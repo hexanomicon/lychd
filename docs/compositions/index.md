@@ -35,14 +35,15 @@ leading to its applications and their outcomes.
 | [Creative Works](creative-works/index.md) | visual work, music, language editions, playable builds, and publication |
 | [Stewardship & Acquisition](stewardship-and-acquisition/index.md) | personal health and wellbeing, places, animal care, cultivation, and acquisition |
 | [Presence & Embodiment](presence-and-embodiment/index.md) | social presence, presentation, virtual worlds, physical bodies, and mobile sessions |
-| [Professional Operations](professional-operations/index.md) | attributable client casework and professional handoffs |
+| [Professional Operations](professional-operations/index.md) | client casework, business books, technical service, and source interpretation |
+| [Security & Trust](security-and-trust/index.md) | security casework and compute-node privacy qualification |
 
 Areas may overlap because a reader can approach the same work from different concerns. Each
 Composition nevertheless keeps one canonical route and owns its records and judgment; the Area
 only helps the reader find it. A [Suite](products-and-suites.md#compositions-relate-without-nesting)
 coordinates live work within one Area or across several. The [Area contract](../adr/28-workflow.md#areas-for-discovery)
-keeps that navigation separate from application ownership, while Guides and Candidate studies
-provide separate views of explanations and proposals.
+keeps that navigation separate from application ownership. Guides explain how to design, implement,
+and combine applications.
 
 ## Follow a shared work
 
@@ -62,32 +63,6 @@ needs a **Suite**.
 The [worked handoffs](products-and-suites.md#compositions-relate-without-nesting) extend this
 relationship to household care, embodied presence, and professional casework. A **Product** gives
 the resulting application or Suite a named operator promise.
-
-## Candidate studies
-
-These studies develop application boundaries beyond the accepted Portfolio.
-
-[Reach connected work](reach/connected-work/index.md) proposes a successor to the public Discord
-contract for bounded Gmail, Discord and GitHub correspondence, optional WhatsApp, account onboarding,
-autonomous delivery policy and recovery. It does not broaden the existing Reach revision or deployment profiles.
-
-[Thorn](thorn/index.md) studies whitehat security casework: authorized assessment, bounded response
-during an attack, cooperative investigation, and supported reports and corrections. Monitoring
-supplies evidence; general system maintenance keeps its own owners.
-
-[Signet](signet/index.md) studies independent compute-node privacy qualification, constrained
-Linux host profiles, public evidence, certificate renewal or revocation, and stamps for individual
-requests. Its executable profiles remain open.
-
-[Accounting Office](accounting-office/index.md) studies business documents, bank reconciliation,
-entity-owned books, asset and subscription obligations, and period close. Provider adapters and
-jurisdiction profiles vary under one proposed accounting lifecycle.
-
-[Workshop](workshop/index.md) tests technical-service casework. Mechanic is its proposed first Product under the passenger-vehicle service profile.
-
-[Transmuter](transmuter/index.md) studies the passage from imported digital material to
-attributed knowledge and proposals for memory and identity. Extractor and Synthesizer are its
-internal stages; naming, labeling, and classification belong to Extractor.
 
 ## The Composition test
 

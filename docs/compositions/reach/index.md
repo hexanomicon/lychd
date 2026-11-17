@@ -46,13 +46,15 @@ This public profile excludes cross-place identity/continuity, moderation, ambien
 
 ## Connected work
 
-The [connected-work study](connected-work/index.md) proposes a successor for Gmail, Discord and
-GitHub correspondence, plus optional WhatsApp business messaging and a separate owner–agent probe.
-It includes private accounts, reviewed or preauthorized sends, onboarding and updates while
-preserving the current public Discord contract.
+[Reach Connected Work](connected-work/index.md) (`reach.correspondence`, revision `1`) is the
+accepted successor for bounded correspondence across accounts. It owns the communication,
+audience and delivery judgment for Gmail, Discord and GitHub, with an optional WhatsApp business
+profile and a separate owner–agent probe. Public Discord records and grants retain their
+`reach.discord@1` identity. The separately executable preparation profile can build provider
+requests today. Connected account access and durable delivery still require implementation.
 
 The [account lifecycle](connected-work/accounts.md) and [delivery plan](connected-work/delivery.md)
-retain the proposed operational boundary. [Social accounts and advertising](connected-work/social.md)
+specify how a connected account is authorized and how an uncertain send is recovered. [Social accounts and advertising](connected-work/social.md)
 distinguishes organic publishing from later paid campaigns.
 
 [Composition Portfolio](../index.md) · [Workflow](../../adr/28-workflow.md)

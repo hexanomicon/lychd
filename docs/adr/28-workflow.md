@@ -860,8 +860,8 @@ and indexes provide documentation routes. They have no runtime identity, revisio
 records, authority, application namespace, code-layout consequence, dependency meaning, delivery
 state, or runtime/Product selection role. A Composition may be discoverable through several
 Areas while retaining one canonical route and its own contract. Renaming an Area or changing
-its membership does not revise those contracts. Guides organize explanations; Candidate studies
-organize proposals by acceptance status. Neither is a thematic Area.
+its membership does not revise those contracts. Guides explain application design and implementation. Each application appears in the thematic
+Area that helps readers find its work; delivery status remains with State of Work.
 
 Suites may coordinate live Composition-owned Invocations within one Area or across several Areas.
 Sharing or crossing an Area boundary alone creates no Suite requirement; the live-coordination

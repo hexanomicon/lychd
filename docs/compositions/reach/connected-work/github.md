@@ -9,7 +9,7 @@ The repository owner installs Reach on selected repositories. An admitted issue 
 conversation can produce a proposed timeline comment, then one delivery as the application's bot.
 The conversation can ask for a code change without granting permission to execute or publish one.
 
-The candidate `reach.github.correspondence@1` profile belongs to the [successor study](index.md).
+The `reach.github.correspondence@1` profile belongs to [Reach Connected Work](index.md).
 It starts with GitHub.com; another GitHub host/version needs its own pinned compatibility and
 credential configuration, not an arbitrary model-selected API URL.
 

@@ -435,10 +435,9 @@ admitted authoritative result.
 ## Assess the remote host separately
 
 A destination may present evidence about logging configuration or protected execution.
-[Signet](../../../compositions/signet/index.md) is the separate candidate Composition for that
-qualification. Its [certificate contract](../../../compositions/signet/index.md#what-the-certificate-guarantees)
+[Signet](../../../compositions/security-and-trust/signet.md) owns that qualification. Its [certificate contract](../../../compositions/security-and-trust/signet.md#what-the-certificate-guarantees)
 distinguishes observed collection paths from enforced protection against a named administrator;
-its [request stamps](../../../compositions/signet/index.md#a-request-from-admission-to-final-stamp)
+its [request stamps](../../../compositions/security-and-trust/signet.md#a-request-from-admission-to-final-stamp)
 bind current admission and later completion evidence to one request and protected session.
 Neither a certificate nor an enrolled peer can widen disclosure policy. Host qualification
 does not make a revealing research question anonymous. Account, network and timing visibility

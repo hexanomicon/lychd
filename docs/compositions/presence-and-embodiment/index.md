@@ -12,7 +12,7 @@ Familiar keeps the body's capabilities and safety.
 | Composition | Outcome |
 | --- | --- |
 | [Blockworld](../blockworld/index.md) | One finite mission in a block world, with evidence of what changed and a way to recover. |
-| [Reach](../reach/index.md) | One bounded social turn, summon, or presence effect in an admitted external place. |
+| [Reach](../reach/index.md) | Bounded correspondence across selected accounts and conversations, with reviewed audience and delivery, or a public Discord turn under its original contract. |
 | [Avatar](../avatar/index.md) | The Lich’s chosen appearance across places, with each projection’s outcome kept distinct. |
 | [Spectre](../spectre/index.md) | A virtual place and a bounded meeting that people can enter, leave, or interrupt. |
 | [Familiar](../familiar/index.md) | A physical body carrying a bounded task or presence, with its local limits and outcome preserved. |

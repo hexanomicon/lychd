@@ -359,7 +359,7 @@ Signed assessments are non-bearer evidence: they grant no identity enrollment, p
 authority or declassification. Expired, revoked, mismatched or missing required evidence refuses
 release. A peer's onward execution and custody must satisfy the actual task's requirements;
 evidence for its ingress endpoint alone cannot qualify that path. Runtime enforcement remains
-independent of the [Signet Composition](../compositions/signet/index.md). A post-execution stamp
+independent of the [Signet Composition](../compositions/security-and-trust/signet.md). A post-execution stamp
 cannot replace the evidence and authority required before disclosure.
 
 #### Thresholds and refusal

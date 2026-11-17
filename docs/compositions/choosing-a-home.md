@@ -11,7 +11,7 @@ icon: material/sign-direction
 
 ## One idea end to end
 
-**Mechanic** is the proposed Product a garage would recognize. “Choose the next diagnostic test” is one use case. [Workshop](workshop/index.md), still a candidate, would own the durable service case under its passenger-vehicle profile. One configured garage installation would be a **Deployment**.
+**Mechanic** is the proposed Product a garage would recognize. “Choose the next diagnostic test” is one use case. [Workshop](professional-operations/workshop.md) owns the durable service case under its passenger-vehicle profile. One configured garage installation would be a **Deployment**.
 
 An already-settled part requirement may pass to Scavenger as exact sourcing input. Only a result that must actively coordinate diagnostic and acquisition Invocations needs a **Suite**. None of those packaging or transport choices can supply a missing application owner.
 
@@ -104,9 +104,9 @@ A single engine or compound container can produce several roles. The role's acce
 
 A Translation Spell has an authority-qualified publisher; Spellweaver validates placement without taking linguistic or application truth. Compound model returns likewise keep one technical parent and independent visual/music/dialogue/picture/world-sound semantic admission. No generic reusable-sound Composition is accepted; a future owner must prove its own lifecycle rather than hide in an existing craft.
 
-## An unresolved ownership need stops at study
+## Resolve the application owner
 
-If an external system already owns the needed truth, define an exact typed integration. If the state is bounded client UI or device-local presentation, leave it there. If LychD needs distinct durable application records, judgment, effects, finish, and recovery, prepare a candidate study.
+If an external system already owns the needed truth, define an exact typed integration. If the state is bounded client UI or device-local presentation, leave it there. If LychD needs distinct durable application records, judgment, effects, finish, and recovery, define the Composition contract and its defeat conditions.
 
 Until an exact external authority or accepted Composition revision resolves the need, affected use cases remain candidate or unsupported. A Product cannot temporarily own the missing truth or admit that path as supported.
 
@@ -116,11 +116,11 @@ Give the reader one representative journey, then the exact identity, Pattern cat
 
 Native records, policies, and finish judgment enter `src/lychd/compositions/<identity>/**`; `clients/<target>/**` can project them without acquiring their authority. A stable key and separate Composition revision, such as `example.application` revision `1`, differs from Pattern `example.perform_work@1`. [Workflow](../adr/28-workflow.md#composition-identity-revision-and-retirement) owns frozen revision, successor, and retirement law. [State](../state-of-the-work.md#composition-portfolio-delivery) owns registration and execution evidence.
 
-## From study to matter
+## From contract to implementation
 
 ```text
-Product/use-case study exposes a need
-→ candidate Composition tests the owner and defeat conditions
+Product or use case exposes a need
+→ Composition design establishes the owner and defeat conditions
 → Portfolio acceptance establishes design truth
 → source enters only with an executable first-party contract
 → State of Work records what is actually delivered

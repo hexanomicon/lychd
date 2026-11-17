@@ -406,9 +406,9 @@ receiving owner, while Aspects describe the responsibilities those owners serve.
 
 [Covenant 5](../adr/05-extensions.md)
 
-### [Extractor](../compositions/transmuter/extractor.md) { #extractor }
+### [Extractor](../compositions/professional-operations/transmuter/extractor.md) { #extractor }
 
-Transmuter's proposed internal stage for source-grounded decomposition, extraction, naming,
+Transmuter's internal stage for source-grounded decomposition, extraction, naming,
 labeling, and classification; its outputs preserve attribution and uncertainty.
 
 ### [Eye](../adr/29-observability.md) { #eye }
@@ -1051,9 +1051,9 @@ opens a smaller living Circle within it.
 
 [Altar Circle](../divination/altar/circle.md#the-greater-summoning-circle)
 
-### [Synthesizer](../compositions/transmuter/synthesizer.md) { #synthesizer }
+### [Synthesizer](../compositions/professional-operations/transmuter/synthesizer.md) { #synthesizer }
 
-Transmuter's proposed internal stage for comparing and connecting extracted material with
+Transmuter's internal stage for comparing and connecting extracted material with
 authorized knowledge and preparing attributable proposals for receiving owners. It owns neither
 Persona publication nor model training.
 
@@ -1113,11 +1113,11 @@ A versioned semantic text transformation qualified by authority. It preserves so
 languages, implementation, and declared loss. Spellweaver governs its placement and casting;
 the consuming owner judges whether the transformation fits the application.
 
-### [Transmuter](../compositions/transmuter/index.md) { #transmuter }
+### [Transmuter](../compositions/professional-operations/transmuter/index.md) { #transmuter }
 
-The candidate Composition for processing external digital material through Extractor and
-Synthesizer into knowledge and proposals for memory, identity, or other separately admitted use.
-It owns the proposed processing dossier, not its receiving owners' decisions.
+The Composition for processing external digital material through Extractor and Synthesizer into
+knowledge and proposals for memory, identity, or other separately admitted use. It owns the
+processing dossier and records each receiving owner’s separately admitted decision.
 
 ### [Trial Suite](../adr/34-drift.md#trial-contract) { #trial-suite }
 

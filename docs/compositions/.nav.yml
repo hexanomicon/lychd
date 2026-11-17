@@ -96,7 +96,11 @@ nav:
           - blockworld/continuity.md
       - Reach:
           - reach/index.md
-          - reach/connected-work/preparation.md
+          - Connected work:
+              - reach/connected-work/index.md
+              - reach/connected-work/preparation.md
+              - reach/connected-work/accounts.md
+              - reach/connected-work/delivery.md
           - Email:
               - reach/email.md
               - reach/connected-work/gmail.md
@@ -141,6 +145,8 @@ nav:
           - companion/utterance.md
           - companion/return.md
           - companion/android-development.md
+          - companion/android-foundation.md
+          - companion/phone-workspace.md
           - companion/access-and-views.md
   - Professional Operations:
       - professional-operations/index.md
@@ -151,25 +157,19 @@ nav:
           - broker/cases.md
           - broker/products.md
           - broker/channels.md
-  - Candidate studies:
-      - Reach Connected Work:
-          - reach/connected-work/index.md
-          - reach/connected-work/accounts.md
-          - reach/connected-work/delivery.md
-      - Companion Android Foundation: companion/android-foundation.md
-      - Companion Phone Workspace: companion/phone-workspace.md
-      - Signet: signet/index.md
-      - Thorn:
-          - thorn/index.md
-          - thorn/investigation.md
-          - thorn/response-policy.md
-          - thorn/trials.md
       - Accounting Office:
-          - accounting-office/index.md
-          - accounting-office/knowledge-and-obligations.md
+          - professional-operations/accounting-office/index.md
+          - professional-operations/accounting-office/knowledge-and-obligations.md
       - Transmuter:
-          - transmuter/index.md
-          - transmuter/extractor.md
-          - transmuter/synthesizer.md
-      - Workshop:
-          - workshop/index.md
+          - professional-operations/transmuter/index.md
+          - professional-operations/transmuter/extractor.md
+          - professional-operations/transmuter/synthesizer.md
+      - Workshop: professional-operations/workshop.md
+  - Security & Trust:
+      - security-and-trust/index.md
+      - Signet: security-and-trust/signet.md
+      - Thorn:
+          - security-and-trust/thorn/index.md
+          - security-and-trust/thorn/investigation.md
+          - security-and-trust/thorn/response-policy.md
+          - security-and-trust/thorn/trials.md

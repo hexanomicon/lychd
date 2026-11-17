@@ -15,7 +15,7 @@ prepares bounded comment reads or a new issue/PR timeline comment through GitHub
 
 A timeline comment is not a diff review, formal approval, merge, code write, release or workflow
 run. App installation and delegated user access have separate authority requirements; the offline
-builder authenticates neither. The [GitHub study](connected-work/github.md) owns the proposed
+builder authenticates neither. The [GitHub profile](connected-work/github.md) specifies its
 installation, event, permission and reconciliation contract.
 
 ## Radicle boundary

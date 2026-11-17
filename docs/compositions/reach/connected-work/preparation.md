@@ -10,9 +10,9 @@ through the same Reach boundary. The result records the selected account, exact 
 payload, policy and expiry. It can be inspected without connecting an account or contacting a
 provider.
 
-**`reach.connect.prepare@1`** is an explicit offline profile. It does not activate or widen
-`reach.discord@1`, and does not qualify the operational `reach.correspondence@1` successor proposed
-in the [connected-work study](index.md). [State of Work](../../../state-of-the-work.md#composition-portfolio-delivery)
+**`reach.connect.prepare@1`** is the explicit offline preparation profile. The public Discord
+contract retains its own identity. The [connected-work contract](index.md) specifies the separate
+authority, custody and recovery required for operational delivery under `reach.correspondence@1`. [State of Work](../../../state-of-the-work.md#composition-portfolio-delivery)
 owns its evidence and the remaining deployment boundary.
 
 ## One intent, several concrete channels
@@ -80,7 +80,7 @@ uv run --locked python scripts/reach_connect_prepare.py \
 
 Use `founder-policy.json` and `founder-launch.json` in the same directory for Fastmail plus
 Facebook Page, LinkedIn member and X launch-copy preparation. Both fixtures use invented accounts.
-The default output reports only preparation status and count. `--include-payload` explicitly
+The default output reports the profile, preparation status, count, expiry and unattempted delivery. `--include-payload` explicitly
 prints the private application requests for inspection; protect that output like correspondence.
 
 For native execution, assemble

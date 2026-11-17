@@ -10,9 +10,9 @@ the business's number, subject to the recipient's permission, the response windo
 provider policy. That is useful correspondence; it does not establish access to the operator's
 existing personal chats.
 
-Reviewed **2026-10-21** for the [connected-work study](index.md). Recommend an **optional later
-Business Platform profile**, `reach.whatsapp.business@1`, after the Gmail, Discord and GitHub
-slices. It reuses Reach's preparation, authority and effect ledger but needs its own intake,
+This assessment was reviewed **2026-10-21**. [Reach Connected Work](index.md) scopes
+`reach.whatsapp.business@1` as an optional Business Platform profile after Gmail, Discord and
+GitHub. It reuses Reach's preparation, authority and effect ledger but needs its own intake,
 onboarding, eligibility and billing contracts. No WhatsApp connection is implemented or qualified.
 
 ## Three distinct routes
@@ -31,7 +31,7 @@ specific platform. Before proposing its adapter, verify the developer protocol, 
 availability, sender assurance, callback custody and reconnect/recovery in the actual deployment.
 
 The business profile uses official APIs. Reverse-engineered WhatsApp Web sessions, browser cookies
-and QR-linked session libraries are outside this candidate and supply no supported shortcut to
+and QR-linked session libraries are outside this profile and supply no supported shortcut to
 personal-chat access.
 
 ## Business setup and existing numbers

@@ -15,7 +15,8 @@ Reconnection reapplies the original frame-admission rules and the session's sepa
 
 ## Client-local interaction
 
-The first client-only profile holds text drafts and observed presentations in memory. It handles
+The `interaction` reducer used by the separate `offline` Android app holds text drafts and
+observed presentations in memory. It handles
 no recording bytes, credentials, transport, or authoritative Companion records. Every local session
 has a fresh generation; restarting the process discards this local state. Native session and result
 identities remain opaque inputs to a future authorized adapter.
@@ -63,6 +64,11 @@ disconnected; a simulation switch or device connectivity observation supplies no
 
 ## Proving the route
 
-A fifteen-second local Android fixture uses distinct tunnel/application keys, local recognition, typed handoff sink, pre-settled text result, optional synthesis, ephemeral audio, durable text, and utterance-id reconnect. Prove no destination wait/cancel, stolen-tunnel-key refusal, revoked app key, replay, object guessing, transcript injection, disconnect, expiry, and locked-device playback. No public proxy, ambient capture, mobile approval, administration, or medical promise enters it.
+A future fifteen-second Android qualification fixture must exercise distinct tunnel and
+application keys, local recognition, a typed handoff sink, a pre-settled text result, optional
+synthesis, ephemeral audio, durable text and reconnect by utterance identity. It must cover
+stolen tunnel keys, revoked application keys, replay, object guessing, transcript injection,
+disconnect, expiry and locked-device playback. Destination wait or cancellation, public proxy,
+ambient capture, mobile approval, administration and medical claims remain outside its scope.
 
 Return to [Companion](index.md), or follow a new [Utterance](utterance.md).

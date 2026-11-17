@@ -79,7 +79,7 @@ Python's standard library.
 
 [Android Development](../../docs/compositions/companion/android-development.md) owns this slice's
 behavior, custody, test limits and next integration steps. [Android Foundation](../../docs/compositions/companion/android-foundation.md)
-retains the broader construction study. [Access and Views](../../docs/compositions/companion/access-and-views.md)
+retains the live-client construction plan. [Access and Views](../../docs/compositions/companion/access-and-views.md)
 owns the mobile application of IAM law; [State of Work](../../docs/state-of-the-work.md#companion-android-client)
 owns delivery claims.
 

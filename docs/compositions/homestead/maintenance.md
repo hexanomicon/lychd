@@ -13,9 +13,10 @@ An inspection reports a leak. Before anyone can close the work, the household ne
 
 An uncertain cause may call for research or containment advice before a work order can be defined.
 
-The proposed [Workshop](../workshop/index.md) could own a separately admitted technical service
-case and return its disposition. Homestead retains the site, work order, controller envelope,
-and return-to-service decision; its own maintenance does not require Workshop.
+When an accepted [Workshop](../professional-operations/workshop.md) profile covers the asset and
+work, Workshop owns the separately admitted technical service case and returns its disposition.
+Its first profile covers passenger vehicles. Homestead retains the site, work order, controller
+envelope, and return-to-service decision; its own maintenance proceeds under its existing contract.
 
 If the work needs an independent acquisition campaign for a part, the requirement can pass to [Scavenger](../scavenger/index.md) with the compatibility, certification, serviceability, environmental, budget, and evidence requirements that a candidate must meet. Scavenger returns dated evidence about candidates and sellers. Purchasing a candidate and commissioning it each require their own admission.
 Ordinary replenishment can remain within [Provision](provision.md).

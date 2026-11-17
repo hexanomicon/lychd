@@ -16,8 +16,7 @@ Also load [Build](build.md) when the task implements that truth under `src/**` o
    For every Covenant task, read that index before opening or editing a numbered ADR; its closed
    register and ownership map determine which existing Covenant must be amended or rewritten.
    [ADR 28](../../docs/adr/28-workflow.md) owns Weaver and Pattern law; the
-   [Composition index](../../docs/compositions/index.md) routes accepted designs and candidate
-   studies according to each page's declared maturity.
+   [Composition index](../../docs/compositions/index.md) routes accepted application designs through thematic Areas.
 4. [State of Work](../../docs/state-of-the-work.md) owns evidence-backed delivery status; it does
    not replace ADR law.
 5. Tracked source and tests establish implementation evidence. Ignored `.agents/work/**` material

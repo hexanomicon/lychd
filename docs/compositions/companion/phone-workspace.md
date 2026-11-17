@@ -5,19 +5,18 @@ icon: material/cellphone-cog
 
 # :material-cellphone-cog: Companion Phone Workspace
 
-Companion could grow into the everyday mobile workspace through which LychD can act on the
-operator's phone. The operator's **30 October 2026 clarification** makes the primary promise:
-install Companion once, pair it with the PC, then manage its state and initiate updates from the
-PC application. The phone maintains its local state and recovers/reconnects within its granted
-authority and Android limits. The first end-to-end priority is that application lifecycle;
-an offline music player is a useful feature delivered through it. Selected photos and explicit
-file sync follow, with local Wi-Fi before later VPN reach.
+The first planned milestone is to install Companion once, pair it with the PC, and initiate a
+signed update from the PC interface. It ends when the PC can verify which version the phone runs
+after reconnecting. An offline music player is the first feature planned for this lifecycle. Selected
+photos and explicit file sync follow, starting on local Wi-Fi before adding VPN reach.
 
-This candidate study, opened **2026-10-07**, explores that direction beside
-[`companion.mobile` revision `3`](index.md). It publishes no successor revision or supported phone
-administration path. [State of Work](../../state-of-the-work.md#composition-portfolio-delivery)
-owns delivery. The initial device to test is the operator's Samsung S20 FE; the first application
-design requires ordinary Android app permissions rather than root or a replacement ROM.
+This construction plan targets the Samsung S20 FE with ordinary Android application permissions.
+[`companion.mobile` revision `3`](index.md) governs session interaction and excludes mobile
+administration. A PC update needs a receiving owner and a published contract for package
+authority, attempt records and recovery. Today the device status view runs locally. The
+[Android development guide](android-development.md#running-the-slice) covers the supported
+debug build and [State of Work](../../state-of-the-work.md#companion-android-client) records
+the outstanding pairing and handset checks.
 
 ## Install once, manage from the PC
 
@@ -60,7 +59,7 @@ The default personal-phone path retains the local confirmation described below.
 
 This lifecycle is the main integration priority before the MP3 feature. A manual/KDE Connect APK
 transfer can help qualify bootstrap delivery, but cannot establish the PC Update workflow. The
-receiving application owner, successor contract, protected ingress and durable recovery must be
+receiving application owner, published effect contract, protected ingress and durable recovery must be
 settled before native remote handlers; Companion revision 3 remains unchanged.
 
 ## Start with a player worth using
@@ -87,7 +86,7 @@ revoke remote control.
 Feature development and connectivity are separate tracks: local music can work before remote
 admission exists, and photos need no VPN to become useful.
 
-| Stage | Proposed behavior | Smallest useful journey |
+| Stage | Construction target | Smallest useful journey |
 | --- | --- | --- |
 | Installed lifecycle | One initial install/pairing, PC-visible state, one-click initiated update and reconciled reconnect. | Update A to B from the PC and verify version, retained state and post-update checks on the phone. |
 | Local music | Folder library, search, queue, and offline/background playback. | Pick an album, lock the screen, use headset controls, and continue playing without LychD. |
@@ -105,7 +104,7 @@ be visible. File arrival does not itself authorize model analysis, memory ingest
 
 The operator's intended experience is one selected LychD whether a request starts on the PC or
 phone. Both devices can be request surfaces and, for admitted capabilities, execution targets.
-The table describes the candidate behavior, not delivered cross-device access:
+The four cases identify the owner of each planned effect.
 
 | Request starts on | Effect belongs on | Example |
 | --- | --- | --- |
@@ -132,8 +131,8 @@ depends on the platform and target SDK.
 
 The first remote path needs a protected mobile ingress with
 [Ward](../../sepulcher/aspects/ward.md)-owned enrollment, scoped grants, and revocation. The
-current same-host loopback service is not this path: the study does not authorize exposing or
-tunnelling the current Altar. [Remote IAM](../../state-of-the-work.md#remote-iam) retains that
+current Altar serves its local client over loopback. Remote access needs its own ingress.
+[Remote IAM](../../state-of-the-work.md#remote-iam) retains that
 delivery boundary. Later, [Tether](../../sepulcher/aspects/tether.md) can supply VPN reachability
 without replacing application authentication or widening the grants.
 
@@ -150,9 +149,10 @@ actually did. A model's request is not evidence that playback or a transfer happ
 
 Broader mobile execution exceeds Companion revision 3's current handoff/presentation contract.
 Before admitting that path, [Choosing a Home](../choosing-a-home.md) must resolve the media and
-transfer application ownership, then publish the appropriate accepted contract. This study does
-not choose a new Composition or Suite merely because the client has several screens. Coordinating
-multiple live Composition Invocations would need the separately owned Suite boundary.
+transfer application ownership. If Companion takes new responsibilities, its owner must publish a
+successor that names the authority, retained attempts, unknown outcomes and compatibility with
+revision 3. An independent application may instead own the effects and return a settled receipt
+to Companion. Coordinating multiple live Composition Invocations needs a separately owned Suite.
 
 ## Build an app and put it on the phone
 
@@ -220,7 +220,7 @@ and handle pending user action. Unexpected package, version or signing changes r
 review; a signing conflict must not trigger uninstall. Installation readback proves observed
 package identity, not an independent hash of the installed raw APK bytes. Android documents narrow
 [update exceptions](https://developer.android.com/reference/android/content/pm/PackageInstaller.SessionParams#setRequireUserAction(int));
-this candidate's default keeps local confirmation.
+the personal-phone profile calls for local confirmation by default.
 
 The future operation record must bind operation/version, canonical request digest, initiating
 account and device, target device/object, current grant and capability generations, exact content
@@ -337,7 +337,7 @@ integrity verification, storage exhaustion, and a destination conflict with both
 VPN acceptance repeats the existing authenticated journey over another route.
 
 Continuous observation, camera capture, notification actions, launcher integration, destructive
-sync, and wider phone administration remain future candidate capabilities. The independent
+sync, and wider phone administration remain outside the planned initial release. The independent
 player-delivery pilot can establish local usefulness while the Bridge and Voice release follows
 its own acceptance sequence. Native phone control still needs one admitted player action and its
 failure endings on the S20 FE.

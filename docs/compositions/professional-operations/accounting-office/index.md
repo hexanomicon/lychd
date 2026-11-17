@@ -5,30 +5,28 @@ icon: material/book-check
 
 # :material-book-check: Accounting Office
 
-A business owner needs to know what arrived, what is owed, what has been paid, and what the books can honestly say. An invoice in mail and a matching bank movement are evidence to connect, not a finished accounting judgment. Accounting Office would preserve that connection through review, reconciliation, and an explainable period close.
+A business owner needs to know what arrived, what is owed, what has been paid, and what the books can honestly say. An invoice in mail and a matching bank movement may concern the same purchase. Accounting Office keeps both originals, records who accepted the match, and carries unresolved differences into the period close.
 
-This **candidate study**, prepared **2026-09-11**, proposes `accounting.office` revision `1`, outside the accepted Portfolio. It supplies no source implementation, registered Pattern, executable configuration, live mail/bank integration, or jurisdiction support claim. [Workflow](../../adr/28-workflow.md#composition-identity-revision-and-retirement) owns acceptance and revision law; [State of Work](../../state-of-the-work.md#composition-portfolio-delivery) owns delivery evidence.
+**Accounting Office** (`accounting.office`, revision `1`) is the Native Reference Composition for one entity’s books. It owns the evidence-to-journal link, reconciliation decisions, and acceptance of a period close. The contract is design-only. [State of Work](../../../state-of-the-work.md#composition-portfolio-delivery) tracks executable delivery.
 
-[Knowledge and obligations](knowledge-and-obligations.md) explores a proposed successor revision:
-source-effective rules, scoped professional answers, and entity-specific obligation instances.
-That proposal neither changes this revision's contract nor establishes acceptance or delivery.
+A [successor proposal](knowledge-and-obligations.md) would add source-effective research cases, scoped professional answers and entity-specific obligation instances. Revision `1` remains the accepted contract under [Workflow’s revision law](../../../adr/28-workflow.md#composition-identity-revision-and-retirement).
 
 ## One accounting lifecycle
 
-The proposed owner is one entity's accounting lifecycle:
+Each Invocation follows one entity’s evidence through its requested accounting judgment.
 
 ```text
 source evidence → proposed classification/match → validated and reviewed journal
 → reconciliation → period close → accepted scope, exact partial, unresolved, or handoff
 ```
 
-An `AccountingOfficeRequest@1` would bind the entity, period, purpose, source coverage, exact compliance profile, rule versions, reviewer authority, privacy policy, and effect ceilings. An `AccountingOfficeOutcome@1` would identify accepted records and reports, exceptions, unresolved balances, missing coverage, and required handoffs. Refusal and an indeterminate external action remain explicit outcomes. A plausible report cannot substitute for missing evidence.
+An `AccountingOfficeRequest@1` binds the entity, period, purpose, source coverage, exact compliance profile, rule versions, reviewer authority, privacy policy, and effect ceilings. An `AccountingOfficeOutcome@1` identifies accepted records and reports, exceptions, unresolved balances, missing coverage, and required handoffs. Refusal and an indeterminate external action remain explicit outcomes. A plausible report cannot substitute for missing evidence.
 
-During a pilot, the external accountant's books remain the reference. Accounting Office shadows them, records disagreements, and prepares evidence for resolution; it cannot silently replace their books or treat agreement on one period as general accounting acceptance. Acceptance names the reviewer, scope, rule versions, exceptions, and reconciliation evidence. A proposed native-book mode would instead name the authoritative ledger, entity and period, reviewer, and reconciliation and correction route. The mode and any transition require explicit acceptance; shadow agreement cannot silently switch book authority.
+During a pilot, the external accountant's books remain the reference. Accounting Office shadows them, records disagreements, and prepares evidence for resolution; it cannot silently replace their books or treat agreement on one period as general accounting acceptance. Acceptance names the reviewer, scope, rule versions, exceptions, and reconciliation evidence. In native-book mode the entity names the authoritative ledger, entity and period, reviewer, and reconciliation and correction route. The mode and any transition require explicit acceptance; shadow agreement cannot silently switch book authority.
 
 ## Records that survive the conversation
 
-The candidate would retain distinct, linked records for:
+The Office links five kinds of record.
 
 - **Evidence:** each source occurrence, custody and coverage observations, original bytes and their separate digest, extraction version, and attributed corrections. Identical bytes can arrive through several occurrences; a digest alone does not identify the business event.
 - **Commercial obligations:** counterparty identity and evidence; invoices, accounts payable/receivable, credit notes, due dates, disputes, advance allocations, and supporting contracts.
@@ -42,9 +40,9 @@ Before posting, validate accounts, dates, amounts, provenance, and applicable re
 
 ## Portable rules, isolated entities
 
-The proposed Composition-owned `EntityComplianceProfile@1` binds legal form, tax residence, functional/reporting currency, accounting period, typed registrations and their effective dates. A versioned `JurisdictionPack@1` resolves accounting, company-law, income-tax, VAT/GST/withholding, and filing rules and schemas. Transaction facts and treaty overlays may change which rules apply. Provider dialect translates transport fields; it never decides law.
+The Composition’s `EntityComplianceProfile@1` binds legal form, tax residence, functional/reporting currency, accounting period, typed registrations and their effective dates. A versioned `JurisdictionPack@1` resolves accounting, company-law, income-tax, VAT/GST/withholding, and filing rules and schemas. Transaction facts and treaty overlays may change which rules apply. Provider dialect translates transport fields; it never decides law.
 
-Neither a country string nor a successful import proves support. Missing, conflicting, expired, or inapplicable rules block the affected judgment with an exact reason. Portability requires a second wholly synthetic foreign profile with distinct rules, effective-time changes, calendar, and currency. Its fixture must demonstrate deliberate rule selection and refusal without fallback; this study makes no live foreign legal assertion.
+Neither a country string nor a successful import proves support. Missing, conflicting, expired, or inapplicable rules block the affected judgment with an exact reason. Portability requires a second wholly synthetic foreign profile with distinct rules, effective-time changes, calendar, and currency. The fixture must show which rule applies and why the office refuses a transaction outside its coverage. Real jurisdiction support requires separate qualification.
 
 To admit a rule, retain its authoritative source, source digest, publication and effective dates, applicability predicates, reviewer, executable revision, and expected fixtures. Research can assemble that evidence, but its findings cannot activate themselves.
 
@@ -52,9 +50,9 @@ When a rule changes, identify the open cases it affects and preserve earlier jud
 
 Each entity keeps separate books, credential references, source coverage, grants, and acceptance authority. A counterparty buying services establishes a commercial relationship, not permission to operate that counterparty's books. Shared software and reusable profiles do not create shared financial authority.
 
-## Proposed Patterns and configuration
+## Pattern catalogue
 
-These are proposed Pattern identities, separate from the Composition revision:
+Revision `1` specifies these Pattern identities and their bounded results. Each Pattern carries its own revision.
 
 | Pattern | Bounded result |
 | --- | --- |
@@ -67,7 +65,7 @@ These are proposed Pattern identities, separate from the Composition revision:
 | `accounting.prepare_filing@1` | Frozen return/report candidate, applicable schema validation, open exceptions, and authorized handoff. |
 | `accounting.assess_cash@1` | Assumption-bound cash scenarios and a separately authorized handoff candidate. |
 
-The following is **non-loadable, nonbinding design notation**, not a Rune or accepted schema. Exact registrations and deployment syntax remain future work.
+This synthetic example shows which references a deployment must bind. It illustrates the contract. A loadable Rune and registered Patterns still require implementation.
 
 ```text
 composition: accounting.office / revision 1
@@ -84,7 +82,7 @@ close: period_ref, reviewer_ref, exception_policy_ref
 
 ## Intake and effects have different authority
 
-`MailAdapter`, `BankAdapter`, and `DocumentAdapter` name proposed application-facing ports, not existing global LychD classes or new Core offices or Aspects. Mail separates read, draft, send, and delivery observation. Bank separates read, payment preparation, submission, status observation, and reconciliation. Document intake retains original evidence and quarantines untrusted content. Any required registration must identify the receiving owner, typed Contribution, Provider, profile revision, and Registrant under [Extensions](../../adr/05-extensions.md); these names do not justify stuffing bank or mail operations into `ToolConnector`.
+`MailAdapter`, `BankAdapter`, and `DocumentAdapter` name application-facing ports in the design. Mail separates read, draft, send, and delivery observation. Bank separates read, payment preparation, submission, status observation, and reconciliation. Document intake retains original evidence and quarantines untrusted content. Any required registration must identify the receiving owner, typed Contribution, Provider, profile revision, and Registrant under [Extensions](../../../adr/05-extensions.md).
 
 Before using an adapter, inspect its declared operations, coverage, limits, and recovery semantics. Unsupported operations must refuse or return a manual handoff. During intake, use cursors to track traversal while keeping document identity separate. At-least-once ingestion deduplicates repeated delivery without losing distinct arrivals. Partial imports, unavailable attachments, and historical gaps remain visible.
 
@@ -100,7 +98,7 @@ A filing candidate follows the same evidence discipline: freeze its source/perio
 
 ## Privacy before remote cognition
 
-Here **Portal** means remote provider cognition. The candidate follows [Context](../../adr/21-context.md#privatization-and-the-privacy-cut) and [Security](../../adr/09-security.md#portal-privatization-and-egress):
+Sending a question to a **Portal** for remote cognition requires both a verified privacy cut and a decision authorizing that transmission. [Context](../../../adr/21-context.md#privatization-and-the-privacy-cut) and [Security](../../../adr/09-security.md#portal-privatization-and-egress) govern that sequence.
 
 ```text
 local minimization + classification + lineage
@@ -111,7 +109,7 @@ local minimization + classification + lineage
 
 Local processing removes unnecessary identities, metadata, quoted correspondence, attachment text, and embedded banking information before a remote candidate is considered. Amounts, dates, relationships, and unusual combinations can themselves identify a business. Pseudonyms, reversible identifiers, and hashes are not anonymity. Semantic abstraction must preserve the question's declared invariants; if that cannot be verified, the work remains local or refuses the remote road.
 
-Any re-identification map remains separately controlled locally under Context's lease law. No map, raw history, credential, or local decision evidence accompanies the request. Related calls, retries, and derived summaries count toward cumulative disclosure. A failed local capability or privacy check creates no implicit cloud fallback. A returned recommendation remains untrusted and cannot directly post, pay, send, or file. [State](../../state-of-the-work.md#context-privatization-and-portal-egress) records that the shared privacy machinery is not delivered.
+Any re-identification map remains separately controlled locally under Context's lease law. No map, raw history, credential, or local decision evidence accompanies the request. Related calls, retries, and derived summaries count toward cumulative disclosure. A failed local capability or privacy check creates no implicit cloud fallback. A returned recommendation remains untrusted and cannot directly post, pay, send, or file. [State](../../../state-of-the-work.md#context-privatization-and-portal-egress) records that the shared privacy machinery is not delivered.
 
 Statutory records retain their actual legally required contents. An accountant may need exact originals through a separately authorized, exact-recipient exchange; model anonymization cannot replace that channel or alter the books. Applicable Security disclosure law still governs that exchange.
 
@@ -123,13 +121,13 @@ A missing completion record leaves the affected allocation unresolved. An invoic
 
 ## Foreign owners and the stopping line
 
-Asset/subscription inventory here concerns accounting value, rights, and renewal obligations. Physical warehouse custody, stock counting, and IoT remain with their actual owner. Accounting Office consumes exact settled count/valuation evidence and records its accounting interpretation. A Suite becomes necessary only when a promised result must coordinate several owners' live Invocations; [Choosing a Home](../choosing-a-home.md) retains that routing test.
+Asset/subscription inventory here concerns accounting value, rights, and renewal obligations. Physical warehouse custody, stock counting, and IoT remain with their actual owner. Accounting Office consumes exact settled count/valuation evidence and records its accounting interpretation. A Suite becomes necessary only when a promised result must coordinate several owners' live Invocations; [Choosing a Home](../../choosing-a-home.md) retains that routing test.
 
-Cash strategy and tactics produce scenarios with assumptions, liquidity constraints, and uncertainty. Any proposed [Broker](../broker/index.md) client handoff must fit its admitted insurance-service scope; a report provides neither trading agency nor payment authority. An external accountant or filing system remains an unmanaged external precondition unless an exact admitted integration says otherwise. No foreign reference lends credentials, lifecycle control, or settlement authority.
+Cash strategy and tactics produce scenarios with assumptions, liquidity constraints, and uncertainty. Any proposed [Broker](../../broker/index.md) client handoff must fit its admitted insurance-service scope; a report provides neither trading agency nor payment authority. An external accountant or filing system remains an unmanaged external precondition unless an exact admitted integration says otherwise. No foreign reference lends credentials, lifecycle control, or settlement authority.
 
-## Fixtures that can defeat the proposal
+## Verification
 
-| Falsifying fixture | Required evidence |
+| Test case | Required evidence |
 | --- | --- |
 | Duplicate mail plus bank ingestion | Preserve occurrences; prevent duplicated obligations/postings without merging distinct events. |
 | Crash at every durable transition and effect boundary | Resume from receipts; retain unresolved state without invented completion. |
@@ -140,6 +138,4 @@ Cash strategy and tactics produce scenarios with assumptions, liquidity constrai
 | Adversarial privacy leakage | Detect metadata, quotes, attachments, linkage and cumulative reconstruction; refuse uncertain disclosure. |
 | Accountant discrepancy | Preserve both positions and attributable resolution; no silent overwrite. |
 
-Composition ownership itself fails if these records, judgments, recovery, and finish already belong to an exact existing owner, or if regional variation requires incompatible lifecycles concealed in profiles. A mere report projection, provider wrapper, or Product label cannot establish the proposed office. Conversely, distinct deployment credentials alone do not justify another Composition.
-
-Implementation would begin with local synthetic receipts and the deterministic accounting kernel, then an explicitly authorized read-only shadow against reference books. Accounting acceptance follows demonstrated reconciliation and reviewer judgment; optional external effects come later with their own evidence. Portfolio acceptance establishes a maintained design boundary, while executable delivery requires source contracts, focused verification, and maintained receipts. Until then this remains a candidate study.
+The first implementation boundary is a local reconciliation on synthetic books. It must retain the source occurrences and original evidence, bind reviewed postings to the entity and period, and recover the same matches and exceptions after interruption. A read-only shadow can then be judged against a named accountant’s reference books for an explicitly authorized scope. Live account access, payment, filing, and jurisdiction support each need their own evidence.

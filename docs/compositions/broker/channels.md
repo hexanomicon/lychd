@@ -24,7 +24,8 @@ Reach Invocation could own the communication delivery under its applicable contr
 retaining its case judgment and a correlated result. Shared transport attempts or provider
 evidence do not create a second owner of the same send. Live coordination of both Invocations
 requires the applicable [Suite](../products-and-suites.md#compositions-relate-without-nesting);
-Reach correspondence remains a [candidate](../reach/connected-work/index.md).
+[Reach correspondence](../reach/connected-work/index.md) defines that separate delivery contract;
+its operational transport and durable outbox await implementation.
 
 Deletion begins by closing admission and draining or containing atomic work. It can then remove governed local derivatives while retaining explicit legal holds and an account of third-party custody.
 
