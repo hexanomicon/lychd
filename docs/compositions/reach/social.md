@@ -24,8 +24,7 @@ boosts, advertising campaigns and spending are outside the prepared operation se
 
 [Broadcast](../broadcast/release.md) owns editorial acceptance and release of its own project.
 Settled, approved copy can enter Reach as input; a standalone Reach social communication need not
-commission Broadcast. Reach delivery of such a post is proposed, not supplied by the current
-preparation builders. Coordinating several live Composition Invocations needs a
+commission Broadcast. The current preparation builders stop before provider publication. Coordinating several live Composition Invocations needs a
 [Suite](../products-and-suites.md#compositions-relate-without-nesting).
 
 Use [connected preparation](connected-work/preparation.md) for the founder launch example and

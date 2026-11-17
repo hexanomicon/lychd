@@ -6,9 +6,9 @@ icon: material/source-merge
 # :material-source-merge: Synthesizer
 
 An old conversation asks for brief answers; a later project calls for detailed explanations.
-Synthesizer would relate those statements to their dates and purposes, preserving both until
+Synthesizer relates those statements to their dates and purposes, preserving both until
 evidence or review supports a scoped preference. It is the interpretation and synthesis stage of
-the [Transmuter candidate](index.md), working from [Extractor](extractor.md) outputs.
+[Transmuter](index.md), working from [Extractor](extractor.md) outputs.
 
 ## Compare and propose
 
@@ -33,15 +33,16 @@ memory or identity.
 
 | Proposed use | Receiving decision |
 | --- | --- |
-| Retain or correct a memory | [Archive](../../adr/27-memory.md) owns Memory admission, curation, and recall eligibility. |
-| Revise the Lich's Persona | [Mirror](../../adr/32-identity.md) owns the reviewed revision and its publication. |
-| Nominate material for training | [Soulforge](../../adr/33-training.md) independently admits a corpus and any later training. |
-| Request a missing parser, tool, or code candidate | [Smith](../../adr/16-smith.md) governs candidate authorship through a separately admitted exact application contract. |
+| Retain or correct a memory | [Archive](../../../adr/27-memory.md) owns Memory admission, curation, and recall eligibility. |
+| Revise the Lich's Persona | [Mirror](../../../adr/32-identity.md) owns the reviewed revision and its publication. |
+| Nominate material for training | [Soulforge](../../../adr/33-training.md) independently admits a corpus and any later training. |
+| Request a missing parser, tool, or code candidate | [Smith](../../../adr/16-smith.md) governs candidate authorship through a separately admitted exact application contract. |
 
 Settled Smith outputs may also enter Transmuter as attributed material for interpretation. Their
 authorship establishes no promotion or truth. Forge constructs packages and images; Soulforge
 owns training. Neither code activation nor weight promotion follows automatically from synthesis.
-This study specifies these proposed handoffs without publishing executable contracts for them.
+Before a handoff, verify the exact destination supports the requested operation and recheck
+current authority. An unavailable destination leaves the proposal in the dossier with its blocker.
 
 ## Account for the result
 
@@ -57,5 +58,5 @@ which retains authority over its own history.
 
 Budget exhaustion retains completed proposals and identifies unfinished work. Cancellation stops
 new synthesis and handoffs while preserving committed effects. Resumption must reconcile recorded
-uncertainty and recheck authority before further work. The exact executable recovery contract
-remains acceptance work under [Workflow](../../adr/28-workflow.md).
+uncertainty and recheck authority before further work. Each attempt retains its exact inputs and
+disposition under the [Composition’s recovery contract](index.md#the-processing-dossier).

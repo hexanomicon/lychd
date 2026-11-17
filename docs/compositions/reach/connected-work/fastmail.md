@@ -10,8 +10,8 @@ The founder keeps company mail in Fastmail and prepares a client reply through t
 mail identity and the submission envelope remain explicit.
 
 This page describes Fastmail request preparation in `reach.connect.prepare@1`. The
-[connected-work study](index.md) retains the proposed account lifecycle and durable delivery
-contract; the builder does not connect an account or create a remote draft.
+[connected-work contract](index.md) specifies the account lifecycle and durable delivery
+requirements; the builder does not connect an account or create a remote draft.
 
 ## Select the protocol account and sender
 

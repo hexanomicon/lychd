@@ -5,15 +5,15 @@ icon: material/tools
 
 # :material-tools: Workshop
 
-An intermittent no-start complaint is a service case before it is a diagnosis. Workshop would keep the exact vehicle, reported symptom, sources, competing hypotheses, requested checks, and observed results together until the evidence supports a scoped disposition—or makes a qualified handoff the useful result.
+An intermittent no-start complaint is a service case before it is a diagnosis. Workshop keeps the exact vehicle, reported symptom, sources, competing hypotheses, requested checks, and observed results together. The case can end with verified restoration under stated conditions or with a handoff that tells the next qualified person where the evidence stopped.
 
-This candidate study, reviewed **2026-08-09**, tests that reusable application boundary. Workshop is outside the accepted Portfolio; **Mechanic** is its proposed first Product using the passenger-vehicle service profile. [State of Work](../../state-of-the-work.md#composition-portfolio-delivery) retains the delivery boundary.
+**Workshop** is the technical-service Composition. **Mechanic**, its first Product design, selects the passenger-vehicle service profile. The package contains only a namespace docstring. The case store, guided checks, and Product entry point await implementation. [State of Work](../../state-of-the-work.md#composition-portfolio-delivery) records delivery.
 
-## Candidate contract
+## Service-case contract
 
-`workshop.service` revision `1` proposes `workshop.service_case@1`. Its `WorkshopServiceRequest@1` binds purpose, case-scoped asset identity/configuration evidence, condition, hazards, operator role, pinned service profile, attributed sources/observations, and privacy/authority ceilings.
+**`workshop.service` revision `1`** defines the Pattern **`workshop.service_case@1`**. Its `WorkshopServiceRequest@1` binds the purpose, case-scoped evidence of asset identity and configuration, condition, hazards, operator role, pinned service profile, attributed sources and observations, and limits on access and action.
 
-The proposed `WorkshopServiceCase@1` keeps the work reconstructible after the conversation. It owns purpose and operator assignment, asset assurance, and the evidence available to the case: symptoms, manuals, bulletins, schematics, codes, images, statements and measurements. It also retains hypotheses and contradictions; checks, prerequisites, hazards, tools, results and interruptions; part/tool requirements; and verification scope. A hypothesis remains distinct from an observed fact, and chat cannot substitute for this record.
+`WorkshopServiceCase@1` keeps the work reconstructible after the conversation. It records the purpose, assigned operator, and grounds for identifying the asset. It preserves symptoms, manuals, bulletins, schematics, codes, images, statements and measurements with their sources. Observations and hypotheses remain distinct. For each hypothesis, the case keeps contrary evidence and the checks that could distinguish it from another explanation. Each check records its prerequisites, hazards, tool and part requirements, result or interruption, and verification scope.
 
 `WorkshopServiceDisposition@1` can return scoped verified restoration, containment advice or attributable containment evidence, professional handoff, exact blocker, unresolved result, refusal, or indeterminate action. It cannot certify a machine generally safe, perform statutory inspection, admit unsafe/unqualified work, control a machine, bypass guards, invent part identity, purchase, or pay. Emergency response is outside this office.
 
@@ -31,7 +31,7 @@ The operator opens the no-start case from a phone, deliberately speaks through p
 
 Revision one guides no lifting/support, exposed high voltage or hazardous energy, energized/rotating machinery, pressurized/combustible material, pyrotechnics, primary vehicle controls, or guard/interlock defeat. It can organize evidence for qualified help. Consent does not create competence; local inference retains access, retention, deletion, and workplace privacy duties.
 
-Neither this study nor the inert legacy `src/lychd/compositions/workshop/` scaffold supplies a schema, service, registry contribution, Pattern, effect path, or delivery evidence. The scaffold is no precedent for new candidate stubs.
+If the phone disconnects after a check is requested, the case parks that exact check. On return, the assigned operator can see what was requested, which precautions applied and whether a result was recorded. If execution is uncertain, record the uncertainty and seek attributable evidence before any further action. Resuming through the headset cannot issue the check a second time.
 
 ## One workshop, versioned practices
 
@@ -39,13 +39,13 @@ Neither this study nor the inert legacy `src/lychd/compositions/workshop/` scaff
 
 A Product selects profiles/use cases; a client changes presentation; a [Persona](../../adr/32-identity.md) changes discourse and commitments; a Posture changes a cognitive step. None owns technical or safety law.
 
-## Proposed reuse beneath the Product
+## Handoffs and supporting mechanisms
 
 Workshop can use existing mechanisms while retaining the purpose and policy of the service case. Companion, Echo, Tether, and Ward keep mobile controls, speech chronology, transport, authentication, grants, and revocation. Scout and Sight provide acquisition/visual evidence; Workshop decides whether that source applies and which check may follow. When parts need sourcing, [Scavenger](../scavenger/index.md) keeps its own listing, seller, bargaining, commitment, payment, and parcel records.
 
 `WorkshopPartRequirement@1` carries compatibility, quantity, condition, certification, and evidence needs to stock or Scavenger, without reservation or commitment authority. A stock owner can return exact snapshots and reservation/use/return receipts. Workshop records them; it cannot mutate ambient inventory.
 
-An asset owner such as [Homestead](../homestead/index.md) may supply the request and consume the disposition while retaining its site, work order, controller envelope, and return-to-service authority. Workshop's typed requests, part needs, and dispositions remain its proposed projections, not new Core primitives. [Products and Suites](../products-and-suites.md) explains settled handoffs versus live coordination.
+An asset owner such as [Homestead](../homestead/index.md) may supply the request and consume the disposition while retaining its site, work order, controller envelope, and return-to-service authority. Workshop owns the typed service request, part need, and disposition used at these handoffs. [Products and Suites](../products-and-suites.md) explains settled handoffs and live coordination.
 
 ## Honest settlement
 
@@ -53,6 +53,6 @@ Close the case only as far as its evidence permits. Verified restoration means t
 
 When identity, source, observation, tool, part, qualification, or authority is missing, return that exact blocker. Conflicts and exhausted budget remain unresolved. An uncertain action stays indeterminate and must not be repeated.
 
-The first network-disabled synthetic passenger-vehicle fixture must include conflicting identity, a pinned manual excerpt, finite images, codes/measurements, and fake stock. It proves refusal and source mismatch, one parked/resumed check without duplication, Sight uncertainty, hypothesis revision, hazardous-work handoff, a part need without purchase, scoped verification, and interruption without invented completion. No live vehicle, public web, camera stream, purchase, actuator, or repair enters it.
+The first qualification fixture requires a synthetic passenger vehicle, conflicting identity evidence, a pinned manual excerpt, finite images, codes and measurements, and fake stock. With the network disabled, it must demonstrate refusal on source mismatch, a parked check resumed without duplication, Sight uncertainty, hypothesis revision, hazardous-work handoff, a part need without purchase, scoped verification, and interruption without invented completion. The fixture excludes live vehicles, the public web, camera streams, purchases, actuators and repairs.
 
 [Composition Portfolio](../index.md) · [Homestead Maintenance](../homestead/maintenance.md) · [Scavenger](../scavenger/index.md)

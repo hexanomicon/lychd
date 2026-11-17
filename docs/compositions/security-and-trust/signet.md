@@ -10,12 +10,12 @@ know which program will receive it, who can read it, and whether the required pr
 active. **Signet** qualifies that execution environment and keeps signed evidence for individual
 requests. Its seal names the conditions it checked and the protections the client may rely on.
 
-This candidate study proposes a standalone Composition for compute-node qualification, issued
-claims, request stamps, renewal and revocation. The name is settled; registered identity,
-Patterns and executable profiles remain open.
-[State of Work](../../state-of-the-work.md#composition-portfolio-delivery) owns delivery. The
-study establishes no scanner, certificate issuer, privileged collector or protected-inference
-integration.
+Signet is a Native Reference Composition. Its identity is `signet.qualification`, revision `1`.
+Its Pattern `signet.qualify_node@1` takes an authorized request naming the node, workload,
+execution profile, adversary and required claims. It returns a qualification recording which
+claims the evidence supports, which failed and which remain unobserved. A certificate identifies those gaps and attests
+only to the claims the evidence supports. [State of Work](../../state-of-the-work.md#composition-portfolio-delivery)
+records the implementation status of the collector, issuer and protected request path.
 
 ## Qualification has its own lifecycle
 
@@ -29,11 +29,11 @@ results, expiry/revocation, dependent consumer notices, and retest obligations. 
 inspection keeps its incomplete evidence and any unsettled test effects. A refused or partial
 qualification can produce a useful report without making the node eligible for private work.
 
-[Thorn](../thorn/index.md) separately owns security operations: incident defense, investigation,
+[Thorn](thorn/index.md) separately owns security operations: incident defense, investigation,
 response and corrections. A settled finding or repair retest can inform a qualification, while
 qualification failure can inform an independently admitted security case. Neither application
-owns the other's judgment. This study creates no Aspect. Typed collectors, platform
-verifiers and host actuators supply mechanisms under their existing architectural owners.
+owns the other's judgment. Typed collectors, platform verifiers and host actuators supply
+mechanisms under their existing architectural owners.
 
 ## What the certificate guarantees
 
@@ -52,7 +52,7 @@ profile additionally requires mechanisms that prevent the excluded administrator
 request contents or changing their handling within the qualified boundary. Successful scanning
 alone cannot qualify that stronger claim.
 
-The proposed protected-processing promise is: **“This approved workload handles request contents
+A protected-processing certificate states that **“This approved workload handles request contents
 only for the admitted task, under the profile's enforced access, output and retention rules.”**
 Its scope includes the components and request interval actually qualified. It depends on the
 approved code, enforcement and named hardware/firmware roots; it is not an unconditional proof
@@ -67,7 +67,7 @@ owns those content and cumulative-disclosure assessments. Stamps must not label 
 
 ## Conditions for a qualified host
 
-The candidate targets LychD's supported Linux host environment. Signet participation is open to
+Signet targets LychD's supported Linux host environment. Participation is open to
 any operator who can satisfy an admitted profile. Installing the Composition does not make every
 Linux machine or GPU eligible for the same guarantee. A dedicated commercial node may simplify
 qualification; a suitable isolated execution environment can also separate private inference
@@ -121,11 +121,11 @@ establish that input was never copied previously or will never be copied later.
 | Specified collection paths were not observed | Authorized configuration checks and synthetic exercises | Cooperative observation substrate, coverage and freshness |
 | An approved launch was measured | Independently rooted measurements and reference appraisal | Which components were measured and what can change afterward |
 | A named administrator cannot inspect this session's plaintext | A qualified execution boundary excluding that administrator, approved application and protected connection | Hardware/firmware roots, workload/configuration, device path and declared threat exclusions |
-| The node never spies under any circumstances | No unrestricted certificate is supported by this study | Historical capture, arbitrary lower-layer compromise and future behaviour exceed the claim |
+| The node never spies under any circumstances | Outside the scope of every Signet certificate | Historical capture, arbitrary lower-layer compromise and future behaviour exceed the claim |
 
 ## From inspection to protected execution
 
-There are two stronger candidate constructions. A controlled appliance can boot a reviewed,
+A controlled appliance can boot a reviewed,
 restricted image and remove interactive administrator access while the workload runs, provided
 the client has an independent basis for trusting that launch and its hardware. A hardware-backed
 confidential workload can instead isolate the approved software from a participating host's
@@ -155,7 +155,7 @@ NVIDIA's [Confidential Bare Metal threat model](https://docs.nvidia.com/confiden
 trusts the model owner's privileged software and administrators and does not isolate end-user
 data from them. Other deployment modalities have different boundaries; the exact platform and
 application profile must be qualified rather than inferred from a product family or the phrase
-“confidential computing.” This study selects no consumer-GPU compatibility or performance claim.
+“confidential computing.” Consumer-GPU compatibility and performance require evidence for the exact platform.
 The separate [VM threat model](https://docs.nvidia.com/confidential-computing/virtual-machines/threat-model)
 protects against specified infrastructure attackers while retaining guest software and
 administrators in its trusted boundary. Its [supported-platform matrix](https://docs.nvidia.com/confidential-computing/virtual-machines/supported-platforms)
@@ -208,7 +208,8 @@ admission evidence before disclosure and a separate completion record afterward.
 answer different questions; a successful final receipt cannot retroactively protect an input
 sent to an unqualified destination.
 
-For protection against a hostile administrator, the proposed admission sequence is:
+For a request requiring protection against a hostile administrator, the client, verifier and
+protected workload share the following admission procedure.
 
 1. The client supplies a fresh challenge, opaque request identity and required execution-profile
    identifiers, without revealing private task contents or its local protected-fact policy.

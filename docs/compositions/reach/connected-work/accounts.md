@@ -10,8 +10,8 @@ account and requested access, then chooses where Reach may read and speak. The f
 confirmed connection and a prepared message; sending a test message remains a separately admitted
 action.
 
-This is the onboarding and custody proposal for the [connected-work study](index.md), not an
-existing settings screen or deployment profile. Optional [WhatsApp](whatsapp.md) adds its own
+[Reach Connected Work](index.md) defines this account lifecycle. Its settings screen and
+credential service still require implementation. Optional [WhatsApp](whatsapp.md) adds its own
 business/number onboarding or separately qualified owner–agent route; it is not another Google-style
 account grant or a dependency of the first three connections.
 
@@ -35,7 +35,7 @@ A shared Discord token covers multiple guilds. A shared GitHub App signing key c
 for its installations. Neither is a separate customer secret merely because a connection row is
 separate. A self-hosted client must not receive the publisher's shared secret. A future credential
 broker would need an exact per-installation protocol, custody/disclosure manifest and independently
-authorized destination; it is not supplied by a generic OAuth proxy or by this study.
+authorized destination. The design requires a qualified credential service for that deployment.
 
 For Google, a shared confidential server client also stays with its trusted service. Customer-owned
 registrations use their own exact callback. No wildcard callback or reusable authentication code
@@ -73,7 +73,7 @@ and policy again; a valid token alone cannot release an old pending send.
 
 ## What an update asks of the user
 
-| Change | Proposed handling |
+| Change | Required handling |
 | --- | --- |
 | Bug fix or new logic within the existing contract and provider grant | Quiesced LychD generation update; retain connection ids, credential custody, cursors and effect identities. No routine provider reconnect or reinstall. |
 | New optional provider capability | Keep disabled until its exact adapter/profile, local policy and required provider permissions are admitted. |
@@ -107,7 +107,7 @@ uncertain send occurred and cannot make that send safe to repeat.
 
 The existing missing Ward, Composition selection, service-attempt and deployment prerequisites
 remain delivery gates, recorded in [State](../../../state-of-the-work.md#composition-portfolio-delivery).
-This proposal creates no service, port, token store or permissive local-authority substitute.
+Activation depends on the registered services, bounded secret custody and current authority described above.
 
 WhatsApp Cloud API would require the separately admitted webhook profile described in its
 [assessment](whatsapp.md#intake-requires-a-different-deployment). Its message bodies are not

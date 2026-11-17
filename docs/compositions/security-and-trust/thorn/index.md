@@ -7,19 +7,19 @@ icon: material/shield-search
 
 > _LychD has spikes._
 
-Thorn is a proposed **whitehat security workbench**. It turns a scoped security question or attack
-into supported findings, a bounded protective response, and an accountable report or correction.
-It serves incidents affecting the operator and separately authorized engagements; the target
-environment need not run LychD. Its lasting unit of work is the security case.
+Thorn is the **whitehat security casework Composition**. A defender can bring an incident
+affecting the operator or a separately authorized assessment, including one on a system outside
+LychD. The private case keeps the observations, the defender's findings, and the receipts for
+any protective action or disclosure. It also names who owes the next verification or correction.
 
 The intended deterrence is that targeting participating defenders can expose a campaign and
 prompt intervention. Useful protection and findings do not require identifying a human controller.
 Whether participation discourages attacks remains an unmeasured proposition.
 
-This **candidate study**, opened **2026-09-22**, proposes **`thorn.defense`, revision 1**.
-Portfolio acceptance and executable contracts remain open. [State of Work](../../state-of-the-work.md#composition-portfolio-delivery)
-owns delivery; [Workflow](../../adr/28-workflow.md#composition-identity-revision-and-retirement)
-owns identity and revision law. The contract below is a proposal throughout.
+**`thorn.defense`, revision 1**, is the accepted reference contract under
+[Workflow](../../../adr/28-workflow.md#composition-identity-revision-and-retirement).
+The case store and its Patterns await implementation.
+[State of Work](../../../state-of-the-work.md#composition-portfolio-delivery) records delivery.
 
 ## Purpose and boundary
 
@@ -33,7 +33,7 @@ response is justified, what actually happened, and which obligations remain.
 | Security verification of a suspected weakness or remediation | Maintenance owners control code changes, migrations, activation, and operational recovery. |
 | Recipient-specific reports, shared findings, challenges, and corrections | Each peer controls its own work and disclosure; external recipients own their intervention. |
 
-[Autopoiesis](../../lexicon/iron-tongue.md#autopoiesis) names intended verified self-repair and
+[Autopoiesis](../../../lexicon/iron-tongue.md#autopoiesis) names intended verified self-repair and
 extension under operator authority. Routine database or workflow optimization, code maintenance,
 backups, and whole-system restoration belong to that wider concern under existing owners. They
 are outside Thorn's casework. A repair receipt can inform a security retest; a healthy service
@@ -42,16 +42,15 @@ does not by itself prove containment or close a security finding.
 Tool availability supplies no permission. An assessment pins targets, methods, possible effects,
 and stopping conditions. Receiving an attack supplies no right to enter suspected third-party
 systems, coerce someone, expose private identities publicly, or retaliate.
-[Security](../../adr/09-security.md) and [IAM](../../adr/38-iam.md) retain enforcement and authority.
+[Security](../../../adr/09-security.md) and [IAM](../../../adr/38-iam.md) retain enforcement and authority.
 Thorn introduces no general system administrator, scheduler, or self-authorizing agent.
 
-[Signet](../signet/index.md) separately studies compute-node privacy
-qualification and certificate lifecycle. Thorn can supply an admitted security finding or repair
-retest without owning that qualification or its renewal.
+[Signet](../signet.md) owns compute-node privacy qualification and the certificate lifecycle.
+Thorn can supply an admitted security finding or repair retest for Signet to judge.
 
 Typed findings, requests, and settled receipts can cross these boundaries without transferring
 ownership. A promise to coordinate separate Compositions' live Invocations needs the explicit
-[Suite contract](../products-and-suites.md#compositions-relate-without-nesting).
+[Suite contract](../../products-and-suites.md#compositions-relate-without-nesting).
 
 ## From encounter to result
 
@@ -92,7 +91,7 @@ transformations and redaction lineage, original and UTC times with clock uncerta
 observed versus inferred status. Original bytes and local custody digests remain with their
 owners. Each assessment records its reviewer, grounds for confidence, and review/expiry conditions.
 
-| Proposed Pattern | Admitted input → accounted result |
+| Pattern | Admitted input → accounted result |
 | --- | --- |
 | `thorn.open_case@1` | Scoped report, observation, or assessment question → triage and a new/linked private case, non-incident disposition, or refusal. |
 | `thorn.investigate@1` | Admitted leads or assessment and source policy → supported claims, competing explanations, gaps, and disposition of each lead. |
@@ -100,9 +99,17 @@ owners. Each assessment records its reviewer, grounds for confidence, and review
 | `thorn.report@1` | Findings and recipient policy → exact reviewed packet and separately authorized handoff disposition. |
 | `thorn.correct@1` | Changed or challenged evidence → successor claims, invalidated derivatives, and recipient-specific correction dispositions. |
 
-These names are proposed, not registered Patterns. Their separation permits protection without
-inquiry, inquiry without reporting, and correction after other work has ended. Tools remain
-replaceable behind typed boundaries; the case and its judgment explain why Thorn is a Composition.
+An operator can admit protection alone, investigate without reporting, or reopen a finding for
+correction after the investigation ends. The case owner sees outstanding effects and obligations
+beside each finding. A peer sees only the admitted exchange. An external recipient sees the exact
+packet approved for that destination.
+
+For example, a defender reviewing a synthetic sign-in alert may inspect one account's audit
+records for the reported interval. Two alerts cite the same denied sign-in. The case links both
+to that observation. The reviewer records one denied attempt, a gap in coverage for subsequent
+sign-ins, and an unknown actor. With no authority to contact peers or change the account, the
+owner can close triage with those limits and abstain from reporting. If a corrected audit
+record later changes the finding, the case retains the original judgment and its successor.
 
 ## Respond and verify
 
@@ -133,7 +140,7 @@ Independently verify the recipient and destination, accepted threat category, pu
 mandate/jurisdiction where applicable. A human accepts the exact packet, destination, and purpose;
 changing them requires renewed acceptance. Preparation does not authorize sending or publication.
 Outgoing evidence uses only recipient-permitted opaque references or scoped `EvidenceDigest@1`
-under [Security's disclosure rules](../../adr/09-security.md#decision-identity-and-local-custody),
+under [Security's disclosure rules](../../../adr/09-security.md#decision-identity-and-local-custody),
 not raw canonical source digests. Peer exchange follows the same disclosure boundary through its
 [own contract](investigation.md#ask-another-defender).
 
@@ -168,8 +175,8 @@ custody policy while preserving only permitted lineage. Remote deletion or recal
 
 [Thorn Trials](trials.md) begins with a synthetic local attack and simulated response, then compares
 the same case across three simulated defenders. A scoped assessment and repair retest separately
-exercise security verification. The proposal must improve a supported decision or reduce total
+exercise security verification. An implementation must improve a supported decision or reduce total
 work against competent simpler protection, within authority, privacy, recovery, and cost limits.
 The trials page defines defeat conditions and advancement evidence; no trial result is claimed.
 
-[Composition studies](../index.md#candidate-studies)
+[Composition Portfolio](../../index.md#the-portfolio)

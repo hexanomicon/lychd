@@ -9,8 +9,7 @@ A server administrator installs Reach, selects allowed text channels, and permit
 and direct bot mentions. One admitted question can yield one response under the selected Persona.
 The visible speaker is the bot, not an automated ordinary user account.
 
-The proposed `reach.discord.correspondence@1` profile belongs to the
-[successor study](index.md). The accepted [Discord Habitat](../habitat.md), public deployment
+The `reach.discord.correspondence@1` profile belongs to [Reach Connected Work](index.md). The accepted [Discord Habitat](../habitat.md), public deployment
 profiles and historical `reach.discord@1` remain separately pinned.
 
 ## Installation and access
@@ -85,7 +84,7 @@ action or provider review as applicable. [Command updates](https://docs.discord.
 
 ## Workflow interactions in Orb (Proposed)
 
-This section extends the **candidate successor study**, not the delivered operator profile.
+This proposed Orb projection builds on the connected-work contract. The delivered operator profile has its own ledger.
 [Orb](../../../divination/altar/orb.md) should show a workflow's actual Discord intake and
 external attempts: provider mark, incoming or outgoing direction, permitted channel detail and
 recorded outcome. Reach contributes the meaning and static presentation metadata. Orb projects
@@ -211,6 +210,6 @@ existing `tests/web/test_orb.py`, Reach composition/transport tests,
 Python checks through the source-bound OCI harness, then `make frontend-check` and
 `make frontend-build`; complete the required Svelte documentation/autofixer workflow before any
 Svelte edit. Published documentation changes also require a clean Zensical build. These are
-implementation gates, not evidence that this candidate or its backend ports are delivered.
+checks for the proposed Orb projection and its backend ports.
 
 [Chat](../chat.md) · [Accounts and updates](accounts.md) · [Acceptance and delivery](delivery.md)

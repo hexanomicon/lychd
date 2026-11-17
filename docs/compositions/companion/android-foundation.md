@@ -5,31 +5,26 @@ icon: material/cellphone-sound
 
 # :material-cellphone-sound: Companion Android Foundation
 
-This study designs Companion's native Android Bridge and foreground voice journey on the Samsung
-S20 FE. Pair with the operator's LychD, record a short deliberate utterance, review its transcript,
-submit the chosen words, and present the settled reply with optional speech. A folder-first music
-player, selected photos, and explicit copy sync can grow from that foundation.
+The Android development client lets an operator review typed words against a local Bridge
+fixture, record and replay a short utterance, and inspect local device status. A separate
+offline text prototype keeps expiring drafts in memory.
+[Android Development](android-development.md#running-the-slice) gives the build and test steps.
 
-This candidate study, opened **2026-10-09**, develops the construction choices beside
-[`companion.mobile` revision `3`](index.md). It accepts no successor Composition, Suite, remote
-ingress, or phone execution contract. The operator's later priority is the
-[install-once and PC-managed update lifecycle](phone-workspace.md#install-once-manage-from-the-pc),
-before the MP3 feature. This page retains the separate Bridge and Voice journey and its release
-acceptance; [Phone Workspace](phone-workspace.md) owns that broader direction. [State of
-Work](../../state-of-the-work.md#composition-portfolio-delivery) owns delivery.
-
-[Android Development](android-development.md) now describes the first implementation under
-`clients/android/**`: a schema-derived Bridge fixture and bounded local recording/replay.
-Pairing, live transport, transcription, synthesis, semantic event subscription and the native
-handoff/result journey in this study remain future work.
+The Bridge and Voice release target for [`companion.mobile` revision `3`](index.md) is a
+reviewed spoken turn and a settled reply on the Samsung S20 FE. It requires pairing, protected
+transport, Echo transcription and synthesis, and independently admitted handoff and presentation.
+The host and handset milestones below define the evidence for that journey.
+[State of Work](../../state-of-the-work.md#companion-android-client) records current delivery.
+The [PC-managed update plan](phone-workspace.md#install-once-manage-from-the-pc) has separate
+ownership and precedes the offline music player.
 
 ## Language and frameworks
 
 Keep **Kotlin and Jetpack Compose** for Android. Keep **Python and Litestar** on the host and
-**Svelte 5 with static SvelteKit** for Altar. The clients share generated wire contracts and
-compatibility fixtures; each owns its platform UI and interaction state. They reference the same
-authorized host records rather than acquiring application authority through a shared client
-library.
+**Svelte 5 with static SvelteKit** for Altar. The Android generator derives its wire subset from Altar's
+OpenAPI snapshot, with compatibility fixtures for that subset. Each client owns its platform UI
+and interaction state. An enrolled live client would reference authorized host records through
+protected ingress.
 
 | Layer | Initial construction choice | Reason and boundary |
 | --- | --- | --- |
@@ -42,16 +37,16 @@ library.
 | Reply playback | Media3 ExoPlayer in the foreground | Decode admitted speech artifacts; background music later adds MediaSessionService and its own controls. |
 | Speech execution | Host Echo with the accepted audio.cpp candidate profile | The phone needs no inference runtime for the first journey. |
 | Preferences | DataStore | Non-secret settings and selected host preferences. Add a database only when retained client records require one. |
-| Build | Gradle Kotlin DSL and a pinned wrapper | One reproducible Android project under `clients/android/**`. |
+| Build | Gradle Kotlin DSL and a pinned wrapper | A version-pinned Android build under `clients/android/**`. |
 
 [Compose setup](https://developer.android.com/develop/ui/compose/setup) supplies the native
 project route. [Keystore](https://developer.android.com/privacy-and-security/keystore) protects
 key material but does not guarantee StrongBox or hardware backing on every device. Credential
 secrets must not become ordinary DataStore preferences.
 
-The first implementation uses an Android `app` and a pure JVM `core` for SDK-independent wire
-and interaction tests. Keep platform capture, playback and UI inside `app`; extract additional Gradle modules when a
-second feature or app establishes the need. Android's [modularization
+The Bridge client uses an Android `app` and a pure JVM `core` for SDK-independent wire
+and interaction tests. The text-only prototype pairs `offline` with the `interaction` reducer.
+Platform capture, playback and the device status UI belong to `app`. Android's [modularization
 guide](https://developer.android.com/topic/modularization) supports sharing features across app
 modules and also identifies the overhead of excessive subdivision. Avoid a speculative module
 tree, dependency-injection framework, database, or plugin runtime before the first journey needs it.
@@ -88,8 +83,8 @@ the mobile sharing choice without reopening Altar's accepted architecture.
 
 ## Bridge and the host boundary
 
-Companion reaches **LychD's protected API**, not the Altar browser process. Altar and Android are
-two projections of host-owned work. Existing text Bridge behavior is useful evidence, but its
+The live Android target connects to **LychD's protected API** and projects host-owned work.
+The development client currently exchanges messages with its local mock transport. Existing text Bridge behavior is useful evidence, but its
 send operation immediately admits a Run. Companion submission instead settles an exact handoff
 before the destination independently decides whether to admit work. Relabeling a Bridge response
 would lose that distinction.
@@ -101,8 +96,8 @@ provide session reads, `sendBridgeMessage`, Run snapshots, cancellation, and sem
 utterance, expiry, disclosure, or exact requested Pattern binding. Its request identity is not a
 complete mobile authority or recovery contract.
 
-The first product promising capture through an eventual answer needs a **named candidate
-Suite**, with **Communion Bridge** as its proposed working name. Its construction design must coordinate:
+The first Product promising capture through an eventual answer needs a named Suite.
+**Communion Bridge** is its working name. Its score must coordinate the following steps.
 
 1. Echo recording/transcription and the operator's reviewed words.
 2. Companion's separately settled `submit_turn@1` handoff.
@@ -183,18 +178,18 @@ A changed epoch or revoked grant would require fresh admission or refusal; a los
 would be reconciled against the exact handoff rather than replayed. Android permissions and local
 reports alone grant no host authority.
 
-This is a study, not an admitted route or a generic Device registry. It still needs a durable
-attachment owner, evidence for capability and stop guarantees across disconnects, epoch fencing,
-and a proof fixture. Removing the Familiar prerequisite changes `companion.mobile` revision 3
-and requires an explicit successor with exact binding and record identities, continuity and
-migration analysis. The accepted Ward → Familiar → Companion route remains in force.
+Admitting this alternative requires a durable attachment owner, evidence for capability and
+stop guarantees across disconnects, epoch fencing, and a proof fixture. Removing the Familiar
+prerequisite requires an explicit successor with exact binding and record identities, continuity,
+and migration analysis. Revision 3 requires the Ward → Familiar → Companion route.
 
 ## First voice profile
 
-Use visible foreground push-to-talk and **record and send**. A proposed device fixture admits
-mono PCM16 WAV at 16 kHz, at most 15 seconds and 512 KiB. Its maximum PCM payload is 480,000
-bytes; the container also counts toward the byte ceiling. These are candidate fixture limits,
-subject to capture and decoder verification on the exact S20 FE variant and installed OS.
+The development client records mono PCM16 WAV at 16 kHz in the foreground, with limits of
+15 seconds and 512 KiB including the container. A full-duration recording has 480,000 bytes of
+PCM payload. Start and stop are explicit controls. The release target adds visible foreground
+push-to-talk and a separately reviewed send. Capture and decoding on the exact S20 FE variant
+and installed OS still need handset verification.
 [AudioRecord](https://developer.android.com/reference/android/media/AudioRecord) gives the app
 sample reads; it does not itself supply the WAV file or lifecycle policy.
 
@@ -244,8 +239,7 @@ requires the separate timeline, echo cancellation, barge-in, turn ownership, and
 
 ## API design coverage
 
-The following is a **candidate operation inventory**, not an implemented route catalogue or
-frozen wire schema. It covers the first batch journey and identifies each receiving owner.
+The table identifies the operations and receiving owners required for the first batch journey.
 Controller paths, operation IDs, concrete DTOs, error variants, and security metadata must be
 closed in the owning backend contract before Kotlin generation. Companion has no universal
 `execute`, shell, arbitrary Intent, or phone-admin operation.
@@ -319,12 +313,12 @@ connected proves neither current authority nor durable event retention. Bound qu
 bytes, concurrent streams, backoff, and request deadlines. After ordinary Android background
 suspension, recover from a snapshot on return.
 
-The [OpenAPI Kotlin generator](https://openapi-generator.tech/docs/generators/kotlin/) is a
-candidate mechanism, with documented limitations around nulls and composite schemas. A bootstrap
-probe must generate a small DTO slice from the exact OpenAPI 3.1 schema and prove absent versus
-null fields, enums, discriminators/unions, identifiers, timestamps, errors, and event fixtures
-against Python and TypeScript. Pin the successful generator/version/configuration; do not treat
-generated code as policy or handwrite a competing transport schema when a generator fails.
+The Android build already runs `clients/android/tools/generate_wire.py` against the tracked
+Altar OpenAPI export. It generates the selected Bridge models and token-shape checks and
+refuses unsupported schema shapes. When mobile operations acquire a host-owned schema,
+extend the generator and compare absent and null fields, enums, discriminated unions,
+identifiers, timestamps, errors and event fixtures across the clients. The host still decides
+authority and validates state transitions.
 
 ## Growing into phone capabilities and more apps
 
@@ -381,8 +375,9 @@ restrictions. The complete candidate speech stack must not be described as unres
 Voice-model promotion must account for those terms; watched alternatives remain explicit owner
 decisions rather than automatic fallback engines.
 
-Pin AGP with its supported Gradle/JDK combination, min/target/compile SDK, the actual Kotlin
-compiler, Compose/serialization compiler plugins, and exact library versions. AGP 9+ has
+The current client pins Android Gradle Plugin 8.13.2, Gradle 8.13 and Kotlin 2.3.21 and uses
+JDK 17. Keep the min/target/compile SDK, Compose and serialization compiler plugins, and library
+versions under the build's existing version and lock discipline. For a future upgrade, AGP 9+ has
 [built-in Kotlin](https://developer.android.com/build/migrate-to-built-in-kotlin); avoid applying
 another Kotlin Android plugin to the same module. A Compose BOM coordinates Compose artifacts,
 not every AndroidX dependency. Commit reviewed dependency locks and verification metadata;

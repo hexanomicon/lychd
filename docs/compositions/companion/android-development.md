@@ -8,13 +8,30 @@ icon: material/android
 The first implementation lives in [the Android client](https://github.com/hexanomicon/lychd/tree/main/clients/android).
 It provides a native Kotlin/Compose development screen, a schema-derived Bridge fixture, and
 bounded foreground microphone capture with local replay. [State of Work](../../state-of-the-work.md#companion-android-client)
-owns its delivery boundary. [Android Foundation](android-foundation.md) retains the researched
-live-client direction and its host prerequisites. [Access and Views](access-and-views.md) applies
+owns its delivery boundary. [Android Foundation](android-foundation.md) sets the live-client
+construction plan and its host prerequisites. [Access and Views](access-and-views.md) applies
 the accepted account and working-interface rules to this client.
 
 ## Running the slice
 
-Follow the client [build and installation instructions](https://github.com/hexanomicon/lychd/blob/main/clients/android/README.md).
+From the repository root, use JDK 17 and Python 3.12+ to check both JVM modules. The first
+command enters the Android project. The Gradle check also exercises the wire generator.
+
+```bash
+cd clients/android
+./gradlew -PcoreOnly=true :core:check :interaction:test
+```
+
+With Android SDK platform 36 and build-tools 36.0.0 configured, build the debug audio client
+from that same directory.
+
+```bash
+./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
+```
+
+The APK is `app/build/outputs/apk/debug/app-debug.apk`. The
+[Android client README](https://github.com/hexanomicon/lychd/blob/main/clients/android/README.md)
+covers SDK setup, offline builds with cached dependencies, and installation on a selected device.
 The debug application has a separate `.dev` identity. Open Companion, type words, mark them
 reviewed, and send. The reply explicitly identifies itself as a development fixture. Refresh reads
 the fixture conversation; New conversation starts a separate local fixture session. These actions
@@ -31,6 +48,22 @@ attempts to discard its current recording, and fences late callbacks. Activity d
 resources. Rotation may retain the ViewModel's draft while discarding audio. This boundary is
 `onStop`; the implementation does not claim capture ends merely on `onPause` or against every
 Samsung-specific lifecycle condition before a handset probe.
+
+### Offline text prototype
+
+The optional `offline` app exercises the expiring text draft through a separate screen. Select
+a lifetime in whole seconds, edit before its original deadline, then cancel or observe expiry.
+The draft survives Activity recreation in the same process and is lost on process death.
+Review and Submit stay disabled. With the same SDK, build this APK from `clients/android`.
+
+```bash
+./gradlew -PcoreOnly=true -PincludeOfflineApp=true :offline:testDebugUnitTest :offline:assembleDebug
+```
+
+Its application ID is `org.lychd.companion.offline`. [Return](return.md) explains the local
+reducer and the limits of its submission and presentation signals. The portable reducer has
+JVM test evidence. The offline ViewModel and instrumentation tests are authored; their execution
+and an installed offline APK remain separate qualification work.
 
 ## Local device status
 
@@ -60,6 +93,7 @@ an automatic repair.
 | --- | --- |
 | `clients/android/app` | Compose views, lifecycle and permission handling, testable handset interaction, AudioRecord capture and Media3 replay adapters. |
 | `clients/android/core` | Local Bridge state, bounded Ktor transport, explicitly in-process HTTP fixture, local presentation offers, local diagnostics/advice and foreground sampling lifecycle. |
+| `clients/android/interaction` and `clients/android/offline` | Pure Kotlin draft reducer and the opt-in Android screen for expiring, memory-only text drafts. |
 | `clients/android/tools/generate_wire.py` | Deterministic Kotlin wire models and JSON token-shape checks from the current Altar OpenAPI export. |
 | `clients/web/openapi.json` | Existing host-owned transport schema; Android does not own a second copy. |
 | `clients/android/gradle/libs.versions.toml` | Pinned direct build and library versions. |
@@ -257,7 +291,7 @@ acknowledgement and lookup in the original account/context.
 
 Folder-first offline music can reuse the platform/lifecycle project but requires its own library
 selection, media session and background playback behavior. Selected photos and explicit copy sync
-follow the [Phone Workspace](phone-workspace.md) study. Those features do not turn client modules
+follow the [Phone Workspace](phone-workspace.md) construction plan. Those features do not turn client modules
 into host-owned extension execution or confer broad control of the phone.
 
 [Companion](index.md) · [Return](return.md) · [Android Foundation](android-foundation.md)

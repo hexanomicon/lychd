@@ -420,7 +420,7 @@ do not introduce a second task registry merely to project them.
 
 Start with the read slice. The current [Reach Forge](../../../compositions/reach/forge.md) prepares
 bounded conversation reads and timeline comments offline; it supplies no live authentication or
-transport. Its [GitHub successor study](../../../compositions/reach/connected-work/github.md)
+transport. Its [GitHub correspondence contract](../../../compositions/reach/connected-work/github.md)
 does not currently admit repository-wide coordination queries, branch/board discovery or issue
 state changes. Resolve each required operation to its owner, explicit profile and permissions
 before implementation; this follow-up does not silently widen the correspondence profile.

@@ -9,8 +9,7 @@ The operator connects one mailbox, selects the mail Reach may inspect, and prepa
 that account. Connecting a second employer creates another connection, not a shared inbox or
 permission to combine the two companies' Context.
 
-This candidate profile, `reach.gmail.correspondence@1`, belongs to the
-[successor study](index.md). Gmail-enabled personal accounts and Workspace accounts can use the API;
+The `reach.gmail.correspondence@1` profile belongs to [Reach Connected Work](index.md). Gmail-enabled personal accounts and Workspace accounts can use the API;
 Business Standard is not a prerequisite. [Google's prerequisites](https://developers.google.com/workspace/gmail/api/quickstart/python)
 require a Cloud project and Gmail access, not that subscription.
 

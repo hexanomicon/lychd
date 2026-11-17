@@ -1,19 +1,19 @@
 ---
-title: Connected work study
+title: Connected work
 icon: material/message-arrow-right-outline
 ---
 
-# :material-message-arrow-right-outline: Connected work study
+# :material-message-arrow-right-outline: Connected work
 
 A client sends an email, a collaborator asks about an issue, and someone mentions the bot in a
 Discord channel. Reach should be able to answer each in its own place, from the right account,
 without carrying one customer's words or authority into another conversation.
 
-This **candidate successor study**, researched **2026-10-21**, proposes native Gmail, Discord,
-and GitHub connections, with an optional later [WhatsApp profile](whatsapp.md). It does not widen
-the accepted [`reach.discord` revision `1`](../index.md),
-its public-only deployment profiles, or their permissions. [State of Work](../../../state-of-the-work.md#composition-portfolio-delivery)
-owns the implementation boundary.
+**Reach Connected Work** (`reach.correspondence`, revision `1`) is the Native Reference
+Composition for correspondence across accounts and conversations. It defines operational profiles
+for Gmail, Discord and GitHub. [WhatsApp](whatsapp.md) has a separately scoped
+business profile. [State of Work](../../../state-of-the-work.md#composition-portfolio-delivery)
+records the executable boundary.
 
 The explicit [connected preparation profile](preparation.md), added **2026-10-29**, makes bounded
 email, chat, forge and social request preparation executable without account access or delivery.
@@ -23,31 +23,29 @@ the operational successor or supply its missing durable delivery machinery.
 
 Browse the provider contracts by family: [Email](../email.md), [Chat](../chat.md),
 [Forge](../forge.md) and [Social](../social.md). Those routes distinguish current request preparation
-from each provider's proposed connected operation without creating separate application owners.
+from each provider’s account, delivery and recovery requirements.
 
 ## Contract and ownership
 
-The proposed identity is **`reach.correspondence` revision `1`**. Private correspondence, proactive
-outbound messages, and preauthorized delivery materially change the old authority boundary;
-silently adding them to `reach.discord@1` would reinterpret its contract. Acceptance would record
-the successor relation explicitly under [Workflow's revision law](../../../adr/28-workflow.md#composition-identity-revision-and-retirement).
-Historical Discord records retain their original meaning; there is no executable migration yet.
+`reach.correspondence` revision `1` succeeds the public [`reach.discord` revision `1`](../index.md#public-discord-profile)
+under a new identity. Private accounts, proactive messages and preauthorized delivery change
+which audiences and effects the application can admit. Existing Discord records, public
+deployment profiles and grants stay bound to `reach.discord@1`. There is no executable migration.
+[Workflow](../../../adr/28-workflow.md#composition-identity-revision-and-retirement) governs that continuity.
 
-One Composition would own bounded correspondence across provider profiles. Providers vary
+One Composition owns bounded correspondence across provider profiles. Providers vary
 transport, audience, identity evidence, limits, and recovery. They do not each need an
 application with a duplicate policy engine. Their adapters use native APIs behind typed host
 ports; MCP is an optional future projection, not an execution dependency.
 
-Reach owns connection configuration. It would decide which configured connection and admitted conversation a communication belongs
-to, judge its audience and disclosure, and retain the proposal, delivery intent and result. It uses
-the existing owners to carry out that work: Ward retains Principal, account linking, current grants
-and revocation; HitL retains review/preauthorization; Spellweaver retains Patterns and admission;
-and Workers retain jobs. The credential owner holds provider secrets and transport attempts.
+Reach owns connection configuration. For each communication it selects the admitted connection
+and conversation, judges audience and disclosure, and retains the proposal, delivery intent and result.
+Ward owns Principal, account linking, current grants and revocation. HitL owns review and
+preauthorization, Spellweaver owns Patterns and admission, and Workers own jobs. The credential owner holds provider secrets and transport attempts.
 A local result must still defer to provider records for the provider's external state.
 
-For an admitted Reach communication, Reach would own its delivery intent and result; a transport
-attempt and provider evidence do not become a second application outcome. Another owner may
-retain its own correlated domain result without owning the same send. Mail transport does not
+Reach records a single delivery outcome for the communication, correlated with the transport
+attempt and provider evidence. Another owner may retain its own domain result for that send. Mail transport does not
 acquire accounting, client-case, Broadcast editorial, or software-change judgment.
 Another Composition may submit an exact accepted artifact and a communication request. Coordinating
 several live application Invocations requires a [Suite](../../products-and-suites.md#compositions-relate-without-nesting).
@@ -70,9 +68,9 @@ An operator-originated message uses the same preparation and delivery path as a 
 triage and follow-up enter through finite, deduplicated Schedule Occurrences, not a permanently
 running model loop or a second application scheduler.
 
-## Proposed records and Patterns
+## Records and Patterns
 
-These names define application-local design contracts, not existing Python types or new Core stores.
+These records connect a provider event to the exact communication, effect and observed outcome.
 
 | Record | Required meaning |
 | --- | --- |
@@ -83,7 +81,7 @@ These names define application-local design contracts, not existing Python types
 | `ReachDeliveryIntent@1` | One immutable destination, actor mode, complete wire-payload digest, communication revision, effect identity, policy/Consent or preauthorization binding, and attempt/fence identity. |
 | `ReachDeliveryReceipt@1` | Observed provider id/URL, attempt, payload binding, accepted/rejected/unknown outcome and reconciliation evidence. Provider acceptance does not prove reading, final email delivery, or agreement. |
 
-The candidate catalogue is `reach.inspect_correspondence@1`, `reach.prepare_communication@1`,
+The revision specifies `reach.inspect_correspondence@1`, `reach.prepare_communication@1`,
 `reach.deliver_communication@1`, `reach.reconcile_delivery@1`, and `reach.triage_correspondence@1`.
 Each Scroll must close its exact typed inputs/results, effects, budgets and recovery before
 registration. Inspection cannot silently invoke delivery; reconciliation cannot create a new send.
@@ -125,7 +123,7 @@ new communication.
 ## Autonomy that survives an update
 
 Connecting an account grants provider access; it does not grant an Agent all uses of that access.
-The proposed default is inspection and preparation with review before external delivery. An
+The default policy permits inspection and preparation and requires review before external delivery. An
 operator may explicitly enable standing policy for bounded autonomous sends: named Principal and
 connection, permitted operation, exact recipient/channel/repository sets, disclosure classes,
 expiry, finite uses and rate/spend ceilings. Model confidence cannot widen it.
@@ -150,4 +148,4 @@ sent to remote inference, that transfer needs its own eligible disclosure decisi
 subscription supplies no such decision.
 
 [Accounts and updates](accounts.md) defines connection lifecycle and custody.
-[Delivery plan](delivery.md) defines implementation slices and the fixtures that can defeat this proposal.
+[Delivery plan](delivery.md) defines the remaining implementation work and its recovery fixtures.

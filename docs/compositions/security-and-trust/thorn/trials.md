@@ -5,12 +5,10 @@ icon: material/flask-outline
 
 # Thorn Trials
 
-Thorn must earn its place by improving a security decision or reducing the total work needed
-to reach it. The first proof uses synthetic cases and simulated effects: local response during
-an attack, investigation with and without peers, and verification of a scoped repair.
-
-This is an unexecuted trial plan for the [candidate workbench](index.md). It selects no engine,
-adapter, or deployment and supplies no evidence of live protection or deterrence.
+Does [Thorn](index.md) improve a security decision or reduce the total work needed to reach it?
+The first trial compares local response during an attack, investigation with and without peers,
+and verification of a scoped repair. It uses synthetic cases and simulated effects. The trial
+plan awaits execution, and live protection and deterrence require their own evidence.
 
 ## Fix the question and the comparison
 
@@ -58,7 +56,7 @@ when it would be the only way to answer the question.
 
 A forbidden effect or changed original fails the boundary gate regardless of usefulness. Offline
 fixtures establish only exercised logic. Effectful trials require the exact adapter's
-[observed outer boundary evidence](../../adr/09-security.md#refusal-compromise-and-evidence).
+[observed outer boundary evidence](../../../adr/09-security.md#refusal-compromise-and-evidence).
 
 ## Respond during an attack
 
@@ -111,7 +109,7 @@ inferred status. Receipt, attempted access, successful access, and later use rem
 Compare local findings with the three-defender result; peers must add supported relationships
 without filling the deliberately missing hop. Unavailable and irrelevant replies are controls.
 
-| Fixture | Defeats the proposal if… |
+| Fixture | Fails the trial if… |
 | --- | --- |
 | Shared hosting, similar lures, or reused infrastructure | Similarity or time order establishes control, campaign membership, or traversal without additional grounds. |
 | Copied reports and honest sightings of planted identifiers | Repetition becomes independence, or observer independence becomes proof of common control. |
@@ -176,8 +174,8 @@ attempts and untouched final cases. No observed bypass means only none was found
 Local simulation comes first. Real action, collection, reporting, and peer exchange each require
 their own scope, observed enforcement, and recovery evidence. Live peers additionally need proved
 enrollment, revocation, disclosure, and sustainable review/correction capacity. A changed model,
-tool, parser, policy, or collector reopens affected qualification and utility checks. No stage
-automatically deploys a tool or accepts Thorn into the Portfolio.
+tool, parser, policy, or collector reopens affected qualification and utility checks. Deployment
+requires a separate decision for the selected environment.
 
 Deterrence needs a separate comparison of successful abuse or recurrence under comparable exposure
 and observation coverage. Silence may reflect lost capture or displaced activity. Public claims

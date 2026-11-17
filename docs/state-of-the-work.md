@@ -2403,13 +2403,19 @@ registered Pattern, parallel Graph, dossier schema, or Altar surface.
 
 Keeper and Cultivator's durable record contracts do not supply database models or migrations.
 
-[Transmuter](./compositions/transmuter/index.md) remains a candidate study outside the accepted
-Portfolio. Its Extractor and Synthesizer pages establish proposed responsibilities, not import
-adapters, processing records, executable Patterns, or Memory/Identity handoffs.
+[Transmuter](compositions/professional-operations/transmuter/index.md), `transmuter.intake` revision 1,
+defines source-attributed extraction, synthesis, and dossier correction. Its Patterns have no
+executable registration, general import adapter, dossier store, or Memory/Identity handoff.
 
-[Accounting Office](./compositions/accounting-office/index.md) also remains a candidate study:
-its proposed mail/bank ports, entity books, jurisdiction profiles, privacy workflow, and accounting
-Patterns establish no implementation, live account access, tax filing, or supported-country claim.
+[Accounting Office](compositions/professional-operations/accounting-office/index.md), `accounting.office`
+revision 1, defines entity-scoped evidence, reviewed postings, reconciliation, and period close.
+Its mail/bank ports, entity books, jurisdiction profiles, and accounting Patterns await
+implementation. Live account access, tax filing, and supported-country qualification remain open.
+
+[Workshop](compositions/professional-operations/workshop.md), `workshop.service` revision 1,
+defines guided technical-service casework for Mechanic's passenger-vehicle profile. Its Python
+namespace contains only a docstring. The service-case store, executable profile, Pattern, and
+operator entry point await implementation; the network-disabled qualification fixture has yet to run.
 
 The public Reach contract still supplies no default SDK connection, Ward enrollment, durable
 application turn/outbox, recovery or deployable home/VPS profile. The explicit operator profile
@@ -2432,11 +2438,13 @@ still require an identified live-host occurrence; the existing native Scout mech
 do not qualify that new assembly automatically.
 Public history/media and production deployment acceptance remain separate contract work.
 
-[Reach connected work](./compositions/reach/connected-work/index.md) proposes a successor to the
-public Discord contract for Gmail, Discord and GitHub correspondence, plus optional WhatsApp business
-messaging and a separate owner–agent probe. Its account lifecycle, provider profiles, delivery policy
-and recovery plan supply no implemented OAuth/installation flow, credential service, registered
-operational correspondence Pattern, live provider transport, or deployed private-mail capability.
+[Reach Connected Work](./compositions/reach/connected-work/index.md), `reach.correspondence`
+revision 1, succeeds the public Discord contract under its own identity for bounded correspondence.
+Historical Discord records and grants retain their original identity; no executable migration is
+provided. Its account lifecycle, provider profiles, delivery policy, and recovery plan await an
+OAuth/installation flow, credential service, registered operational correspondence Pattern,
+live provider transport, and qualified private-mail deployment. The owner–agent probe remains
+separately scoped.
 
 The separate explicit `reach.connect.prepare@1` profile now supplies immutable Email, Chat, Forge
 and Social requests, exact connection/partition/target policy, provider-specific application payload
@@ -2448,19 +2456,20 @@ design work. Preparation performs no network, authentication, provider draft sav
 call, and its policy is not current effect authority. This does not implement the successor's
 durable records/outbox, service attempts, required review, provider qualification or live deployment.
 
-[Thorn](./compositions/thorn/index.md) remains a candidate whitehat security workbench for scoped
-assessment, incident response, cooperative investigation, and reviewed reports/corrections.
-General monitoring and system maintenance remain outside its case ownership. It supplies no
-implemented case records, monitoring integration, response automation, peer investigation network,
-actor attribution, or reporting adapter; deterrence remains unmeasured.
+[Thorn](compositions/security-and-trust/thorn/index.md), `thorn.defense` revision 1,
+defines authorized assessment, incident response, cooperative investigation, and reviewed findings
+or corrections. Its five Pattern contracts await registered implementations, a private case store,
+response adapters, peer exchange, and reporting adapters. The synthetic trials await execution;
+deterrence remains unmeasured.
 
-[Signet](./compositions/signet/index.md) is a separate candidate Composition study. Its proposed
-Linux host conditions distinguish privileged inspection from enforced private processing, with
-public evidence, certificate renewal/revocation and per-request admission/completion stamps.
-It supplies no implemented scanner, certificate issuer, privileged host collector, stamp producer
-or qualified confidential inference path; its synthetic acceptance cases are not runtime evidence.
+[Signet](compositions/security-and-trust/signet.md), `signet.qualification` revision 1,
+defines compute-node qualification, certificate renewal/revocation, and per-request evidence.
+Its Linux host conditions distinguish privileged inspection from enforced private processing.
+The scanner, certificate issuer, privileged host collector, request stamps, and qualified
+confidential inference path await implementation. Its synthetic acceptance cases supply the
+qualification plan.
 
-The Android screen supplies no device capture/playback, transport, persistence, credential
+The separate offline text screen supplies no device capture/playback, transport, persistence, credential
 enrollment, or authoritative Companion records and receipts. Emulator evidence does not qualify
 physical devices or every Android version allowed by the declared minimum SDK.
 
@@ -2585,7 +2594,7 @@ projection, object-scoped authorization, semantic event subscription,
 Echo transcription/synthesis transport, settled Companion handoff/presentation, or Communion
 Suite execution. Host work stays unavailable in release; local status has an independent UI path.
 Current diagnostics and callback wiring still need actual-device checks. Music, photo access and
-copy sync remain candidate work.
+copy sync remain planned work.
 
 **Evidence**
 

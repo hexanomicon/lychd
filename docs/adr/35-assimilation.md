@@ -29,7 +29,7 @@ their coordination and execution. Assimilation itself is not a Portfolio Composi
 | Integration | Bind an external service/protocol through an adapter. |
 | Delegation | Ask another runtime or sovereign node for bounded labor. |
 | Assimilation | Study a pattern and implement an owned local expression. |
-| Material intake and interpretation | Convert external user data into provenance-bearing candidates; [Transmuter](../compositions/transmuter/index.md) studies the application boundary. |
+| Material intake and interpretation | Convert external user data into provenance-bearing candidates; [Transmuter](../compositions/professional-operations/transmuter/index.md) owns the processing dossier. |
 
 No act promises bit-for-bit reproduction, protocol or license compatibility, or freedom from
 upstream maintenance without separate evidence.
@@ -201,9 +201,9 @@ workspace or changing its explanation.
 ## Transmuter and correspondence {#heritage-and-correspondence}
 
 Cloud archives, historical conversations, and shared media expose an application ownership need
-outside Smith. **[Transmuter](../compositions/transmuter/index.md)** names that candidate study,
-with Extractor and Synthesizer as internal stages. It remains outside the accepted Portfolio
-until its records, judgment, finish, recovery, and independent use establish an accepted contract.
+outside Smith. **[Transmuter](../compositions/professional-operations/transmuter/index.md)** owns the source-processing
+dossier, with Extractor and Synthesizer as internal stages. Its contract retains source attribution,
+processing judgment, terminal outcomes, and recovery; State of Work records implementation.
 The candidate-author Agent may propose a parser or supply attributable candidate artifacts for
 interpretation. Transmuter's proposals retain source lineage; Memory, Mirror, and Soulforge
 independently admit their own effects. Imported material establishes no Persona, instruction,

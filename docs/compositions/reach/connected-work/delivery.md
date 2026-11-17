@@ -9,16 +9,16 @@ The first useful result is one prepared email from the correct mailbox and one k
 after authorized review. A successful API request alone cannot qualify Reach: it must survive a
 restart, revoked access and a lost response without sending the same message twice by assumption.
 
-This is the implementation plan for the [candidate successor](index.md). The separate
+This is the implementation plan for [`reach.correspondence` revision `1`](index.md). The separate
 [connected preparation profile](preparation.md) implements pure account/target/payload preparation
 and a finite native Graph. It supplies no operational successor registration, provider transport,
 credential service or deployed capability.
 
 ## Ordered slices
 
-1. **Close the contract.** Accept or revise the proposed `reach.correspondence` identity, records,
-   provider profiles, authority/privacy boundaries, Patterns and successor relation. Register no
-   empty package to imply acceptance. Any shared-law change belongs to its existing Covenant.
+1. **Select one operation.** Pin the provider profile, exact Scroll, typed inputs and results,
+   authority checks, resource bounds and recovery behavior under the accepted correspondence
+   contract. Register a Pattern when its executable path is ready.
 2. **Prove preparation without providers.** Pure application policy plus typed fake ports exercise
    account selection, bounded reads, hostile input, exact communication preparation, required native
    review, standing-policy constraints and finite retention. Initially no model/network is needed.

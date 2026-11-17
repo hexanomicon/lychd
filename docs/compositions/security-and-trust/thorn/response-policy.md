@@ -6,11 +6,9 @@ icon: material/tune
 # Choose your response
 
 One operator wants protection and an uninterrupted afternoon. Another wants to follow useful
-leads until the case is understood. Thorn's proposed response policy lets both choose their
-effort, automatic actions, and participation independently.
-
-These are editable presets within the [candidate Composition](index.md), not delivered settings,
-additional Compositions, or global Agent Postures.
+leads until the case is understood. [Thorn](index.md) defines three editable casework presets.
+Each lets the operator choose effort, automatic actions, and participation independently of any
+global Agent Posture.
 
 ## From Iron Shield to Hornet
 
@@ -20,7 +18,7 @@ additional Compositions, or global Agent Postures.
 | **Guided Inquiry** | “Find out whether this deserves my attention.” Add bounded local triage/correlation and propose leads for the operator to select. |
 | **Hornet** | “If you attack me, I follow the trail.” Proactively pursue admitted leads, ask eligible peers, reconstruct supported campaign activity, and prepare findings within finite limits. |
 
-Iron Shield is the proposed initial selection. Every preset preserves configured protection,
+Iron Shield is the initial selection in revision 1. Every preset preserves configured protection,
 evidence handling, and outstanding recovery/correction duties. Hornet increases persistence;
 anger, attack volume, or a peer's urgency cannot change its permissions or attribution standards.
 Within an admitted inquiry, agents need no new approval for each reasoning step. External reports
@@ -82,7 +80,7 @@ Use bounded sampling and aging so cheap or familiar cases cannot consume all cap
 urgency, novelty, and repetition alone cannot set priority. Full review capacity means a bounded
 pending lead or an explicit stop, not more unreviewed reports.
 
-Priority resolves through [Workflow service classes](../../adr/28-workflow.md#compositions-products-suites-and-schedules).
+Priority resolves through [Workflow service classes](../../../adr/28-workflow.md#compositions-products-suites-and-schedules).
 Thorn introduces no queue or scheduler; Hornet can use spare capacity. Those facilities retain
 their existing delivery boundary.
 
@@ -105,9 +103,9 @@ Switching to Iron Shield leaves separately admitted protection and collectors in
 a collector has its own control. Corrections and uncertain deliveries survive. Returning to a
 default cannot resume cancelled work or authorize an automatic resend.
 
-[Configuration](../../adr/12-configuration.md#future-selectors) owns typed loading, validation,
-precedence, and generation. Thorn would own this policy's application meaning; the proposal adds
-no executable switch or configuration schema. [Policy trials](trials.md#compare-response-policies)
-must first establish the intended behavior.
+[Configuration](../../../adr/12-configuration.md#future-selectors) owns typed loading, validation,
+precedence, and generation. Thorn owns what the effective policy permits within a case.
+The presets await an executable selector. The [policy trials](trials.md#compare-response-policies)
+compare the same case under all three.
 
 [Thorn](index.md)

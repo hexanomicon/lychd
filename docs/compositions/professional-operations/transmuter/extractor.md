@@ -7,8 +7,7 @@ icon: material/filter-outline
 
 An imported screenshot may contain a conversation, a quoted claim, and text added by somebody
 else. Extractor separates what can be located in the source from what a model merely infers. It
-is Transmuter's internal decomposition and extraction stage, under the [candidate application
-study](index.md).
+is the decomposition and extraction stage of [Transmuter](index.md).
 
 ## Extract, name, and classify
 
@@ -17,7 +16,7 @@ archives retain speaker roles and authorship: a model's assertion about the oper
 an operator assertion. Unknown source authority or unsupported formats produce a reasoned refusal.
 Imported text and metadata are data, never instructions that can widen processing or permissions.
 
-For each extracted unit, the proposed result records:
+The dossier retains the following evidence for each extracted unit.
 
 - Original reference, source identity, digest, revision, and source location such as a message,
   page, image region, or time interval.
@@ -35,7 +34,7 @@ unchanged. When the operator corrects it, create an attributable revision.
 
 A topical label does not lower a Privacy Label, authorize sharing, or establish a person's identity
 from an image. Source and derivative restrictions survive extraction. Observations supplied by
-[Prism](../../adr/36-vision.md) or [Echo](../../adr/37-audio.md) retain their exact references and
+[Prism](../../../adr/36-vision.md) or [Echo](../../../adr/37-audio.md) retain their exact references and
 limitations; an OCR result or caption does not replace the source. Inventory snapshots retain
 their observation time and scope rather than becoming claims about the machine's current state.
 

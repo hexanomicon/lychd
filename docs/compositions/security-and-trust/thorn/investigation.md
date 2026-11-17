@@ -6,10 +6,10 @@ icon: material/map-marker-path
 # Follow the campaign
 
 One defender receives a lure. Another records an access attempt. A third discovers unusual use
-of an account. Thorn should help them determine which encounters belong together, what the
-evidence establishes, and which observation would resolve the next useful question.
+of an account. Each defender needs to know which encounters belong together, what the evidence
+establishes, and which observation would resolve the next useful question.
 
-This is the investigative journey within the [Thorn candidate](index.md). During an attack,
+The [Thorn](index.md) case holds their permitted observations and competing explanations. During an attack,
 admitted protection proceeds without waiting for this inquiry. A separately authorized assessment
 can start with a security question instead of an incident; its target, methods, possible effects,
 and stopping conditions enter the same case scope.
@@ -56,8 +56,8 @@ inventory, raw mailbox, bearer artifact link, or raw canonical source digest.
 Use a permitted observable for matching when necessary. A scoped evidence digest accounts for
 evidence; it does not supply a private matching protocol between peers. Enrollment, revocation,
 query-abuse controls, and cross-community trust need their own design and evidence before live
-exchange. [Security](../../adr/09-security.md#portal-privatization-and-egress) owns disclosure;
-[Intercom](../../adr/26-a2a.md) owns sovereign peer-task transport.
+exchange. [Security](../../../adr/09-security.md#portal-privatization-and-egress) owns disclosure;
+[Intercom](../../../adr/26-a2a.md) owns sovereign peer-task transport.
 
 ## Establish the relationship
 
@@ -92,7 +92,7 @@ to enter private communications or join the attacking activity.
 
 Assume a reasoning worker can be fully compromised. Preserved originals, permissions, budgets,
 effect admission, and the supervising stop remain outside its control under
-[Security](../../adr/09-security.md#7-return-quarantine). A second model or detector cannot replace
+[Security](../../../adr/09-security.md#7-return-quarantine). A second model or detector cannot replace
 that enforcement. Keep source and transformation dependencies, including producing model/tool
 generation and occurrence, so a challenger can inspect permitted underlying evidence and gaps.
 
@@ -100,7 +100,7 @@ Quarantine suspect contributors, sensors, and derivatives from consequential use
 Incomplete lineage restricts affected use until supported reconstruction; it cannot restore trust
 by omission. Reassess dependent reports while retaining earlier effects and correction obligations.
 Incident material does not automatically become standing instructions, cross-case memory, or
-training data; [Archive](../../adr/27-memory.md#ingestion) governs that passage.
+training data; [Archive](../../../adr/27-memory.md#ingestion) governs that passage.
 
 ## Add a source only for a missing observation
 

@@ -7,15 +7,9 @@ icon: material/calendar-check
 
 A published rule does not say whether a particular business must file tomorrow. Accounting
 Office must connect the rule's effective date to the entity's registrations, the transaction,
-the reporting period, and evidence that the required act was completed. This study follows
-that connection from research through professional review to a scheduled obligation.
+the reporting period, and evidence that the required act was completed.
 
-This public study proposes additions for a **possible successor revision of `accounting.office`**,
-dated 2026-09-19. It does not publish an accepted successor contract, retire revision `1`, or accept the
-Composition into the Portfolio. The [existing candidate](index.md) remains the revision `1`
-reference. Material additions below require explicit revision acceptance under
-[Workflow](../../adr/28-workflow.md#composition-identity-revision-and-retirement); they are not
-new Core records, registered Patterns, or executable country support.
+This **successor proposal** would extend [Accounting Office revision `1`](index.md) with research cases, scoped professional answers and individually tracked obligations. Revision `1` remains current. Adding these record families requires acceptance of a new Composition revision under [Workflow](../../../adr/28-workflow.md#composition-identity-revision-and-retirement).
 
 ## One question, bounded evidence
 
@@ -74,7 +68,7 @@ Completion must be equally specific. Preserve prepared, reviewed, authorized, su
 paid and reconciled outcomes separately where relevant. The tax return, its payment and the
 regulator's receipt are related records, but each proves a different part of the obligation.
 
-Schedules use [Workflow's occurrence law](../../adr/28-workflow.md#compositions-products-suites-and-schedules).
+Schedules use [Workflow's occurrence law](../../../adr/28-workflow.md#compositions-products-suites-and-schedules).
 Repeated observations of the same event must not create duplicate obligations. A timeout after
 submission remains indeterminate until reconciled against the original external identity.
 Professional acceptance of the tax treatment does not authorize a payment or filing.
@@ -108,7 +102,4 @@ continue to apply.
 - A second entity uses another jurisdiction: require its own facts and rules, never inherit a convenient default.
 - A filing times out: observe the original attempt before retrying; do not manufacture acceptance.
 
-Acceptance requires synthetic fixtures for these cases, reproducible calculations and source
-lineage, and an explicitly scoped comparison against reference professional outputs. The
-[State of Work](../../state-of-the-work.md#composition-portfolio-delivery) remains the delivery
-owner. This study creates neither a tax filing engine nor a professional certification.
+Evaluating this proposal requires synthetic fixtures for these cases, reproducible calculations and source lineage, and an explicitly scoped comparison against reference professional outputs. [State of Work](../../../state-of-the-work.md#composition-portfolio-delivery) records the current implementation boundary.
