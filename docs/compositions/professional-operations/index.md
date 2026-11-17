@@ -4,8 +4,8 @@ title: Professional Operations
 
 # Professional Operations
 
-Keep a client case, an entity's books, a technical service case, or a source-processing dossier
-answerable to the person reviewing it. Each Composition retains its own evidence and judgment
+Keep a client case, an entity's books, or a technical service case answerable to the person
+reviewing it. Each Composition retains its own evidence and judgment
 through review, correction, completion, and handoff.
 
 | Composition | Outcome |
@@ -14,6 +14,5 @@ through review, correction, completion, and handoff.
 | [Creation investigation](../creation/index.md) | A public-source software question, exact analysis candidate and separately attributed verdict. |
 | [Accounting Office](accounting-office/index.md) | Entity-scoped evidence, reviewed postings, reconciliation, and an accountable period close. |
 | [Workshop](workshop.md) | An evidence-backed technical service disposition, safely bounded check, or qualified handoff. |
-| [Transmuter](transmuter/index.md) | Attributed source interpretation and separately reviewed proposals for knowledge, memory, or identity. |
 
 [Composition Areas](../index.md#areas)

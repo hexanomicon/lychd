@@ -406,7 +406,7 @@ receiving owner, while Aspects describe the responsibilities those owners serve.
 
 [Covenant 5](../adr/05-extensions.md)
 
-### [Extractor](../compositions/professional-operations/transmuter/extractor.md) { #extractor }
+### [Extractor](../compositions/knowledge-and-interpretation/transmuter/extractor.md) { #extractor }
 
 Transmuter's internal stage for source-grounded decomposition, extraction, naming,
 labeling, and classification; its outputs preserve attribution and uncertainty.
@@ -1051,7 +1051,7 @@ opens a smaller living Circle within it.
 
 [Altar Circle](../divination/altar/circle.md#the-greater-summoning-circle)
 
-### [Synthesizer](../compositions/professional-operations/transmuter/synthesizer.md) { #synthesizer }
+### [Synthesizer](../compositions/knowledge-and-interpretation/transmuter/synthesizer.md) { #synthesizer }
 
 Transmuter's internal stage for comparing and connecting extracted material with
 authorized knowledge and preparing attributable proposals for receiving owners. It owns neither
@@ -1113,7 +1113,7 @@ A versioned semantic text transformation qualified by authority. It preserves so
 languages, implementation, and declared loss. Spellweaver governs its placement and casting;
 the consuming owner judges whether the transformation fits the application.
 
-### [Transmuter](../compositions/professional-operations/transmuter/index.md) { #transmuter }
+### [Transmuter](../compositions/knowledge-and-interpretation/transmuter/index.md) { #transmuter }
 
 The Composition for processing external digital material through Extractor and Synthesizer into
 knowledge and proposals for memory, identity, or other separately admitted use. It owns the

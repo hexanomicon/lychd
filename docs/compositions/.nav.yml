@@ -160,11 +160,13 @@ nav:
       - Accounting Office:
           - professional-operations/accounting-office/index.md
           - professional-operations/accounting-office/knowledge-and-obligations.md
-      - Transmuter:
-          - professional-operations/transmuter/index.md
-          - professional-operations/transmuter/extractor.md
-          - professional-operations/transmuter/synthesizer.md
       - Workshop: professional-operations/workshop.md
+  - Knowledge & Interpretation:
+      - knowledge-and-interpretation/index.md
+      - Transmuter:
+          - knowledge-and-interpretation/transmuter/index.md
+          - knowledge-and-interpretation/transmuter/extractor.md
+          - knowledge-and-interpretation/transmuter/synthesizer.md
   - Security & Trust:
       - security-and-trust/index.md
       - Signet: security-and-trust/signet.md
