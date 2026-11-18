@@ -10,7 +10,7 @@ Choose the role of this computer before installing anything.
 | What you want | Where to start |
 | --- | --- |
 | Host on Linux (primary) | [Summoning](../summoning.md) takes one installation through configuration, model selection, Altar and Bridge. |
-| Host on macOS or Windows (secondary) | [Personal desktop hosts](desktop.md) covers setup, local access, recovery and outstanding qualification. |
+| Host on macOS or Windows (secondary) | [Personal desktop hosts](desktop.md) covers installation, local browser chat, PostgreSQL recovery and hardware qualification. |
 | Use an existing installation | Use its operator-approved [Altar access](../divination/altar/index.md). The client needs a browser and the access arrangements for that host. |
 
 ## Linux host preparation

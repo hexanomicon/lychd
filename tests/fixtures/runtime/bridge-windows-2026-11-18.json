@@ -1,0 +1,23 @@
+{
+  "model_sha256": "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db",
+  "engine_sha256": "c89712e0ed68591074d6a339e1c6db1c91603c0632e8cb4f558cc86e4c70fba4",
+  "request_id": "8df28b65-fe60-4f7b-ba75-82ac9fa6b0a8",
+  "run_id": "86fcf29d-e5a5-5d22-a189-2f0f226f7652",
+  "conversation": "http://127.0.0.1:7134/bridge/5ab53b11-3abb-4d4f-8729-5edcfeecf428",
+  "prompt": "What is 12 plus 7? Reply with just the number.",
+  "retained_answer": "19",
+  "platform": "win32",
+  "max_tokens": 128,
+  "temperature": 0.0,
+  "source_commit": "5c443428d03070689fa5bb40bc3e10d055d527dc",
+  "runner": "windows-2025 (x64)",
+  "browser": "Edge",
+  "workflow_job": "https://github.com/hexanomicon/lychd/actions/runs/44234632237/job/134567678834",
+  "artifact_id": 14396324803,
+  "artifact_sha256": "e654abe4d10327777f0309dc16031388799aada256b46270ab869d1fc57ac462",
+  "screenshots": {
+    "01-bridge.png": "c7a903e338ef68b9b536eac7dc487ea8641932d269cacb906d0df5e28e49b948",
+    "02-answer.png": "fd34e66a7182ebe9c222580f8ef505bfb8c7c88dd4582f0f802c75b68819ce61",
+    "03-restarted.png": "fd34e66a7182ebe9c222580f8ef505bfb8c7c88dd4582f0f802c75b68819ce61"
+  }
+}

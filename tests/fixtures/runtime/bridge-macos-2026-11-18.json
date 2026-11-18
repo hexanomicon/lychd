@@ -1,0 +1,23 @@
+{
+  "model_sha256": "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db",
+  "engine_sha256": "685941b8df982e4e205fd20492f9aaa9418f2d1224ba3d311a686abd0edb0439",
+  "request_id": "740544c2-44f0-4be1-a128-fad6d2d98079",
+  "run_id": "6f610e6b-5b86-534e-8f92-5cf1c0369adb",
+  "conversation": "http://127.0.0.1:7134/bridge/307adcab-7548-4555-a15c-840ac2b8ef5a",
+  "prompt": "What is 12 plus 7? Reply with just the number.",
+  "retained_answer": "19",
+  "platform": "darwin",
+  "max_tokens": 128,
+  "temperature": 0.0,
+  "source_commit": "5c443428d03070689fa5bb40bc3e10d055d527dc",
+  "runner": "macos-15 (Apple Silicon)",
+  "browser": "Chrome",
+  "workflow_job": "https://github.com/hexanomicon/lychd/actions/runs/44234632237/job/134567678322",
+  "artifact_id": 14396932959,
+  "artifact_sha256": "06cb902156d17d2e17b94528090ab6ba6c49abbc375b7b300fd1b06d2c26572b",
+  "screenshots": {
+    "01-bridge.png": "ff89a92d4a85153aded6d863f317dc896f497c92b9848063457ea097b51619e9",
+    "02-answer.png": "5d232e205b701ffc8fdfb5fdeb9541af4a4b119b4d1427421892faeedb51af28",
+    "03-restarted.png": "5d232e205b701ffc8fdfb5fdeb9541af4a4b119b4d1427421892faeedb51af28"
+  }
+}

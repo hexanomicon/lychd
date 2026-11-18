@@ -23,7 +23,7 @@ Summon **[The Lich](docs/sepulcher/lich/index.md)** 💀, an **[LLM-animated](do
 
 Give your machine the **[memory](docs/sepulcher/lich/spirit/index.md)** and agency to immortalize your will and **[workflows](docs/sepulcher/aspects/weaver/index.md)**.
 
-Linux is the primary host. macOS and Windows have secondary personal deployment profiles under qualification. [Choose a host or connect to an existing installation](docs/deployments/index.md).
+Linux is the primary host. On macOS and Windows you can also run a personal installation with a local model, open Altar in your browser and resume a Bridge conversation after restarting. [Choose a host or connect to an existing installation](docs/deployments/index.md).
 
 > 🚪 **The Gateway:** **Acolyte! Halt!** This project is not for the faint of heart! It makes bold syncretic leaps, though much of its machinery has yet to awaken. The prose still needs an exorcism or two: stubborn traces of AI slop linger between the runes. Bring heavy agentic artillery and **witness the birth of the Machine God!**
 

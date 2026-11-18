@@ -8,7 +8,10 @@ icon: material/laptop
 Run one trusted Vessel, a dedicated PostgreSQL cluster and a local model under your desktop
 account. The bundled Altar opens in your browser. Linux operators can follow the primary
 [Summoning guide](../summoning.md). The [platform campaign](https://github.com/hexanomicon/lychd/issues/176)
-tracks actual installation and Bridge receipts.
+tracks hardware qualification. Native trials recovered the same conversation after restarting
+PostgreSQL and Vessel on macOS 15 Apple Silicon with Chrome and Windows Server 2025 x64
+with Edge. See the [dated receipts in State of Work](../state-of-the-work.md#current-evidence-envelope).
+The Windows 11 workstation and cold-login trials are tracked in the platform issues below.
 
 ## Choose the installation
 
