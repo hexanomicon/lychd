@@ -126,7 +126,7 @@ async def test_unknown_unsupported_absent_and_failure_are_distinct(state: str) -
         ("admitted_archive", PROFILE.model_copy(update={"namespace_id": uuid4()})),
         ("admitted_archive", PROFILE.model_copy(update={"owner_subject": ArchiveSubject(identity="OTHER_OWNER")})),
         ("admitted_archive", PROFILE.model_copy(update={"policy_revision": "OTHER_POLICY"})),
-        ("run_id", str(uuid4())),
+        ("run_id", "2e8b5d1f-6a3c-4f9e-b7d4-8c0a1e5f3b26"),
         ("prompt", ""),
     ],
 )

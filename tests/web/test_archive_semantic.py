@@ -68,7 +68,9 @@ def client(service: AsyncMock, *, configured: bool = True, caller: Sigil | None 
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("operation", ["recalls", "recalls/inspect", f"recalls/{uuid4()}/resolve"])
+@pytest.mark.parametrize(
+    "operation", ["recalls", "recalls/inspect", "recalls/5b2d8f4a-1e7c-4a9b-8d3f-0e6a2c9b7f15/resolve"]
+)
 async def test_semantic_absence_and_denied_callers_do_no_service_work(operation: str) -> None:
     service = AsyncMock()
     body = {"receipt_digest": "b" * 64} if operation.endswith("resolve") else REQUEST.model_dump(mode="json")
