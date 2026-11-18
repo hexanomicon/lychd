@@ -73,8 +73,8 @@ foreach($item in @($p,$d,$f)) {
   if([IO.File]::GetAttributes($item) -band [IO.FileAttributes]::ReparsePoint){throw 'Redirected requestor receipt'}
   $acl=if([IO.Directory]::Exists($item)){[IO.Directory]::GetAccessControl($item)}else{[IO.File]::GetAccessControl($item)}
   if($trusted -notcontains $acl.GetOwner([Security.Principal.SecurityIdentifier]).Value){throw 'Foreign requestor receipt owner'}
-  foreach($ace in $acl.Access) {
-    $sid=$ace.IdentityReference.Translate([Security.Principal.SecurityIdentifier]).Value
+  foreach($ace in $acl.GetAccessRules($true,$true,[Security.Principal.SecurityIdentifier])) {
+    $sid=$ace.IdentityReference.Value
     if($ace.AccessControlType -eq 'Allow' -and ([int]$ace.FileSystemRights -band 0xD0156) -and
        !($ace.PropagationFlags -band [Security.AccessControl.PropagationFlags]::InheritOnly) -and $trusted -notcontains $sid){throw "Writable requestor receipt: $item; $sid; $($ace.FileSystemRights)"}
   }

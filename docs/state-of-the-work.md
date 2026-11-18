@@ -85,9 +85,10 @@ cold APFS file clone in another PostgreSQL instance. A later write stayed on the
 The measured database pause was 1.068 seconds and capture plus hashing took 1.720 seconds for
 that fixture. [Desktop recovery](deployments/desktop.md#storage-networking-and-recovery)
 documents the separate whole-volume and disk-loss paths.
-On macOS a subsequent browser trial requested two opposite exclusive transitions in Nexus,
-checked the active engine identity, and recovered the original Bridge conversation after restart.
-The trial used two native processes with the same pinned weights and different served names.
+In subsequent browser trials, Chrome on macOS and Edge under a standard Windows account
+requested two opposite exclusive transitions in Nexus. Each checked the active engine identity
+and recovered the original Bridge reply after restarting. Both used two native processes with
+the same pinned weights and different served names. [Native browser receipts](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/runtime/desktop-platform-checks-2026-11-18.json)
 
 The [Apple Silicon and standard-user Windows package trials](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/runtime/desktop-platform-checks-2026-11-18.json)
 used the bundled interpreters and Altar and verified committed rows across repair, program removal

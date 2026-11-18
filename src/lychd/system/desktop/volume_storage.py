@@ -34,7 +34,7 @@ def powershell(script: str, **parameters: str) -> str:
     executable = Path(os.environ["SYSTEMROOT"]) / "System32/WindowsPowerShell/v1.0/powershell.exe"
     result = subprocess.check_output(  # noqa: S603
         [executable, "-NoProfile", "-NonInteractive", "-Command", "$ErrorActionPreference='Stop';" + script],
-        env={**os.environ, **parameters},
+        env={**{key: value for key, value in os.environ.items() if key.upper() != "PSMODULEPATH"}, **parameters},
         text=True,
     )
     return result.strip()

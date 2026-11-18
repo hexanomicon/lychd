@@ -11,17 +11,17 @@ if (!$target.DriveLetter -or $target.FileSystem -ne 'NTFS' -or $target.DriveType
 }
 # Read only the 36 consent bytes in a plain, singly-linked file at the root of the exact
 # volume GUID. Open the reparse point itself; prohibit writers and renames during validation.
+if (!('LychDColdRequest' -as [type])) {
 Add-Type -TypeDefinition @'
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.ComTypes;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
 public static class LychDColdRequest {
     [StructLayout(LayoutKind.Sequential)] private struct FileInfo {
         public uint Attributes;
-        public FILETIME Created, Accessed, Written;
+        public System.Runtime.InteropServices.ComTypes.FILETIME Created, Accessed, Written;
         public uint Serial, SizeHigh, SizeLow, Links, IndexHigh, IndexLow;
     }
     [DllImport("kernel32.dll", CharSet=CharSet.Unicode, ExactSpelling=true, SetLastError=true)]
@@ -50,6 +50,7 @@ public static class LychDColdRequest {
     }
 }
 '@
+}
 $marker = $volumeName + '.lychd-volume-request-' + $Cut.ToString()
 if (![LychDColdRequest]::Matches($marker, $Volume.ToString())) { throw 'The requested volume and pending cut do not match.' }
 # Drive letters, the exact volume GUID and a fixed alias are the entire input to DiskShadow.
