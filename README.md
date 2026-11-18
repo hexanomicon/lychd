@@ -23,7 +23,7 @@ Summon **[The Lich](docs/sepulcher/lich/index.md)** 💀, an **[LLM-animated](do
 
 Give your machine the **[memory](docs/sepulcher/lich/spirit/index.md)** and agency to immortalize your will and **[workflows](docs/sepulcher/aspects/weaver/index.md)**.
 
-Linux is the primary host. On macOS and Windows you can also run a personal installation with a local model, open Altar in your browser and resume a Bridge conversation after restarting. [Choose a deployment](docs/deployments/index.md) · [macOS and Windows installers](docs/deployments/desktop-packages.md).
+Linux defaults to a rootless container for isolation. You can also run Vessel natively under your own account on Linux, macOS or Windows, use a local model and open Altar in your browser. [Choose Vessel placement](docs/deployments/platform-differences.md#vessel) · [Desktop container setup](docs/deployments/container-desktop.md) · [macOS and Windows installers](docs/deployments/desktop-packages.md).
 
 > 🚪 **The Gateway:** **Acolyte! Halt!** This project is not for the faint of heart! It makes bold syncretic leaps, though much of its machinery has yet to awaken. The prose still needs an exorcism or two: stubborn traces of AI slop linger between the runes. Bring heavy agentic artillery and **witness the birth of the Machine God!**
 

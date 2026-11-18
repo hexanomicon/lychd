@@ -13,6 +13,8 @@ import asyncpg
 from lychd.config.settings import root as settings_root
 from lychd.db.authority import RUNTIME_AUTHORITY_QUERY, require_runtime_authority
 from lychd.db.factory import database_saq_dsn
+from lychd.interface.server_policy import validate_native_database
+from lychd.system.vessel_mode import require_native_user
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Callable
@@ -58,6 +60,8 @@ async def _runtime_session(application_name: str) -> AsyncGenerator[Any]:
 
 async def stop_native_vessel() -> bool:
     """Request retirement from the exact lock owner, then observe it relinquish ownership."""
+    require_native_user()
+    validate_native_database(settings_root.get_settings().server.database)
     async with asyncio.timeout(90), _runtime_session("lychd-stop") as connection:
         generation = await connection.fetchval(_OWNER_SQL, VESSEL_LOCK_CLASS, VESSEL_LOCK_KEY)
         if generation is None:

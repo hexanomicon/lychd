@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Final
 
 from lychd.config.constants import BASE_DIR, DEFAULT_MODULE_NAME
+from lychd.system.vessel_mode import vessel_mode
 
 # --- Core Network Blueprint (Internal Container Ports) ---
 # The hardcoded ports the applications bind to INSIDE the container.
@@ -39,11 +40,8 @@ def _personal_roots() -> tuple[Path, Path, Path]:
     if sys.platform == "win32":
         support = Path(os.environ.get("LOCALAPPDATA") or home / "AppData" / "Local") / "LychD"
         return support / "config", support / "data", support / "cache"
-    return (
-        PATH_XDG_CONFIG_HOME / DEFAULT_MODULE_NAME,
-        PATH_XDG_DATA_HOME / DEFAULT_MODULE_NAME,
-        PATH_XDG_CACHE_HOME / DEFAULT_MODULE_NAME,
-    )
+    name = "lychd-native" if sys.platform == "linux" and vessel_mode() == "native" else DEFAULT_MODULE_NAME
+    return PATH_XDG_CONFIG_HOME / name, PATH_XDG_DATA_HOME / name, PATH_XDG_CACHE_HOME / name
 
 
 PATH_CODEX_ROOT, PATH_CRYPT_ROOT, PATH_CACHE_ROOT = _personal_roots()

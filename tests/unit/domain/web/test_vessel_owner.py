@@ -76,7 +76,10 @@ async def test_native_stop_authenticates_only_the_current_generation(mocker: Moc
 
 
 @pytest.mark.asyncio
-async def test_native_stop_awaits_release_of_exact_generation(mocker: MockerFixture) -> None:
+async def test_native_stop_awaits_release_of_exact_generation(
+    mocker: MockerFixture, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("LYCHD_VESSEL_MODE", "native")
     generation = "lychd-native-first"
     connection = Mock(
         fetchval=AsyncMock(side_effect=[False, generation, generation, "lychd-native-next"]),

@@ -5,12 +5,17 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import PurePath
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from lychd.config.settings.server import DatabaseSettings
 
 __all__ = (
     "ServerRuntimePolicy",
     "ServerRuntimePolicyError",
     "evaluate_server_runtime_policy",
     "validate_host_actuator",
+    "validate_native_database",
     "validate_server_environment",
 )
 
@@ -133,14 +138,24 @@ def _detected_server_arguments(
     return ()
 
 
-def validate_host_actuator(platform: str, actuator: str) -> None:
-    """Keep the native process supervisor outside the Linux Vessel."""
-    if platform in {"darwin", "win32"}:
+def validate_host_actuator(mode: str, actuator: str) -> None:
+    """Require the application's runtime actuator to match its selected deployment."""
+    if mode == "native":
         if actuator != "native-process":
-            message = "Personal desktop hosting requires the native-process actuator."
+            message = "Native Vessel hosting requires the native-process actuator."
             raise ServerRuntimePolicyError(message)
-    elif actuator == "native-process":
-        message = "The native-process actuator is available only on macOS and Windows."
+    elif mode != "container" or actuator == "native-process":
+        message = "Container Vessel hosting requires a managed actuator."
+        raise ServerRuntimePolicyError(message)
+
+
+def validate_native_database(database: DatabaseSettings) -> None:
+    """Confine foreground startup and authenticated retirement to local PostgreSQL."""
+    if database.host not in {"127.0.0.1", "localhost", "::1"}:
+        message = "The native Vessel requires a loopback PostgreSQL host."
+        raise ServerRuntimePolicyError(message)
+    if database.profile != "postgres":
+        message = "The native Vessel requires PostgreSQL."
         raise ServerRuntimePolicyError(message)
 
 

@@ -17,6 +17,7 @@ from tempfile import TemporaryDirectory
 
 import psycopg
 
+from lychd.config.settings.root import get_settings
 from lychd.system.desktop.private import private_directory
 from lychd.system.services.local_access import load_local_access
 
@@ -24,7 +25,7 @@ _INTERRUPTED_ROTATION = 74
 
 
 def request(route: str, credential: str | None = None) -> tuple[int, bytes, str | None]:
-    connection = http.client.HTTPConnection("127.0.0.1", 7134, timeout=3)
+    connection = http.client.HTTPConnection("127.0.0.1", get_settings().server.port, timeout=3)
     try:
         headers = {"Authorization": credential} if credential else {}
         connection.request("GET", route, headers=headers)
@@ -179,15 +180,16 @@ def check_password_rotation(cli: list[str]) -> None:
                 raise RuntimeError(msg)
 
 
-def main() -> None:
-    if sys.platform not in {"win32", "darwin"}:
-        msg = "Use a disposable Windows or macOS account."
-        raise SystemExit(msg)
-    cli = [sys.executable, "-m", "lychd"]
+def require_fresh_native_installation(cli: list[str]) -> None:
     profile = json.loads(subprocess.check_output([*cli, "platform"], text=True))
-    if profile["profile"] != "personal-desktop" or any(Path(profile[key]).exists() for key in ("data", "config")):
-        msg = "A fresh personal installation is required."
+    if profile["vessel_mode"] != "native" or any(Path(profile[key]).exists() for key in ("data", "config")):
+        msg = "Select the native Vessel in a disposable account with fresh data and configuration roots."
         raise SystemExit(msg)
+
+
+def main() -> None:
+    cli = [sys.executable, "-m", "lychd"]
+    require_fresh_native_installation(cli)
     subprocess.run([*cli, "desktop", "install"], check=True)
     try:
         subprocess.run([*cli, "desktop", "install"], check=True)

@@ -10,6 +10,7 @@ from pydantic import SecretStr
 
 from lychd.config.settings.root import get_settings
 from lychd.config.settings.server import validate_local_access_password
+from lychd.system.vessel_mode import vessel_mode
 
 
 @dataclass(frozen=True)
@@ -26,7 +27,7 @@ def load_local_access() -> LocalAccess:
     if sys.platform != "win32" and os.geteuid() == 0:
         msg = "Local access belongs to the rootless operator; rerun as your ordinary user."
         raise ValueError(msg)
-    desktop = sys.platform in {"darwin", "win32"}
+    desktop = vessel_mode() == "native"
     if desktop:
         from lychd.system.desktop.credentials import load_credentials
 

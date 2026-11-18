@@ -1,13 +1,15 @@
 ---
-title: Personal macOS and Windows hosts
+title: Personal native hosts
 icon: material/laptop
 ---
 
-# Personal macOS and Windows hosts
+# Personal native hosts
 
 Run one trusted Vessel, a dedicated PostgreSQL cluster and a local model under your desktop
-account. The bundled Altar opens in your browser. Linux operators can follow the primary
-[Summoning guide](../summoning.md). For a side-by-side explanation of host authority, storage,
+account on Linux, macOS or Windows. The bundled Altar opens in your browser. Linux defaults to
+the [managed container](../summoning.md), which provides stronger process and filesystem isolation.
+Choose native for a trusted local installation, including development. To run the caged image
+on a Mac or Windows PC, follow the [portable container guide](container-desktop.md). For a side-by-side explanation of host authority, storage,
 model switching and the other deployment choices, see [Platform differences](platform-differences.md).
 The [platform campaign](https://github.com/hexanomicon/lychd/issues/176)
 tracks hardware qualification. Native trials recovered the same conversation after restarting
@@ -17,7 +19,14 @@ The Windows 11 workstation and cold-login trials are tracked in the platform iss
 
 ## Choose the installation
 
-For a packaged Python runtime and bundled web client, follow [Desktop editions](desktop-packages.md).
+**Select native mode.** Run `export LYCHD_VESSEL_MODE=native` on Linux or macOS, or
+`$env:LYCHD_VESSEL_MODE = 'native'` in Windows PowerShell. Keep the same setting in each terminal,
+including the one used for access or shutdown. macOS and Windows already choose native by default.
+Check `lychd platform` for `"vessel_mode": "native"`. On Linux config, data and cache each use a
+`lychd-native` directory under the corresponding XDG root. Switching modes selects an independent
+installation. If both need to run concurrently, give their host listeners distinct ports.
+
+For a packaged macOS or Windows Python runtime and bundled web client, follow [Desktop editions](desktop-packages.md).
 The source installation below uses uv.
 
 Start with a clean personal account or a dedicated test account. Have a checked-out LychD
@@ -35,6 +44,7 @@ system service or an existing application database can keep its own port and dat
 
 | Target | Prepare this machine |
 | --- | --- |
+| Linux · source | Install PostgreSQL 18, matching server-side pgvector and a native llama.cpp build for your hardware. Set `LYCHD_PG_BIN` if the 18 binaries are outside PATH. Check `initdb --version` using that bin directory. Use an ordinary account and leave `LYCHD_VESSEL_MODE=native` set. |
 | macOS · Apple Silicon | Install the matching tools, for example `brew install postgresql@18 pgvector llama.cpp`. In the terminal for this setup run `export LYCHD_PG_BIN="$(brew --prefix postgresql@18)/bin"`. Check `"$LYCHD_PG_BIN/initdb" --version` and `command -v llama-server`. |
 | Windows · x64 | Install the PostgreSQL 18 server tools and [pgvector for that PostgreSQL installation](https://github.com/pgvector/pgvector#windows). Install the matching [llama.cpp Windows release](https://github.com/ggml-org/llama.cpp/releases) and keep its DLLs beside the executable. In PowerShell set `$env:LYCHD_PG_BIN = 'C:\Program Files\PostgreSQL\18\bin'` and run `& "$env:LYCHD_PG_BIN\initdb.exe" --version`. Administrator access, if required by the dependency installer, ends before running LychD. |
 
@@ -64,7 +74,7 @@ tool protocol. The personal Rune also uses `f16` for both key and value caches. 
 precision saves memory and can change model answers. Recheck Bridge after tuning it. Run
 this command before starting Vessel. Use a separate free port for each engine.
 
-```bash title="macOS"
+```bash title="Linux or macOS"
 uv run --no-sync lychd desktop configure-model \
   --engine "$(command -v llama-server)" --model "$HOME/Models/chat.gguf"
 ```
@@ -158,7 +168,9 @@ issues below for hardware, GPU and cold-login trials.
 
 ## Login, update and removal
 
-For automatic startup use `uv run --no-sync lychd desktop enable-login` under the intended
+On native Linux use the foreground `desktop session` under the installation account. Login registration, OS vault enrollment and native volume capture are macOS/Windows operations. Native Linux supports portable credential files and the verified PostgreSQL physical backup.
+
+On macOS and Windows, for automatic startup use `uv run --no-sync lychd desktop enable-login` under the intended
 account once foreground startup works. macOS registers a user LaunchAgent and Windows registers
 a current-user `Run` registry value with the installation identifier and quoted interpreter path.
 Existing Windows scheduled tasks retain their original enrollment until disabled. Windows caps
@@ -254,7 +266,7 @@ clone shares disk failure risk with the source. Use the streamed backup for inde
 An actual volume snapshot uses the [dedicated storage procedure](volume-snapshots.md).
 [Apple clonefile semantics](https://raw.githubusercontent.com/apple-oss-distributions/xnu/main/bsd/man/man2/clonefile.2)
 
-| Capability | Linux | Personal macOS / Windows |
+| Capability | Managed Linux | Personal macOS / Windows |
 | --- | --- | --- |
 | Supervision and isolation | Rootless Podman, systemd/Quadlet, cgroup v2 and reviewed SELinux policy where enabled. | User-owned native services and a trusted engine. A same-user process has access to that user's files. |
 | Fast filesystem capture | Btrfs storage preparation is implemented. Whole-installation restore has independent criteria. | [Dedicated volume setup and recovery](volume-snapshots.md) bind the volume and PostgreSQL identity to a cold cut. APFS requires an authorized producer. Windows VSS creation belongs to the storage operator. |
@@ -274,7 +286,7 @@ responsibility for tunnel and service configuration.
 
 ## Animator ownership
 
-On Linux the Reactor applies the declared conflicts through systemd and generated Quadlets.
+On managed Linux the Reactor applies the declared conflicts through systemd and generated Quadlets.
 In the personal profile the same orchestration contract selects the native process actuator.
 Vessel starts a configured executable using fixed arguments, verifies ownership of its loopback
 listener, and waits for the conflicting foreground process to exit before launching its replacement. Login registration starts

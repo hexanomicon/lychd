@@ -44,3 +44,16 @@ def test_listener_adapter_refuses_the_wrong_host_before_loading_settings(
     with pytest.raises(ServerRuntimePolicyError):
         launch()
     load_settings.assert_not_called()
+
+
+@pytest.mark.parametrize("platform", ["darwin", "win32"])
+def test_desktop_container_control_cannot_assemble_the_vessel_on_the_host(
+    monkeypatch: pytest.MonkeyPatch, platform: str
+) -> None:
+    monkeypatch.setenv("LYCHD_VESSEL_MODE", "container")
+    monkeypatch.setattr(app.sys, "platform", platform)
+    settings = Mock()
+    monkeypatch.setattr(app, "get_settings", settings)
+    with pytest.raises(ServerRuntimePolicyError, match="Linux runtime"):
+        app.create_app()
+    settings.assert_not_called()
