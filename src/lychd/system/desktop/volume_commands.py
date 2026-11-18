@@ -30,17 +30,17 @@ from lychd.system.desktop.volume_storage import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Generator
 
 _DEFAULT = PATH_POSTGRES_ROOT_DIR / "native-data"
 
 
 @contextmanager
-def _operation() -> Iterator[None]:
-    from lychd.system.desktop import _management_lock
+def _operation() -> Generator[None]:
+    from lychd.system.desktop import management_lock
 
     try:
-        with _management_lock():
+        with management_lock():
             yield
     except (OSError, ValueError, KeyError, subprocess.CalledProcessError) as exc:
         raise click.ClickException(str(exc)) from exc
@@ -62,22 +62,22 @@ def select(root: Path) -> None:
 @volume.command("verify-start", hidden=True)
 def verify_start() -> None:
     """Check the selected server with short-lived administrator credentials before Vessel startup."""
-    from lychd.system.desktop import _require_cluster, _settings
+    from lychd.system.desktop import desktop_settings, require_cluster
 
     with _operation():
-        _require_cluster()
-        bind_installation(_DEFAULT, _settings(admin=True).server.database, initialize=False)
+        require_cluster()
+        bind_installation(_DEFAULT, desktop_settings(admin=True).server.database, initialize=False)
 
 
 @volume.command()
 def register() -> None:
     """Grant a new capture generation to the running dedicated cluster."""
-    from lychd.system.desktop import _require_cluster, _settings
+    from lychd.system.desktop import desktop_settings, require_cluster
 
     with _operation():
         root, identity = selected(_DEFAULT)
-        _require_cluster()
-        db = _settings(admin=True).server.database
+        require_cluster()
+        db = desktop_settings(admin=True).server.database
         bind_installation(_DEFAULT, db, initialize=False)
         source_id = active_id(root / STORAGE / _DEFAULT.name, db)
         generation = str(uuid4())
@@ -97,7 +97,7 @@ def revoke() -> None:
         click.echo(f"Revoked {record['generation']}.")
 
 
-def _grant(identity: str) -> dict[str, str]:
+def active_grant(identity: str) -> dict[str, str]:
     directory = authority(_DEFAULT)
     record = read_record(directory / "grant.json")
     generation = str(UUID(record["generation"]))
@@ -126,16 +126,16 @@ def _frozen(grant: dict[str, str], cut: str, snapshot: str, tool: str) -> tuple[
 @volume.command()
 def capture() -> None:
     """Pause the running database for an operator-produced native snapshot and restart it."""
-    from lychd.system.desktop import _require_cluster, _settings, _start, _stop, postgres_program
+    from lychd.system.desktop import desktop_settings, postgres_program, require_cluster, start_cluster, stop_cluster
 
     with _operation():
         started = monotonic()
         root, identity = selected(_DEFAULT)
-        grant = _grant(identity)
+        grant = active_grant(identity)
         dedicated_contents(root)
-        _require_cluster()
+        require_cluster()
         source = root / STORAGE / _DEFAULT.name
-        db = _settings(admin=True).server.database
+        db = desktop_settings(admin=True).server.database
         if active_id(source, db) != grant["system_identifier"]:
             msg = "The running cluster differs from the registered PostgreSQL system identifier."
             raise ValueError(msg)
@@ -145,7 +145,7 @@ def capture() -> None:
         request = root / f".lychd-volume-request-{cut}"
         tool = postgres_program("pg_controldata")
         pause = monotonic()
-        _stop()
+        stop_cluster()
         try:
             inventory(source, digest=False)
             cold_control(source, tool, grant["system_identifier"])
@@ -169,7 +169,7 @@ def capture() -> None:
             finally:
                 # Recheck storage before using an old path to restart PostgreSQL.
                 selected(_DEFAULT)
-                _start(db.port)
+                start_cluster(db.port)
         resumed = monotonic()
         record = dict(
             grant,
@@ -198,7 +198,7 @@ def restore(cut: UUID, destination: Path) -> None:
 
     with _operation():
         root, identity = selected(_DEFAULT)
-        grant = _grant(identity)
+        grant = active_grant(identity)
         record = read_record(authority(_DEFAULT) / f"capture-{cut}.json")
         if record["cut"] != str(cut) or any(record[key] != value for key, value in grant.items()):
             msg = "The capture does not match the current database volume grant."

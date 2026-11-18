@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from unittest.mock import Mock
 from uuid import uuid4
 
 import pytest
@@ -23,14 +24,14 @@ def test_exact_generation_and_offvolume_revocation(tmp_path: Path, monkeypatch: 
     grant = {"generation": generation, "volume": volume, "system_identifier": "3456"}
     path = directory / "grant.json"
     storage.write_record(path, **grant)
-    assert commands._grant(volume) == grant
+    assert commands.active_grant(volume) == grant
     with pytest.raises(ValueError, match="stale"):
-        commands._grant(str(uuid4()))
+        commands.active_grant(str(uuid4()))
     path.rename(directory / f"revoked-{generation}.json")
     # Even restoring the old grant file beside the surviving tombstone must fail.
     storage.write_record(path, **grant)
     with pytest.raises(ValueError, match="revoked"):
-        commands._grant(volume)
+        commands.active_grant(volume)
 
 
 def test_dedicated_cut_refuses_personal_files_and_linked_database_files(tmp_path: Path) -> None:
@@ -65,7 +66,7 @@ def test_cold_control_requires_shutdown_and_same_identifier(tmp_path: Path, monk
     (tmp_path / "pg_tblspc").mkdir()
     for state, identifier in [("in production", "42"), ("shut down", "24"), ("shut down", "42")]:
         output = f"Database system identifier: {identifier}\nDatabase cluster state: {state}\n"
-        monkeypatch.setattr(volume_cluster.subprocess, "check_output", lambda *_args, value=output, **_kwargs: value)
+        monkeypatch.setattr(volume_cluster.subprocess, "check_output", Mock(return_value=output))
         if state == "shut down" and identifier == "42":
             cold_control(tmp_path, "pg_controldata", "42")
         else:
@@ -87,8 +88,8 @@ def test_native_vss_refuses_shadow_of_another_volume(tmp_path: Path, monkeypatch
         "DeviceObject": r"\\?\GLOBALROOT\Device\HarddiskVolumeShadowCopy7",
     }
     monkeypatch.setattr(native.sys, "platform", "win32")
-    monkeypatch.setattr(native, "windows_record", lambda _cut: data)
-    monkeypatch.setattr(native, "verify_exposure", lambda _drive, _device: None)
+    monkeypatch.setattr(native, "windows_record", Mock(return_value=data))
+    monkeypatch.setattr(native, "verify_exposure", Mock(return_value=None))
     assert native.snapshot_view(volume, shadow, cut).provider == provider
     with pytest.raises(ValueError, match="registered volume"):
         native.snapshot_view(str(uuid4()), shadow, cut)
@@ -99,8 +100,10 @@ def test_native_vss_refuses_shadow_of_another_volume(tmp_path: Path, monkeypatch
 
 def test_native_apfs_requires_mounted_snapshot_of_exact_volume(monkeypatch: pytest.MonkeyPatch) -> None:
     volume, shadow, cut = str(uuid4()), str(uuid4()), str(uuid4())
-    inventory_result = {"AllDisksAndPartitions": [{"APFSVolumes": [{"VolumeUUID": volume, "MountedSnapshots": []}]}]}
+    inventory_result: dict[str, object] = {
+        "AllDisksAndPartitions": [{"APFSVolumes": [{"VolumeUUID": volume, "MountedSnapshots": []}]}]
+    }
     monkeypatch.setattr(native.sys, "platform", "darwin")
-    monkeypatch.setattr(native, "diskutil", lambda *_args: inventory_result)
+    monkeypatch.setattr(native, "diskutil", Mock(return_value=inventory_result))
     with pytest.raises(ValueError, match="read-only"):
         native.snapshot_view(volume, shadow, cut)

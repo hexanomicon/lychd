@@ -83,7 +83,7 @@ func startRoad(service netip.AddrPort, backend backendTarget, peer netip.Addr, p
 	if err != nil {
 		return nil, "", err
 	}
-	dev := device.NewDevice(tun, conn.NewDefaultBind(), device.NewLogger(device.LogLevelSilent, ""))
+	dev := device.NewDevice(exactService(tun, peer, service), conn.NewDefaultBind(), device.NewLogger(device.LogLevelSilent, ""))
 	// IPC text is constructed only from typed values. Never log or return it.
 	config := fmt.Sprintf("private_key=%s\nlisten_port=%d\npublic_key=%s\nallowed_ip=%s/32\n",
 		hex.EncodeToString(privateKey.Bytes()), port, hex.EncodeToString(publicKey), peer)

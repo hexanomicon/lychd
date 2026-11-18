@@ -39,7 +39,7 @@ def start_native() -> None:
     from lychd.system.desktop.credentials import load_credentials
     from lychd.system.desktop.volume_storage import authority
 
-    if (authority(PATH_POSTGRES_ROOT_DIR / "native-data") / "storage.json").exists():
+    if authority(PATH_POSTGRES_ROOT_DIR / "native-data").exists():
         # The administrative connection exists only in the short-lived verifier process.
         subprocess.run(
             [sys.executable, "-m", "lychd.system.desktop", "volume", "verify-start"],

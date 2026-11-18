@@ -75,6 +75,8 @@ def _exercise_vessel(cli: list[str], credential: str) -> None:
 
 def check_registered_backup(cli: list[str]) -> None:
     """Exercise the installed backup command and inspect its verified recovery copy."""
+    if sys.platform == "darwin":
+        subprocess.run([sys.executable, str(Path(__file__).with_name("check_desktop_apfs_clone.py"))], check=True)
     with TemporaryDirectory() as destination:
         parent = Path(destination).resolve()
         private_directory(parent)

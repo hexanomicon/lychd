@@ -12,11 +12,13 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"io"
 	"math/big"
 	"net"
 	"net/netip"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -24,6 +26,7 @@ import (
 	"golang.zx2c4.com/wireguard/conn"
 	"golang.zx2c4.com/wireguard/device"
 	"golang.zx2c4.com/wireguard/tun/netstack"
+	"gvisor.dev/gvisor/pkg/tcpip/header"
 )
 
 func endpoint(t *testing.T, port uint16, name, address string, m *manager) (*grant, *netstack.Net, []string) {
@@ -123,8 +126,8 @@ func TestOfferedServiceAcrossTwoEncryptedPeers(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { l.Close() })
-	accepted := make(chan struct{}, 8)
-	ended := make(chan struct{}, 8)
+	accepted := make(chan struct{}, maxStreams+2)
+	ended := make(chan struct{}, maxStreams+2)
 	go func() {
 		for {
 			c, err := l.Accept()
@@ -152,6 +155,22 @@ func TestOfferedServiceAcrossTwoEncryptedPeers(t *testing.T) {
 	exchange(t, second, "independent WireGuard path")
 	<-accepted
 	<-accepted
+	ping, err := stack.DialPingAddr(g.Address, service.Addr())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ping.Close()
+	ping.SetReadDeadline(time.Now().Add(400 * time.Millisecond))
+	echo := make(header.ICMPv4, header.ICMPv4MinimumSize)
+	echo.SetType(header.ICMPv4Echo)
+	echo.SetSequence(1)
+	echo.SetChecksum(header.ICMPv4Checksum(echo, 0))
+	if _, err := ping.Write(echo); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ping.Read(make([]byte, 1500)); !errors.Is(err, os.ErrDeadlineExceeded) {
+		t.Fatalf("unadmitted ICMP outcome: %v", err)
+	}
 	for _, destination := range []string{"10.93.0.1:8444", "10.93.0.3:8443", l.Addr().String()} {
 		ctx, cancel := context.WithTimeout(context.Background(), 400*time.Millisecond)
 		otherPort, err := stack.DialContextTCPAddrPort(ctx, netip.MustParseAddrPort(destination))
@@ -196,6 +215,7 @@ func TestOfferedServiceAcrossTwoEncryptedPeers(t *testing.T) {
 		t.Fatal("revoked peer opened another stream")
 	}
 	exchange(t, second, "survived revocation of first peer")
+	checkStreamLimit(t, other, service, second, accepted)
 	if _, err := m.admit(args); err == nil {
 		t.Fatal("revoked admission replayed in this session")
 	}
@@ -209,6 +229,27 @@ func TestOfferedServiceAcrossTwoEncryptedPeers(t *testing.T) {
 		t.Fatal("unadmitted backend stream opened")
 	default:
 	}
+}
+
+func checkStreamLimit(t *testing.T, stack *netstack.Net, service netip.AddrPort, existing net.Conn, accepted <-chan struct{}) {
+	t.Helper()
+	// One stream is already active. Observe the TLS backend accept each permitted connection.
+	for i := 1; i < maxStreams; i++ {
+		c := dial(t, stack, service)
+		exchange(t, c, "admitted within budget")
+		<-accepted
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	if excess, err := stack.DialContextTCPAddrPort(ctx, service); err == nil {
+		defer excess.Close()
+		excess.SetDeadline(time.Now().Add(2 * time.Second))
+		io.WriteString(excess, "over budget")
+		if _, err := excess.Read(make([]byte, 1)); err == nil {
+			t.Fatal("excess stream reached backend")
+		}
+	}
+	exchange(t, existing, "existing stream survives excess connection")
 }
 
 func TestConsoleStartsClosedAndRefusesMalformedCommands(t *testing.T) {

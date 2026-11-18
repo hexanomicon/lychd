@@ -50,6 +50,17 @@ python scripts/generate_python_third_party_notices.py \
   --forbid-distribution psycopg-binary
 ```
 
+## Native Desktop Editions
+
+The [desktop edition build](docs/deployments/desktop-packages.md) ships the standalone Python
+and standard-library licenses, the installed Python distributions' `PYTHON_THIRD_PARTY_NOTICES.txt`,
+the Altar notices and `TETHER_THIRD_PARTY_NOTICES.txt`. The latter covers the desktop Tether's Go
+runtime, WireGuard userspace implementation, gVisor TCP/IP stack and target-specific dependencies.
+The build generates it from the Go packages selected for that target and their upstream license,
+patent and attribution material. To regenerate it for a matching build environment, run
+`python clients/desktop-tether/notices.py TETHER_THIRD_PARTY_NOTICES.txt` from the repository root.
+The module versions and checksums are recorded in `clients/desktop-tether/go.mod` and `go.sum`.
+
 ## Optional Discord Edge Environment
 
 The separately locked Discord operator edge under `clients/discord/` installs discord.py 2.7.1,

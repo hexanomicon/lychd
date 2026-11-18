@@ -58,7 +58,7 @@ def cold_control(source: Path, tool: str, expected: str) -> None:
 def inventory(source: Path, *, digest: bool) -> dict[str, str]:
     """Reject redirects, special files and nested volumes before traversal or copying."""
     device = source.stat().st_dev
-    found = {}
+    found: dict[str, str] = {}
     stack = [source]
     while stack:
         path = stack.pop()
@@ -85,7 +85,7 @@ def bind_installation(default: Path, db: DatabaseSettings, *, initialize: bool) 
     from lychd.system.desktop.volume_storage import STORAGE, authority, read_record, selected, write_record
 
     directory = authority(default)
-    if not (directory / "storage.json").exists():
+    if not directory.exists():
         return
     root, volume = selected(default)
     identifier = active_id(root / STORAGE / default.name, db)

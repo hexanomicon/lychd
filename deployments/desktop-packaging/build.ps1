@@ -83,7 +83,7 @@ if ($IsMacOS) {
     if ($Sign) { & /bin/bash "$PSScriptRoot/sign-macos.sh" installer "$work/unsigned.pkg" $artifact }
     else { Move-Item "$work/unsigned.pkg" $artifact }
 } else {
-    $compiler = (Get-Command ISCC.exe -CommandType Application).Source
+    $compiler = (Get-Command ISCC.exe -CommandType Application | Select-Object -First 1).Source
     if ($Sign) { & "$PSScriptRoot/sign-windows.ps1" -Artifact $tether }
     & $compiler "/DEdition=$Revision" "/DPayload=$payload" "/F$stem" "/O$out" "$PSScriptRoot/desktop.iss"
     $artifact = "$out/$stem.exe"

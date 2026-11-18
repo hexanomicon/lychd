@@ -1,5 +1,6 @@
 # The administrative runner installs dependencies. A separate standard account runs the personal profile.
-param([string] $TrialSid, [switch] $BridgeChat, [switch] $VolumeTrial, [string] $VolumeDrive)
+param([string] $TrialSid, [switch] $BridgeChat, [switch] $VolumeTrial, [string] $VolumeDrive,
+      [string] $PackageBuild, [ValidatePattern('^[0-9a-f]{40}$')][string] $PackageRevision)
 
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
@@ -31,6 +32,10 @@ if ($TrialSid) {
     $env:LYCHD_PG_BIN = Join-Path $env:ProgramFiles 'PostgreSQL\18\bin'
     $env:PYTHONDONTWRITEBYTECODE = '1'
     $env:PYTHONNOUSERSITE = '1'
+    if ($PackageRevision) {
+        & "$root/deployments/desktop-packaging/check-install.ps1" -BuildDirectory $root -Revision $PackageRevision
+        exit 0
+    }
     $python = "$root\.venv\Scripts\python.exe"
     $cli = "$root\.venv\Scripts\lychd.exe"
     if ($VolumeTrial) {
@@ -71,12 +76,16 @@ try {
     & git archive --format=tar "--output=$stage\source.tar" HEAD
     & tar.exe -xf "$stage\source.tar" -C $stage
     Remove-Item -LiteralPath "$stage\source.tar"
-    $env:UV_PYTHON_INSTALL_DIR = "$stage\runtime"
-    & uv python install --no-bin 3.14.8
-    $python = @(Get-ChildItem -Path "$stage\runtime\cpython-3.14.8-*\python.exe")
-    if ($python.Count -ne 1) { throw 'Expected one staged CPython 3.14.8 interpreter.' }
-    $env:UV_PROJECT_ENVIRONMENT = "$stage\.venv"
-    & uv sync --project $stage --python $python[0].FullName --locked --no-default-groups --extra postgres-binary --group test --group desktop-browser --no-editable --link-mode copy
+    if ($PackageRevision) {
+        Copy-Item -LiteralPath "$PackageBuild/artifacts" -Destination "$stage/artifacts" -Recurse
+    } else {
+        $env:UV_PYTHON_INSTALL_DIR = "$stage\runtime"
+        & uv python install --no-bin 3.14.8
+        $python = @(Get-ChildItem -Path "$stage\runtime\cpython-3.14.8-*\python.exe")
+        if ($python.Count -ne 1) { throw 'Expected one staged CPython 3.14.8 interpreter.' }
+        $env:UV_PROJECT_ENVIRONMENT = "$stage\.venv"
+        & uv sync --project $stage --python $python[0].FullName --locked --no-default-groups --extra postgres-binary --group test --group desktop-browser --no-editable --link-mode copy
+    }
     if ($env:BRIDGE_CHAT -eq 'true') {
         Copy-Item -LiteralPath (Split-Path -Parent $env:BRIDGE_ENGINE) -Destination "$stage\engine" -Recurse
         Copy-Item -LiteralPath $env:BRIDGE_MODEL -Destination "$stage\model.gguf"
@@ -85,6 +94,7 @@ try {
     }
     Start-Service seclogon
     $argsLine = "-NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"$stage\scripts\check_windows_desktop.ps1`" -TrialSid $sid"
+    if ($PackageRevision) { $argsLine += " -PackageRevision $PackageRevision" }
     if ($VolumeTrial) {
         . "$stage\scripts\check_volume_vhd.ps1"
         $drive = New-TrialDatabaseVolume $stage $sid

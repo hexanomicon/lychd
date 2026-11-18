@@ -47,12 +47,12 @@ def test_database_refuses_unmarked_and_wrong_major(tmp_path: Path, monkeypatch: 
     monkeypatch.setattr(desktop, "_DATA", tmp_path)
     (tmp_path / "PG_VERSION").write_text("18")
     with pytest.raises(click.ClickException, match="Unrecognized"):
-        desktop._require_cluster()
+        desktop.require_cluster()
     (tmp_path / ".lychd-desktop").write_text(desktop._OWNER)
-    desktop._require_cluster()
+    desktop.require_cluster()
     (tmp_path / "PG_VERSION").write_text("17")
     with pytest.raises(click.ClickException, match="PostgreSQL 18"):
-        desktop._require_cluster()
+        desktop.require_cluster()
 
 
 def test_launch_agent_uses_interpreter_and_retains_user_files(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -203,21 +203,21 @@ def test_cluster_publish_recovers_partial_initialization(tmp_path: Path, monkeyp
         desktop._initialize_cluster("initdb", "user", "temporary")
     assert not final.exists()
     desktop._initialize_cluster("initdb", "user", "temporary")
-    desktop._require_cluster()
+    desktop.require_cluster()
 
 
 def test_management_lock_releases_after_failure(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(desktop, "PATH_POSTGRES_ROOT_DIR", tmp_path)
 
     def interrupted() -> None:
-        with desktop._management_lock():
-            with pytest.raises(click.ClickException, match="management operation"), desktop._management_lock():
+        with desktop.management_lock():
+            with pytest.raises(click.ClickException, match="management operation"), desktop.management_lock():
                 pytest.fail("overlapping desktop operations")
             raise InterruptedError
 
     with pytest.raises(InterruptedError):
         interrupted()
-    with desktop._management_lock():
+    with desktop.management_lock():
         assert tmp_path.is_dir()
 
 
@@ -251,7 +251,7 @@ def test_reinstall_refuses_lost_generated_key(tmp_path: Path, monkeypatch: pytes
     monkeypatch.delenv("LYCHD_APP_SECRET_KEY", raising=False)
     monkeypatch.delenv("LYCHD_APP_SECRET_KEY_FILE", raising=False)
     with pytest.raises(click.ClickException, match="Restore its original file"):
-        desktop._settings(install=True, admin=True)
+        desktop.desktop_settings(install=True, admin=True)
     assert not (tmp_path / "desktop-credentials").exists()
 
 
@@ -322,7 +322,7 @@ def test_installer_and_shutdown_pin_admin_connections(tmp_path: Path, monkeypatc
     monkeypatch.setattr(
         desktop, "_prepare_installation", Mock(return_value=SimpleNamespace(server=SimpleNamespace(database=db)))
     )
-    monkeypatch.setattr(desktop, "_start", Mock())
+    monkeypatch.setattr(desktop, "start_cluster", Mock())
     connect = Mock(side_effect=ConnectionRefusedError)
     monkeypatch.setattr(psycopg, "connect", connect)
 

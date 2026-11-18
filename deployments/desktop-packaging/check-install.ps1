@@ -27,6 +27,14 @@ function Invoke-Installation {
         if ($install.ExitCode -ne 0) { throw "Installation returned $($install.ExitCode)." }
     }
 }
+function Invoke-Removal {
+    if ($IsWindows) {
+        $uninstall = Start-Process -FilePath "$edition/unins000.exe" -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART' -Wait -PassThru
+        if ($uninstall.ExitCode -ne 0 -or (Test-Path -LiteralPath $python)) { throw 'Edition removal failed.' }
+    } else {
+        Remove-Item -LiteralPath $edition -Recurse -Force
+    }
+}
 Invoke-Installation
 $tether = if ($IsWindows) { "$edition/desktop-tether.exe" } else { "$edition/desktop-tether" }
 & $tether -help
@@ -45,16 +53,24 @@ $markers = foreach ($directory in $profilePaths.config, $profilePaths.data) {
 }
 & $python -I -B -m lychd desktop --help
 & $python -I -B -c 'import sys; from pathlib import Path; from lychd.app import create_app; from lychd.interface.web.altar import PATH_ALTAR_INDEX; from lychd.interface.server import run_native_server; import psycopg; assert sys.version_info[:3] == (3,14,8) and PATH_ALTAR_INDEX.is_relative_to(Path(sys.executable).resolve().parents[2]) and PATH_ALTAR_INDEX.is_file() and psycopg.pq.__impl__ == "binary"'
+$rowCheck = (Resolve-Path "$PSScriptRoot/../../scripts/check_desktop_package_rows.py").Path
+& $python -I -B -m lychd desktop install
+try { & $python -I -B $rowCheck seed }
+finally { & $python -I -B -m lychd desktop stop }
 # Damage only a package-owned file created by this trial.
 Remove-Item -LiteralPath "$edition/edition.json"
 Invoke-Installation
 if ((Get-Content "$edition/edition.json" -Raw | ConvertFrom-Json).revision -cne $Revision) { throw 'Edition repair failed.' }
-if ($IsWindows) {
-    $uninstall = Start-Process -FilePath "$edition/unins000.exe" -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART' -Wait -PassThru
-    if ($uninstall.ExitCode -ne 0 -or (Test-Path -LiteralPath $python)) { throw 'Edition removal failed.' }
-} else {
-    Remove-Item -LiteralPath $edition -Recurse
-}
+& $python -I -B -m lychd desktop install
+try { & $python -I -B $rowCheck repair }
+finally { & $python -I -B -m lychd desktop uninstall }
+Invoke-Removal
 foreach ($marker in $markers) {
     if ((Get-Content -LiteralPath $marker -Raw) -cne $Revision) { throw 'Package lifecycle changed profile data.' }
 }
+# Reinstall from the same artifact without restoring any data or supplying old secrets.
+Invoke-Installation
+& $python -I -B -m lychd desktop install
+try { & $python -I -B $rowCheck recover }
+finally { & $python -I -B -m lychd desktop uninstall }
+Invoke-Removal

@@ -232,6 +232,15 @@ loopback port and verify a known committed row. Keep the source and restored cop
 Leave LychD admission closed during database-only recovery. Application-wide recovery additionally
 needs other stores and current revocation history. [Snapshot contract](../adr/07-snapshots.md)
 
+On macOS, a second option makes a copy-on-write clone of the dedicated database on the same
+APFS volume. Stop Vessel, leave its database running, and create a private destination
+outside the cluster. Run `lychd desktop backup --method apfs-clone --destination "<directory>"`.
+This pauses PostgreSQL, clones each file, restarts the original and hashes the inactive copy.
+The receipt records pause time, total time, free space and per-file hashes. A matching-volume
+clone shares disk failure risk with the source. Use the streamed backup for independent media.
+An actual volume snapshot uses the [dedicated storage procedure](volume-snapshots.md).
+[Apple clonefile semantics](https://raw.githubusercontent.com/apple-oss-distributions/xnu/main/bsd/man/man2/clonefile.2)
+
 | Capability | Linux | Personal macOS / Windows |
 | --- | --- | --- |
 | Supervision and isolation | Rootless Podman, systemd/Quadlet, cgroup v2 and reviewed SELinux policy where enabled. | User-owned native services and a trusted engine. A same-user process has access to that user's files. |

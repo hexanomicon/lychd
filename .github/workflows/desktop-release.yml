@@ -3,6 +3,9 @@ name: Desktop installers (no publication)
 on:
   pull_request:
     paths:
+      - ".github/actions/desktop-postgres/**"
+      - "scripts/check_desktop_package_rows.py"
+      - "scripts/check_windows_desktop.ps1"
       - ".github/workflows/desktop-release.yml"
       - "deployments/desktop-packaging/**"
       - "src/lychd/system/desktop/**"
@@ -57,12 +60,21 @@ jobs:
           $result = Start-Process $setup -ArgumentList '/CURRENTUSER','/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',"/DIR=`"$tools`"" -PassThru -Wait
           if ($result.ExitCode -ne 0) { throw "Inno Setup installation failed ($($result.ExitCode))." }
           $tools >> $env:GITHUB_PATH
-      - name: Build the unsigned installer and exercise its installed runtime
+      - name: Build the unsigned installer
         shell: pwsh
         run: |
           $build = Join-Path $env:RUNNER_TEMP 'lychd-desktop'
           ./deployments/desktop-packaging/build.ps1 -Revision $env:GITHUB_SHA -BuildDirectory $build
-          ./deployments/desktop-packaging/check-install.ps1 -Revision $env:GITHUB_SHA -BuildDirectory $build
+      - uses: ./.github/actions/desktop-postgres
+      - name: Exercise installation, repair and removal with a populated database
+        shell: pwsh
+        run: |
+          $build = Join-Path $env:RUNNER_TEMP 'lychd-desktop'
+          if ($IsWindows) {
+              ./scripts/check_windows_desktop.ps1 -PackageBuild $build -PackageRevision $env:GITHUB_SHA
+          } else {
+              ./deployments/desktop-packaging/check-install.ps1 -Revision $env:GITHUB_SHA -BuildDirectory $build
+          }
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: desktop-installer-${{ runner.os }}-${{ github.sha }}

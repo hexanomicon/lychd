@@ -54,7 +54,7 @@ def postgres_program(name: str) -> str:
     return binary
 
 
-def _settings(*, install: bool = False, admin: bool = False, allow_rotation: bool = False) -> Settings:
+def desktop_settings(*, install: bool = False, admin: bool = False, allow_rotation: bool = False) -> Settings:
     from lychd.config.settings import Settings
 
     existing_cluster = _data().exists()
@@ -76,7 +76,7 @@ def _ctl(*args: str, check: bool = True) -> int:
     return subprocess.run([postgres_program("pg_ctl"), "-D", str(_data()), *args], check=check).returncode
 
 
-def _require_cluster() -> None:
+def require_cluster() -> None:
     owner = _data() / ".lychd-desktop"
     check_path(owner)
     check_path(_data() / "PG_VERSION")
@@ -89,8 +89,8 @@ def _require_cluster() -> None:
         raise click.ClickException(msg)
 
 
-def _start(port: int) -> None:
-    _require_cluster()
+def start_cluster(port: int) -> None:
+    require_cluster()
     status_code = _ctl("status", check=False)
     if status_code == _STOPPED:  # pg_ctl indicates a stopped cluster.
         options = f"-c listen_addresses=127.0.0.1 -p {port}"
@@ -101,7 +101,7 @@ def _start(port: int) -> None:
 
 
 @contextmanager
-def _management_lock(*, wait: bool = False) -> Generator[None]:
+def management_lock(*, wait: bool = False) -> Generator[None]:
     """Serialize management until the operating system closes this command's handle."""
     private_directory(PATH_POSTGRES_ROOT_DIR)
     path = PATH_POSTGRES_ROOT_DIR / ".desktop-management.lock"
@@ -126,7 +126,7 @@ def _management_lock(*, wait: bool = False) -> Generator[None]:
 class _DesktopCommand(click.Command):
     def invoke(self, ctx: click.Context) -> object:
         if self.name not in {"session", "status"}:
-            ctx.with_resource(_management_lock())
+            ctx.with_resource(management_lock())
         return super().invoke(ctx)
 
 
@@ -155,7 +155,7 @@ def _prepare_installation() -> Settings:
             f'\n[orchestration.switching]\nactuator = "native-process"\nnative_state_dir = {native_state}\n'
         )
         publish_file(PATH_LYCHD_TOML, content.encode("utf-8"))
-    settings = _settings(install=True, admin=True)
+    settings = desktop_settings(install=True, admin=True)
     switching = settings.orchestration.switching
     directory = switching.native_state_dir
     if switching.actuator != "native-process" or directory is None:
@@ -219,7 +219,7 @@ def install() -> None:
     password = db.password.get_secret_value()
     if not _data().exists():
         _initialize_cluster(binary, db.user, password)
-    _start(db.port)
+    start_cluster(db.port)
     bind_installation(_DATA, db, initialize=True)
     with psycopg.connect(
         host="127.0.0.1",
@@ -247,7 +247,7 @@ def install() -> None:
 @desktop.command()
 def start() -> None:
     """Start the dedicated PostgreSQL cluster."""
-    _start(_settings().server.database.port)
+    start_cluster(desktop_settings().server.database.port)
 
 
 @contextmanager
@@ -286,15 +286,15 @@ def _exclusive_cluster(db: DatabaseSettings) -> Generator[psycopg.Connection[tup
         connection.close()
 
 
-def _stop(*, unregister: bool = False) -> None:
+def stop_cluster(*, unregister: bool = False) -> None:
     from lychd.system.desktop.login import disable
 
-    _require_cluster()
+    require_cluster()
     if _ctl("status", check=False) == _STOPPED:
         if unregister:
             disable()
         return
-    with _exclusive_cluster(_settings(admin=True).server.database):
+    with _exclusive_cluster(desktop_settings(admin=True).server.database):
         if unregister:
             disable()
         _ctl("-w", "-m", "fast", "stop")
@@ -303,13 +303,13 @@ def _stop(*, unregister: bool = False) -> None:
 @desktop.command()
 def stop() -> None:
     """Stop the dedicated PostgreSQL cluster while preserving all data."""
-    _stop()
+    stop_cluster()
 
 
 @desktop.command()
 def status() -> None:
     """Report the running state of the dedicated PostgreSQL cluster."""
-    _require_cluster()
+    require_cluster()
     raise click.exceptions.Exit(_ctl("status", check=False))
 
 
@@ -319,9 +319,9 @@ def session() -> None:
     from lychd.__main__ import cli
     from lychd.system.desktop.login import load_environment
 
-    with _management_lock(wait=True):
+    with management_lock(wait=True):
         load_environment()
-        _start(_settings().server.database.port)
+        start_cluster(desktop_settings().server.database.port)
     cli.main(args=["start"], standalone_mode=False)
 
 
@@ -330,7 +330,7 @@ def enable_login() -> None:
     """Register the installed Python environment to start a desktop session at user login."""
     from lychd.system.desktop.login import enable
 
-    _require_cluster()
+    require_cluster()
     enable()
 
 
@@ -397,8 +397,8 @@ def rotate_runtime_password(recovery_directory: Path) -> None:
     """Rotate the managed runtime DB role offline and verify an independent new recovery set."""
     from lychd.system.desktop.password_rotation import rotate
 
-    _require_cluster()
-    settings = _settings(admin=True, allow_rotation=True).server.database
+    require_cluster()
+    settings = desktop_settings(admin=True, allow_rotation=True).server.database
     try:
         with _exclusive_cluster(settings) as owner:
             rotate(settings, owner, recovery_directory.absolute())
@@ -410,18 +410,29 @@ def rotate_runtime_password(recovery_directory: Path) -> None:
 @desktop.command()
 def uninstall() -> None:
     """Remove login integration and stop the dedicated database, preserving settings and data."""
-    _stop(unregister=True)
+    stop_cluster(unregister=True)
     click.echo("Login service removed and database stopped. Settings, credentials and data were retained.")
 
 
 @desktop.command()
 @click.option("--destination", required=True, type=click.Path(exists=True, file_okay=False, path_type=Path))
-def backup(destination: Path) -> None:
+@click.option("--method", type=click.Choice(["stream", "apfs-clone"]), default="stream", show_default=True)
+def backup(destination: Path, method: str) -> None:
     """Capture the running desktop database into a fresh, verified offline copy."""
     from lychd.system.desktop.database_backup import capture_registered
 
-    _require_cluster()
-    db = _settings(admin=True).server.database
-    directory = Path(postgres_program("pg_basebackup")).absolute().parent
-    output = capture_registered(directory, _data(), destination.absolute(), db)
+    require_cluster()
+    db = desktop_settings(admin=True).server.database
+    if method == "apfs-clone":
+        from lychd.system.desktop.apfs_clone import clone_database
+
+        try:
+            output = clone_database(
+                _data(), destination.absolute(), db, postgres_program("pg_controldata"), stop_cluster, lambda: start_cluster(db.port)
+            )
+        except (OSError, ValueError) as exc:
+            raise click.ClickException(str(exc)) from exc
+    else:
+        directory = Path(postgres_program("pg_basebackup")).absolute().parent
+        output = capture_registered(directory, _data(), destination.absolute(), db)
     click.echo(f"Verified PostgreSQL backup: {output}")

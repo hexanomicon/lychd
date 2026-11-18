@@ -88,13 +88,11 @@ def authority(default: Path) -> Path:
 
 
 def read_record(path: Path) -> dict[str, str]:
+    from pydantic import TypeAdapter
+
     verify_private_directory(path.parent)
     verify_private_file(path)
-    value = json.loads(path.read_bytes())
-    if not isinstance(value, dict) or not all(isinstance(k, str) and isinstance(v, str) for k, v in value.items()):
-        msg = "Invalid desktop volume record."
-        raise ValueError(msg)
-    return value
+    return TypeAdapter(dict[str, str]).validate_json(path.read_bytes(), strict=True)
 
 
 def write_record(path: Path, **values: str) -> None:
@@ -137,7 +135,7 @@ def cluster_path(default: Path) -> Path:
     """Resolve the recorded storage binding on each native command requiring PGDATA."""
     selection = authority(default) / "storage.json"
     check_path(selection)
-    if not selection.exists():
+    if not selection.parent.exists():
         return default
     root, _ = selected(default)
     return root / STORAGE / default.name

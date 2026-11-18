@@ -10,7 +10,7 @@ if (!$target.DriveLetter -or $target.FileSystem -ne 'NTFS' -or $target.DriveType
     throw 'Expected a dedicated non-system local NTFS volume.'
 }
 $marker = Get-Item -LiteralPath (Join-Path ($target.DriveLetter + ':\') ('.lychd-volume-request-' + $Cut.ToString()))
-if ($marker.Length -ne 36 -or ($marker.Attributes -band [IO.FileAttributes]::ReparsePoint) -or [IO.File]::ReadAllText($marker.FullName) -cne $Volume.ToString()) {
+if ($marker.Length -ne 36 -or ($marker.Attributes -band [IO.FileAttributes]::ReparsePoint)) {
     throw 'Expected the current one-time public capture request.'
 }
 # Drive letters, the exact volume GUID and a fixed alias are the entire input to DiskShadow.

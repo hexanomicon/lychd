@@ -55,7 +55,7 @@ lychd desktop install
 ```
 
 The edition root also contains `desktop-tether` on macOS or `desktop-tether.exe` on Windows.
-It has its own setup and consent flow. Run the executable with `-help` to inspect its options.
+Run the executable with `-help` to inspect its options. [Tether setup and peer admission](desktop-tether.md)
 
 Use this `lychd` function wherever the source installation uses `uv run --no-sync lychd`.
 Configure the model, start `lychd desktop session`, and confirm that the same Bridge
@@ -113,9 +113,12 @@ release machine.
 | macOS | Set `LYCHD_APPLE_TEAM`, the full `LYCHD_APPLE_APPLICATION` and `LYCHD_APPLE_INSTALLER` Developer ID names, and the existing `LYCHD_NOTARY_PROFILE` keychain profile. The script signs nested native code with the application identity, signs the product archive with the installer identity, submits it to Apple's notary service, staples the ticket and checks Gatekeeper. |
 | Windows | Make the code-signing private key available to SignTool through the current user's Personal certificate store. Set `LYCHD_SIGNER_THUMBPRINT` and the custodian-approved HTTPS RFC 3161 `LYCHD_TIMESTAMP_URL`. Put the Windows SDK `signtool.exe` on PATH. The script signs the bundled Tether executable and final installer, checks the Authenticode trust chain, matches the exact certificate and requires a timestamp. |
 
-The native CI trial installs, imports the application and bundled Altar from the relocated
-interpreter, repairs a missing program file, removes the edition and checks synthetic
-configuration and data markers. The separate desktop-host CI exercises PostgreSQL and
-authenticated Vessel startup. Windows Server CI, macOS CI and credentialed signing each have
+The native CI trial installs the edition, imports the application and bundled Altar from its
+relocated interpreter, provisions PostgreSQL 18 and commits a row. It repairs a missing program
+file, checks that first row and commits a second. It retires the deployment, removes the program
+and reinstalls the same edition. Both rows must still be present. Windows runs these operations
+in a separate standard account. This trial exercises same-revision recovery. A migration between
+different releases needs a populated upgrade trial for that version pair. The separate desktop-host
+CI exercises authenticated Vessel startup. Windows Server CI, macOS CI and credentialed signing each have
 distinct evidence. Physical workstation, clean-account Gatekeeper/SmartScreen acceptance
 and cold login require target observations. [Platform qualification](desktop.md)

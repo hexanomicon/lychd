@@ -13,12 +13,13 @@ from tempfile import TemporaryDirectory
 from uuid import UUID, uuid4
 
 import psycopg
+from psycopg.conninfo import make_conninfo
 
 from lychd.system.constants import PATH_POSTGRES_ROOT_DIR
-from lychd.system.desktop import _settings, postgres_program
+from lychd.system.desktop import desktop_settings, postgres_program
 from lychd.system.desktop.private import private_directory
 from lychd.system.desktop.volume_native import snapshot_view
-from lychd.system.desktop.volume_storage import STORAGE, authority
+from lychd.system.desktop.volume_storage import STORAGE, authority, diskutil
 
 CLI = [sys.executable, "-m", "lychd.system.desktop"]
 
@@ -58,6 +59,24 @@ def vss_capture(root: Path) -> None:
             print(output)  # noqa: T201
 
 
+def check_apfs_inventory() -> None:
+    """Check positive native mount resolution using the existing, read-only macOS system snapshot."""
+    for device in diskutil("list", "-plist")["AllDisksAndPartitions"]:
+        for volume in device.get("APFSVolumes", []):
+            for mounted in volume.get("MountedSnapshots", []):
+                if mounted.get("SnapshotMountPoint") == "/":
+                    identity = str(UUID(volume["VolumeUUID"]))
+                    identifier = str(UUID(mounted["SnapshotUUID"]))
+                    result = snapshot_view(identity, identifier, str(uuid4()))
+                    if not result.root.samefile("/"):
+                        msg = "The current mounted system snapshot disagrees with diskutil inventory."
+                        raise RuntimeError(msg)
+                    print(f"Read-only APFS mount metadata verified: {identity} / {identifier}")  # noqa: T201
+                    return
+    msg = "Expected a booted macOS system snapshot in diskutil's mounted snapshot inventory."
+    raise RuntimeError(msg)
+
+
 def trial(root: Path) -> None:
     default = PATH_POSTGRES_ROOT_DIR / "native-data"
     if default.exists() or authority(default).exists() or (root / STORAGE).exists():
@@ -67,21 +86,22 @@ def trial(root: Path) -> None:
     command("install")
     try:
         command("volume", "register")
-        db = _settings(admin=True).server.database
+        db = desktop_settings(admin=True).server.database
         if db.password is None:
             msg = "Missing disposable cluster credential."
             raise RuntimeError(msg)
-        options = {
-            "host": "127.0.0.1",
-            "hostaddr": "127.0.0.1",
-            "user": db.user,
-            "password": db.password.get_secret_value(),
-            "dbname": "postgres",
-        }
-        with psycopg.connect(**options, port=db.port) as connection:
+        conninfo = make_conninfo(
+            host="127.0.0.1",
+            hostaddr="127.0.0.1",
+            user=db.user,
+            password=db.password.get_secret_value(),
+            dbname="postgres",
+        )
+        with psycopg.connect(conninfo, port=db.port) as connection:
             connection.execute("CREATE TABLE volume_drill(value text PRIMARY KEY)")
             connection.execute("INSERT INTO volume_drill VALUES ('captured')")
         if sys.platform == "darwin":
+            check_apfs_inventory()
             rejected = command("volume", "capture", answer=str(uuid4()) + "\n", check=False)
             if not rejected.returncode or "Mount the specified APFS snapshot" not in rejected.stderr:
                 raise RuntimeError(rejected.stdout + rejected.stderr)
@@ -91,12 +111,12 @@ def trial(root: Path) -> None:
                 raise RuntimeError(msg)
             print("APFS disk image registered; cold cut rejected absent snapshot and resumed PostgreSQL.")  # noqa: T201
             return
-        verify_windows(root, default, options, db.port)
+        verify_windows(root, default, conninfo, db.port)
     finally:
         command("stop")
 
 
-def verify_windows(root: Path, default: Path, options: dict[str, str], port: int) -> None:
+def verify_windows(root: Path, default: Path, conninfo: str, port: int) -> None:
     vss_capture(root)
     captures = list(authority(default).glob("capture-*.json"))
     if len(captures) != 1:
@@ -110,7 +130,7 @@ def verify_windows(root: Path, default: Path, options: dict[str, str], port: int
     else:
         msg = "Another volume was admitted."
         raise RuntimeError(msg)
-    with psycopg.connect(**options, port=port) as connection:
+    with psycopg.connect(conninfo, port=port) as connection:
         connection.execute("INSERT INTO volume_drill VALUES ('later')")
     with TemporaryDirectory() as recovery:
         parent = Path(recovery)
@@ -118,7 +138,7 @@ def verify_windows(root: Path, default: Path, options: dict[str, str], port: int
         args = ("volume", "restore", "--capture", record["cut"], "--destination", str(parent))
         command(*args)
         (backup,) = parent.iterdir()
-        verify_restored(backup, options)
+        verify_restored(backup, conninfo)
         command("volume", "revoke")
         if not command(*args, check=False).returncode:
             msg = "Revocation admitted an old capture."
@@ -130,7 +150,7 @@ def verify_windows(root: Path, default: Path, options: dict[str, str], port: int
         print(json.dumps(dict(record, recovered_row="captured", wrong_volume="refused", revoked="refused")))  # noqa: T201
 
 
-def verify_restored(backup: Path, options: dict[str, str]) -> None:
+def verify_restored(backup: Path, conninfo: str) -> None:
     cluster = backup / "cluster"
     port = 55434
     ctl = [postgres_program("pg_ctl"), "-w", "-D", str(cluster)]
@@ -146,7 +166,7 @@ def verify_restored(backup: Path, options: dict[str, str]) -> None:
         check=True,
     )
     try:
-        with psycopg.connect(**options, port=port) as connection:
+        with psycopg.connect(conninfo, port=port) as connection:
             rows = connection.execute("SELECT value FROM volume_drill ORDER BY value").fetchall()
             location = connection.execute("SHOW data_directory").fetchone()
             if rows != [("captured",)] or not location or not cluster.samefile(location[0]):

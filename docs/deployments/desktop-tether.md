@@ -7,7 +7,9 @@ icon: material/lan-connect
 
 A desktop owner can offer one TCP service to a named WireGuard peer from an ordinary account.
 The foreground `desktop-tether` helper uses a separate userspace WireGuard device and TCP/IP stack for
-each grant. The only host listener it opens is the encrypted UDP port chosen for that peer.
+each grant. An ingress filter admits only unfragmented IPv4 TCP to the exact service port from
+the assigned peer address. It drops ICMP, UDP, other destinations and IP options before the
+private stack processes them. The only host listener it opens is the encrypted UDP port chosen for that peer.
 The service address exists inside the helper. The operating system keeps its existing interfaces,
 routes, DNS and firewall settings. Local Bridge continues to use loopback.
 
