@@ -5,7 +5,8 @@ icon: material/server
 
 # Deployment profiles
 
-Choose the role of this computer before installing anything.
+Choose the role of this computer before installing anything. To see how the same job works
+on each host, read [Platform differences across Linux, macOS and Windows](platform-differences.md).
 
 | What you want | Where to start |
 | --- | --- |
