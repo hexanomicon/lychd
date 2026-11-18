@@ -1,0 +1,59 @@
+{
+  "observed_date": "2026-11-18",
+  "commit": "6494894fda97d9b260ba108fa81f72e218f44939",
+  "parent_commit": "e9e41cbf175cc24a0e13fb214d6f101c7235b95f",
+  "source": "Production and portable images built from a clean git archive of the recorded commit. Both OCI revision labels matched.",
+  "host": {
+    "os": "openSUSE Tumbleweed",
+    "kernel": "7.1.8-1-default",
+    "architecture": "x86_64",
+    "engine": "rootless Podman 6.1.4, local Docker-compatible Unix socket",
+    "compose": "Docker Compose v2.40.3",
+    "browser": "Google Chrome 157.0.8103.38, Playwright headless"
+  },
+  "image_ids": {
+    "production": "sha256:fb183ea5390aae05913f72c7a4df05faa4ad639a50dda11945463bcb6479bcf3",
+    "portable": "sha256:67b60eead9d5edbd7604a6f70a5a6569f698ef65ed250afdad39c3ccc60d927f",
+    "postgres_pgvector": "sha256:6056e3cfeacc60b20613aeee65585f56c0816c2b040982880b1f8053773c3062",
+    "llamacpp_cpu": "sha256:ebda7b4acf58742ddea023fac84a218427d93e127e46a8ec123d9ae847d298c4"
+  },
+  "configuration": {
+    "project": "isolated disposable project with fresh named volumes",
+    "qualification_override": "Desktop port 7134 was occupied. Changed only the host port to 17142 and the corresponding Vessel SERVER__PORT. The container still listened on 8000.",
+    "effective_base_compose_sha256": "f3d672da6cf7c14f034c3b8a34e282ec87750f4bbb5f3b6eb739a1168cf28aa6",
+    "chat_overlay_sha256": "01bae3a63ad37718914206381a8d5a49df9f74bd8afa5186f4670b01eccff15f",
+    "published_ports": ["127.0.0.1:17142 -> 8000/tcp"],
+    "model_bytes": 491400032,
+    "model_sha256": "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db",
+    "model_execution": "CPU, 0 GPU layers, f16 K/V caches, single fixed GGUF"
+  },
+  "startup": {
+    "compose_up_wait_exit": 0,
+    "provision_exit": 0,
+    "migrate_exit": 0,
+    "healthy": ["database", "model", "vessel"],
+    "unauthenticated_altar_status": 401,
+    "authenticated_altar_status": 200
+  },
+  "bridge": {
+    "pattern_revision": "2",
+    "prompt": "What is 12 plus 7? Reply with just the number.",
+    "retained_answer": "19",
+    "session_id": "415c0aff-cee2-4c1a-ba2c-686c8e7ffa11",
+    "run_id": "201b2d63-79ea-5c89-873a-afca6cb87c25",
+    "run_status": "done",
+    "animator": "personal",
+    "model_id": "personal-model",
+    "grant_id": "9bca2a6646cc44a48d56fa6700d885ee"
+  },
+  "restart": {
+    "procedure": "After the synthetic Run settled, Compose down retired every project container and its network. Compose up --detach --no-build --wait --wait-timeout 180 recreated them on the retained project volumes.",
+    "compose_up_wait_exit": 0,
+    "provision_exit": 0,
+    "migrate_exit": 0,
+    "healthy": ["database", "model", "vessel"],
+    "new_browser_process": true,
+    "same_session_run_reply_and_grant": true
+  },
+  "scope": "Linux provider and browser only. macOS and Windows Docker Desktop networking, hardware, native-to-container CLI operation, host reboot, and recovery of interrupted work require separate evidence."
+}

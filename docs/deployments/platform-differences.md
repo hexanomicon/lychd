@@ -49,7 +49,7 @@ The account's `%LOCALAPPDATA%\LychD` contains `config`, `data` and `cache`. Prog
 
 Choose either placement before installation. The default `LYCHD_VESSEL_MODE=auto` and explicit `container` both select the **managed container Vessel** on Linux. PostgreSQL, migrations and admitted local model services also have their own units. The old `--native-only` and `--uncaged` flags refuse before changing the host. For a **native Linux Vessel**, set `export LYCHD_VESSEL_MODE=native` in both terminals, prepare PostgreSQL 18 and pgvector, and run `lychd desktop install`. Configure your local model and run `lychd desktop session`. Use `lychd access` in the second terminal. `lychd stop` gracefully retires this native Vessel, and `lychd desktop stop` then stops its dedicated database. [Native setup and commands](desktop.md#choose-the-installation)
 
-For frontend work alone, `make frontend-dev` runs Vite and `make developer-fixture` supplies a disposable API with synthetic data. For a real persisted conversation use the compiled Altar served by the managed Vessel. [Linux binding](../summoning.md#retired-host-native-bindings) · [Browser development](https://github.com/hexanomicon/lychd/blob/main/CONTRIBUTING.md#browser-development-and-its-backend)
+For frontend work alone, `make frontend-dev` runs Vite and `make developer-fixture` supplies a disposable API with synthetic data. For a real persisted conversation use the compiled Altar served by either installed Vessel. [Linux binding](../summoning.md#retired-host-native-bindings) · [Browser development](https://github.com/hexanomicon/lychd/blob/main/CONTRIBUTING.md#browser-development-and-its-backend)
 
 ### macOS {#vessel-macos}
 

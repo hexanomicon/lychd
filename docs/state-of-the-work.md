@@ -83,6 +83,16 @@ exclusive model transitions succeeded, and the same reply and Run survived a res
 Vessel, PostgreSQL and the browser. The [native setup](deployments/desktop.md#choose-the-installation)
 uses separate XDG roots. Container isolation and accelerator performance have separate evidence.
 
+The [portable Compose deployment](deployments/container-desktop.md) was built and exercised on a
+[Linux Docker runner](https://github.com/hexanomicon/lychd/actions/runs/44311383918). The caged
+production image required browser authentication. Recreating the project containers over the
+retained named volumes preserved the credential and a committed PostgreSQL row. A separate [Linux Compose browser trial](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/runtime/bridge-portable-linux-2026-11-18.json)
+used the same project with a pinned CPU engine and GGUF on rootless Podman. After recreating the
+containers and reopening Chrome it recovered the same Bridge Run, answer and model grant. Docker Desktop
+on physical macOS and Windows still needs host-side checks of the published loopback port,
+resource limits and restart. The [repeatable CI workflow](https://github.com/hexanomicon/lychd/blob/main/.github/workflows/portable-vessel.yml)
+uses the [portable install/recreation test](https://github.com/hexanomicon/lychd/blob/main/scripts/check_portable_vessel.py).
+
 The desktop custody trial on 18 November 2026 recovered the five generated values from
 the login Keychain on macOS and CurrentUser DPAPI on Windows. The
 [macOS and Windows host jobs](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/runtime/desktop-platform-checks-2026-11-18.json)

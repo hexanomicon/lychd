@@ -130,6 +130,12 @@ session and Run IDs. Reopen those same records after an authorized restart using
 project, files, model and volumes. Include the host/engine versions, image IDs, GGUF hash
 and listener observations in the receipt. [Operator receipt requirements](../state-of-the-work.md#operator-receipt-requirements)
 
+The [Linux Compose browser receipt](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/runtime/bridge-portable-linux-2026-11-18.json)
+records a real CPU model answer and the same Run and model grant after recreating all containers
+and reopening Chrome. The [Docker CI trial](https://github.com/hexanomicon/lychd/actions/runs/44311383918)
+verified credentials and committed PostgreSQL data across recreation. Test port publication,
+restart and the browser on the actual macOS or Windows Desktop provider during host qualification.
+
 ## Logs, shutdown and recovery
 
 Use `docker compose -f compose.yaml -f compose.chat.yaml logs --tail 100 migrate vessel model`
