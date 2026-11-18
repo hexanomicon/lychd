@@ -173,6 +173,28 @@ trailers and unlisted redirects refuse. This mechanism proof uses a synthetic ga
 attempts and current operator authority have their own PostgreSQL and workflow checks. Neither
 receipt alone proves a deployed application, a selected model or arbitrary host compatibility.
 
+## Reference questions
+
+Unsloth Studio exposes search, page reading and interactive control in one product. Choose one
+effect for a [reference study](weaver/assimilation.md#find-reference-implementations).
+
+- **Search.** Studio [returns titles, URLs and snippets](https://github.com/unslothai/unsloth/blob/81803c75660fae2ce460304e9e7e471a124c009b/studio/backend/core/inference/tools.py#L18684-L18716)
+  and labels results when coverage is limited to Wikipedia. How should a Scout caller learn
+  which coverage it actually received? Compare the projection with the
+  [selected SearXNG contract](../../adr/30-webcrawler.md#searxng-search-contract).
+- **Fetch and Extract.** Its [URL reader](https://github.com/unslothai/unsloth/blob/81803c75660fae2ce460304e9e7e471a124c009b/studio/backend/core/inference/tools.py#L17918-L17930)
+  takes a page URL and returns readable text. Trace where network contact ends and content
+  transformation begins, then compare with Scout's [static path](#the-chosen-road).
+- **Interactive browser control.** Its [page agent](https://github.com/unslothai/unsloth/blob/81803c75660fae2ce460304e9e7e471a124c009b/studio/frontend/src/features/browser/agent/page-agent.ts#L1332-L1361)
+  can take a snapshot, click a control, or type into a page. A request to submit a form needs
+  an owner for that external action and separate Interact authority. Scout's
+  [effect boundaries](../../adr/30-webcrawler.md#decision) distinguish it from rendering a page
+  for reading. A study can document that boundary and stop there.
+
+These Studio files carry [Studio's AGPL terms](https://github.com/unslothai/unsloth/blob/81803c75660fae2ce460304e9e7e471a124c009b/studio/LICENSE.AGPL-3.0).
+The [reuse procedure](weaver/assimilation.md#upstream-reuse-and-notices) governs any later
+proposal to incorporate material.
+
 ## Public-page answers
 
 The opt-in `bridge_chat@4` casting prepares a native review, waits for your decision, acquires one

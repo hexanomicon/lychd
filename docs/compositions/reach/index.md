@@ -57,4 +57,17 @@ The [account lifecycle](connected-work/accounts.md) and [delivery plan](connecte
 specify how a connected account is authorized and how an uncertain send is recovered. [Social accounts and advertising](connected-work/social.md)
 distinguishes organic publishing from later paid campaigns.
 
+## Reference questions
+
+Choose one provider operation from the [connected-work contracts](connected-work/index.md).
+These are starting points for a [reference study](../../sepulcher/aspects/weaver/assimilation.md#find-reference-implementations).
+Each question tests a different assumption about correspondence.
+
+| Target | Implementation to inspect | Question for Reach |
+| --- | --- | --- |
+| [GitHub issue conversation](connected-work/github.md) | [GitHub CLI issue view](https://github.com/cli/cli/blob/acee710547dcf7dfb6490afea77972187e74b819/pkg/cmd/issue/view/view.go) | When a reader asks for comments, how does it identify the issue and its speakers? How would Reach expose a partial page of comments? |
+| [Gmail reply draft](connected-work/gmail.md) | [Google's create-draft sample](https://github.com/googleworkspace/python-samples/blob/afb9e229ef04ad714a5166685eed0bf0e44abfe3/gmail/snippet/send%20mail/create_draft.py) | Which MIME bytes are prepared locally, when does a draft first exist in the mailbox, and what identifier comes back? What if that response is lost? |
+| [Discord mention](operator.md) | [Mercury's Discord adapter](https://github.com/cosmicstack-labs/mercury-agent/blob/7b0d6c0d6acf03fd7d0df0d9f0421aafca2496a9/src/channels/discord.ts) | Compare the handling of a guild mention and a DM with the existing operator profile. Which audience and sender checks happen before either reaches the agent? |
+| [Telegram reply](connected-work/telegram.md) | [Mercury's Telegram adapter](https://github.com/cosmicstack-labs/mercury-agent/blob/7b0d6c0d6acf03fd7d0df0d9f0421aafca2496a9/src/channels/telegram.ts#L624-L661) | How does the adapter identify a message for later edits? If the initial send may have succeeded, what evidence would Reach need before sending again? |
+
 [Composition Portfolio](../index.md) · [Workflow](../../adr/28-workflow.md)

@@ -24,7 +24,8 @@ makes the result examinable. The candidate has not yet become an organ of the ru
 [ADR 35](../../../adr/35-assimilation.md) owns the architecture and full protocol;
 [State of Work](../../../state-of-the-work.md#smith-forge-promotion) owns delivery.
 For work with today's contributors and coding agents, follow
-[upstream reuse and notices](#upstream-reuse-and-notices) below.
+[reference discovery](#find-reference-implementations) when the source is still open, or
+[upstream reuse and notices](#upstream-reuse-and-notices) when the material is known.
 
 ## The hammer has no crown
 
@@ -47,6 +48,34 @@ The declared harness records deterministic facts such as lint, type, build, or t
 [Forge](../../../adr/17-packaging.md) constructs package or image artifacts from reviewed inputs,
 while Codex, migration, and lifecycle owners perform their own effects. A passing check supports
 only its declared predicate; ADR 35 keeps the exhaustive authority matrix.
+
+## Find reference implementations
+
+Start with the receiving owner's question. What should a person be able to do, what does LychD
+already do, and which failure would change the design? The same question can lead to an official
+client, an independent application, or a project in a different domain that solves the same
+problem. A provider's API describes the available operation. A caller and its tests can show
+what happens when a response is incomplete or the operation is interrupted.
+
+An explorer can start with this reading assignment.
+
+> Find public implementations of **[one behavior]** for **[local owner]**. Compare them with
+> **[current contract and evidence]**. Trace an ordinary case and **[one decisive failure]**
+> within **[source or time budget]**. Return the smallest mechanism worth studying and the
+> evidence for your judgment. An existing local solution or no suitable reference is a valid result.
+
+Use an available reference shelf as a starting point. If it has no match, search upstream by
+operation, protocol method, or failure case. Follow a promising README or SDK example to the
+code that performs the operation and any focused test. For each lead worth reporting, give a
+permalink at an immutable revision, the file or symbol, applicable terms, what the source
+shows, and what remains unverified. Explain which behavior would transfer, which credentials,
+permissions or effects stay with the upstream, and one local check that could disprove the fit.
+Record the finding with the task or issue. The reading assignment ends with that report. Once an owner selects
+material for construction, carry that evidence into [the reuse procedure](#upstream-reuse-and-notices).
+
+[Reach](../../../compositions/reach/index.md#reference-questions) shows how the same correspondence
+problem changes across providers. [Scout](../scout.md#reference-questions) shows how one
+upstream product can supply evidence about several effects that LychD governs separately.
 
 ## Upstream reuse and notices
 
