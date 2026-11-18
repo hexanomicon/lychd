@@ -12,7 +12,9 @@ icon: material/file-tree
 ## The three domains
 
 `src/lychd/system/constants.py` is the executable path contract. `~` is the effective LychD
-user's home. Shared XDG parents are never recursively owned by LychD.
+user's home. Shared XDG parents are never recursively owned by LychD. On personal macOS and Windows hosts,
+the [desktop profile](../deployments/desktop.md) resolves the three domains under the account's
+application support, local application data and cache roots. The resolved path alone confers no deletion authority.
 
 | Domain | XDG root and default | LychD root | Purpose |
 | --- | --- | --- | --- |

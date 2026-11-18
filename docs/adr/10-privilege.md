@@ -42,6 +42,11 @@ environment, or arbitrary payload. A host consumer or extension escalation needs
 typed class, trusted producer and consumer, configuration owner, recovery states, and boundary
 tests; extension import grants no host authority.
 
+On a personal desktop, the ordinary account owns a trusted native engine and its scoped
+transition actuator. A configuration entry cannot grant administrator rights. Filesystem
+provisioning and native VPN installation have separate owners. The [future VM profile](../deployments/desktop.md#virtual-machines)
+requires independent host authorization for every cross-boundary effect.
+
 ## The physical transaction
 
 Physical truth comes from observed state. For an admissible transition, the actuator first

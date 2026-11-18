@@ -42,6 +42,10 @@ The Tether service remains outside the shared application Pod. It receives no br
 application secrets, database credentials, or host-mutation channel; granting `CAP_NET_ADMIN`
 inside that Pod is not an acceptable shortcut.
 
+Local desktop inference uses loopback. A managed tunnel on a desktop host needs independent
+route isolation, key custody and revocation acceptance, including after restore. For future
+guest-to-host networking see the [VM profile](../deployments/desktop.md#virtual-machines).
+
 ## Offered network and imported attachments {#offered-and-imported-roads}
 
 A Lich may offer one locally governed VPN network to many admitted peers and simultaneously hold

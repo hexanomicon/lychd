@@ -95,9 +95,9 @@ For a separate headless VPS host-preparation pilot, start with the
 prerequisites and inactive source staging; they do not qualify this GPU/model rite, public
 ingress, or a complete application lifecycle.
 
-The [supported host policy](adr/08-containers.md#supported-host-policy) requires a free and
-open-source Linux host stack under operator control. macOS and Windows are unsupported hosting
-platforms, including deployments in Linux guests on those hosts.
+This rite exercises the primary Linux profile. For a personal macOS or Windows host or
+for client access, start at [Deployment profiles](deployments/index.md). The
+[host policy](adr/08-containers.md#supported-host-policy) defines the scope of each profile.
 
 Before writing configuration, establish Linux with cgroup v2, rootless Podman **5.4 or newer**,
 an effective Quadlet user generator **5.4 or newer**, a responding systemd user manager, NVIDIA
@@ -178,7 +178,7 @@ uv run --extra postgres-binary lychd --help
 podman image inspect localhost/lychd:dev --format '{{.Id}}'
 ```
 
-Help exposes `init`, `bind`, `start`, `stop`, `status` (with exact alias `st`), `logs`, `access`,
+The Linux CLI includes `platform`, `tether`, `init`, `bind`, `start`, `stop`, `status` (with exact alias `st`), `logs`, `access`,
 `tether`, and `del`.
 There is no public `run` verb. Image inspection must return an ID. If construction fails, start
 with the first failed step and the supported Python range `>=3.12,<3.16`; a different package or

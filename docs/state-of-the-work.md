@@ -8,10 +8,11 @@ icon: material/list-status
 LychD is **pre-alpha**. This page answers the practical question that follows the grimoire's
 promise: what can this revision actually support, and where is the evidence?
 
-The supported runtime is local and loopback-oriented, with a single user, one control process,
-and a managed container Vessel. Host-native Core deployment and Core test deployment are retired;
-Core checks run only in the explicit OCI test image. The [evidence envelope](#current-evidence-envelope) dates the production-image and Ward
-PostgreSQL observations and identifies which source revisions they cover.
+The primary Linux runtime is local and loopback-oriented, with one user, one control process
+and a managed container Vessel. The [personal desktop guide](deployments/desktop.md) covers
+macOS and Windows. Qualification of those hosts is in progress. Core repository checks use
+the OCI test image. The [evidence envelope](#current-evidence-envelope) dates the production-image
+and Ward PostgreSQL observations and identifies which source revisions they cover.
 
 Start with an outcome, then read its whole record. State, proved subset, limit, and evidence must
 be read together. The Covenants own architectural decisions; this ledger explains what their

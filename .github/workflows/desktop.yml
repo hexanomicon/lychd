@@ -1,0 +1,82 @@
+name: Desktop host CI
+
+on:
+  pull_request:
+    paths:
+      - "src/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".github/workflows/desktop.yml"
+      - "scripts/check_desktop_startup.py"
+      - "tests/integration/test_native_pg_backup.py"
+      - "tests/unit/cli/test_native_entry.py"
+      - "tests/unit/system/desktop/**"
+      - "tests/unit/domain/web/test_vessel_owner.py"
+  push:
+    branches: [dev]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  desktop:
+    name: Personal host (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, windows-2025]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: "0.13.0"
+          python-version: "3.14.8"
+      - name: Install the selected project and check ordinary entrypoints
+        run: |
+          uv sync --locked --no-default-groups --extra postgres-binary --group test --no-editable
+          uv run --no-sync lychd --help
+          uv run --no-sync lychd platform
+          uv run --no-sync lychd desktop --help
+      - name: Check desktop routing and the database ownership protocol
+        run: uv run --no-sync python -m pytest -q -o addopts= tests/unit/cli/test_native_entry.py tests/unit/domain/web/test_vessel_owner.py tests/unit/system/desktop
+      - name: Install PostgreSQL and pgvector for the macOS trial
+        if: runner.os == 'macOS'
+        run: |
+          brew install postgresql@18 pgvector
+          echo "LYCHD_PG_BIN=$(brew --prefix postgresql@18)/bin" >> "$GITHUB_ENV"
+      - name: Install PostgreSQL on the disposable Windows runner
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $secret = [Convert]::ToHexString([Security.Cryptography.RandomNumberGenerator]::GetBytes(32))
+          Write-Output "::add-mask::$secret"
+          choco install postgresql18 --version=18.7.1 -y --no-progress --params "/NoPath /Port:55431 /Password:$secret"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          "LYCHD_PG_BIN=$env:ProgramFiles\PostgreSQL\18\bin" >> $env:GITHUB_ENV
+      - name: Check out the pgvector source for the Windows server
+        if: runner.os == 'Windows'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: pgvector/pgvector
+          ref: f37c13f68b57d2c3472b2214fbcff699d6d34876 # v0.8.7
+          path: .ci-pgvector
+          persist-credentials: false
+      - name: Build the Windows PostgreSQL extension
+        if: runner.os == 'Windows'
+        shell: cmd
+        working-directory: .ci-pgvector
+        run: |
+          set "PGROOT=%ProgramFiles%\PostgreSQL\18"
+          for /f "usebackq tokens=*" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do set "VSROOT=%%i"
+          call "%VSROOT%\VC\Auxiliary\Build\vcvars64.bat" || exit /b 1
+          nmake /F Makefile.win || exit /b 1
+          nmake /F Makefile.win install || exit /b 1
+      - name: Recover an actual committed PostgreSQL row
+        run: uv run --no-sync python -m pytest -q -o addopts= tests/integration/test_native_pg_backup.py
+      - name: Install twice and exercise the authenticated local Vessel
+        run: uv run --no-sync python scripts/check_desktop_startup.py

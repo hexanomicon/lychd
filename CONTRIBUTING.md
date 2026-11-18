@@ -153,7 +153,8 @@ credentials or release authority.
   `python:3.14.8-slim-bookworm`. Core CI and manual Python/PostgreSQL checks cover both 3.14.8
   and 3.15.0 using `uv` 0.13.0. Core tests, lint, formatting and typing run only in the explicit
   `Containerfile.tests` OCI image.
-- Live hosts target free/open-source Linux with systemd, cgroup v2 and rootless Podman/Quadlet.
+- The primary host uses Linux with systemd, cgroup v2 and rootless Podman/Quadlet.
+  Personal [macOS and Windows deployments](docs/deployments/desktop.md) have separate host receipts.
   [Summoning](docs/summoning.md) owns host prerequisites; isolated repository checks do not
   qualify a deployment.
 - Web tooling pins Node.js 24.20.0 (`.nvmrc`) and npm 12.0.2 (`clients/web/package.json`).

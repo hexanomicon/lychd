@@ -1,3 +1,4 @@
 nav:
   - Overview: index.md
+  - Personal macOS and Windows hosts: desktop.md
   - Tumbleweed Server and Workstation: tumbleweed

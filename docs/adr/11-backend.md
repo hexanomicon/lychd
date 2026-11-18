@@ -33,8 +33,9 @@ failed application shutdown. Signals request ordinary worker retirement and do n
 completion. The user manager retains its outer stop-timeout and forced-stop semantics.
 
 The managed Vessel image selects its fixed internal `0.0.0.0:8000` listener behind generated
-loopback-only host publication. There is no host-native Vessel launcher, alternative native bind
-generation or host Core test deployment. The image entrypoint and `create_app()` preserve the
+loopback-only host publication. A personal desktop Vessel binds directly to IPv4 loopback
+under its own OS account. Both launchers share the application and authentication boundary.
+The image entrypoint and `create_app()` preserve the
 single-process/no-reload policy and reject unsupported upstream supervisor or alternate-listener
 configuration. Existing images must be rebuilt to acquire changed runtime behavior.
 

@@ -6,64 +6,44 @@ icon: material/cube-outline
 # :material-cube-outline: 8. Containers
 
 !!! abstract "Context"
-    LychD manifests its one-host service body as rootless Podman Quadlets and systemd user units.
-    systemd and cgroup v2 supply supervision, dependency ordering, and observable physical state;
-    rootless Podman supplies containers. There is no external control plane.
+    Linux is the primary host. Its managed Vessel uses rootless Podman Quadlets and systemd
+    user units. Personal macOS and Windows hosts may run the same application under a
+    trusted, ordinary desktop account. The host profile determines which effects it can own.
 
 ## Core deployment and verification
 
-The Vessel runs in its managed container. Core has no host-native deployment or test-deployment
-profile. Bind compiles one container Vessel with its declared PostgreSQL, migration and extension
-services; it does not generate an uncaged alternative. The `--native-only` and `--uncaged` bind
-options are retired. Existing native bindings are preserved and refused for mutation; there is
-no implicit conversion or stop.
+On Linux, bind compiles one container Vessel, PostgreSQL, migration and extension services.
+The former `--native-only` and `--uncaged` options stay retired. Existing bindings require
+their original ownership evidence. Installing a desktop profile never adopts them.
 
-Core tests and quality gates run in an explicit OCI test image. A test process may import the
-application directly inside that container; this does not create another supported deployment.
-Installed-runtime acceptance must exercise the actual built Vessel image and its declared
-boundary. A PostgreSQL container beside an application on the host cannot qualify that claim.
-The host CLI, Reactor and test harness retain their separately owned host responsibilities;
-they do not run a host Vessel. No container test gains production credentials or broad host
-access merely to simplify verification.
+A desktop installation uses the same application, extension registry, PostgreSQL schema,
+queue, authenticated Altar and Bridge. Its launcher owns an explicit loopback listener.
+An installed service runs under the account that owns its configuration and credentials.
+A configured trusted native engine may use the host GPU. A container engine is a separately
+selected dependency. No deployment inherits another profile's guarantees by sharing code.
+
+Core repository checks use the explicit OCI test image. Desktop release checks additionally
+exercise installed entrypoints on the actual OS. Full acceptance includes a persisted Bridge
+turn and a restart, using the documented package, real database and selected engine.
 
 ## Supported host policy
 
-LychD is committed to developing and supporting free and open-source (FOSS) software on FOSS hosts
-only. Every layer entrusted with host authority, isolation, lifecycle, or recovery must remain
-operator-inspectable, modifiable, rebuildable, and replaceable. The operator must retain full
-control over host integration and removal.
+Linux with systemd, cgroup v2 and rootless Podman/Quadlet is the primary deployment target.
+Its host stack is open, inspectable and replaceable. macOS and Windows are secondary personal
+host targets. The platform guide identifies the implemented operations and the evidence still
+needed on each. A browser on any of these systems can also connect to an admitted installation.
+[Deployment profiles](../deployments/index.md) and [State of Work](../state-of-the-work.md)
+own the operating instructions and delivery evidence.
 
-Linux with systemd, cgroup v2, and rootless Podman/Quadlet is the supported substrate. macOS,
-Windows, and other non-FOSS host stacks are unsupported hosting platforms. Running LychD in a
-Linux VM or container on a non-FOSS host does not change that support boundary: the outer host
-still controls its execution and storage.
+Typed operations, bounded authority, explicit credentials and observed results apply on each
+host. The profile may use different service managers, storage and transports. A missing required
+capability must identify the unmet prerequisite before the corresponding effect. Untrusted
+extensions and workloads still need the isolation required by [Security](09-security.md) and
+[Extensions](05-extensions.md). A trusted same-user native engine can access the user's files.
 
-Private extensions and Portals retain their separate admission boundaries under
-[Extensions](05-extensions.md). Admission does not bring their implementations or host platforms
-into Core's support scope. Neither may become a required owner of LychD's continuity.
-
-### Rationale: FOSS commitment and the agentic transition
-
-The operator must be able to inspect, rebuild, replace, and reshape the host through authorized,
-recoverable changes. That open-host commitment keeps agentic control accountable across the
-software stack. A proprietary host would place part of the body's authority beyond the project's
-ability to maintain and replace it.
-
-Supporting macOS or Windows would require separate integrations for service supervision,
-networking, filesystem ownership, privilege boundaries, secrets, CLI control, and recovery. Each
-would add an ongoing implementation and verification burden. We commit that effort to deep Linux
-integration and the guarantees of one supported host architecture.
-
-Our strategic forecast is that the approaching agentic revolution will converge on Linux and
-displace proprietary operating systems. **We do not expect Windows or macOS to survive that
-transition.** We will not spend LychD development time sustaining compatibility with platforms we
-expect that transition to leave behind.
-
-Linux-only hosting and FOSS support are permanent project commitments. We deliberately accept a
-smaller reachable user base to strengthen operator freedom and create an incentive to adopt an
-open host stack. Native macOS and Windows backends, compatibility shims, and degraded hosting
-profiles are outside the project's scope. Independent ports or forks carry their own maintenance
-and support obligations; they create none for LychD Core.
+A future VM profile must qualify its guest, storage, host network and each authorized operation
+across the guest boundary. Its design and evidence requirements are concentrated in the
+[deployment guide](../deployments/desktop.md#virtual-machines).
 
 ## Decision: the manifested body
 
