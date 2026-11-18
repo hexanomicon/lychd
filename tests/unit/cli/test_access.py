@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import pytest
 from click.testing import CliRunner
 from pydantic import SecretStr
 
@@ -86,4 +87,15 @@ def test_access_refuses_root_before_loading_settings(mocker: MockerFixture) -> N
     settings = mocker.patch.object(local_access, "get_settings")
     result = CliRunner().invoke(cli, ["access"])
     assert result.exit_code != 0
+    settings.assert_not_called()
+
+
+def test_native_access_checks_account_before_reading_credentials(mocker: MockerFixture) -> None:
+    mocker.patch.object(local_access, "vessel_mode", return_value="native")
+    mocker.patch.object(local_access, "require_native_user", side_effect=ValueError("elevated process"))
+    credentials = mocker.patch("lychd.system.desktop.credentials.load_credentials")
+    settings = mocker.patch.object(local_access, "get_settings")
+    with pytest.raises(ValueError, match="elevated process"):
+        load_local_access()
+    credentials.assert_not_called()
     settings.assert_not_called()

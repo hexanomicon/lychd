@@ -113,6 +113,23 @@ before Compose starts the chat Vessel. A cold or failed model needs repair in th
 The caged Vessel has a read-only Reactor inbox and cannot launch a host engine.
 [Compose networking](https://docs.docker.com/compose/how-tos/networking/) · [llama.cpp server images](https://github.com/ggml-org/llama.cpp/blob/master/docs/docker.md)
 
+## Which files does each container receive?
+
+| Service | Reads | Writes |
+| --- | --- | --- |
+| Vessel | Its image, runtime database password, application signing key and browser credential | Its guard journal, lab and temporary storage |
+| PostgreSQL | Its image and bootstrap database password | Its dedicated database volume and runtime filesystem |
+| Migration | Administrative, runtime and Phoenix database credentials | Schema and roles through the database connection, plus temporary storage |
+| Optional CPU model | Its image and the single GGUF mounted read-only | Temporary storage |
+
+The one-shot provisioner creates the credentials before these services start. Vessel receives
+no desktop home, database data directory, administrative password, model shelf or engine socket.
+Its image filesystem is read-only. Vessel and the model each have a 128 MiB temporary filesystem
+with `nosuid,nodev,noexec`. The profile limits Vessel and the database to 512 tasks each and
+the optional model to 1,024. Threads count towards these limits. These services share a network
+namespace, so reachable services still need their own access controls.
+[Compose service settings](https://docs.docker.com/reference/compose-file/services/#pids_limit)
+
 ## Open Altar and check a retained turn
 
 Retrieve the password in a private terminal using the Compose file selection for this

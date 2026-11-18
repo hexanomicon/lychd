@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING
 
 import click
 
-from lychd.system.constants import PATH_LYCHD_TOML, PATH_POSTGRES_ROOT_DIR
+from lychd.system.constants import PATH_CACHE_ROOT, PATH_CRYPT_ROOT, PATH_LYCHD_TOML, PATH_POSTGRES_ROOT_DIR
 from lychd.system.desktop.credentials import load_credentials, verify_credential_copy
 from lychd.system.desktop.private import check_path, private_directory, publish_file, verify_private_directory
 from lychd.system.desktop.volume_commands import volume
@@ -164,8 +164,9 @@ def _prepare_installation() -> Settings:
     """Initialize native settings and the protected journal before starting any services."""
     check_path(PATH_LYCHD_TOML)
     check_path(_data())
+    for root in (PATH_LYCHD_TOML.parent, PATH_CRYPT_ROOT, PATH_CACHE_ROOT):
+        private_directory(root)
     private_directory(PATH_POSTGRES_ROOT_DIR)
-    PATH_LYCHD_TOML.parent.mkdir(parents=True, exist_ok=True)
     if not PATH_LYCHD_TOML.exists():
         native_state = json.dumps(str(PATH_POSTGRES_ROOT_DIR.parent / "native-runtimes"), ensure_ascii=False)
         content = (

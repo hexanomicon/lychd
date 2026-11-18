@@ -56,6 +56,35 @@ def test_database_refuses_unmarked_and_wrong_major(tmp_path: Path, monkeypatch: 
         desktop.require_cluster()
 
 
+@pytest.mark.skipif(os.name != "posix", reason="POSIX write modes")
+def test_configure_model_refuses_group_writable_shelf_before_publishing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from click.testing import CliRunner
+
+    from lychd.system.desktop import model
+
+    tmp_path = tmp_path.resolve()
+    config = tmp_path / "lychd.toml"
+    initial = '[orchestration.switching]\nactuator = "native-process"\n'
+    config.write_text(initial)
+    monkeypatch.setattr(model, "PATH_LYCHD_TOML", config)
+    monkeypatch.setattr(model, "PATH_SOULSTONES_DIR", tmp_path / "runes")
+    monkeypatch.setattr(desktop, "PATH_POSTGRES_ROOT_DIR", tmp_path / "postgres")
+    engine = tmp_path / "llama-server"
+    engine.touch(mode=0o700)
+    shelf = tmp_path / "models"
+    shelf.mkdir()
+    shelf.chmod(0o770)
+    weights = shelf / "weights.gguf"
+    weights.write_bytes(b"GGUF")
+    result = CliRunner().invoke(desktop.configure_model, ["--engine", str(engine), "--model", str(weights)])
+    assert result.exit_code == 1
+    assert "group- or publicly writable" in result.output
+    assert config.read_text() == initial
+    assert not (tmp_path / "runes").exists()
+
+
 @pytest.mark.parametrize("legacy", [False, True])
 def test_launch_agent_uses_interpreter_and_retains_user_files(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, *, legacy: bool
@@ -119,27 +148,43 @@ def test_configure_model_binds_typed_chat_and_preserves_extensions(
 ) -> None:
     import tomllib
 
+    from click.testing import CliRunner
+
     from lychd.system.desktop import model
 
+    tmp_path = tmp_path.resolve()
     config = tmp_path / "lychd.toml"
     config.write_text('[orchestration.switching]\nactuator = "native-process"\n[extensions]\nbuiltins=["tether"]\n')
     monkeypatch.setattr(model, "PATH_LYCHD_TOML", config)
+    monkeypatch.setattr(desktop, "PATH_POSTGRES_ROOT_DIR", tmp_path / "postgres")
+    monkeypatch.setattr(desktop, "PATH_POSTGRES_ROOT_DIR", tmp_path / "postgres")
     monkeypatch.setattr(model, "PATH_SOULSTONES_DIR", tmp_path / "runes")
-    engine = tmp_path / "llama-server"
+    engine = tmp_path / ("llama-server.exe" if os.name == "nt" else "llama-server")
     engine.touch()
     engine.chmod(0o700)
     weights = tmp_path / "weights.gguf"
     weights.write_bytes(b"GGUF")
+    selected_engine = engine
+    if os.name != "nt":
+        # Homebrew presents its installed executable via a bin symlink.
+        bin_dir = tmp_path / "bin"
+        bin_dir.mkdir()
+        selected_engine = bin_dir / "llama-server"
+        selected_engine.symlink_to(engine)
     for _ in range(2):
-        model.configure(engine, weights, 8081)
+        invocation = CliRunner().invoke(
+            desktop.configure_model, ["--engine", str(selected_engine), "--model", str(weights)]
+        )
+        assert invocation.exit_code == 0, invocation.exception
     result = tomllib.loads(config.read_text())
     assert result["extensions"]["builtins"] == ["tether", "animator/llamacpp"]
     assert result["weaver"]["bridge"] == {"revision": "2", "capability_key": "personal:chat:personal-model"}
-    assert result["orchestration"]["switching"]["native_model_root"] == str(tmp_path)
+    assert result["orchestration"]["switching"]["native_llama_server"] == str(engine.resolve())
+    assert result["orchestration"]["switching"]["native_model_root"] == str(tmp_path.resolve())
     rune = tomllib.loads((tmp_path / "runes/llamacpp/personal.toml").read_text())
     assert rune["structured_output"] == "json-schema"
     assert rune["cache_type_k"] == rune["cache_type_v"] == "f16"
-    assert rune["model_path"] == str(weights)
+    assert rune["model_path"] == str(weights.resolve())
     assert rune["base_url"] == "http://127.0.0.1:8081/v1"
 
 
@@ -224,8 +269,11 @@ def test_fresh_install_prepares_journal_used_by_native_actuator(
     root_path = tmp_path / "new-account"
     settings_file = root_path / "config" / "lychd.toml"
     postgres = root_path / "data" / "postgres"
+    cache = root_path / "cache"
     monkeypatch.setattr(root, "PATH_LYCHD_TOML", settings_file)
     monkeypatch.setattr(desktop, "PATH_LYCHD_TOML", settings_file)
+    monkeypatch.setattr(desktop, "PATH_CRYPT_ROOT", postgres.parent)
+    monkeypatch.setattr(desktop, "PATH_CACHE_ROOT", cache)
     monkeypatch.setattr(desktop, "PATH_POSTGRES_ROOT_DIR", postgres)
     monkeypatch.setattr(desktop, "_DATA", postgres / "native-data")
     monkeypatch.setattr(credentials, "PATH_POSTGRES_ROOT_DIR", postgres)
@@ -234,6 +282,8 @@ def test_fresh_install_prepares_journal_used_by_native_actuator(
         monkeypatch.delenv(f"{name}_FILE", raising=False)
     assert not root_path.exists()
     settings = desktop._prepare_installation()
+    for owned in (settings_file.parent, postgres.parent, cache):
+        desktop.verify_private_directory(owned)
     directory = settings.orchestration.switching.native_state_dir
     assert directory is not None
     assert directory == postgres.parent / "native-runtimes"

@@ -64,6 +64,36 @@ runtime access. Another service holding that port must be reconciled. Existing u
 settings remain authoritative. Re-running install checks the dedicated cluster and applies the
 current revision's migrations.
 
+### Which host files can a native Vessel read?
+
+Vessel, its installed Python extensions and the native model run as the installation user.
+An engine selected in Nexus can therefore open the same personal files as a program you start
+in that terminal. To keep your own documents and credentials out of reach while using a native
+GPU, install and sign in under a separate standard OS account. On Linux and macOS, put the
+models in that account’s own shelf or a root-owned, read-only shelf. Keep the engine and
+weights on paths owned by that account or root, with write access restricted to their owner.
+The launcher also accepts administrator-managed Homebrew executable paths. On Windows, use a
+trusted engine directory including its DLLs and grant the installation account read access to
+the model using filesystem permissions. Keep private files under your own account with
+permissions that exclude the installation account. Shared folders and group-readable files
+remain accessible. A developer running Vessel under their everyday login chooses that login's
+access.
+
+During `desktop install`, LychD makes its config, data and cache directories private to the
+installation user. It preserves the shared parent directories. The native engine gets a fresh
+working directory for each launch. Its home, cache and temporary paths point there. The launcher
+passes the configured executable and GGUF, closes inherited application handles and excludes
+database credentials from the child environment. Normal engine retirement removes the working
+directory. An interrupted Vessel can leave private scratch beside its runtime journal.
+The host account still defines which files and network services that child can access.
+Use the model Rune’s `threads`, `threads_batch` and `n_ctx` settings to tune inference.
+LychD sets no native per-process CPU or memory ceiling.
+
+If Vessel itself must see only explicitly attached host files, select
+`LYCHD_VESSEL_MODE=container`. A job running foreign code needs a separately admitted
+sandbox even if Vessel is already in a container. [Per-platform isolation](platform-differences.md#authority)
+· [Worker trust boundaries](../adr/09-security.md#the-coffin-delegated-agent-profile)
+
 ## Connect a real model
 
 Substitute actual existing paths, including the full executable filename. The following command

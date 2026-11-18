@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import errno
 import os
 import stat
 import subprocess
+import sys
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
@@ -49,6 +51,44 @@ def check_path(path: Path) -> None:
         _check_windows_ancestry(path)
 
 
+def check_native_inputs(engine: Path, model: Path) -> None:
+    """Verify canonical engine and GGUF paths. POSIX installations use a user- or root-owned shelf."""
+    for path in (engine, model):
+        if not path.is_absolute() or ".." in path.parts or (os.name == "nt" and path.drive.startswith("\\\\")):
+            msg = f"Native runtime requires a canonical local path: {path}"
+            raise ValueError(msg)
+        for component in (*reversed(path.parents), path):
+            info = component.lstat()
+            if stat.S_ISLNK(info.st_mode) or getattr(info, "st_file_attributes", 0) & stat.FILE_ATTRIBUTE_REPARSE_POINT:
+                msg = f"Native runtime path is redirected: {component}"
+                raise ValueError(msg)
+            if os.name == "posix":
+                _check_native_posix_mode(component, info, engine_path=path == engine)
+
+
+def _check_native_posix_mode(component: Path, info: os.stat_result, *, engine_path: bool) -> None:
+    if info.st_uid not in (0, os.getuid()):
+        msg = f"Native input must be on a shelf owned by the desktop user or root: {component}"
+        raise ValueError(msg)
+    if not info.st_mode & (stat.S_IWGRP | stat.S_IWOTH):
+        return
+    if stat.S_ISDIR(info.st_mode) and info.st_mode & stat.S_ISVTX:
+        # Sticky directories permit only the trusted directory or entry owner to replace a binding.
+        return
+    if (
+        engine_path
+        and sys.platform == "darwin"
+        and not info.st_mode & stat.S_IWOTH
+        and (component.is_relative_to("/opt/homebrew") or component.is_relative_to("/usr/local"))
+    ):
+        import grp
+
+        if info.st_gid == grp.getgrnam("admin").gr_gid:
+            return
+    msg = f"Native input path is group- or publicly writable: {component}"
+    raise ValueError(msg)
+
+
 def _check_windows_ancestry(path: Path) -> None:
     """Find cross-account mutation authority on existing directories within the user profile."""
     binary = Path(os.environ["SYSTEMROOT"]) / "System32/WindowsPowerShell/v1.0/powershell.exe"
@@ -91,6 +131,9 @@ def private_directory(directory: Path) -> None:
             msg = f"Refusing foreign-owned private directory: {directory}"
             raise ValueError(msg)
         directory.chmod(0o700)
+        if sys.platform == "darwin":
+            subprocess.run(["/bin/chmod", "-N", directory], check=True)  # noqa: S603 -- fixed macOS ACL operation.
+            _verify_macos_directory_acl(directory)
         return
     powershell = Path(os.environ["SYSTEMROOT"]) / "System32/WindowsPowerShell/v1.0/powershell.exe"
     script = (
@@ -135,6 +178,31 @@ def _verify_windows_acl(path: Path) -> None:
     )
 
 
+def _verify_macos_directory_acl(directory: Path) -> None:
+    """Require Darwin to report an absent extended ACL on the opened directory."""
+    import ctypes
+
+    libc = ctypes.CDLL("/usr/lib/libSystem.B.dylib", use_errno=True)
+    libc.acl_get_fd.argtypes = [ctypes.c_int]
+    libc.acl_get_fd.restype = ctypes.c_void_p
+    libc.acl_free.argtypes = [ctypes.c_void_p]
+    libc.acl_free.restype = ctypes.c_int
+    fd = os.open(directory, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+    try:
+        ctypes.set_errno(0)
+        acl = libc.acl_get_fd(fd)
+        if acl:
+            libc.acl_free(acl)
+            msg = f"Expected an owner-only directory without an extended ACL: {directory}"
+            raise ValueError(msg)
+        # Darwin's filesec_get_property reports ENOENT for the absent FILESEC_ACL property.
+        if (error := ctypes.get_errno()) != errno.ENOENT:
+            msg = f"Cannot verify the extended ACL on {directory} (errno {error})."
+            raise ValueError(msg)
+    finally:
+        os.close(fd)
+
+
 def verify_private_directory(directory: Path) -> None:
     """Validate an existing operator-selected directory without changing permissions."""
     check_path(directory)
@@ -146,6 +214,8 @@ def verify_private_directory(directory: Path) -> None:
     elif directory.stat().st_uid != os.getuid() or stat.S_IMODE(directory.stat().st_mode) != _PRIVATE_DIRECTORY_MODE:
         msg = f"Native journal requires an owner-only directory: {directory}"
         raise ValueError(msg)
+    elif sys.platform == "darwin":
+        _verify_macos_directory_acl(directory)
 
 
 def verify_private_file(path: Path) -> None:

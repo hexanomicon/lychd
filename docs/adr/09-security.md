@@ -51,6 +51,17 @@ platform, workload, tunnel, and edge-epoch credentials, quarantine the journal, 
 external identities. Disjoint home/provider credentials are implicated only if boundary evidence
 shows they crossed.
 
+### Personal native process authority
+
+The native Vessel, its in-process extensions and the configured llama.cpp child are trusted
+with the installation account's OS permissions. Native startup requires an ordinary account.
+Owner-only installation roots protect data across accounts. The model launcher restricts its
+arguments, environment, inherited handles and working directory. The OS identity still governs
+filesystem access after the process starts. Where the operator requires a mount boundary for
+Vessel, select the container placement. Foreign execution requires its own admitted job boundary
+whichever placement serves the UI.
+[Native operating procedure](../deployments/desktop.md#which-host-files-can-a-native-vessel-read)
+
 ### Tomb Execution Contract {#6-tomb-execution-contract}
 
 The Tomb is deliberately non-agent: its child has a task-scoped workspace and artifacts, filtered
