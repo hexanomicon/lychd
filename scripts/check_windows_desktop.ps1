@@ -56,6 +56,7 @@ if ($TrialSid) {
     }
     $ownFile = Join-Path $testTemp 'standard-user-canary.txt'
     $probe = @'
+import errno
 import sys
 from pathlib import Path
 from lychd.system.vessel_mode import require_native_user
@@ -67,7 +68,8 @@ if own.read_text(encoding="ascii") != "standard-user":
 try:
     protected.read_bytes()
 except PermissionError as exc:
-    if exc.winerror != 5:  # ERROR_ACCESS_DENIED
+    # The CRT used by open() can report EACCES without retaining a Win32 error.
+    if exc.errno != errno.EACCES or exc.winerror not in (None, 5):
         raise
 else:
     raise SystemExit("The native account read the administrator-only canary.")
