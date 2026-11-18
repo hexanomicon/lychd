@@ -126,7 +126,7 @@ try {
         RedirectStandardError = $stderr
     }
     $process = Start-Process @options -PassThru
-    if ($VolumeTrial) { Invoke-TrialVolumeRequest $drive $process $stage }
+    if ($VolumeTrial) { Invoke-TrialVolumeRequest $drive $process $stage $stdout $stderr }
     if (-not $process.WaitForExit(1200000)) {
         $process.Kill($true)
         throw 'The Windows desktop trial exceeded 20 minutes.'
@@ -141,7 +141,7 @@ try {
         foreach ($item in @("$stage\artifacts", $source)) {
             if ((Get-Item -LiteralPath $item).Attributes -band [IO.FileAttributes]::ReparsePoint) { throw 'Redirected evidence directory.' }
         }
-        foreach ($file in @('01-bridge.png', '02-answer.png', '03-restarted.png', 'receipt.json')) {
+        foreach ($file in @('01-bridge.png', '02-answer.png', '03-restarted.png', '04-nexus.png', 'receipt.json')) {
             $item = Get-Item -LiteralPath (Join-Path $source $file)
             if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint -or $item.PSIsContainer) { throw 'Invalid evidence file.' }
             Copy-Item -LiteralPath $item.FullName -Destination (Join-Path $destination $file)
@@ -151,10 +151,15 @@ try {
 }
 finally {
     if ($VolumeTrial -and $process -and !$process.HasExited) { $process.Kill($true); $process.WaitForExit() }
+    if ($VolumeTrial -and (Get-Command Stop-TrialVolumeProcesses -ErrorAction SilentlyContinue)) {
+        if ($stdout -and (Test-Path -LiteralPath $stdout)) { Get-Content -LiteralPath $stdout -Tail 35 -ErrorAction Continue }
+        if ($stderr -and (Test-Path -LiteralPath $stderr)) { Get-Content -LiteralPath $stderr -Tail 35 -ErrorAction Continue }
+        Stop-TrialVolumeProcesses $sid
+    }
     if ($VolumeTrial -and (Test-Path -LiteralPath "$stage\volume.vhdx")) {
         Dismount-DiskImage -ImagePath "$stage\volume.vhdx" -ErrorAction Continue
     }
     Get-CimInstance Win32_UserProfile -Filter "SID='$($user.SID.Value)' AND Loaded=FALSE" | Remove-CimInstance
     Remove-LocalUser -SID $user.SID
-    if (Test-Path -LiteralPath $stage) { Remove-Item -LiteralPath $stage -Recurse -Force }
+    if (Test-Path -LiteralPath $stage) { Remove-Item -LiteralPath $stage -Recurse -Force -ErrorAction Continue }
 }

@@ -48,3 +48,35 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: ./scripts/check_windows_desktop.ps1 -VolumeTrial
+
+  vss-producer:
+    name: Native VSS requestor and read-only drive exposure
+    runs-on: windows-2025
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Capture one disposable NTFS volume and verify its frozen bytes
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          . ./scripts/check_volume_vhd.ps1
+          $stage=Join-Path $env:RUNNER_TEMP ('vss-probe-'+[guid]::NewGuid())
+          $null=New-Item -ItemType Directory -Path $stage
+          $drive=New-TrialDatabaseVolume $stage ([Security.Principal.WindowsIdentity]::GetCurrent().User.Value)
+          try {
+            $volume=Get-Volume -DriveLetter $drive[0]
+            $id=[guid]($volume.Path.Substring(11,36))
+            $cut=[guid]::NewGuid()
+            [IO.File]::WriteAllText((Join-Path $drive ".lychd-volume-request-$cut"),$id.ToString(),[Text.Encoding]::ASCII)
+            $live=Join-Path $drive 'trial.txt'
+            [IO.File]::WriteAllText($live,'captured')
+            $receipt=./src/lychd/system/desktop/volume_vss.ps1 -Volume $id -Cut $cut
+            [IO.File]::WriteAllText($live,'later')
+            $copy=Join-Path ($receipt.Drive+'\') 'trial.txt'
+            if ([IO.File]::ReadAllText($copy) -cne 'captured') {throw 'Unexpected snapshot contents.'}
+            $receipt | Format-List
+          } finally {
+            Dismount-DiskImage -ImagePath "$stage\volume.vhdx" -ErrorAction Continue
+          }

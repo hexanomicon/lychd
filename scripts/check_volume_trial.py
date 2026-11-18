@@ -9,7 +9,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from tempfile import TemporaryDirectory
+from tempfile import TemporaryDirectory, TemporaryFile
 from uuid import UUID, uuid4
 
 import psycopg
@@ -25,7 +25,19 @@ CLI = [sys.executable, "-m", "lychd.system.desktop"]
 
 
 def command(*args: str, check: bool = True, answer: str | None = None) -> subprocess.CompletedProcess[str]:
-    result = subprocess.run([*CLI, *args], input=answer, capture_output=True, text=True, check=False, timeout=240)  # noqa: S603
+    print(f"Desktop command: {' '.join(args)}", flush=True)  # noqa: T201
+    # A PostgreSQL descendant may keep an inherited Windows pipe open after pg_ctl exits.
+    # Regular files let the supervisor await only the requested command's process handle.
+    with (
+        TemporaryFile(mode="w+", encoding="utf-8", errors="replace") as stdout,
+        TemporaryFile(mode="w+", encoding="utf-8", errors="replace") as stderr,
+    ):
+        process = subprocess.run(  # noqa: S603
+            [*CLI, *args], input=answer, stdout=stdout, stderr=stderr, text=True, check=False, timeout=240
+        )
+        stdout.seek(0)
+        stderr.seek(0)
+        result = subprocess.CompletedProcess(process.args, process.returncode, stdout.read(), stderr.read())
     if check and result.returncode:
         msg = f"{args} failed: {result.stdout}\n{result.stderr}"
         raise RuntimeError(msg)
@@ -34,9 +46,13 @@ def command(*args: str, check: bool = True, answer: str | None = None) -> subpro
 
 def vss_capture(root: Path) -> None:
     """Wait for the separate VSS operator and pass its snapshot UUID to the desktop command."""
-    with subprocess.Popen(  # noqa: S603
-        [*CLI, "volume", "capture"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
-    ) as process:
+    print("Starting cold capture; waiting for the VSS operator.", flush=True)  # noqa: T201
+    with (
+        TemporaryFile(mode="w+", encoding="utf-8", errors="replace") as log,
+        subprocess.Popen(  # noqa: S603
+            [*CLI, "volume", "capture"], stdin=subprocess.PIPE, stdout=log, stderr=subprocess.STDOUT, text=True
+        ) as process,
+    ):
         try:
             deadline = time.monotonic() + 180
             while process.poll() is None and time.monotonic() < deadline:
@@ -45,9 +61,10 @@ def vss_capture(root: Path) -> None:
                     cut = str(UUID(requests[0].name.removeprefix(".lychd-volume-request-")))
                     receipt = Path(os.environ["PROGRAMFILES"]) / f"LychD-Volume-{cut}" / "snapshot.json"
                     if receipt.is_file():
-                        result, _ = process.communicate(json.loads(receipt.read_bytes())["ID"] + "\n", timeout=60)
+                        process.communicate(json.loads(receipt.read_bytes())["ID"] + "\n", timeout=90)
                         if process.returncode != 0:
-                            raise RuntimeError(result)
+                            msg = "Desktop capture refused the exposed VSS snapshot."
+                            raise RuntimeError(msg)
                         return
                 time.sleep(0.5)
             msg = "The native VSS operator did not produce a seal."
@@ -55,8 +72,9 @@ def vss_capture(root: Path) -> None:
         finally:
             if process.poll() is None:
                 process.kill()
-            output, _ = process.communicate()
-            print(output)  # noqa: T201
+            process.wait(timeout=15)
+            log.seek(0)
+            print(log.read(), flush=True)  # noqa: T201
 
 
 def check_apfs_inventory() -> None:

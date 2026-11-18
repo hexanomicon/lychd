@@ -85,9 +85,12 @@ cold APFS file clone in another PostgreSQL instance. A later write stayed on the
 The measured database pause was 1.068 seconds and capture plus hashing took 1.720 seconds for
 that fixture. [Desktop recovery](deployments/desktop.md#storage-networking-and-recovery)
 documents the separate whole-volume and disk-loss paths.
+On macOS a subsequent browser trial requested two opposite exclusive transitions in Nexus,
+checked the active engine identity, and recovered the original Bridge conversation after restart.
+The trial used two native processes with the same pinned weights and different served names.
 
-The [Apple Silicon package trial](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/runtime/desktop-platform-checks-2026-11-18.json)
-used the bundled interpreter and Altar and verified committed rows across repair, program removal
+The [Apple Silicon and standard-user Windows package trials](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/runtime/desktop-platform-checks-2026-11-18.json)
+used the bundled interpreters and Altar and verified committed rows across repair, program removal
 and reinstall. Production Developer ID notarization and Windows Authenticode signing require
 the corresponding release identities. [Edition installation and verification](deployments/desktop-packages.md)
 
@@ -4078,7 +4081,8 @@ The separate [desktop offered-service profile](deployments/desktop-tether.md) ad
 WireGuard public key and private service address per grant. Native two-peer tests on
 [macOS and Windows](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/runtime/desktop-platform-checks-2026-11-18.json) exercised
 encrypted TCP, the backend certificate pin, live stream closure and continued access for the
-other peer. A fresh helper process requires fresh enrollment. Physical LAN, firewall and
+other peer. The Windows standard-account trial verified the test SID and unelevated token before
+opening either WireGuard connection. A fresh helper process requires fresh enrollment. Physical LAN, firewall and
 client routing trials remain with the platform owners.
 
 **Boundary — Not yet:** Repository tests use bounded effect ports and policy fixtures; they do not

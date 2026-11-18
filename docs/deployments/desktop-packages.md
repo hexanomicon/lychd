@@ -22,7 +22,9 @@ workflow](https://github.com/hexanomicon/lychd/actions/workflows/desktop-release
 Select the successful run for the intended change. In **Artifacts**, download
 `desktop-installer-macOS-<revision>` or `desktop-installer-Windows-<revision>` and extract
 the ZIP. Candidates expire after 14 days. For a pull request the revision is GitHub's tested
-merge commit. A manually dispatched build uses the selected ref's commit.
+merge commit. A build from a push to `dev` records the integrated commit. To try a public
+`main` snapshot, match that full commit against the edition revision. A manually dispatched
+build uses the selected ref’s commit.
 
 The ZIP contains `LychD-macos-arm64-<revision>.pkg` or `LychD-windows-x64-<revision>.exe`,
 `SHA256SUMS` and `provenance.json`. The latter records the

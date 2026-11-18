@@ -8,26 +8,14 @@ import subprocess
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
+from lychd.system.path_policy import physically_contains
+
 _PRIVATE_DIRECTORY_MODE = 0o700
 
 
 def overlaps(left: Path, right: Path) -> bool:
     """Compare physical directory ancestry, including aliases on case-insensitive volumes."""
-
-    def contains(parent: Path, child: Path) -> bool:
-        try:
-            identity = parent.stat()
-        except FileNotFoundError:
-            return False
-        for ancestor in (child, *child.parents):
-            try:
-                if os.path.samestat(identity, ancestor.stat()):
-                    return True
-            except FileNotFoundError:
-                continue
-        return False
-
-    return contains(left, right) or contains(right, left)
+    return physically_contains(left, right) or physically_contains(right, left)
 
 
 def check_path(path: Path) -> None:

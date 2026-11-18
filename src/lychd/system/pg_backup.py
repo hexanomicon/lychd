@@ -11,6 +11,8 @@ from pathlib import Path
 
 import click
 
+from lychd.system.path_policy import physically_contains
+
 
 def _control_id(pg_bin: Path, cluster: Path) -> str:
     """Read the identifier from the physical control file in the source or copy."""
@@ -50,7 +52,7 @@ def capture(pg_bin: Path, source: Path, destination: Path, *, port: int, user: s
     source = source.resolve(strict=True)
     destination = destination.resolve(strict=True)
     passfile = passfile.resolve(strict=True)
-    if destination.is_relative_to(source) or not destination.is_dir():
+    if physically_contains(source, destination) or not destination.is_dir():
         msg = "Choose an existing backup directory outside the source cluster."
         raise ValueError(msg)
     if not passfile.is_file() or (os.name == "posix" and passfile.stat().st_mode & 0o077):

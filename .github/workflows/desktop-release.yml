@@ -14,6 +14,19 @@ on:
       - "pyproject.toml"
       - "uv.lock"
       - ".nvmrc"
+  push:
+    branches: [dev]
+    paths:
+      - ".github/actions/desktop-postgres/**"
+      - ".github/workflows/desktop-release.yml"
+      - "clients/desktop-tether/**"
+      - "clients/web/**"
+      - "deployments/desktop-packaging/**"
+      - "scripts/**"
+      - "src/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".nvmrc"
   workflow_dispatch:
 
 permissions:

@@ -43,6 +43,28 @@
       "checkout_revision": "facbba4494718ca6211566b3cb4c8ccbe0717990",
       "job": "https://github.com/hexanomicon/lychd/actions/runs/44274890330/job/134700392838",
       "observed": "Unsigned per-user installer with bundled Python and Altar. Committed database rows survived repair, removal of the edition and reinstall of the same edition."
+    },
+    {
+      "feature": "Ordinary-account exact-service Tether",
+      "source_head": "d7a29407969ee7996b47ef24bc084cfcf2974ce1",
+      "jobs": {
+        "windows": "https://github.com/hexanomicon/lychd/actions/runs/44277359065/job/134708777149",
+        "macos": "https://github.com/hexanomicon/lychd/actions/runs/44277359065/job/134708777460"
+      },
+      "observed": "Fresh Windows SID and nonadministrative token verified before the Go trial. Two real WireGuard clients exercised exact TCP service, backend pin, ICMP/UDP and other-port refusals, stream cap, active revocation and unrelated peer continuity."
+    },
+    {
+      "feature": "Windows program edition",
+      "source_head": "fbbd489adf70671c402501ba273af7dbe728bb05",
+      "checkout_revision": "facbba4494718ca6211566b3cb4c8ccbe0717990",
+      "job": "https://github.com/hexanomicon/lychd/actions/runs/44274890330/job/134700393346",
+      "observed": "Unsigned per-user installer with bundled Python and Altar. A separate standard-user account checked committed PostgreSQL rows after edition repair, uninstall and reinstall. Windows Server 2025 x64."
+    },
+    {
+      "feature": "macOS Nexus swap, interrupted credential rotation and re-enrollment",
+      "source_head": "d7a29407969ee7996b47ef24bc084cfcf2974ce1",
+      "job": "https://github.com/hexanomicon/lychd/actions/runs/44277364196/job/134708787339",
+      "observed": "Chrome previewed and requested personal to alternate and back, retaining the original Bridge response across restart. Both processes advertised distinct model IDs using the same pinned weights. The post-commit rotation interruption was recovered with PostgreSQL stopped. Inaccessible per-installation vault records required explicit matching re-enrollment."
     }
   ]
 }

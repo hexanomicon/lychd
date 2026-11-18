@@ -15,7 +15,8 @@ function New-TrialDatabaseVolume($Stage, $Sid) {
     if ($LASTEXITCODE) { throw 'Cannot grant the trial owner access to the VHD.' }
     return $drive
 }
-function Invoke-TrialVolumeRequest($Drive, $Process, $Stage) {
+function Invoke-TrialVolumeRequest($Drive, $Process, $Stage, $Stdout, $Stderr) {
+    $lastLine = ''
     $volume = Get-Volume -DriveLetter $Drive[0]
     $id = [guid]($volume.Path.Substring(11,36))
     $end = [DateTime]::UtcNow.AddMinutes(12)
@@ -26,7 +27,22 @@ function Invoke-TrialVolumeRequest($Drive, $Process, $Stage) {
             & "$Stage\src\lychd\system\desktop\volume_vss.ps1" -Volume $id -Cut $cut | Out-Host
             return
         }
+        if (Test-Path -LiteralPath $Stdout) {
+            $progress = Get-Content -LiteralPath $Stdout -Tail 1
+            if ($progress -and $progress -ne $lastLine) { Write-Host $progress; $lastLine = $progress }
+        }
         Start-Sleep -Seconds 1
     }
-    if (!$Process.HasExited) { throw 'Timed out before the cold snapshot request.' }
+    if (!$Process.HasExited) {
+        Get-Content -LiteralPath $Stdout,$Stderr -Tail 40 -ErrorAction Continue
+        throw 'Timed out before the cold snapshot request.' }
+}
+
+function Stop-TrialVolumeProcesses($Sid) {
+    # The harness created this SID for this single trial; stop even detached PostgreSQL children.
+    $account = ([Security.Principal.SecurityIdentifier]::new($Sid)).Translate([Security.Principal.NTAccount]).Value
+    foreach ($process in @(Get-Process -IncludeUserName | Where-Object UserName -eq $account)) {
+        try { if (!$process.HasExited) { $process.Kill(); $null = $process.WaitForExit(5000) } }
+        catch { Write-Warning "Unable to settle trial process $($process.Id): $_" }
+    }
 }
