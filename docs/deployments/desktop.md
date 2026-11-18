@@ -153,6 +153,10 @@ require an authenticated, narrowly scoped host helper, an allowlist of targets a
 lost acknowledgement. Keep unrestricted host commands, the container-engine socket and host
 credentials outside the guest. [Privilege](../adr/10-privilege.md) · [VPN](../adr/39-vpn.md).
 
+Follow implementation of [volume snapshots](https://github.com/hexanomicon/lychd/issues/182),
+[desktop Tether](https://github.com/hexanomicon/lychd/issues/183) and
+[signed OS packages and credential recovery](https://github.com/hexanomicon/lychd/issues/184).
+
 Track hands-on qualification in [macOS #177](https://github.com/hexanomicon/lychd/issues/177),
 [Windows #178](https://github.com/hexanomicon/lychd/issues/178) and
 [Linux #179](https://github.com/hexanomicon/lychd/issues/179).

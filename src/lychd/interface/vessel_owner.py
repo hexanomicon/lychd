@@ -10,12 +10,12 @@ from typing import TYPE_CHECKING, Any, cast
 
 import asyncpg
 
-from lychd.config.settings.root import get_settings
+from lychd.config.settings import root as settings_root
 from lychd.db.authority import RUNTIME_AUTHORITY_QUERY, require_runtime_authority
 from lychd.db.factory import database_saq_dsn
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Callable
+    from collections.abc import AsyncGenerator, Callable
 
     from litestar import Litestar
 
@@ -33,7 +33,7 @@ _NATIVE_PREFIX = "lychd-native-"
 
 
 def _stop_proof(generation: str) -> str:
-    secret = get_settings().server.web.secret_key
+    secret = settings_root.get_settings().server.web.secret_key
     if secret is None:
         message = "The native Vessel requires the application signing key."
         raise ValueError(message)
@@ -41,8 +41,8 @@ def _stop_proof(generation: str) -> str:
 
 
 @asynccontextmanager
-async def _runtime_session(application_name: str) -> AsyncIterator[Any]:
-    db = get_settings().server.database
+async def _runtime_session(application_name: str) -> AsyncGenerator[Any]:
+    db = settings_root.get_settings().server.database
     connection = await cast("Any", asyncpg).connect(
         database_saq_dsn(db, runtime=True),
         timeout=10,
@@ -72,7 +72,7 @@ async def stop_native_vessel() -> bool:
 
 
 @asynccontextmanager
-async def vessel_database_owner(app: Litestar) -> AsyncIterator[None]:
+async def vessel_database_owner(app: Litestar) -> AsyncGenerator[None]:
     """Keep a session advisory lock through worker retirement, including recovery."""
     owner = asyncio.current_task()
     if owner is None:

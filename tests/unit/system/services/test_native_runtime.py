@@ -46,7 +46,7 @@ def _profile(tmp_path: Path) -> tuple[Mock, SwitchingSettings, dict[str, LlamaCp
     settings = SwitchingSettings(
         actuator="native-process", native_state_dir=root, native_llama_server=engine, native_model_root=tmp_path
     )
-    runes = {}
+    runes: dict[str, LlamaCppSoulstoneConfig] = {}
     for name in ("alpha", "beta"):
         port = _free_port()
         runes[name] = LlamaCppSoulstoneConfig.model_validate(

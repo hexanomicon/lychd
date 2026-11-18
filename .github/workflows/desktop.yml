@@ -2,12 +2,15 @@ name: Desktop host CI
 
 on:
   pull_request:
+    types: [opened, reopened, synchronize, edited]
     paths:
       - "src/**"
       - "pyproject.toml"
       - "uv.lock"
       - ".github/workflows/desktop.yml"
+      - "scripts/check_desktop_bridge.py"
       - "scripts/check_desktop_startup.py"
+      - "scripts/check_windows_desktop.ps1"
       - "tests/integration/test_native_pg_backup.py"
       - "tests/unit/cli/test_native_entry.py"
       - "tests/unit/system/desktop/**"
@@ -15,6 +18,17 @@ on:
   push:
     branches: [dev]
   workflow_dispatch:
+    inputs:
+      bridge_chat:
+        description: Run real browser inference and verify the conversation after restart
+        type: boolean
+        default: false
+
+env:
+  BRIDGE_CHAT: >-
+    ${{ (github.event_name == 'workflow_dispatch' && inputs.bridge_chat) ||
+        (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository &&
+         contains(github.event.pull_request.body, '[run-desktop-bridge]')) }}
 
 permissions:
   contents: read
@@ -27,7 +41,7 @@ jobs:
       matrix:
         os: [macos-15, windows-2025]
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 40
+    timeout-minutes: 85
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -37,12 +51,14 @@ jobs:
           version: "0.13.0"
           python-version: "3.14.8"
       - name: Install the selected project and check ordinary entrypoints
+        if: runner.os == 'macOS'
         run: |
           uv sync --locked --no-default-groups --extra postgres-binary --group test --no-editable
           uv run --no-sync lychd --help
           uv run --no-sync lychd platform
           uv run --no-sync lychd desktop --help
       - name: Check desktop routing and the database ownership protocol
+        if: runner.os == 'macOS'
         run: uv run --no-sync python -m pytest -q -o addopts= tests/unit/cli/test_native_entry.py tests/unit/domain/web/test_vessel_owner.py tests/unit/system/desktop
       - name: Install PostgreSQL and pgvector for the macOS trial
         if: runner.os == 'macOS'
@@ -77,6 +93,54 @@ jobs:
           nmake /F Makefile.win || exit /b 1
           nmake /F Makefile.win install || exit /b 1
       - name: Recover an actual committed PostgreSQL row
+        if: runner.os == 'macOS'
         run: uv run --no-sync python -m pytest -q -o addopts= tests/integration/test_native_pg_backup.py
       - name: Install twice and exercise the authenticated local Vessel
+        if: runner.os == 'macOS' && env.BRIDGE_CHAT != 'true'
         run: uv run --no-sync python scripts/check_desktop_startup.py
+      - name: Check out the qualified llama.cpp CPU source
+        if: env.BRIDGE_CHAT == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: ggml-org/llama.cpp
+          ref: af6528e6df5d798f7f1363ec1141699be0f638e2
+          path: .ci-llama
+          persist-credentials: false
+      - name: Build the CPU inference server
+        if: env.BRIDGE_CHAT == 'true'
+        run: |
+          cmake -S .ci-llama -B .ci-llama/build -DCMAKE_BUILD_TYPE=Release -DGGML_METAL=OFF -DGGML_OPENMP=OFF -DLLAMA_CURL=OFF
+          cmake --build .ci-llama/build --config Release --target llama-server --parallel 3
+      - name: Verify the pinned model and locate the inference server
+        if: env.BRIDGE_CHAT == 'true'
+        shell: pwsh
+        run: |
+          $model = Join-Path $env:RUNNER_TEMP 'SmolLM2-360M-Instruct-Q4_K_M.gguf'
+          $source = 'https://huggingface.co/bartowski/SmolLM2-360M-Instruct-GGUF/resolve/7be6f65f1db715fe5dc5a4634c0d459b4eed42ec/SmolLM2-360M-Instruct-Q4_K_M.gguf'
+          curl --fail --location --silent --show-error --max-filesize 270590880 --max-time 300 --output $model $source
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if ((Get-FileHash $model -Algorithm SHA256).Hash -ne '2fa3f013dcdd7b99f9b237717fa0b12d75bbb89984cc1274be1471a465bac9c2') {
+            throw 'Qualification model checksum mismatch.'
+          }
+          "BRIDGE_MODEL=$model" >> $env:GITHUB_ENV
+          $binary = if ($IsWindows) { 'llama-server.exe' } else { 'llama-server' }
+          $engine = @(Get-ChildItem -Path .ci-llama/build/bin -Recurse -File -Filter $binary)
+          if ($engine.Count -ne 1) { throw 'Expected one built llama-server.' }
+          "BRIDGE_ENGINE=$($engine[0].FullName)" >> $env:GITHUB_ENV
+      - name: Exercise browser chat and verify the answer after native restart
+        if: runner.os == 'macOS' && env.BRIDGE_CHAT == 'true'
+        run: |
+          uv pip install playwright==1.58.0
+          uv run --no-sync python scripts/check_desktop_bridge.py --engine "$BRIDGE_ENGINE" --model "$BRIDGE_MODEL" --output bridge-evidence
+      - name: Exercise PostgreSQL recovery and the Vessel as a standard Windows user
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./scripts/check_windows_desktop.ps1
+      - name: Retain the synthetic Bridge screens and receipt
+        if: always() && env.BRIDGE_CHAT == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: desktop-bridge-${{ runner.os }}
+          path: bridge-evidence/
+          if-no-files-found: ignore
+          retention-days: 7

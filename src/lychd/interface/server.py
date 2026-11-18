@@ -21,6 +21,8 @@ from lychd.interface.server_policy import (
 )
 
 if TYPE_CHECKING:
+    from types import FrameType
+
     from litestar import Litestar
     from litestar.types import Receive, Scope, Send
 
@@ -67,10 +69,14 @@ def _preserve_signal_handlers(loop: asyncio.AbstractEventLoop, request_stop: Cal
             callback = handle._callback  # noqa: SLF001
             arguments = handle._args  # noqa: SLF001
             previous_callbacks[signum] = partial(handle.get_context().run, callback, *arguments)
+
+    def schedule_stop(_signum: int, _frame: FrameType | None) -> None:
+        loop.call_soon_threadsafe(request_stop)
+
     try:
         for signum in _SIGNALS:
             if sys.platform == "win32":
-                signal.signal(signum, lambda *_: loop.call_soon_threadsafe(request_stop))
+                signal.signal(signum, schedule_stop)
             else:
                 loop.add_signal_handler(signum, request_stop)
         yield

@@ -16,20 +16,24 @@ from pathlib import Path
 from lychd.system.services.local_access import load_local_access
 
 
-def _request(route: str, credential: str | None = None) -> tuple[int, bytes]:
+def _request(route: str, credential: str | None = None) -> tuple[int, bytes, str | None]:
     connection = http.client.HTTPConnection("127.0.0.1", 7134, timeout=3)
     try:
         headers = {"Authorization": credential} if credential else {}
         connection.request("GET", route, headers=headers)
         response = connection.getresponse()
-        return response.status, response.read()
+        return response.status, response.read(), response.getheader("Location")
     finally:
         connection.close()
 
 
 def _check_routes(credential: str) -> None:
-    for route in ("/", "/bridge", "/api/v1/altar/status"):
-        status, body = _request(route, credential)
+    status, _, location = _request("/", credential)
+    if status != HTTPStatus.FOUND or location != "/orb":
+        msg = f"Unexpected Altar entry: {status}, expected a local redirect to /orb."
+        raise RuntimeError(msg)
+    for route in ("/orb", "/bridge", "/api/v1/altar/status"):
+        status, body, _ = _request(route, credential)
         if status != HTTPStatus.OK or not body:
             msg = f"Authenticated {route} returned {status} or an empty response."
             raise RuntimeError(msg)

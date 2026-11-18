@@ -12,6 +12,7 @@ from pathlib import Path
 
 import psycopg
 import pytest
+from psycopg.conninfo import make_conninfo
 
 from lychd.system.pg_backup import capture, verify
 
@@ -35,23 +36,23 @@ def test_recovered_cluster_retains_only_the_captured_commit(tmp_path: Path) -> N
     )
     with closing(socket.socket()) as listener:
         listener.bind(("127.0.0.1", 0))
-        port = listener.getsockname()[1]
+        port = int(listener.getsockname()[1])
     passfile = tmp_path / "pgpass"
     passfile.write_text(f"127.0.0.1:{port}:*:backup_test:{password}\n", encoding="ascii")
     passfile.chmod(0o600)
     # Both instances are confined to the private temp directory and IPv4 loopback.
     options = f"-p {port} -h 127.0.0.1 -c unix_socket_directories="
     command = [pg_ctl, "-w", "-l", tmp_path / "postgres.log"]
-    database = {"host": "127.0.0.1", "port": port, "user": "backup_test", "password": password, "dbname": "postgres"}
+    database = make_conninfo(host="127.0.0.1", port=port, user="backup_test", password=password, dbname="postgres")
     subprocess.run([*command, "-D", source, "-o", options, "start"], check=True)  # noqa: S603
     try:
-        with psycopg.connect(**database) as connection:
+        with psycopg.connect(database) as connection:
             connection.execute("CREATE TABLE proof(value text)")
             connection.execute("INSERT INTO proof VALUES ('captured')")
         with pytest.raises(ValueError, match="outside"):
             capture(pg_bin, source, source, port=port, user="backup_test", passfile=passfile)
         output = capture(pg_bin, source, destination, port=port, user="backup_test", passfile=passfile)
-        with psycopg.connect(**database) as connection:
+        with psycopg.connect(database) as connection:
             connection.execute("INSERT INTO proof VALUES ('after capture')")
     finally:
         subprocess.run([pg_ctl, "-w", "-D", source, "-m", "fast", "stop"], check=True)  # noqa: S603
@@ -61,7 +62,7 @@ def test_recovered_cluster_retains_only_the_captured_commit(tmp_path: Path) -> N
         verify(pg_bin, recovered, "0")
     subprocess.run([*command, "-D", recovered, "-o", options, "start"], check=True)  # noqa: S603
     try:
-        with psycopg.connect(**database) as connection:
+        with psycopg.connect(database) as connection:
             assert connection.execute("SELECT value FROM proof").fetchall() == [("captured",)]
     finally:
         subprocess.run([pg_ctl, "-w", "-D", recovered, "-m", "fast", "stop"], check=True)  # noqa: S603

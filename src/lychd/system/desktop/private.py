@@ -53,8 +53,8 @@ $trusted=@($u,'S-1-5-18','S-1-5-32-544','S-1-3-0')
 $homeDir=[IO.Path]::GetFullPath($env:USERPROFILE)
 $p=[IO.Path]::GetFullPath($env:LYCHD_DESKTOP_CHECK_PATH)
 while($p -and ($p -eq $homeDir -or $p.StartsWith($homeDir+'\\',[StringComparison]::OrdinalIgnoreCase))) {
-    if(Test-Path -LiteralPath $p) {
-        $a=Get-Acl -LiteralPath $p
+    if([IO.Directory]::Exists($p) -or [IO.File]::Exists($p)) {
+        $a=if([IO.Directory]::Exists($p)){[IO.Directory]::GetAccessControl($p)}else{[IO.File]::GetAccessControl($p)}
         if($trusted -notcontains $a.GetOwner([Security.Principal.SecurityIdentifier]).Value) {throw 'Foreign path owner'}
         foreach($r in $a.Access) {
             if($r.AccessControlType -eq 'Allow' -and ([int]$r.FileSystemRights -band 0xD0156) -and
@@ -88,14 +88,14 @@ def private_directory(directory: Path) -> None:
         "$ErrorActionPreference='Stop';"
         "$u=[Security.Principal.WindowsIdentity]::GetCurrent().User;"
         "$p=$env:LYCHD_PRIVATE_DIR;"
-        "$acl=Get-Acl -LiteralPath $p;"
+        "$acl=[IO.Directory]::GetAccessControl($p);"
         "if($acl.GetOwner([Security.Principal.SecurityIdentifier]) -ne $u){throw 'Foreign directory owner'};"
         "$acl.SetAccessRuleProtection($true,$false);"
         "foreach($r in @($acl.Access)){$acl.RemoveAccessRuleSpecific($r)};"
         "$rule=[Security.AccessControl.FileSystemAccessRule]::new($u,'FullControl',"
         "'ContainerInherit,ObjectInherit','None','Allow');"
-        "$acl.AddAccessRule($rule);Set-Acl -LiteralPath $p -AclObject $acl;"
-        "$result=Get-Acl -LiteralPath $p;"
+        "$acl.AddAccessRule($rule);[IO.Directory]::SetAccessControl($p,$acl);"
+        "$result=[IO.Directory]::GetAccessControl($p);"
         "if(!$result.AreAccessRulesProtected -or @($result.Access).Count -ne 1 -or "
         "$result.Access[0].IdentityReference.Translate([Security.Principal.SecurityIdentifier]) -ne $u)"
         "{throw 'Directory ACL verification failed'}"
@@ -111,7 +111,8 @@ def _verify_windows_acl(path: Path) -> None:
     powershell = Path(os.environ["SYSTEMROOT"]) / "System32/WindowsPowerShell/v1.0/powershell.exe"
     script = (
         "$ErrorActionPreference='Stop';$u=[Security.Principal.WindowsIdentity]::GetCurrent().User;"
-        "$a=Get-Acl -LiteralPath $env:LYCHD_PRIVATE_FILE;"
+        "$p=$env:LYCHD_PRIVATE_FILE;"
+        "$a=if([IO.Directory]::Exists($p)){[IO.Directory]::GetAccessControl($p)}else{[IO.File]::GetAccessControl($p)};"
         "if($a.GetOwner([Security.Principal.SecurityIdentifier]) -ne $u -or @($a.Access).Count -eq 0)"
         "{throw 'Unverified file owner or ACL'};"
         "foreach($r in $a.Access){if($r.IdentityReference.Translate([Security.Principal.SecurityIdentifier]) -ne $u)"

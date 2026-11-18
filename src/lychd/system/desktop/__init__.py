@@ -21,7 +21,7 @@ from lychd.system.desktop.credentials import load_credentials
 from lychd.system.desktop.private import check_path, private_directory, publish_file, verify_private_directory
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Generator
 
     from lychd.config.settings import DatabaseSettings, Settings
 
@@ -31,7 +31,7 @@ _STOPPED = 3
 _OWNER = "lychd-native-postgres-18-v1"
 
 
-def _program(name: str) -> str:
+def postgres_program(name: str) -> str:
     directory = os.environ.get("LYCHD_PG_BIN")
     binary = shutil.which(name, path=directory)
     if not binary:
@@ -53,7 +53,7 @@ def _settings(*, install: bool = False, admin: bool = False) -> Settings:
 
 
 def _ctl(*args: str, check: bool = True) -> int:
-    return subprocess.run([_program("pg_ctl"), "-D", str(_DATA), *args], check=check).returncode
+    return subprocess.run([postgres_program("pg_ctl"), "-D", str(_DATA), *args], check=check).returncode
 
 
 def _require_cluster() -> None:
@@ -81,7 +81,7 @@ def _start(port: int) -> None:
 
 
 @contextmanager
-def _management_lock(*, wait: bool = False) -> Iterator[None]:
+def _management_lock(*, wait: bool = False) -> Generator[None]:
     """Serialize management until the operating system closes this command's handle."""
     private_directory(PATH_POSTGRES_ROOT_DIR)
     path = PATH_POSTGRES_ROOT_DIR / ".desktop-management.lock"
@@ -103,15 +103,22 @@ def _management_lock(*, wait: bool = False) -> Iterator[None]:
         yield
 
 
+class _DesktopCommand(click.Command):
+    def invoke(self, ctx: click.Context) -> object:
+        if self.name not in {"session", "status"}:
+            ctx.with_resource(_management_lock())
+        return super().invoke(ctx)
+
+
 @click.group()
-@click.pass_context
-def desktop(ctx: click.Context) -> None:
+def desktop() -> None:
     """Manage the current user's native desktop deployment."""
     if sys.platform not in {"win32", "darwin"}:
         msg = "The native desktop installer supports macOS and Windows."
         raise click.ClickException(msg)
-    if ctx.invoked_subcommand not in {"session", "status"}:
-        ctx.with_resource(_management_lock())
+
+
+desktop.command_class = _DesktopCommand
 
 
 def _prepare_installation() -> Settings:
@@ -177,7 +184,7 @@ def install() -> None:
 
     from lychd.db.bootstrap import bootstrap_database
 
-    binary = _program("initdb")
+    binary = postgres_program("initdb")
     version = subprocess.check_output([binary, "--version"], text=True)
     if not re.match(rf"initdb \(PostgreSQL\) {_MAJOR}(?:\.|\s|$)", version):
         msg = f"Expected PostgreSQL {_MAJOR}, found {version.strip()}"
@@ -215,7 +222,7 @@ def start() -> None:
 
 
 @contextmanager
-def _exclusive_cluster(db: DatabaseSettings) -> Iterator[None]:
+def _exclusive_cluster(db: DatabaseSettings) -> Generator[None]:
     """Fence bootstrap and shutdown against an active Vessel in the verified dedicated database."""
     import psycopg
 

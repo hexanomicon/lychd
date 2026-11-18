@@ -30,7 +30,7 @@ def _registration(*, create: bool = False) -> dict[str, str]:
     """Persist a private identifier before registration, permitting interruption and readback."""
     check_path(_PROFILE)
     if not _PROFILE.exists() and create:
-        from lychd.system.desktop import _program
+        from lychd.system.desktop import postgres_program
 
         private_directory(_PROFILE.parent)
         values = {key: os.environ[key] for key in _KEYS if key in os.environ}
@@ -38,7 +38,7 @@ def _registration(*, create: bool = False) -> dict[str, str]:
             msg = "Login registration requires generated credentials or explicit runtime credential file references."
             raise click.ClickException(msg)
         values.update(
-            LYCHD_PG_BIN=str(Path(_program("pg_ctl")).resolve().parent),
+            LYCHD_PG_BIN=str(Path(postgres_program("pg_ctl")).resolve().parent),
             interpreter=sys.executable,
             identifier=secrets.token_hex(20),
         )
@@ -110,7 +110,7 @@ if ($existing.Count) {
     subprocess.run(
         [binary, "-NoProfile", "-NonInteractive", "-Command", script],
         env={
-            **os.environ,
+            **{key: value for key, value in os.environ.items() if key.upper() != "PSMODULEPATH"},
             "LYCHD_LOGIN_IDENTIFIER": identifier,
             "LYCHD_LOGIN_INTERPRETER": sys.executable,
             "LYCHD_LOGIN_REMOVE": "1" if remove else "0",
@@ -138,7 +138,7 @@ def _mac(identifier: str, *, remove: bool) -> None:
                 raise click.ClickException(msg)
     query = subprocess.run(["/bin/launchctl", "print", service], capture_output=True, text=True, check=False)
     loaded = query.returncode == 0
-    properties = {line.strip() for line in query.stdout.splitlines()} if loaded else set()
+    properties: set[str] = {line.strip() for line in query.stdout.splitlines()} if loaded else set()
     if loaded and (
         not path.is_file()
         or not {f"path = {path}", f"program = {sys.executable}", f"LYCHD_LOGIN_IDENTIFIER => {identifier}"}

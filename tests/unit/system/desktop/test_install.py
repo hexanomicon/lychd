@@ -4,11 +4,14 @@ from __future__ import annotations
 
 import os
 import plistlib
+from types import SimpleNamespace
 from typing import TYPE_CHECKING
+from unittest.mock import Mock
 
 import click
 import pytest
 
+# pyright: reportPrivateUsage=false
 from lychd.system import desktop
 from lychd.system.desktop import credentials, login
 
@@ -53,13 +56,13 @@ def test_database_refuses_unmarked_and_wrong_major(tmp_path: Path, monkeypatch: 
 
 
 def test_launch_agent_uses_interpreter_and_retains_user_files(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(login.sys, "platform", "darwin")
+    monkeypatch.setattr(login, "sys", SimpleNamespace(platform="darwin", executable=login.sys.executable))
     uid = getattr(os, "getuid", lambda: 0)()
     monkeypatch.setattr(login.os, "getuid", lambda: uid, raising=False)
     monkeypatch.setattr(login, "_PROFILE", tmp_path / "login.json")
     path = tmp_path / "agent.plist"
     monkeypatch.setattr(login, "_plist", lambda: path)
-    monkeypatch.setattr(desktop, "_program", lambda _: "/opt/Postgres 18/bin/pg_ctl")
+    monkeypatch.setattr(desktop, "postgres_program", Mock(return_value="/opt/Postgres 18/bin/pg_ctl"))
     for name in credentials._RUNTIME:
         monkeypatch.delenv(name, raising=False)
     calls: list[list[str]] = []
@@ -68,9 +71,9 @@ def test_launch_agent_uses_interpreter_and_retains_user_files(tmp_path: Path, mo
         from subprocess import CompletedProcess
 
         calls.append(args)
-        return CompletedProcess(args, 1 if "print" in args else 0)
+        return CompletedProcess[str](args, 1 if "print" in args else 0, stdout="")
 
-    monkeypatch.setattr(login.subprocess, "run", run)
+    monkeypatch.setattr(login, "subprocess", SimpleNamespace(run=run))
     login.enable()
     payload = plistlib.loads(path.read_bytes())
     assert payload["ProgramArguments"] == [login.sys.executable, "-m", "lychd.system.desktop", "session"]
@@ -108,12 +111,10 @@ def test_configure_model_binds_typed_chat_and_preserves_extensions(
 
 
 def test_windows_login_task_uses_interactive_limited_principal(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    from lychd.system.desktop import private
-
-    monkeypatch.setenv("SYSTEMROOT", str(tmp_path / "Windows"))
-    monkeypatch.setattr(login.sys, "platform", "win32")
+    monkeypatch.setattr(login, "os", SimpleNamespace(environ={**os.environ, "SYSTEMROOT": str(tmp_path / "Windows")}))
+    monkeypatch.setattr(login, "sys", SimpleNamespace(platform="win32", executable=login.sys.executable))
     monkeypatch.setattr(login, "_PROFILE", tmp_path / "login.json")
-    monkeypatch.setattr(desktop, "_program", lambda _: str(tmp_path / "pg_ctl.exe"))
+    monkeypatch.setattr(desktop, "postgres_program", Mock(return_value=str(tmp_path / "pg_ctl.exe")))
     for name in credentials._RUNTIME:
         monkeypatch.delenv(name, raising=False)
     calls: list[list[str]] = []
@@ -121,7 +122,7 @@ def test_windows_login_task_uses_interactive_limited_principal(tmp_path: Path, m
     def run(args: list[str], **_: object) -> None:
         calls.append(args)
 
-    monkeypatch.setattr(private.subprocess, "run", run)
+    monkeypatch.setattr(login, "subprocess", SimpleNamespace(run=run))
     login.enable()
     script = calls[-1][-1]
     assert "-LogonType Interactive -RunLevel Limited" in script
@@ -138,7 +139,12 @@ def test_private_credential_path_refuses_redirected_ancestry(tmp_path: Path, mon
     target = tmp_path / "target"
     target.mkdir()
     link = tmp_path / "redirect"
-    link.symlink_to(target, target_is_directory=True)
+    if os.name == "nt":
+        import _winapi  # Windows junction creation also works without symbolic-link privilege.
+
+        _winapi.CreateJunction(str(target), str(link))
+    else:
+        link.symlink_to(target, target_is_directory=True)
     monkeypatch.setattr(credentials, "PATH_POSTGRES_ROOT_DIR", link / "postgres")
     with pytest.raises(ValueError, match="redirected"):
         credentials.load_credentials(provision=True)
@@ -148,8 +154,6 @@ def test_private_credential_path_refuses_redirected_ancestry(tmp_path: Path, mon
 def test_fresh_install_prepares_journal_used_by_native_actuator(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from unittest.mock import Mock
-
     from lychd.config.settings import root
     from lychd.system.services.native_runtime import NativeRuntimeActuator
 
@@ -167,6 +171,7 @@ def test_fresh_install_prepares_journal_used_by_native_actuator(
     assert not root_path.exists()
     settings = desktop._prepare_installation()
     directory = settings.orchestration.switching.native_state_dir
+    assert directory is not None
     assert directory == postgres.parent / "native-runtimes"
     assert directory.is_dir()
     NativeRuntimeActuator(Mock(), settings.orchestration.switching)
@@ -179,7 +184,7 @@ def test_cluster_publish_recovers_partial_initialization(tmp_path: Path, monkeyp
     final = tmp_path / "native-data"
     monkeypatch.setattr(desktop, "_DATA", final)
     monkeypatch.setattr(desktop, "PATH_POSTGRES_ROOT_DIR", tmp_path)
-    attempts = []
+    attempts: list[Path] = []
 
     def initdb(args: list[str], *, check: bool) -> None:
         assert check
@@ -191,7 +196,7 @@ def test_cluster_publish_recovers_partial_initialization(tmp_path: Path, monkeyp
         if len(attempts) == 1:
             raise InterruptedError
 
-    monkeypatch.setattr(desktop.subprocess, "run", initdb)
+    monkeypatch.setattr(desktop, "subprocess", SimpleNamespace(run=initdb))
     with pytest.raises(InterruptedError):
         desktop._initialize_cluster("initdb", "user", "temporary")
     assert not final.exists()
