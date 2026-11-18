@@ -14,7 +14,8 @@ def platform() -> None:
     """Show the selected host profile and its configuration path."""
     from lychd.system.constants import PATH_CACHE_ROOT, PATH_CODEX_ROOT, PATH_CRYPT_ROOT, PATH_LYCHD_TOML
 
-    profile = "personal-desktop" if sys.platform in {"darwin", "win32"} else "managed-linux"
+    profiles = {"linux": "managed-linux", "darwin": "personal-desktop", "win32": "personal-desktop"}
+    profile = profiles.get(sys.platform, "unsupported")
     click.echo(
         json.dumps(
             {

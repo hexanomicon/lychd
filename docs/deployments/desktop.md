@@ -16,6 +16,11 @@ Start with a clean personal account or a dedicated test account. Have a checked-
 revision, Git, uv, PostgreSQL **18** and the matching **server-side pgvector extension**.
 For chat, supply a trusted native `llama-server` executable built for your OS and one local GGUF
 in a private model directory. Choose an instruction-tuned chat model with a working template.
+Bridge validates structured replies. For the small CPU trial, use the
+[Qwen2.5-0.5B-Instruct Q4_K_M fixture](https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/blob/9217f5db79a29953eb74d5343926648285ec7e67/qwen2.5-0.5b-instruct-q4_k_m.gguf).
+Its SHA-256 is `74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db`.
+A model can answer a raw API request and still fail Bridge's reply validation.
+
 The Python `postgres-binary` extra supplies a database *client*. The installer provisions its
 own cluster and role credentials using your installed server tools. A separate PostgreSQL
 system service or an existing application database can keep its own port and data.
@@ -83,6 +88,13 @@ To stop the database too, run `uv run --no-sync lychd desktop stop` after the Ve
 `lychd desktop status` queries the dedicated PostgreSQL cluster. A second Vessel targeting the
 same database must refuse before startup recovery can affect the first one's work.
 
+The automated qualification uses a disposable OS account, the same CLI and a real browser. It
+saves the opened Bridge, the completed reply, the same reply after restarting PostgreSQL and
+Vessel, and a JSON receipt with the Run ID and the model and engine hashes. Maintainers can run
+the **Desktop host CI** workflow with the browser-chat input selected. Retrieve its
+`desktop-bridge-macOS` and `desktop-bridge-Windows` artifacts from that run. Use the platform
+issues below for hardware, GPU and cold-login trials.
+
 ## Login, update and removal
 
 For automatic startup use `uv run --no-sync lychd desktop enable-login` under the intended
@@ -99,6 +111,15 @@ qualified isolation boundary.
   generated credentials in the dedicated data area with per-user filesystem permissions or
   ACLs. Keep the application signing key and browser credential private. The runtime receives
   its restricted DB role. Administrative access belongs to provisioning.
+- **Credential recovery.** Back up the entire generated `desktop-credentials` directory
+  separately from the PostgreSQL cluster, using encrypted storage. Before relying on the
+  backup, recover the directory into a fresh owner-only location and run
+  `lychd desktop verify-credential-backup "<recovered-directory>"` under the installation
+  account. The command compares all five files against the active generated set without
+  displaying their contents. Keep externally supplied credentials and their file references
+  recoverable through their own provider. When restoring a cluster, recover the matching
+  credentials under the destination account before starting the Vessel or running install.
+  An existing cluster requires the original credentials or explicit overrides.
 - **Update.** Obtain a verified backup before changing a populated installation. Stop Vessel,
   disable login for the update, and keep the current revision and configuration. Install the new
   revision into the intended environment and run `desktop install`, then repeat the persisted
@@ -112,15 +133,13 @@ qualified isolation boundary.
 
 ## Storage, networking and recovery
 
-For PostgreSQL 18 on one dedicated volume, the source includes a physical backup command. Set up a
-private [libpq password file](https://www.postgresql.org/docs/18/libpq-pgpass.html) for the
-selected local replication/administrative role and loopback port. Give the file owner-only
-access. Use an existing private destination on a separate volume for disk-loss protection.
-Find the running cluster's data directory in `desktop status`. Supply the matching PostgreSQL
-18 bin directory.
+With the desktop database running, select an existing owner-only backup directory. Use a separate
+volume for disk-loss protection. The desktop command reads the installed administrative
+credential, checks the running server against the registered cluster and uses its PostgreSQL 18
+tools. The destination on Windows must grant access only to the current user.
 
 ```text
-uv run --no-sync python -m lychd.system.pg_backup --pg-bin "<absolute-bin>" --source "<absolute-PGDATA>" --destination "<private-backup-parent>" --port 55432 --user lich --passfile "<absolute-password-file>"
+uv run --no-sync lychd desktop backup --destination "<private-backup-parent>"
 ```
 
 The command prints its fresh output directory, streams a physical backup and WAL, verifies both
@@ -141,6 +160,21 @@ needs other stores and current revocation history. [Snapshot contract](../adr/07
 [Apple snapshot API](https://github.com/apple-oss-distributions/xnu/blob/main/bsd/man/man2/fs_snapshot_create.2#L86) ·
 [Windows VSS security](https://learn.microsoft.com/en-us/windows/win32/vss/security-considerations-for-requestors) ·
 [PostgreSQL physical backup](https://www.postgresql.org/docs/18/app-pgbasebackup.html).
+
+## Animator ownership
+
+On Linux the Reactor applies the declared conflicts through systemd and generated Quadlets.
+In the personal profile the same orchestration contract selects the native process actuator.
+Vessel starts a configured executable using fixed arguments, verifies ownership of its loopback
+listener, and waits for it to release its resources before switching. Login registration starts
+Vessel under the desktop account. A request to Bridge grants no general host command execution.
+
+We considered llama-swap for its model routing and swap matrix. Adding it as another lifecycle
+owner would require coordinating its independent unload decisions with LychD's grants and
+observations. The personal profile uses its existing extension and Reactor instead. A future
+adapter for an externally managed server needs its own authority and readiness contract.
+[Upstream swap matrix](https://github.com/mostlygeek/llama-swap/blob/a109800cc5340e7722895b7baf78b3d16ef19311/docs/kb/guides/routing/groups-and-matrix.md)
+· [Containers and switching](../adr/08-containers.md).
 
 ## Virtual machines
 

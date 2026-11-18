@@ -53,7 +53,7 @@ jobs:
       - name: Install the selected project and check ordinary entrypoints
         if: runner.os == 'macOS'
         run: |
-          uv sync --locked --no-default-groups --extra postgres-binary --group test --no-editable
+          uv sync --locked --no-default-groups --extra postgres-binary --group test --group desktop-browser --no-editable
           uv run --no-sync lychd --help
           uv run --no-sync lychd platform
           uv run --no-sync lychd desktop --help
@@ -97,6 +97,8 @@ jobs:
         run: uv run --no-sync python -m pytest -q -o addopts= tests/integration/test_native_pg_backup.py
       - name: Install twice and exercise the authenticated local Vessel
         if: runner.os == 'macOS' && env.BRIDGE_CHAT != 'true'
+        env:
+          PGHOSTADDR: 127.0.0.2
         run: uv run --no-sync python scripts/check_desktop_startup.py
       - name: Check out the qualified llama.cpp CPU source
         if: env.BRIDGE_CHAT == 'true'
@@ -115,11 +117,11 @@ jobs:
         if: env.BRIDGE_CHAT == 'true'
         shell: pwsh
         run: |
-          $model = Join-Path $env:RUNNER_TEMP 'SmolLM2-360M-Instruct-Q4_K_M.gguf'
-          $source = 'https://huggingface.co/bartowski/SmolLM2-360M-Instruct-GGUF/resolve/7be6f65f1db715fe5dc5a4634c0d459b4eed42ec/SmolLM2-360M-Instruct-Q4_K_M.gguf'
-          curl --fail --location --silent --show-error --max-filesize 270590880 --max-time 300 --output $model $source
+          $model = Join-Path $env:RUNNER_TEMP 'qwen2.5-0.5b-instruct-q4_k_m.gguf'
+          $source = 'https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/9217f5db79a29953eb74d5343926648285ec7e67/qwen2.5-0.5b-instruct-q4_k_m.gguf'
+          curl --fail --location --silent --show-error --max-filesize 491400032 --max-time 300 --output $model $source
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          if ((Get-FileHash $model -Algorithm SHA256).Hash -ne '2fa3f013dcdd7b99f9b237717fa0b12d75bbb89984cc1274be1471a465bac9c2') {
+          if ((Get-FileHash $model -Algorithm SHA256).Hash -ne '74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db') {
             throw 'Qualification model checksum mismatch.'
           }
           "BRIDGE_MODEL=$model" >> $env:GITHUB_ENV
@@ -129,8 +131,9 @@ jobs:
           "BRIDGE_ENGINE=$($engine[0].FullName)" >> $env:GITHUB_ENV
       - name: Exercise browser chat and verify the answer after native restart
         if: runner.os == 'macOS' && env.BRIDGE_CHAT == 'true'
+        env:
+          PGHOSTADDR: 127.0.0.2
         run: |
-          uv pip install playwright==1.58.0
           uv run --no-sync python scripts/check_desktop_bridge.py --engine "$BRIDGE_ENGINE" --model "$BRIDGE_MODEL" --output bridge-evidence
       - name: Exercise PostgreSQL recovery and the Vessel as a standard Windows user
         if: runner.os == 'Windows'

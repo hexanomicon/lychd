@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING
 import click
 
 from lychd.system.constants import PATH_LYCHD_TOML, PATH_POSTGRES_ROOT_DIR
-from lychd.system.desktop.credentials import load_credentials
+from lychd.system.desktop.credentials import load_credentials, verify_credential_copy
 from lychd.system.desktop.private import check_path, private_directory, publish_file, verify_private_directory
 
 if TYPE_CHECKING:
@@ -43,7 +43,10 @@ def postgres_program(name: str) -> str:
 def _settings(*, install: bool = False, admin: bool = False) -> Settings:
     from lychd.config.settings import Settings
 
-    load_credentials(administrative=admin, provision=install)
+    existing_cluster = _DATA.exists()
+    load_credentials(
+        administrative=admin, provision=install and not existing_cluster, required=install and existing_cluster
+    )
     settings = Settings()
     db = settings.server.database
     if db.profile != "postgres" or db.host not in {"127.0.0.1", "localhost"}:
@@ -199,7 +202,13 @@ def install() -> None:
         _initialize_cluster(binary, db.user, password)
     _start(db.port)
     with psycopg.connect(
-        host="127.0.0.1", port=db.port, user=db.user, password=password, dbname="postgres", autocommit=True
+        host="127.0.0.1",
+        hostaddr="127.0.0.1",
+        port=db.port,
+        user=db.user,
+        password=password,
+        dbname="postgres",
+        autocommit=True,
     ) as conn:
         location = conn.execute("SHOW data_directory").fetchone()
         if location is None or not _DATA.samefile(location[0]):
@@ -233,6 +242,7 @@ def _exclusive_cluster(db: DatabaseSettings) -> Generator[None]:
         raise click.ClickException(msg)
     connection = psycopg.connect(
         host="127.0.0.1",
+        hostaddr="127.0.0.1",
         port=db.port,
         user=db.user,
         password=db.password.get_secret_value(),
@@ -325,7 +335,31 @@ def configure_model(engine: Path, model: Path, port: int) -> None:
 
 
 @desktop.command()
+@click.argument("directory", type=click.Path(exists=True, file_okay=False, path_type=Path))
+def verify_credential_backup(directory: Path) -> None:
+    """Compare a private backup with all generated desktop credentials."""
+    try:
+        verify_credential_copy(directory.absolute())
+    except (OSError, ValueError) as exc:
+        raise click.ClickException(str(exc)) from exc
+    click.echo("All five generated credentials match the private backup.")
+
+
+@desktop.command()
 def uninstall() -> None:
     """Remove login integration and stop the dedicated database, preserving settings and data."""
     _stop(unregister=True)
     click.echo("Login service removed and database stopped. Settings, credentials and data were retained.")
+
+
+@desktop.command()
+@click.option("--destination", required=True, type=click.Path(exists=True, file_okay=False, path_type=Path))
+def backup(destination: Path) -> None:
+    """Capture the running desktop database into a fresh, verified offline copy."""
+    from lychd.system.desktop.database_backup import capture_registered
+
+    _require_cluster()
+    db = _settings(admin=True).server.database
+    directory = Path(postgres_program("pg_basebackup")).absolute().parent
+    output = capture_registered(directory, _DATA, destination.absolute(), db)
+    click.echo(f"Verified PostgreSQL backup: {output}")

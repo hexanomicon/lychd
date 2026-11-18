@@ -33,6 +33,7 @@ if ($TrialSid) {
     & $cli platform
     & $cli desktop --help
     & $python -m pytest -q -o addopts= -p no:cacheprovider tests/unit/cli/test_native_entry.py tests/unit/domain/web/test_vessel_owner.py tests/unit/system/desktop tests/integration/test_native_pg_backup.py
+    $env:PGHOSTADDR = '127.0.0.2'
     if ($BridgeChat) {
         & $python scripts/check_desktop_bridge.py --browser msedge --engine "$root\engine\llama-server.exe" --model "$root\model.gguf" --output "$root\artifacts\bridge-evidence"
     } else {
@@ -67,9 +68,8 @@ try {
     $python = @(Get-ChildItem -Path "$stage\runtime\cpython-3.14.8-*\python.exe")
     if ($python.Count -ne 1) { throw 'Expected one staged CPython 3.14.8 interpreter.' }
     $env:UV_PROJECT_ENVIRONMENT = "$stage\.venv"
-    & uv sync --project $stage --python $python[0].FullName --locked --no-default-groups --extra postgres-binary --group test --no-editable --link-mode copy
+    & uv sync --project $stage --python $python[0].FullName --locked --no-default-groups --extra postgres-binary --group test --group desktop-browser --no-editable --link-mode copy
     if ($env:BRIDGE_CHAT -eq 'true') {
-        & uv pip install --python "$stage\.venv\Scripts\python.exe" --link-mode copy playwright==1.58.0
         Copy-Item -LiteralPath (Split-Path -Parent $env:BRIDGE_ENGINE) -Destination "$stage\engine" -Recurse
         Copy-Item -LiteralPath $env:BRIDGE_MODEL -Destination "$stage\model.gguf"
         [void](New-Item -ItemType Directory -Path "$stage\artifacts")

@@ -57,6 +57,14 @@ Project maturity and delivery state are different. An accepted ADR does not prov
 
 ## Current evidence envelope {#current-evidence-envelope}
 
+On 18 November 2026 a [Linux browser and restart receipt](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/runtime/bridge-linux-2026-11-18.json)
+recorded the production image at `665eb336` answering through Bridge in Chrome with a real
+Qwen2.5-0.5B model. After restarting PostgreSQL, Vessel and Chrome, the same conversation,
+reply and Orb dispatch grant were present. This trial used a manually assembled rootless
+Podman pod. The generated systemd/Quadlet installation and its switching lifecycle have
+separate qualification criteria. Desktop qualification uses the
+[personal host procedure](deployments/desktop.md).
+
 The 20 October 2026 container-only correction retired the former Core host-native runtime,
 including native stop, credential-source, server/TCP, and host fixtures. Core pytest, lint,
 format checks, and typing now enter `Containerfile.tests` through the Makefile and bounded OCI

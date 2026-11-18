@@ -133,6 +133,9 @@ def _register_local_commands() -> None:
         cli.add_command(stop_native)
         return
 
+    if sys.platform != "linux":
+        return
+
     from lychd.cli.commands import COMMANDS
     from lychd.cli.deletion import delete_installation
     from lychd.cli.operator import logs, start, status, stop
@@ -146,7 +149,7 @@ _register_local_commands()
 
 def run_cli() -> None:
     """Configure shared logging, then run the native CLI without eager ASGI assembly."""
-    if sys.platform in {"darwin", "win32"}:
+    if sys.platform != "linux":
         cli()
         return
 

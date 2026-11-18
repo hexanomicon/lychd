@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from typing import TYPE_CHECKING
 
 from sqlalchemy import event
@@ -32,8 +33,8 @@ def database_url(settings: DatabaseSettings, *, runtime: bool = False) -> str:
     ).render_as_string(hide_password=False)
 
 
-def database_saq_dsn(settings: DatabaseSettings, *, runtime: bool = False) -> str:
-    """Build the driverless Postgres DSN used by the local queue workers."""
+def database_saq_dsn(settings: DatabaseSettings, *, runtime: bool = False, libpq: bool = True) -> str:
+    """Build a driverless DSN, pinning native libpq loopback connections against ambient routing."""
     password = settings.runtime_password if runtime else settings.password
     if password is None:
         msg = (
@@ -44,6 +45,9 @@ def database_saq_dsn(settings: DatabaseSettings, *, runtime: bool = False) -> st
         raise ValueError(msg)
     return URL.create(
         "postgresql",
+        query={"hostaddr": "127.0.0.1"}
+        if libpq and sys.platform in {"win32", "darwin"} and settings.host in {"localhost", "127.0.0.1"}
+        else {},
         username=settings.runtime_user if runtime else settings.user,
         password=password.get_secret_value(),
         host=settings.host,

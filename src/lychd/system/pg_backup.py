@@ -86,6 +86,10 @@ def capture(pg_bin: Path, source: Path, destination: Path, *, port: int, user: s
             msg = "This single-volume profile requires every tablespace inside the dedicated cluster."
             raise ValueError(msg)
         output = Path(tempfile.mkdtemp(prefix="lychd-postgres-", dir=destination))
+        if os.name == "nt":
+            from lychd.system.desktop.private import private_directory
+
+            private_directory(output)
         cluster = output / "cluster"
         click.echo(f"Capture directory: {output}", err=True)
         subprocess.run(  # noqa: S603

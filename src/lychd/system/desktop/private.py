@@ -138,6 +138,20 @@ def verify_private_directory(directory: Path) -> None:
         raise ValueError(msg)
 
 
+def verify_private_file(path: Path) -> None:
+    """Verify an owner-only credential file without modifying the recovery media."""
+    check_path(path)
+    if not path.is_file():
+        msg = f"Expected a regular credential file: {path}"
+        raise ValueError(msg)
+    info = path.stat()
+    if sys.platform == "win32":
+        _verify_windows_acl(path)
+    elif info.st_uid != os.getuid() or info.st_mode & (stat.S_IRWXG | stat.S_IRWXO):
+        msg = f"Expected an owner-only credential file: {path}"
+        raise ValueError(msg)
+
+
 def private_file(path: Path) -> None:
     """Check file ownership and restrict access before reading credentials."""
     check_path(path)

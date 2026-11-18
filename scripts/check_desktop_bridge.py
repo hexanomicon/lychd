@@ -22,28 +22,29 @@ from contextlib import contextmanager
 from http import HTTPStatus
 from pathlib import Path
 from typing import TYPE_CHECKING
-from uuid import UUID, uuid4
+from uuid import uuid4
 
-from check_desktop_startup import _check_routes, _request
+from check_desktop_startup import check_registered_backup, check_routes, request
 
+from lychd.domain.web.contracts import MessageAccepted, MessageIntent
 from lychd.system.services.local_access import load_local_access
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Generator
 
-    from playwright.sync_api import Page
+    from playwright.sync_api import HttpCredentials, Page
 
 CLI = [sys.executable, "-m", "lychd"]
 
 
 @contextmanager
-def session() -> Iterator[None]:
+def session() -> Generator[None]:
     process = subprocess.Popen([*CLI, "desktop", "session"])
     try:
         deadline = time.monotonic() + 90
         while time.monotonic() < deadline and process.poll() is None:
             try:
-                if _request("/api/v1/altar/status")[0] == HTTPStatus.UNAUTHORIZED:
+                if request("/api/v1/altar/status")[0] == HTTPStatus.UNAUTHORIZED:
                     break
             except OSError:
                 pass
@@ -72,9 +73,15 @@ def capture(page: Page, path: Path) -> None:
 
 
 def completed_reply(page: Page, run_id: str) -> str:
-    turn = page.locator(f'article.turn--agent[data-run-id="{run_id}"][data-state="done"] .turn__body')
+    turn = page.locator(
+        f'article.turn--agent[data-run-id="{run_id}"]:is([data-state="done"],[data-state="failed"],[data-state="cancelled"])'
+    )
     turn.wait_for(timeout=240_000)
-    text = turn.inner_text()
+    state = turn.get_attribute("data-state")
+    if state != "done":
+        msg = f"Bridge Run {run_id} ended with state {state}."
+        raise RuntimeError(msg)
+    text = turn.locator(".turn__body").inner_text()
     if not re.search(r"\b19\b|\bnineteen\b", text, re.IGNORECASE):
         msg = "The completed model reply did not answer the arithmetic prompt."
         raise RuntimeError(msg)
@@ -117,12 +124,16 @@ def offer(page: Page, origin: str, prompt: str, output: Path) -> tuple[str, str,
     if not response.ok or response.request.method != "POST":
         msg = "Bridge refused the browser's message."
         raise RuntimeError(msg)
-    receipt = response.json()
-    if (receipt["pattern_id"], receipt["pattern_revision"]) != ("bridge_chat", "2"):
+    receipt = MessageAccepted.model_validate(response.json())
+    if (receipt.pattern_id, receipt.pattern_revision) != ("bridge_chat", "2"):
         msg = "Browser message was admitted on a different Pattern."
         raise RuntimeError(msg)
-    request_id = str(UUID(response.request.post_data_json["request_id"]))
-    run_id = receipt["run_id"]
+    intent = MessageIntent.model_validate(response.request.post_data_json)
+    if intent.prompt != prompt:
+        msg = "The admitted request differs from the browser prompt."
+        raise RuntimeError(msg)
+    request_id = str(intent.request_id)
+    run_id = receipt.run_id
     if not re.fullmatch(r"[A-Za-z0-9_:.~-]+", run_id):
         msg = "Invalid admitted Run identity."
         raise RuntimeError(msg)
@@ -159,6 +170,7 @@ def main() -> None:
     subprocess.run([*CLI, "desktop", "install"], check=True)
     try:
         subprocess.run([*CLI, "desktop", "install"], check=True)
+        check_registered_backup(CLI)
         subprocess.run(
             [*CLI, "desktop", "configure-model", "--engine", str(args.engine), "--model", str(args.model)], check=True
         )
@@ -167,12 +179,16 @@ def main() -> None:
             "ascii"
         )
         origin = access.url.rstrip("/")
-        credentials = {"username": access.username, "password": access.password.get_secret_value(), "origin": origin}
+        credentials: HttpCredentials = {
+            "username": access.username,
+            "password": access.password.get_secret_value(),
+            "origin": origin,
+        }
         prompt = f"Trial {uuid4().hex[:8]}. What is 12 plus 7? Reply with the number."
         with sync_playwright() as playwright:
             with session(), playwright.chromium.launch(channel=args.browser) as browser:
                 page = browser.new_page(http_credentials=credentials, viewport={"width": 1440, "height": 960})
-                _check_routes(f"Basic {credential}")
+                check_routes(f"Basic {credential}")
                 request_id, run_id, answer, conversation_url = offer(page, origin, prompt, args.output)
             with session(), playwright.chromium.launch(channel=args.browser) as browser:
                 page = browser.new_page(http_credentials=credentials, viewport={"width": 1440, "height": 960})

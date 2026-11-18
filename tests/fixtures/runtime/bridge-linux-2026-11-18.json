@@ -1,0 +1,47 @@
+{
+  "commit": "665eb336b9ae4422f08e9d583562930a082e36cb",
+  "image": "sha256:5da9496e3312f663505a473bcfeedf9e43bc3b0b800b15841a6e4682231855fe",
+  "linux_profile": "Rootless Podman pod, manually wired. Standard production image entrypoint and schema bootstrap. No systemd/Quadlet installer.",
+  "model_revision": "9217f5db79a29953eb74d5343926648285ec7e67",
+  "model_sha256": "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db",
+  "prompt": "Trial 41ecfc79. What is 12 plus 7? Reply with the number.",
+  "retained_answer": "19",
+  "run": {
+    "run_id": "97babb34-bcad-562c-a4ca-9ea6becda28d",
+    "session_id": "1f8a0f6a-3102-40bb-9ec5-4491fb46b548",
+    "status": "done",
+    "workflow_name": "bridge_chat",
+    "created_at": "2026-11-18T03:19:23.757518Z",
+    "started_at": "2026-11-18T03:19:23.823968Z",
+    "finished_at": "2026-11-18T03:19:24.767999Z",
+    "error_present": false,
+    "bridge_path": "/bridge/1f8a0f6a-3102-40bb-9ec5-4491fb46b548",
+    "application_path": null
+  },
+  "dispatch": {
+    "event_id": "779e5c86-6be5-4d7a-9d87-0ae0f331dea5",
+    "seq": 5,
+    "kind": "dispatch",
+    "occurred_at": "2026-11-18T03:19:24.048010Z",
+    "summary": "Dispatcher granted capability: personal:chat:personal-model",
+    "subject_key": "personal:chat:personal-model",
+    "phase": "warm",
+    "occurrence_id": "440dd3f0-466b-48a2-b681-426218f57898",
+    "transition_request_id": null,
+    "nexus_path": null,
+    "animator_name": "personal",
+    "capability_family": "chat",
+    "model_id": "personal-model",
+    "grant_id": "255fc120e42b41fc9c6fcf148e439680",
+    "consent_id": null,
+    "capture": "durable_best_effort"
+  },
+  "exact_run_and_evidence_match_after_restart": true,
+  "screenshots": {
+    "02-restart.png": "0bc9914ec48a7e8fdfc9b45e63ca4366dbc5ea57834d5b9852c833d46878def9",
+    "02-send.png": "0bc9914ec48a7e8fdfc9b45e63ca4366dbc5ea57834d5b9852c833d46878def9",
+    "01-bridge.png": "25ec8f9ae086b2309633d23ec41df3fe3dd64081fc67cebfe8343a178854b0b4"
+  },
+  "model_bytes": 491400032,
+  "generation": "Personal desktop binder defaults"
+}

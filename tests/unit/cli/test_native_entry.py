@@ -33,3 +33,12 @@ def test_desktop_bootstrap_routes_and_personal_paths(
     assert cache == (
         tmp_path / "Library" / "Caches" / "LychD" if operating_system == "darwin" else base / "LychD" / "cache"
     )
+
+
+def test_unknown_host_exposes_only_the_platform_probe(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(entry.sys, "platform", "freebsd")
+    group = click.Group()
+    monkeypatch.setattr(entry, "cli", group)
+    entry._register_local_commands()  # pyright: ignore[reportPrivateUsage]
+    assert set(group.commands) == {"platform"}
+    assert json.loads(CliRunner().invoke(group, ["platform"]).output)["profile"] == "unsupported"

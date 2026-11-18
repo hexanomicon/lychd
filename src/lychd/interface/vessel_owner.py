@@ -44,7 +44,7 @@ def _stop_proof(generation: str) -> str:
 async def _runtime_session(application_name: str) -> AsyncGenerator[Any]:
     db = settings_root.get_settings().server.database
     connection = await cast("Any", asyncpg).connect(
-        database_saq_dsn(db, runtime=True),
+        database_saq_dsn(db, runtime=True, libpq=False),
         timeout=10,
         command_timeout=10,
         server_settings={"application_name": application_name},

@@ -238,3 +238,90 @@ def test_publication_preserves_existing_files_and_recovers_write_failure(
     with pytest.raises(FileExistsError):
         private.publish_file(target, b"replacement")
     assert target.read_bytes() == b"retained"
+
+
+def test_reinstall_refuses_lost_generated_key(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    cluster = tmp_path / "native-data"
+    cluster.mkdir()
+    monkeypatch.setattr(desktop, "_DATA", cluster)
+    monkeypatch.setattr(credentials, "PATH_POSTGRES_ROOT_DIR", tmp_path)
+    monkeypatch.setenv("LYCHD_RUNTIME_DB_PASSWORD", "external")
+    monkeypatch.delenv("LYCHD_APP_SECRET_KEY", raising=False)
+    monkeypatch.delenv("LYCHD_APP_SECRET_KEY_FILE", raising=False)
+    with pytest.raises(click.ClickException, match="Restore its original file"):
+        desktop._settings(install=True, admin=True)
+    assert not (tmp_path / "desktop-credentials").exists()
+
+
+def test_verify_recovered_credential_files(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from click.testing import CliRunner
+
+    from lychd.system.desktop.private import private_directory, publish_file
+
+    monkeypatch.setattr(desktop, "PATH_POSTGRES_ROOT_DIR", tmp_path)
+    monkeypatch.setattr(credentials, "PATH_POSTGRES_ROOT_DIR", tmp_path)
+    names = (*credentials._RUNTIME, *credentials._ADMIN)
+    for name in names:
+        monkeypatch.delenv(name, raising=False)
+        monkeypatch.setenv(f"{name}_FILE", "")
+    credentials.load_credentials(administrative=True, provision=True)
+    original = tmp_path / "desktop-credentials"
+    backup = tmp_path / "recovered"
+    private_directory(backup)
+    for name in names:
+        publish_file(backup / name.lower(), (original / name.lower()).read_bytes())
+    runner = CliRunner()
+    verify = desktop.verify_credential_backup
+    assert runner.invoke(verify, [str(backup)]).exit_code == 0
+    assert runner.invoke(verify, [str(original)]).exit_code != 0
+    selected = backup / names[-1].lower()
+    selected.write_text("different-backup-value")
+    mismatch = runner.invoke(verify, [str(backup)])
+    assert mismatch.exit_code != 0
+    assert names[-1] in mismatch.output
+    assert selected.read_text() not in mismatch.output
+    monkeypatch.setenv(f"{names[-1]}_FILE", str(selected))
+    assert "explicit override" in runner.invoke(verify, [str(backup)]).output
+
+
+def test_desktop_libpq_pins_registered_address(monkeypatch: pytest.MonkeyPatch) -> None:
+    from psycopg.conninfo import conninfo_to_dict
+    from pydantic import SecretStr
+
+    from lychd.config.settings.server import DatabaseSettings
+    from lychd.db import factory
+
+    monkeypatch.setattr(factory, "sys", SimpleNamespace(platform="darwin"))
+    monkeypatch.setenv("PGHOSTADDR", "127.0.0.2")
+    db = DatabaseSettings(host="localhost", password=SecretStr("local"), runtime_password=SecretStr("runtime"))
+    for runtime in (True, False):
+        assert conninfo_to_dict(factory.database_saq_dsn(db, runtime=runtime))["hostaddr"] == "127.0.0.1"
+    assert "hostaddr" not in conninfo_to_dict(factory.database_saq_dsn(db, libpq=False))
+    assert "hostaddr" not in conninfo_to_dict(factory.database_saq_dsn(db.model_copy(update={"host": "private-db"})))
+
+
+def test_installer_and_shutdown_pin_admin_connections(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import psycopg
+    from click.testing import CliRunner
+    from pydantic import SecretStr
+
+    from lychd.config.settings.server import DatabaseSettings
+
+    db = DatabaseSettings(host="localhost", password=SecretStr("temporary"))
+    monkeypatch.setenv("PGHOSTADDR", "127.0.0.2")
+    monkeypatch.setattr(desktop, "_DATA", tmp_path)
+    monkeypatch.setattr(desktop, "PATH_POSTGRES_ROOT_DIR", tmp_path)
+    monkeypatch.setattr(desktop, "postgres_program", Mock(return_value="initdb"))
+    monkeypatch.setattr(desktop.subprocess, "check_output", Mock(return_value="initdb (PostgreSQL) 18.0"))
+    monkeypatch.setattr(
+        desktop, "_prepare_installation", Mock(return_value=SimpleNamespace(server=SimpleNamespace(database=db)))
+    )
+    monkeypatch.setattr(desktop, "_start", Mock())
+    connect = Mock(side_effect=ConnectionRefusedError)
+    monkeypatch.setattr(psycopg, "connect", connect)
+
+    assert isinstance(CliRunner().invoke(desktop.install).exception, ConnectionRefusedError)
+    with pytest.raises(ConnectionRefusedError), desktop._exclusive_cluster(db):
+        pytest.fail("management proceeded without a verified database")
+    assert len(connect.call_args_list) == 2
+    assert all(call.kwargs["hostaddr"] == "127.0.0.1" for call in connect.call_args_list)
