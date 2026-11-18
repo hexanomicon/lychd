@@ -103,12 +103,12 @@ Before review or standing-policy admission, freeze the canonical MIME, sender/al
 reply headers and body. Check that the alias is eligible; it shares the mailbox's limits and
 provides no separate identity grant.
 
-Gmail's send API documents no idempotency key, so retain an application effect id and RFC Message-ID
-for correlation, followed by the returned Gmail message id when available. If submission times
-out, keep `UNKNOWN` while inspecting Sent mail. Matching author, destination, bytes and correlation
-can support reconciliation. A missing result in one read cannot prove non-delivery. A vanished
-draft alone is insufficient evidence of the send outcome, and provider acceptance still does not
-establish final delivery.
+If sending the reviewed client reply times out, keep the submission
+`UNKNOWN`. Gmail's send API documents no idempotency key. Look up the application effect ID,
+the RFC Message-ID and any returned Gmail message ID. Inspect Sent mail for a message matching
+the author, destination, bytes and correlation. An empty first search or a vanished draft leaves
+the send unresolved. Even a known Gmail acceptance cannot tell the operator that the client
+received the message.
 [Send API](https://developers.google.com/workspace/gmail/api/reference/rest/v1/users.messages/send),
 [draft lifecycle](https://developers.google.com/workspace/gmail/api/guides/drafts),
 [delivery errors](https://developers.google.com/workspace/gmail/api/guides/handle-errors)

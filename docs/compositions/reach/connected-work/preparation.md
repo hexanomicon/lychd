@@ -12,7 +12,7 @@ provider.
 
 **`reach.connect.prepare@1`** is the explicit offline preparation profile. The public Discord
 contract retains its own identity. The [connected-work contract](index.md) specifies the separate
-authority, custody and recovery required for operational delivery under `reach.correspondence@1`. [State of Work](../../../state-of-the-work.md#composition-portfolio-delivery)
+authority, custody and recovery required for operational delivery under `reach.correspondence@1`. [State of Work](../../../state-of-the-work.md#reach-operator-profiles)
 owns its evidence and the remaining deployment boundary.
 
 ## One intent, several concrete channels
@@ -92,15 +92,17 @@ durable correspondence ledger is implied.
 
 ## WUPHF as finite preparation
 
-“Announce this accepted release in these three places” selects a finite tuple of explicit targets.
-Reach validates every item before returning the batch. Duplicate request identities and duplicate
-operation/target pairs refuse; a forbidden destination does not disappear from an apparently
-successful result. Each provider payload and the complete batch have separate bindings.
+The fixture above prepares the same release notice for a Gmail recipient, a Telegram chat
+and issue 42 in `example/project`. Inspect the recipients and mailbox in the email, the conversation
+ID in the chat request, and the repository and issue number in the comment. If the issue falls
+outside the policy, the whole preparation refuses. Reach cannot silently drop it and return two
+apparently successful requests. Duplicate request IDs and duplicate operation/target pairs also
+refuse. Each provider payload has its own binding alongside the binding for the whole batch.
 
-This is preparation inside a serial Graph station. It uses no Graph broadcast/map/join primitive,
-background sender or parallel executor. A future sender must settle each target independently:
-one accepted email cannot prove that a chat message or post was accepted. An unknown result must
-remain visible and cannot trigger a blind replay of the whole batch.
+One serial Graph station prepares these requests. It uses no Graph broadcast/map/join primitive
+or parallel executor, and has no background sender. If a future authorized sender receives a Gmail acknowledgement and loses the
+Telegram reply, the email has its own result, Telegram remains unknown, and the issue comment
+still needs its own evidence. Replaying all three would risk sending the email twice.
 
 Reach owns correspondence and destination policy. [Broadcast](../../broadcast/release.md) owns
 editorial acceptance and publication judgment for its own project; a standalone proposed Reach

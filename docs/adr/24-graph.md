@@ -47,9 +47,11 @@ valid and exactly equal the registered revision; a revision mismatch fails inste
 Fresh execution must begin at the builder's declared entry station; only a validated durable
 cursor may enter at a later station. Fresh calls retain the caller's state and node objects while
 checkpoint storage retains detached copies.
-Both delivered Bridge revisions validate fresh and restored state against admitted Run identity,
-session, prompt, priority, and capability binding before node execution.
-Workflow.mermaid() is a projection.
+For example, the base chat revisions `bridge_chat@1` and `bridge_chat@2` check fresh and
+restored state against the admitted Run identity, session, prompt, priority and capability
+binding before executing a node. Revision 2 requires its exact admitted capability key.
+Each additional casting has its own pinned state contract. `Workflow.mermaid()` projects the
+score.
 
 [Workflow's Pattern identity](28-workflow.md#pattern-identity) owns reviewed implementation
 compatibility; its [private v2 adapter](28-workflow.md#private-v2-adapter) owns the current local

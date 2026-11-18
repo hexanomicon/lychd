@@ -170,27 +170,6 @@ Its manifest records bounded omissions. It admits at most 8,192 selected and omi
 `--corpus-dir` launch option mounts and verifies this detached export read-only in the worker.
 The mount is a revision snapshot; working-tree edits require a new export and explicit launch.
 
-Research discovery offers at most sixteen local descriptors. Exact source references and numbered
-targets retain precedence; a verified named parent with matching authored units ranks before ordinary
-path, title and content overlap. Its optional `section_match` string has at most 320 characters and
-shows authored parent and sampled child headings or anchors, without inventing a range. It is
-untrusted discovery metadata, never acquired body evidence or source authority. The model selects from that same offered
-set at planning, validation and acquisition. It can read at most three local excerpts per plan.
-Ordinary excerpts retain a 4,000-character bound; an explicitly requested multi-section or
-complete-quotation Markdown read may admit up to 16,000 characters from the selected scope. Neither proves exhaustive
-inspection of the repository.
-Implicit Markdown reads skip link-only navigation. A kickoff favors welcome or getting-started
-content and retains nearby parent/date context; an explicit source fragment still selects that
-section. Implicit nested lexical reads retain the nearest non-title parent with meaningful selected
-content inside the existing excerpt bound. A source whose required contiguous section context cannot
-fit is refused rather than presenting the child without its owner. Numbered section labels and
-adjacent authored anchors participate in selection. The current
-question's explicit targets take precedence over the acknowledged research plan, which supplies focus for an elliptical
-follow-up such as a filename. Inspect the projected excerpt bounds when source relevance matters.
-The complete catalogue is not injected into the prompt, and an oversized fixed input still
-refuses under the normal Context budget. These files supply evidence, not instructions or
-permission to execute code, edit files or search private mounts.
-
 Build the paired development images and retain their exact image identities:
 
 ```bash
@@ -404,6 +383,88 @@ channel whose surrounding content you did not intend to admit.
 
 ## Enable local conversation
 
+Local conversation requires an already running, warm local `Qwen3.8-27B` at the fixed literal endpoint
+`http://127.0.0.1:28000`. The host transport checks fresh `/health` and `/v1/models` observations
+for the exact model. It cannot start, activate, evict or replace an engine. An absent or unsuitable
+model refuses the turn; document search and another model are not fallbacks.
+
+The default `--model-transport host` reads that loopback endpoint on the operator host.
+When the already-running model is inside the native Podman pod, explicitly select
+`--model-transport podman`. Its bounded transport executes only a fixed Python HTTP helper
+in the exact `lychd-night-qwen38` container and reads the same loopback endpoint there.
+Request text crosses standard input, never shell arguments. The helper cannot select a
+different container, URL, command, model, or runtime transition; it publishes no host port.
+Both roads retain the exact health/model and generation-payload checks.
+
+Create a private `0600` file at `$REACH_ROOT/conversation-01.json` with your local editor. This
+synthetic example selects an explicit input allowance:
+
+```json
+{
+  "schema_version": 1,
+  "persona_name": "Example",
+  "persona_instructions": "Answer clearly and state uncertainty when evidence is missing.",
+  "animator_id": "night-qwen38",
+  "model_id": "Qwen3.8-27B",
+  "max_context": 70000,
+  "max_tokens": 1536,
+  "temperature": 0.6,
+  "max_input_chars": 210000,
+  "timeout_seconds": 300
+}
+```
+
+The default combined instruction/input allowance remains 20,000 characters. An explicitly prepared
+profile may select `max_context` up to 262,144 tokens and `max_input_chars` up to 210,000 characters,
+with the same per-message ceiling. These limits remain bounded by the 1,048,576-byte model payload
+and 2,097,152-byte escaped pipe frame. Unicode and JSON escaping can exhaust byte limits before the
+character allowance. The 4,096-token completion ceiling, 300-second per-call maximum, existing call
+limits and review reserves remain unchanged. A larger explicit allowance changes the profile digest;
+it does not make every mandatory context or answer fit.
+
+The profile is a static instruction and exact model binding, not Mirror identity, Persona
+lineage or lasting memory. The supervisor freezes its validated bytes for one generation and
+mounts that snapshot read-only into the worker. Only its validated expression catalogue reaches
+the Discord edge through readiness; the persona and model frames do not. Changes require a new
+explicit launch.
+
+Stop the foreground instance before launching the conversation profile with its state directory.
+Add `converse` to the first matching rule's actions. Keep `answer_docs` for `admin-inspect`
+and `summarize_context` for the excerpt-only context command. This first launch uses the
+original zero history limit. If you already enabled [bounded surrounding history](#enable-bounded-surrounding-history-only-when-intended),
+add `--history` to match the positive policy limit.
+
+```bash
+uv run --locked python scripts/reach_operator.py run \
+  --engine "$ENGINE" \
+  --policy "$REACH_ROOT/policy.toml" \
+  --token-file "$REACH_ROOT/discord-token" \
+  --state-dir "$REACH_ROOT/state" \
+  --images "$REACH_ROOT/images-01.json" \
+  --corpus-dir "$REACH_ROOT/corpus-01" \
+  --conversation-profile "$REACH_ROOT/conversation-01.json" \
+  --model-endpoint http://127.0.0.1:28000
+```
+
+The corpus supplies relevant public-document excerpts. If history is enabled, the worker
+also includes admitted recent messages and omits the oldest first to fit the input bound.
+Both reach the model as attributed, untrusted material.
+
+For each admitted context round, the native worker creates a generation-local Run, executes
+`reach.operator_converse@9`, and acquires an exact Dispatcher Chat lease without tools. An ordinary
+Run makes one bounded model request; the optional research branch below makes one planning and
+one synthesis request in the same Run when usable evidence reaches synthesis.
+[Checkback](#check-an-answer-before-settlement) and [addressing](#quiet-replies-and-adjacent-continuations)
+have their own bounded calls. Adaptive context can admit up to three Runs for one turn.
+The relay supplies no retry, proxy, redirect, arbitrary endpoint or model override. Its reply
+grants no publication or host authority. Model output remains bounded; this profile does not
+qualify general answer quality.
+
+The public slash-command group defaults to `reach`. Select an alias with `--command-name example`
+and deliberately repeat `--sync-commands` when changing guild registration. Names accept a
+lowercase initial letter followed by lowercase letters, digits or underscores, at most 32
+characters. The alias changes the displayed commands, not the Reach Composition or permissions.
+
 ### Nadir conversation evolution
 
 The explicit operator conversation profile may opt into one-to-one DMs. In the private
@@ -460,7 +521,7 @@ within the question's scope without unverified performance claims; an unrelated 
 not call for unsolicited roadmap or current-phase status.
 
 Adaptive context is separately opt-in: add `"adaptive_context": true` to the private conversation
-JSON shown below. Omission retains the single-call behavior. Without catalogue research, the model
+profile used at launch. Omission retains the single-call behavior. Without catalogue research, the model
 returns only an `answer`, `read_more` or `clarify` text decision, never an executable tool call.
 Without catalogue research or checkback, at most three model calls share one turn deadline; each uses a fresh
 generation-local native Run. Only a settled request for more context admits the exact next round, preserving the event,
@@ -531,6 +592,9 @@ The literal current question is also supplied as a separate review task; a model
 cannot replace it. This task is budgeted and bound with the frozen envelope for review and correction.
 When correcting a prior reply, formation and review also require acknowledging its visible error
 and answering a requested explanation without inventing hidden execution causes.
+
+#### When the review itself is malformed
+
 An optional `checkback_invalid_retry = true` profile admits one additional review call across both
 candidate versions, requiring checkback. Omitted or false preserves the previous profile digest,
 review behavior and budget. Only typed model-output failures `review_shape` and `coverage_binding`
@@ -553,8 +617,10 @@ probe retains one shared twelve-operation ceiling across probes, generations, co
 re-review. This is a harness limit, not an existing native broker turn counter. With interpretation
 and addressing, the bounded maximum is seven ordinary or eight research generations; additional
 context/probe operations may exhaust the harness earlier. No restart recovery or hidden replay is
-added. Pattern revision 8 rejects prior manifests; checkpoint schema 8 is unchanged because the
-retry token is transient.
+added. Revision 8 introduced this transient retry token without changing its checkpoint schema 8.
+Runs remain bound to their exact manifests.
+
+#### Rephrasing and claims about a running installation
 
 A conservative controller guard can veto an accepted answer that demonstrably repeats complete
 sentences from the actual reply or continuation anchor despite an unambiguous English request to
@@ -588,6 +654,8 @@ and correction is checked again before its model call, and oversized envelopes r
 An empty list means no claim was observed, not that
 the answer is grounded; extraction remains fallible model judgment.
 
+#### Which earlier answer or numbered item?
+
 Bounded reference hints may resolve coordinated ordinal references from one explicit numbered list
 or sibling-heading sequence in the actual anchor. They preserve observed item order, labels, aliases
 and spans rather than doing arithmetic on printed numbers. Ambiguous, conflicting or incomplete
@@ -603,6 +671,8 @@ asking only for a different numbered target may be returned for the existing one
 original `needs_evidence` judgment remains visible; no rejected candidate is adopted, and the new
 candidate still requires a final accepted review. A clarification about the actual target retains
 its ordinary missing-evidence behavior.
+
+#### Check the requested goals
 
 Adding `"request_goals": true` requires checkback and adds one fresh no-tool interpretation before
 planning. It sees the current question, exact anchors and bounded recent messages, with no source
@@ -636,14 +706,15 @@ partial indication. Complete parent digests and exact character/UTF-8 ranges rem
 and bind the requirements digest. No free offsets, model summary or parent reinsertion follows.
 Interpretation chooses the smallest sufficient units while preserving every referent, contrast and
 visible earlier error needed for a WHY request; it may need a whole message or a budget refusal.
- Selected entries remain mandatory alongside
+
+Selected entries remain mandatory alongside
 the byte-for-byte current question and complete requirements when optional history is trimmed;
 an overflow refuses within the same input, frame and time ceilings. Their exact identities and
-the complete object bind the Run digest and frozen review context. They grant no source authority.
-The current question, including cancellations and shortening requests, remains authoritative over
-this fallible interpretation. They guide planning, synthesis and review, and establish no factual truth or additional authority.
-These outcomes can retain requested components when later source packing omits older messages;
-they do not supply evidence about why a historical response was produced.
+the complete object bind the Run digest and frozen review context. The resulting goals guide planning, synthesis and review even if
+source packing later omits older messages. The current question, including a cancellation or
+shortening request, still controls. Goal selection supplies neither factual evidence about an
+earlier answer nor authority to acquire a source.
+
 Every goal must receive a coverage status; an accepted answer requires complete coverage and a
 short matching visible answer excerpt for each goal. Coverage matching ignores whitespace and
 only a conservative presentation subset: strictly flanked paired bold/italic at up to two nesting
@@ -661,6 +732,8 @@ closed coverage statuses do. This remains model judgment rather than a semantic 
 This optional interpretation needs profile-specific semantic qualification: valid goal syntax does
 not prove that it preserved the user's scope. Leave it disabled when it introduces unrequested work;
 direct checkback still reviews the actual question, anchors, plan and frozen evidence.
+
+#### Read the verdict
 
 `accept` adopts the checked candidate. `revise` permits one correction using that same evidence,
 then requires a final accepted review. `needs_evidence` returns a bounded concrete clarification
@@ -681,86 +754,7 @@ These are observed phases inside the shared `generate` or `research` Graph stati
 remain transient and identical through all review/repair calls. Structural trace records verdicts,
 closed issue codes, attempts and input digests, without candidates, source bodies or reasoning prose.
 
-### Optional reactions and GIFs
-
-The private conversation JSON may enable `expressions` alongside `adaptive_context`:
-
-```json
-{
-  "adaptive_context": true,
-  "expressions": {
-    "enabled": true,
-    "acknowledge": true,
-    "gifs": []
-  }
-}
-```
-
-These are fields to merge into the complete profile below. Omission keeps expressions disabled.
-The edge may add 👀 to the exact admitted incoming mention or DM without a textual receipt.
-A completed answer may select one additional reaction from 👀, 👍, ❤️, 😂, ✨ and
-🤔. These effects never target another message or observe unmentioned channel traffic.
-A cosmetic failure preserves the text answer; a failed or uncertain final part prevents later
-decorations. Slash responses remain text-only and ephemeral.
-
-To offer GIF choices, add at most eight entries to `gifs`, each with a unique lowercase `id`,
-a short `description`, and an exact HTTPS GIPHY media `url` of the form
-`https://media.giphy.com/media/VERIFIED_ID/giphy.gif`. Replace `VERIFIED_ID` with a real verified
-media ID. The model receives only IDs and descriptions; the edge resolves the selected ID
-against the generation's frozen catalogue. Arbitrary model URLs, live GIF search, attachments,
-custom emoji and animation generation are not part of this option.
-
-After all text parts succeed, the edge may send one selected GIF as a separate silent reply
-with previews enabled and mentions disabled. Ordinary text still suppresses previews.
-Reaction and GIF slots have stable attempt identities, so changing a choice cannot bypass an
-uncertain earlier effect. The bot needs Discord's Add Reactions and Embed Links permissions
-where used; this option does not grant or change permissions. Discord client settings and
-provider availability still determine whether the GIF animates.
-
-This option requires an already running, warm local `Qwen3.8-27B` at the fixed literal endpoint
-`http://127.0.0.1:28000`. The host transport checks fresh `/health` and `/v1/models` observations
-for the exact model. It cannot start, activate, evict or replace an engine. An absent or unsuitable
-model refuses the turn; document search and another model are not fallbacks.
-
-The default `--model-transport host` reads that loopback endpoint on the operator host.
-When the already-running model is inside the native Podman pod, explicitly select
-`--model-transport podman`. Its bounded transport executes only a fixed Python HTTP helper
-in the exact `lychd-night-qwen38` container and reads the same loopback endpoint there.
-Request text crosses standard input, never shell arguments. The helper cannot select a
-different container, URL, command, model, or runtime transition; it publishes no host port.
-Both roads retain the exact health/model and generation-payload checks.
-
-Create a private `0600` file at `$REACH_ROOT/conversation-01.json` with your local editor. This
-synthetic example uses the admitted defaults:
-
-```json
-{
-  "schema_version": 1,
-  "persona_name": "Example",
-  "persona_instructions": "Answer clearly and state uncertainty when evidence is missing.",
-  "animator_id": "night-qwen38",
-  "model_id": "Qwen3.8-27B",
-  "max_context": 70000,
-  "max_tokens": 1536,
-  "temperature": 0.6,
-  "max_input_chars": 210000,
-  "timeout_seconds": 300
-}
-```
-
-The default combined instruction/input allowance remains 20,000 characters. An explicitly prepared
-profile may select `max_context` up to 262,144 tokens and `max_input_chars` up to 210,000 characters,
-with the same per-message ceiling. These limits remain bounded by the 1,048,576-byte model payload
-and 2,097,152-byte escaped pipe frame. Unicode and JSON escaping can exhaust byte limits before the
-character allowance. The 4,096-token completion ceiling, 300-second per-call maximum, existing call
-limits and review reserves remain unchanged. A larger explicit allowance changes the profile digest;
-it does not make every mandatory context or answer fit.
-
-The profile is a static instruction and exact model binding, not Mirror identity, Persona
-lineage or lasting memory. The supervisor freezes its validated bytes for one generation and
-mounts that snapshot read-only into the worker. Only its validated expression catalogue reaches
-the Discord edge through readiness; the persona and model frames do not. Changes require a new
-explicit launch.
+### Reasoning and structured decisions
 
 The private profile may opt into `"enable_thinking": true` for the same already-running local
 model. Omitted or false retains the existing request mode and logical profile digest; true is
@@ -793,8 +787,9 @@ selects `decision_schema_version = 4` and includes the exact compact-grammar bun
 `json_object_output` must explicitly declare `decision_schema_version = 4`; omission refuses.
 Disabled legacy profiles retain their omitted-version behavior. This contract requires a separately
 prepared profile and matching image. The explicit interpretation/context projection revision binds the derived profile and requirements
-digests. The Pattern is revision 8 with checkpoint version 8 in either mode; older version 7
-checkpoints cannot resume under this implementation. The outer decision schema remains version 4:
+digests. Both settings now use Pattern revision `9`, implementation `py.9` and checkpoint schema
+`reach-operator-conversation-v9`. An older version 7 or 8 checkpoint cannot resume under this
+manifest. The outer decision schema remains version 4:
 controller output fields and their fixed grammar are byte-identical, while offered-handle meaning
 and model input projection are separately versioned. A new paired image/binding is required even
 when the non-secret profile JSON retains its explicit decision version 4. The
@@ -819,7 +814,7 @@ and four sources overall, including valid mixed-source plans. Exact catalogue me
 uniqueness remain native admission checks. Accounting charges the selected grammar and any
 review/correction carrier delta before freezing context, within the existing byte and frame limits.
 The compact EBNF strings are generated offline from ordered source schemas by
-[`generate_reach_decision_grammar.py`](../../../scripts/generate_reach_decision_grammar.py),
+[`generate_reach_decision_grammar.py`](https://github.com/hexanomicon/lychd/blob/main/scripts/generate_reach_decision_grammar.py),
 with the pinned XGrammar converter and conversion options. A versioned generator normalization
 uses nonempty, recursive JSON strings so escaped newlines, quotation marks and backslashes remain
 representable without expensive bounded-repeat token masks. It excludes raw control characters
@@ -838,40 +833,41 @@ object can still be the wrong decision or contain false prose. Qualify this sett
 selected backend, including separated reasoning. Ordinary formation has no format-repair retry. Only explicit `checkback_invalid_retry` admits the
 closed malformed-review re-review described above; native parsing never repairs or coerces malformed JSON.
 
-Add `converse` to the first matching rule's actions. Keep `answer_docs` if you use
-`admin-inspect`; keep `summarize_context` if you use the excerpt-only context command. To admit
-recent surrounding conversation, first enable history using the preceding section. Then run:
+### Optional reactions and GIFs
 
-```bash
-uv run --locked python scripts/reach_operator.py run \
-  --engine "$ENGINE" \
-  --policy "$REACH_ROOT/policy.toml" \
-  --token-file "$REACH_ROOT/discord-token" \
-  --state-dir "$REACH_ROOT/state" \
-  --images "$REACH_ROOT/images-01.json" \
-  --corpus-dir "$REACH_ROOT/corpus-01" \
-  --conversation-profile "$REACH_ROOT/conversation-01.json" \
-  --model-endpoint http://127.0.0.1:28000 \
-  --history
+The private conversation JSON may enable `expressions` alongside `adaptive_context`:
+
+```json
+{
+  "adaptive_context": true,
+  "expressions": {
+    "enabled": true,
+    "acknowledge": true,
+    "gifs": []
+  }
+}
 ```
 
-Omit `--history` when the policy limit is zero. The corpus is still required and supplies bounded
-public-document excerpts where relevant. The model receives recent messages and excerpts as
-attributed untrusted data, with oldest history omitted first to meet the input bound.
+Merge these fields into the [conversation profile](#enable-local-conversation). Omission keeps expressions disabled.
+The edge may add 👀 to the exact admitted incoming mention or DM without a textual receipt.
+A completed answer may select one additional reaction from 👀, 👍, ❤️, 😂, ✨ and
+🤔. These effects never target another message or observe unmentioned channel traffic.
+A cosmetic failure preserves the text answer; a failed or uncertain final part prevents later
+decorations. Slash responses remain text-only and ephemeral.
 
-For each admitted context round, the native worker creates a generation-local Run, executes
-`reach.operator_converse@8`, and acquires an exact Dispatcher Chat lease without tools. An ordinary
-Run makes one bounded model request; the optional research branch below makes one planning and
-one synthesis request in the same Run. Optional checkback and addressing add only the bounded
-calls described above. Adaptive context can admit up to three Runs for one turn.
-The relay supplies no retry, proxy, redirect, arbitrary endpoint or model override. Its reply
-grants no publication or host authority. Model output remains bounded; this profile does not
-qualify general answer quality.
+To offer GIF choices, add at most eight entries to `gifs`, each with a unique lowercase `id`,
+a short `description`, and an exact HTTPS GIPHY media `url` of the form
+`https://media.giphy.com/media/VERIFIED_ID/giphy.gif`. Replace `VERIFIED_ID` with a real verified
+media ID. The model receives only IDs and descriptions; the edge resolves the selected ID
+against the generation's frozen catalogue. Arbitrary model URLs, live GIF search, attachments,
+custom emoji and animation generation are not part of this option.
 
-The public slash-command group defaults to `reach`. Select an alias with `--command-name example`
-and deliberately repeat `--sync-commands` when changing guild registration. Names accept a
-lowercase initial letter followed by lowercase letters, digits or underscores, at most 32
-characters. The alias changes the displayed commands, not the Reach Composition or permissions.
+After all text parts succeed, the edge may send one selected GIF as a separate silent reply
+with previews enabled and mentions disabled. Ordinary text still suppresses previews.
+Reaction and GIF slots have stable attempt identities, so changing a choice cannot bypass an
+uncertain earlier effect. The bot needs Discord's Add Reactions and Embed Links permissions
+where used; this option does not grant or change permissions. Discord client settings and
+provider availability still determine whether the GIF animates.
 
 ### Opt into public catalogue research
 
@@ -893,6 +889,31 @@ This is approximate retrieval, not a factual or semantic relevance check. A rece
 may retain eligibility during a topic change, while an unmatched paraphrase may need an exact
 source reference. The standing authority, source limits and native offered-set checks remain
 unchanged. Source `focus` phrases continue to select excerpt positions, not catalogue eligibility.
+
+#### Select evidence from the exported corpus
+
+Research discovery offers at most sixteen local descriptors. Exact source references and numbered
+targets retain precedence; a verified named parent with matching authored units ranks before ordinary
+path, title and content overlap. Its optional `section_match` string has at most 320 characters and
+shows authored parent and sampled child headings or anchors, without inventing a range. It is
+untrusted discovery metadata, never acquired body evidence or source authority. The model selects from that same offered
+set at planning, validation and acquisition. It can read at most three local excerpts per plan.
+Ordinary excerpts retain a 4,000-character bound; an explicitly requested multi-section or
+complete-quotation Markdown read may admit up to 16,000 characters from the selected scope. Neither proves exhaustive
+inspection of the repository.
+Implicit Markdown reads skip link-only navigation. A kickoff favors welcome or getting-started
+content and retains nearby parent/date context; an explicit source fragment still selects that
+section. Implicit nested lexical reads retain the nearest non-title parent with meaningful selected
+content inside the existing excerpt bound. A source whose required contiguous section context cannot
+fit is refused rather than presenting the child without its owner. Numbered section labels and
+adjacent authored anchors participate in selection. The current
+question's explicit targets take precedence over the acknowledged research plan, which supplies focus for an elliptical
+follow-up such as a filename. Inspect the projected excerpt bounds when source relevance matters.
+The complete catalogue is not injected into the prompt, and an oversized fixed input still
+refuses under the normal Context budget. These files supply evidence, not instructions or
+permission to execute code, edit files or search private mounts.
+
+#### Deliver the plan before reading
 
 An admitted mention or one-to-one DM may select at most four sources: at most three documents
 and two web entries. The first model call returns an interpreted plan of at most 500 characters.
@@ -971,6 +992,9 @@ verification is itself requested, identify the missing observation instead of tr
 state as absent, broken or working. Unsupported positive or negative availability claims require
 correction from the same evidence when a qualified answer suffices; this remains model judgment,
 not an additional deterministic veto or runtime inspection facility.
+
+#### Check what synthesis actually received
+
 When a long quotation would consume a child's share, at most three spans preserve its opening,
 authored attribution and following narrative. One projection has at most 48 spans; tighter budgets
 still yield partial evidence, never reconstructed quotation text. The explicit synthetic marker
@@ -1011,16 +1035,24 @@ not become a page that was read. If every selected web source fails, the host re
 clarification and its unavailable-source notices, without adopting the model's unsupported comparison.
 Persona, humour, multipart replies and optional GIFs retain the same evidence and delivery bounds.
 
-The current research assembly requires Docker for the edge, Core worker and separate source
-worker, with `--model-transport podman` for the already-running native model. Build the paired
-images using `ENGINE="docker"`; images built in Podman's store do not supply that Docker record.
-The source image adds Bubblewrap and a dedicated public CPython 3.15 runtime closure to the exact
-Core image. Prepare that closure outside every checkout, with no credentials or private material,
-then build a new private image record:
+#### Assemble the selected research profile
+
+The research assembly runs the edge, Core and source worker with Docker. The model still
+runs in Podman. If you built the original pair with Docker, set `DOCKER_IMAGES` to that
+record's path. If you used the default Podman build, create a fresh Docker pair and record:
+
+```bash
+DOCKER_IMAGES="$REACH_ROOT/docker-images-01.json"
+uv run --locked python scripts/reach_operator.py build --engine docker --images "$DOCKER_IMAGES"
+```
+
+Prepare a dedicated public CPython 3.15 interpreter tree outside every checkout, free of
+credentials and private material. The research image adds that tree and Bubblewrap to the
+exact Docker Core image:
 
 ```bash
 uv run --locked python scripts/reach_research_image.py \
-  --core-images "$REACH_ROOT/images-01.json" \
+  --core-images "$DOCKER_IMAGES" \
   --python-root /absolute/public/runtime/python \
   --output "$REACH_ROOT/research-images-01.json"
 ```
@@ -1031,15 +1063,18 @@ It does not qualify a new host or runtime merely by building the image.
 
 Create a separate owner-only authority directory containing exactly one `0600` `profile.json`,
 and a distinct `0700` research-state directory; neither may contain or nest inside the other.
-The strict `ResearchRuntimeProfile` names `source_kind = "operator_public_catalogue"`,
+The [research authority schema](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/reach/research_wire.py)
+requires one to eight authorized web sources for this live assembly, even when a particular
+turn reads only local documents. Its `ResearchRuntimeProfile` names `source_kind = "operator_public_catalogue"`,
 `public_catalogue_authorized = true`, policy/revocation generations, an aware expiry, a `catalogue`
 exactly matching the conversation profile's `research` object, exact subject/channel/DM selectors,
 a numeric resolver address and its custody statement, and cumulative attempt/contact ceilings.
-Keep these files outside every checkout. Add the following selections to the conversation run
-command, replacing the image placeholder with the exact `research` value from the new record:
+Keep these files outside every checkout. In the conversation run command, replace the engine
+and paired-image arguments, select the Podman model transport, and add the research arguments.
+Use the `research` image ID from the source-image record:
 
 ```text
---engine docker --model-transport podman
+--engine docker --images "$DOCKER_IMAGES" --model-transport podman
 --research-profile "$REACH_ROOT/research-authority/profile.json"
 --research-state-dir "$REACH_ROOT/research-state"
 --research-image sha256:REPLACE_WITH_THE_RECORDED_RESEARCH_IMAGE_ID
@@ -1079,7 +1114,7 @@ no synthesis or checkback generation. Late review/correction budget failures ret
 `budget` reason; invalid model output reports `model_protocol`. The conversation Pattern is
 revision 9; rebuild the paired images together.
 Live Discord/model/source deployment and host-specific extraction qualification remain separate
-operator evidence obligations in [State of Work](../../state-of-the-work.md#composition-portfolio-delivery).
+operator evidence obligations in [State of Work](../../state-of-the-work.md#reach-operator-profiles).
 
 ### Reuse from another chat transport
 
@@ -1139,15 +1174,15 @@ entries, 1,900 characters per body and a lifetime of at most one hour. A running
 queue and makes one REST attempt with mentions disabled. It does not ask the model to rewrite
 or decide whether to publish.
 
-After an attempt, a private queue receipt retains the publication ID, body digest, outcome and
-any returned remote ID. A known settlement removes queued body and request files. An unknown
-result retains them and blocks automatic repetition of that publication; the REST journal also
-continues to fence uncertainty independently.
-
-Inspect the uncertain external result before taking any further authorized action. A new UUID
-cannot bypass that uncertainty. The receipt witnesses this local transport path, without
-establishing a durable native outbox, cross-process producer authority or application-level
-release acceptance.
+Look up that UUID in the private queue receipt. It records the body digest, outcome and any
+returned Discord message ID. A known settlement removes the queued body and request files.
+If the response was lost, the files stay in the queue and the effect journal independently
+fences another attempt. Inspect the selected channel against the original notice and any
+recorded ID before deciding what happened. A fresh UUID cannot clear the uncertainty.
+[Handle uncertain effects](#handle-refusals-and-uncertain-effects) describes the operator's
+reconciliation path. Even a known Discord delivery settles only this local transport attempt.
+Application release acceptance, a durable native outbox and cross-process producer authority
+each need their own evidence.
 
 ## Test a turn without Discord
 
@@ -1157,8 +1192,15 @@ running local model. It submits a synthetic normalized mention or DM instead of 
 Discord edge. The plan-delivery receipt is simulated and labelled as such. Local document reads,
 native Run/station events and model HTTP calls remain real observations.
 
-Select the exact Core image ID from your retained image record as `CORE_IMAGE`, and copy one
-scenario into the private operator workspace:
+For the supplied kickoff scenario, select a corpus containing `doc:docs/roadmap.md` and
+`doc:docs/state-of-the-work.md`. The full project export contains both. In the private
+conversation profile, enable `adaptive_context`, research, and [expressions](#optional-reactions-and-gifs)
+with a verified GIF entry named `so_it_begins`. The probe checks the source IDs and GIF
+before launching its worker. Set `CORE_IMAGE` to the exact Core ID in the retained record
+for your selected engine. This example reaches the model inside Podman. For an existing
+host-loopback model, the probe spells its transport `--model-transport http`.
+
+Copy the scenario into the private workspace and run it:
 
 ```bash
 install -m 600 examples/reach/probes/kickoff.json "$REACH_ROOT/kickoff-probe.json"
@@ -1180,10 +1222,8 @@ Model-selected web sources are refused rather than supplied with invented eviden
 Use a Core image built with the matching helper/source contract: projection validation also
 checks the worker's excerpt against the selected verified corpus.
 
-The supplied scenarios cover a roadmap kickoff, an English DM after Slovak history, and an
-uncertain plan-delivery receipt. The kickoff requires the roadmap/current-status source IDs and
-the `so_it_begins` GIF in the selected profile. Choose a suitable corpus and expression catalogue
-before using those assertions. `plan-not-delivered.json` expects a failed native turn and checks
+The other supplied scenarios cover an English DM after Slovak history and an uncertain
+plan-delivery receipt. `plan-not-delivered.json` expects a failed native turn and checks
 that no source read or synthesis followed the uncertain receipt. A passing negative scenario
 means the refusal boundary held; it does not turn that native failure into a successful answer.
 
@@ -1247,6 +1287,28 @@ or a detailed foreign exception. Check the selected file paths, owner-only permi
 image record, expected digest and engine first. Do not work around a refusal by widening mounts,
 passing the token in an environment variable, or starting the native worker on the host.
 
+If a Discord write might already have happened, inspect the **effect journal** before looking at
+Run diagnostics. A missing trace cannot clear the journal's fence.
+
+Transport attempts live in `$REACH_ROOT/state/effects`. Their private JSON records contain
+method, target class, hashed effect/payload/scope identities, status, and an optional remote ID
+or fixed code. They do not retain the token, message text or response body. `attempting` after
+an interruption and `unknown` both mean that Discord **may already have performed the write**.
+The journal refuses unresolved effects in the same scope even under a newly generated plan.
+
+To investigate, stop the instance and retain its plan and journal. Inspect the actual Discord
+server and relevant audit trail manually, comparing the reviewed resource intent and recorded
+remote IDs with what exists. Do not bypass the fence by rerunning an uncertain create, deleting a
+possible new resource, editing/removing journal records, choosing an empty state directory, or
+regenerating a plan.
+
+This profile has no public journal reset or automated reconciliation command. Inspection may
+establish what happened, but further recovery requires explicit manual reconciliation outside
+the automatic apply path. Leave the effect unknown if the evidence stays inconclusive. The journal
+witnesses attempts; it does not retain native Runs or durable conversations.
+
+### Inspect a Run and its delivery trace
+
 The isolated Core also attempts a bounded structural diagnostic for each admitted Run to stderr.
 It correlates the worker generation, request and Run with the returned status, fixed reason and
 processing stage. A failed station is named only when a retained native node event explicitly
@@ -1288,7 +1350,7 @@ The archive is never mounted into either child. Core and Edge container logging 
 avoid incidentally retaining raw private wire bodies in the container engine.
 
 The RunLedger and event bus themselves remain in memory. The diagnostic archive does not provide
-Oculus ingestion, native Run recovery, conversation memory, or a replacement for the journals below.
+Oculus ingestion, native Run recovery, conversation memory, or a replacement for the transport journals.
 
 ### Publish structural observations to Orb and Loom
 
@@ -1318,21 +1380,4 @@ broker or IPC failures create no external model activity. Native station/entered
 and exact admitted Pattern references remain structural metadata; a bounded Run-reference map
 can attach late delivery to that same score without choosing a current or latest Run.
 
-Transport attempts live in `$REACH_ROOT/state/effects`. Their private JSON records contain
-method, target class, hashed effect/payload/scope identities, status, and an optional remote ID
-or fixed code. They do not retain the token, message text or response body. `attempting` after
-an interruption and `unknown` both mean that Discord **may already have performed the write**.
-The journal refuses unresolved effects in the same scope even under a newly generated plan.
-
-To investigate, stop the instance and retain its plan and journal. Inspect the actual Discord
-server and relevant audit trail manually, comparing the reviewed resource intent and recorded
-remote IDs with what exists. Do not bypass the fence by rerunning an uncertain create, deleting a
-possible new resource, editing/removing journal records, choosing an empty state directory, or
-regenerating a plan.
-
-This profile has no public journal reset or automated reconciliation command. Inspection may
-establish what happened, but further recovery requires explicit manual reconciliation outside
-the automatic apply path. Leave the effect unknown if the evidence stays inconclusive. The journal
-witnesses attempts; it does not retain native Runs or durable conversations.
-
-[Preparation](preparation.md) · [Architecture](architecture.md) · [State of Work](../../state-of-the-work.md#composition-portfolio-delivery)
+[Preparation](preparation.md) · [Architecture](architecture.md) · [State of Work](../../state-of-the-work.md#reach-operator-profiles)

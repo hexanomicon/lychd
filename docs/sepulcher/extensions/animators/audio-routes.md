@@ -18,13 +18,17 @@ consent, custody, transport, interruption, and playback.
 
 ## Current LychD boundary
 
-The repository currently proves audio modality metadata, the `stt`/`tts` capability labels,
-and a pure inspector for canonical PCM WAV bytes. An explicit, unregistered
-[local custody seam](../../../state-of-the-work.md#artifact-reference-contract) can retain supplied
-bytes and feed that inspector under separate current authority. Capture, audio transport,
-inference and playback remain Designed under
-[State's audio-admission boundary](../../../state-of-the-work.md#audio-admission). Use this page to
-plan and test a host route; it supplies neither a host receipt nor an operational application path.
+To capture a short utterance for Bridge, follow [Dictate and review](../../../divination/altar/bridge.md#dictate-and-review).
+That optional path takes browser PCM to an explicitly configured local CPU transcriber and returns
+text for review. It requires its own microphone permission and request authority.
+
+For engineering measurements on a Linux device, [local speech qualification](../../aspects/echo-local-probe.md)
+describes the finite capture and playback helpers. Echo also has a pure PCM WAV inspector and
+an [unregistered local custody path](../../../state-of-the-work.md#artifact-reference-contract)
+for supplied bytes under separate current authority.
+Neither the `stt` and `tts` capability labels nor those helpers provide a general Animator speech
+grant. [State of Work](../../../state-of-the-work.md#audio-admission) records the evidence for
+each path. The host checks below establish which device and signal actually work at this desk.
 
 | Office | Owns | Does not own |
 | --- | --- | --- |

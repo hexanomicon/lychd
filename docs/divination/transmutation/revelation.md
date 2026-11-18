@@ -7,16 +7,15 @@ icon: material/eye-outline
 
 What did the encounter disclose?
 
-Return to the merged field notes: one observation is missing. That is the finding. An insufficient
-conflict rule may explain it; retaining both versions may correct it. Keeping those statements
-separate gives the next inquiry its shape. We know what happened, have a possible account of why,
-and have something further to test.
+Compare the merged field notes with the two inputs kept in [Trial](trial.md). Two distinct
+observations went in. Only the later one came out, with no warning. Under
+[Canon's](canon.md) no-silent-loss criterion, this Case failed.
 
-**Revelation brings what happened into accountable interpretation.** Read the evidence against
-[Canon's](canon.md) previously declared criteria, preserving sources, failures, and capture gaps.
-Then ask what each conclusion requires. A score cannot establish a cause; the diagnosis needs
-evidence for that cause. A proposed correction needs another trial and an adoption decision
-from its responsible owner.
+| What kind of claim? | What can the evidence support? |
+| --- | --- |
+| Finding | Comparing the inputs with the captured result establishes the loss in this Case. A gap in the capture would limit what could be said. |
+| Diagnosis | The merge may have discarded the observation because the other edit was later. Reversing the edit order in a controlled repeat could help distinguish that explanation from an unrelated loss. |
+| Proposed correction | Keeping both versions might repair the failure. Another trial must establish what the worker can recover. The responsible owner decides whether to adopt the change. |
 
 [Da'at](genesis.md#daat) names recognition that has become usable. The absent observation exposes
 what the next attempt must repair, and the suspected rule becomes a question to test. The

@@ -7,15 +7,16 @@ icon: material/seed-outline
 
 What shall we bring into existence?
 
-Two workers must preserve field observations while editing disconnected copies. “Keep the latest
-version” offers a simple candidate; “what happens to the other observation?” exposes the question
-it has not answered. [Canon](canon.md) has already required that no observation disappear silently.
-The purpose now needs alternatives, assumptions, and a form that [Trial](trial.md) can confront.
+Two workers must preserve field observations while editing disconnected copies. One proposes
+keeping the latest version when the copies meet again. The other asks, “What happens to my
+observation if you saved yours last?” [Canon](canon.md) has already required that no observation
+disappear silently. There are now at least two designs to examine. One would keep only the
+winning edit. Another would keep both and leave the worker a conflict to resolve.
 
-**One contribution makes another question visible.** Proposing a possibility brings its conditions
-into question; naming a constraint invites possibilities that could satisfy it. Their exchange
-may produce a form neither perspective could supply alone. Genesis stays with this formation
-until someone else can examine the proposal, its reasons, and the evidence that would defeat it.
+**One contribution makes another question visible.** Keeping both may protect the notes, but
+can a worker tell which observation came from which copy? That question gives the designer
+something to change and the reviewer something to look for in [Trial](trial.md). Genesis ends
+when someone else can examine the candidate, why it was chosen, and what would defeat it.
 
 The biblical [Genesis](https://bible.usccb.org/bible/genesis/0) gives the chapter its image of
 beginnings: possibility acquires a differentiated world. The Tree of Life asks how the capacities
@@ -29,14 +30,17 @@ Smith's [offline decision dossier](../../sepulcher/aspects/weaver/smith.md#tree-
 A purpose can gather capable powers and still fail to become a coherent whole. The Tree asks
 what each can give, what it must receive, and what happens when it claims to suffice alone.
 
-The creative workflow preceded this sefirotic comparison. Its
-[geometry](index.md#between-crown-and-kingdom) keeps three currents visible. Red severity / −
-carries **WHY**, **CHALLENGE**, and **REVIEW**; green mercy / + carries **HOW**, **EXPAND**, and
-**TEST**. These meet Binah / Chokhmah, Gevurah / Chesed, and Hod / Netzach. Black follows
-**WHAT → KNOWING → HARMONY → IDENTITY CANDIDATE → PRODUCT**, beside Keter, the displayed Da'at,
-Tiferet, Yesod, and Malkhut. Blue **INTELLECT**, **EMOTION**, and **ACTION** name the relations
-between the sides. Understanding and possibility concern the same WHAT; their exchange changes
-what the next relation receives.
+The creative workflow was on the whiteboard before anyone read it beside the sefirot. Start
+at **WHAT**, the purpose of the undertaking. **WHY** asks what that purpose requires, while
+**HOW** opens possible ways to meet it. In the [drawing](index.md#between-crown-and-kingdom)
+they face one another across **INTELLECT**, as Binah and Chokhmah do in the comparison.
+A new way to reconcile the notes may expose a requirement their authors missed.
+
+Follow the other pairs the same way. **CHALLENGE** and **EXPAND** meet across **EMOTION**
+(Gevurah and Chesed), **REVIEW** and **TEST** across **ACTION** (Hod and Netzach). Red marks
+the left current of severity / − and green the right current of mercy / +. Blue marks the
+relations between them. The middle, drawn in black, holds **WHAT → KNOWING → HARMONY →
+IDENTITY CANDIDATE → PRODUCT**, beside Keter, the displayed Da'at, Tiferet, Yesod, and Malkhut.
 
 Keep the design questions beside their source meanings. “TEST” asks for an active encounter;
 Netzach's persistence can sustain many kinds of work. “REVIEW” makes correction active; Hod's
@@ -364,10 +368,11 @@ probed. [SDLC law](../../adr/16-smith.md#lifecycle-and-ownership) governs the pa
 
 #### Give the edges meanings
 
-The [Ilanot Project](https://www.ilanot.org/pages?page=about) studies historical trees as
-integrations of diagram and explanatory text, including the reciprocal relation between
-sefirotic order and worldly activity. A bare ten-node picture leaves the action of its
-relations unstated.
+Follow the line from Keter to Binah on the [Munich parchment](https://ilanot.org/diagrams/diagram-00291).
+The scribe wrote along the channel itself. As J. H. Chajes explains in the Ilanot Project's
+[account of these trees](https://ilanot.org/about/the-ilan-genre), placement helps a reader
+interpret the words. The trees could also guide prayer, directing attention toward relations
+that the worshipper's own acts were understood to help repair.
 
 Give each edge in our graph a meaning: it may carry evidence, an objection with a defeat condition,
 acceptance of a handoff, or a proposal to reopen the question. A receiver may even discover that
@@ -446,12 +451,12 @@ not reproduce traditional channels or prescribe a runtime Graph; the relations s
               consequence → Da'at → a later Keter
 ```
 
-For the field notes, generosity gives the reconciliation proposal an informative trial;
-restraint limits its reach. Persistence carries the trial far enough to learn, while
-acknowledgment lets a failed assumption stop it. A fitting design becomes a joined candidate
-with its limits and uncertainty intact. Verification and owned admission precede the effect.
-Its consequences may reopen the original purpose. Creation includes learning which form should
-not persist.
+For the field notes, give the latest-version proposal a fair trial with two disposable
+copies. Let it run far enough for a lost observation to show. Acknowledging that loss can
+stop work on a design its maker still likes. A successor that preserves both versions
+still has to show that a worker can tell them apart. That uncertainty belongs with
+the testable candidate. Verification and the responsible owner's admission still stand
+between it and a change in the world. A consequence may even reopen the original purpose.
 
 The Lurianic account of **Tohu** gives isolated power a severe image: sefirotic powers assert
 absolute characters, and their vessels cannot contain the intensity. **Tikkun** brings

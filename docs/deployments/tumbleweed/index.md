@@ -14,8 +14,10 @@ installation choice, not a separate distribution.
 For a laptop, use the independent [KDE workstation profile](workstation.md).
 [Personal and administrator shells](shells.md) selects Zsh by default or Fish for the existing
 administrator, separately from the runtime account; the guarded provisioning branch includes it.
-[AutoYaST](install.md) prepares explicit installation inputs for either class. Optional
-[private access](access.md) has its own host lifecycle and one-owner acceptance boundary.
+[AutoYaST](install.md) prepares installation inputs for either class. For private access,
+choose who will hold the keys and own revocation. The [native Tether profile](#native-tether-profile-protocol-2)
+belongs to LychD from original initialization. The [legacy single-owner forward](access.md)
+belongs to the host administrator.
 [Snapshot upgrade qualification](qualification.md) separately tests one exact OS transition in
 an owned disposable QEMU guest; ordinary host apply still performs no rolling upgrade or reboot.
 
@@ -119,8 +121,13 @@ changes retention only when the installer already created `/etc/snapper/configs/
 Those are counts, not hard byte caps. The role does not invoke cleanup, create a replacement
 root config, or delete the active/default recovery point. Review installed cleanup timers and
 quota behavior separately. Aim for roughly **10 GB free as an operating target**, then revise
-the budget against actual installed packages, images and database growth. An OS snapshot is
-neither a consistent PostgreSQL capture nor an off-host backup.
+the budget against actual installed packages, images and database growth.
+
+After an OS rollback, the root may be older while the excluded database and runtime home still
+contain later writes. Compare the resulting OS, application source, image, configuration and
+database identities before readmitting work. A root snapshot alone supplies neither a consistent
+PostgreSQL capture nor an off-host backup. LychD's [whole-body restore](../../state-of-the-work.md#whole-body-snapshot-restore)
+remains Designed.
 
 Inspect after installation and after one controlled update:
 
@@ -742,7 +749,8 @@ host and its own IDs/keys to private inventory/host variables. Keep the same adm
 SHA. Run `--check --diff` and apply with an explicit `--limit`; the playbook defaults to serial
 one. The initial OS installation remains a separate destructive operation.
 
-Record first apply, second apply, direct-runtime checks and a controlled OS recovery cycle
-for each new host. A passing pilot is reusable procedure, not evidence that an untouched
-server is ready. A developer or their coding assistant should read this page and run the same
-bounded commands; sharing root credentials or private inventories in Discord is unnecessary.
+For each new host, retain both apply results. After authorized provisioning, an unchanged host
+floor should converge with no persistent changes. Once the body is running, the combined
+playbook should return read-only `mode=verify`. Record the direct runtime login and the result
+of the separately authorized OS recovery cycle on that machine. Developers can reuse the pilot's
+procedure while each operator keeps root credentials and private inventory with their own host.

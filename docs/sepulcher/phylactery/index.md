@@ -24,7 +24,8 @@ Different inscriptions answer different questions:
 | `run_checkpoint` | One replaceable JSONB record per Run, containing validated Graph snapshot history and cascading with that Run. |
 | Consent and delegated-owner records | The exact authority whose settled result may permit a parked Run to return. |
 | Ordered `step` rows | Best-effort structural evidence; the Run ledger still owns lifecycle truth. |
-| `session`, `karma`, `soulstone_record`, `codex_preauthorization` | Domain records admitted by application migrations; each row establishes only its own contract. |
+| `session` | Committed conversation history. Reopen the same séance in [Bridge](../../divination/altar/bridge.md) to inspect the retained turn. |
+| `karma`, `soulstone_record`, `codex_preauthorization` | Domain records admitted by application migrations. Each row establishes only its own contract. |
 | Public-note Archive | Explicit namespace ownership, note revisions and lifecycle, intake identities and text-free recall receipts; optional generation tombstones and latest derivation attempts. |
 | SAQ `saq_*` tables | Durable broker state through a separate autocommit pool. Queue publication and Run admission remain separate transactions. |
 
@@ -60,17 +61,16 @@ choice becomes necessary.
 
 ## Read the evidence before claiming continuity
 
-First-light persistence is **Partial**. Read the [named receipts](../../state-of-the-work.md#phylactery-first-light)
-according to what each observed. The lifecycle test uses offline collaborators. Actual warm-model
-reply/history retention includes two normal source-CLI/native TCP boots. These source-profile
-receipts establish neither a Consent-plus-Checkpoint restart, a current installed body, nor crash
-recovery.
+First-light persistence is **Partial**. The [two-boot lifecycle test](../../state-of-the-work.md#phylactery-first-light)
+used offline collaborators. Historical source-CLI/native TCP boots retained a warm model's
+reply and history. In a separate trusted source-browser trial, a fixed useful reply survived a
+normal restart under an explicit test composition.
 
-A separate [trusted source-browser journey](../../state-of-the-work.md#current-evidence-envelope)
-retains its fixed useful reply after normal restart under an explicit test composition. The
-[trusted installed-hybrid receipt](../../state-of-the-work.md#current-evidence-envelope) retains
-identical complete SDK history, Intent capability, and exact Pattern manifest across two normal
-installed native boots. Its private Docker and borrowed-model scope still applies. General
+The historical installed-hybrid trial compared complete SDK history, Intent capability and the
+exact Pattern manifest across two normal native boots, using private Docker and a borrowed
+model. All three native profiles were retired. Their [receipts](../../state-of-the-work.md#current-evidence-envelope)
+remain evidence for those runs. Recovery of a current installed container, an actual crash, and
+restart with both Consent and Checkpoint each require their own observations. General
 retention, compaction, and physical tiering remain incomplete.
 
 The bounded [public-note Archive](../../state-of-the-work.md#karma-semantic-memory) adds explicit

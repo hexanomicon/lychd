@@ -5,19 +5,15 @@ icon: material/map-outline
 
 # :material-map-outline: Atlas
 
-**Atlas opens the catalogue of Canvas projects.** Its pinned first entry is LychD's own Canvas,
-with a curated static project map. Search, filters and pagination apply to the loaded user
-collection while that entry remains available. Open a project to draw on its Canvas, or open
-its **Project record** directly to inspect its brief, concerns, decisions and related activity.
+A conversation can end while the undertaking continues. Open **Atlas** to pick up a Canvas
+project. To draw, open its **Canvas**. To find out why you disputed a decision or what you
+meant to try next, open its **Project record**. It keeps the brief, concerns, judgments, and
+related activity together across conversations and Runs.
 
-A conversation can end while the undertaking continues. The project record keeps its brief, concerns,
-judgments, and proposed next step available across conversations and Runs. Begin with a software
-release, a record, or the continuing care of a home; an existing conversation, Pattern, or Run
-is unnecessary.
-
-The current surface gathers this material in a **Project**. Its concerns name what deserves
-attention, and its judgments retain your reasons for accepting, disputing, or questioning the
-work. The guide below follows that Project from its first brief to a later review.
+You can begin with a software release, a record, or the continuing care of a home, even
+before you have a conversation, Pattern, or Run. LychD's own Canvas stays pinned first in
+the catalogue with its curated static project map. Search, filters, and pagination apply to
+the loaded user collection.
 
 The wider map begins with a question or an idea before it has a Project. It asks what each Concern
 means, how it breaks down, where it is addressed, and what supports a judgment. A Concern need
@@ -134,8 +130,6 @@ to remove its schema while projects remain.
 and remaining boundary.
 
 ## Reading direction
-
-For interface review and design, use the following composition and acceptance case.
 
 The current Project view puts concerns before secondary context. Wide screens keep the brief
 and proposed next step beside them; narrow screens follow the concern list with that context.

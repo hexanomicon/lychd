@@ -4,24 +4,29 @@ title: Agents
 
 # Agents
 
-An Agent performs typed cognition within an explicitly assembled capability. For a current Core
-contribution, define an
-[AgentSpec](https://github.com/hexanomicon/lychd/blob/main/src/lychd/agents/factory.py) with
-instructions, output types and the toolsets it needs, then arrange its builder and use through the
-owning Workflow. [The First
-One](https://github.com/hexanomicon/lychd/blob/main/src/lychd/agents/the_first_one.py) is a concrete
-specimen; its [factory
-tests](https://github.com/hexanomicon/lychd/blob/main/tests/agents/test_factory.py) cover
-construction and refusal.
+A Workflow calls an Agent when a step needs model judgment and the caller can say what kind of
+result it will accept. The Bridge Agent, [The First One](https://github.com/hexanomicon/lychd/blob/main/src/lychd/agents/the_first_one.py),
+is small enough to follow from its declaration into a running turn.
 
-The Forge caches by the complete specification and requires a registered builder for its name.
-Construction refuses unknown toolset names. A mutating toolset is included only when the spec
-permits writes, but this construction choice is not an authority grant: handlers must check the
-actual caller and operation. See [Tools](tools.md) and [Permissions](permissions.md).
+Start with `THE_FIRST_ONE_SPEC`. It declares the identity instructions and two possible
+results, a `BridgeReply` or a deferred tool request. Its builder attaches `stable_floor`,
+which reads the Context assembled for the current Run. The Workflow supplies the model when
+the turn runs. If the model needs another capability, first decide which part of the system
+can authorize that operation. The Bridge Agent deliberately has no tool for replacing the
+model it is using. A replacement could wait for the very lease the turn is holding.
 
-This is Core integration, not an Agent registration store exposed to extensions. The [Agent
-Covenant](../../adr/20-agents.md) defines the architectural boundary; the current registration
-context exposes the separate stores shown in
-[source](https://github.com/hexanomicon/lychd/blob/main/src/lychd/extensions/context.py). For
-execution evidence, follow the owning Workflow and [Oculus](../aspects/oculus.md), not an Agent
-description alone.
+To add an Agent in Core, declare an [`AgentSpec` and its builder](https://github.com/hexanomicon/lychd/blob/main/src/lychd/agents/factory.py),
+register the builder with the Forge and have the owning Workflow request that spec.
+The Forge looks up the builder by name and caches the
+constructed Agent by its complete spec. One [factory test](https://github.com/hexanomicon/lychd/blob/main/tests/agents/test_factory.py)
+makes the distinction visible by changing only `max_tokens` and getting another Agent.
+An unregistered builder name or a toolset name with no factory raises an error.
+
+If you declare a mutating toolset, the builder includes it only for a spec with `writes=True`.
+The handler still checks who is calling and whether they may perform this operation on this
+resource. Follow [Tools](tools.md) for the operation and [Permissions](permissions.md) for the check.
+
+The [Agent Covenant](../../adr/20-agents.md) owns this design. Agents are assembled in Core.
+The current [extension registration stores](https://github.com/hexanomicon/lychd/blob/main/src/lychd/extensions/context.py)
+have no Agent store. To find out whether a particular Agent ran, start with its Workflow and
+the evidence available through [Oculus](../aspects/oculus.md).

@@ -134,7 +134,12 @@ We go deeper into the project: its purpose, structure, questions, and ways of wo
 
 Design the Discord bot/VPS path and one explicitly authorized task on the founder's PC. Agree the question a person asks, the task owner and the reply they can inspect. The two pairs explore approaches with the founder; Debayan prepares shared reproduction and acceptance.
 
-Choose whether the PC is a sovereign peer that owns its task or compute serving the same Lich. These are different relationships. Map the needed A2A, VPN and Scroll boundaries first: today's outbound A2A evidence does not supply an incoming private receiver, and Tether remains designed. Specify what success, refusal, an offline PC and an unknown outcome should look like to the person asking.
+Choose whether the PC is [a sovereign peer that owns its task](adr/26-a2a.md#decision) or
+[compute serving the same Lich](adr/42-multinode.md). Map the needed A2A, VPN and Scroll
+boundaries first. The [outbound A2A evidence](state-of-the-work.md#a2a-intercom) does not
+supply an incoming private receiver. The [native Tether profile](state-of-the-work.md#vpn-tether)
+still needs an observation on the chosen hosts. Specify what success,
+refusal, an offline PC and an unknown outcome should look like to the person asking.
 
 <a id="week-02"></a>
 
@@ -202,7 +207,7 @@ We reproduce proven patterns across our own people, agents, and tasks, preservin
 
 #### Let another person begin
 
-Have another person reproduce the chosen phone/voice journey and Minecraft encounter outside the original developer's setup. Notice hidden instructions, missing configuration and help that only the founder or author knows how to give.
+Have another person reproduce the selected journey outside the original developer's setup. For the phone-and-Minecraft scene, that means trying the voice exchange and the game encounter on their own equipment. Notice hidden instructions, missing configuration and help that only the founder or author knows how to give.
 
 Transfer the useful shared-agent pattern to another participant or task, with separate candidates and ordinary review before adoption. Qualify the exact Atelier or Avatar handoff the showcase needs. Compare the working method, repair friction and strengthen the campaign with something another person can use.
 
@@ -221,9 +226,17 @@ We strengthen the assembled whole, test critical paths, and rehearse the release
 
 #### Prepare the encounter
 
-Rehearse the exact enthusiast release: install the selected artifact, enter the phone conversation, complete the selected Minecraft encounter, inspect the result and recover from the agreed interruption. Check the supported device, world, compute and provider profile outside the development checkout.
+Rehearse the developer preview outside the development checkout. Install the selected artifact,
+follow the tutorial through one useful Composition, inspect the result and recover from the
+agreed interruption. If the team selects the phone-and-Minecraft scene, start the conversation
+on the phone and complete the encounter in the game. Record the device, world, compute and
+provider profile used.
 
-Finish demonstration and onboarding material. Give the remaining multi-user, peer/node, orchestration, compute and fallback roads clear dispositions. Confirm support through 24 December and the shutdown mode. Phone and voice remain required; reduce peripheral polish or extra profiles when needed. A change to a required outcome or release date needs an explicit decision before publication.
+Finish the demonstration and onboarding material. Record which multi-user, peer, node,
+orchestration, compute and fallback options the preview supports. Give voice priority as the
+team selects features. Confirm support through 24 December and the holiday shutdown. Any change
+to the [agreed preview commitments](#where-the-work-stands) needs an explicit decision before
+publication.
 
 <a id="week-07"></a>
 
@@ -238,7 +251,10 @@ We deploy on **Monday 21 December**, demonstrate the integrated release, and sup
 
 #### Meet the world
 
-Deploy the qualified enthusiast release on Monday 21 December. Present the Minecraft-led showcase and supported phone/voice experience, publish the corresponding videos and guides, and help people use that exact revision.
+Publish the developer preview on Monday 21 December with its tutorials and at least one useful
+Composition. If the phone-and-Minecraft scene qualifies, show the encounter from the spoken
+request to the in-game result. Publish the guides and videos for the features people can try
+on that exact revision.
 
 Support and editorial follow-up run through 24 December. Retain the findings, known limits and next questions, then enter the agreed holiday mode. The company shutdown begins on 25 December; the release creates no hidden holiday duty.
 

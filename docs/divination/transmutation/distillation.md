@@ -7,14 +7,14 @@ icon: material/flask-outline
 
 What should the next creation inherit?
 
-The next creator needs to know when a finding matters. Distillation carries that condition with
-the reason, evidence, uncertainty, and counterexample. Together they make a lesson usable beyond
-the encounter that produced it, while preserving the limits that keep it from becoming an
-unearned universal law.
+One worker's observation vanished from the merged field notes. The next creator needs to know
+which design was being tried, how the loss was found, and under what conditions it might recur.
+That much can travel even while the cause is disputed. Preserve the evidence, uncertainty, and
+any counterexample alongside the proposed lesson.
 
-There is an echo of [Deuteronomy](https://bible.usccb.org/bible/deuteronomy/0) here: a journey
-is remembered and its commitments spoken to the generation about to continue it. Our return
-carries experience into a new act rather than repeating the old act unchanged.
+In [Deuteronomy](https://bible.usccb.org/bible/deuteronomy/0), the journey is remembered and its
+commitments spoken to the generation about to continue it. Distillation asks what the next
+undertaking should receive from this one, knowing it will face a world of its own.
 
 ## Give the lesson a next use
 
@@ -37,17 +37,16 @@ earlier result retains the conditions under which it was judged.
 
 ### Preserve the way back to correction { #future-correction }
 
-A lesson must retain enough structure for later evidence to revise the right judgment. “Local
-storage won” preserves a verdict. “This design passed under one-writer conditions; concurrent
-offline writers require another reconciliation test” preserves a boundary and a next question.
-Keep the decisive condition, its source, the evidence that could defeat the conclusion, and
-what remains unresolved. A generic warning that the answer might be wrong supplies none of them.
+Suppose an earlier design had passed every one-writer case. “Local storage won” loses the
+condition that made the verdict defensible. “It preserved the observation while one writer
+edited. We have yet to try two disconnected writers” gives the next worker a reason to
+reopen the design and a comparison to make. An unrelated objection about style leaves that
+one-writer result intact.
 
-That preserved condition lets a later encounter reopen the right decision. Evidence of concurrent
-writers reopens that design decision; an unrelated stylistic objection does not erase the earlier result.
-The [proposed temporal comparison](../../sepulcher/aspects/weaver/drift/workflow-improvement.md#correction-after-distillation)
-asks whether this selective response survives compaction and transfer to another task. The
-inheritance includes a way to become differently informed.
+Attach the decisive condition to its source, the evidence that could defeat the conclusion,
+and what remains unresolved. The [proposed temporal comparison](../../sepulcher/aspects/weaver/drift/workflow-improvement.md#correction-after-distillation)
+asks whether a later worker can still act on that distinction after the account has been
+shortened or brought into another task.
 
 This connects the Tree's [handoff relation](genesis.md#repair-the-relation) to Ouroboros. A
 distinction must survive both a change of form and a passage through time. Omitted material
@@ -74,10 +73,14 @@ rupture.
 
 ### A form ends; a consequence may continue
 
-Withdraw a proposal after examination and its active use ends. An admitted record may still
-preserve its wording, attribution, and reasons for withdrawal. If those traces remain available,
-later Recall can bring them into another act and change it. This is one way work can cross an
-ending; the example does not equate a canceled task with biological death.
+When the workers withdraw the latest-version proposal, its active use ends. An admitted
+record may still preserve the rule as proposed, who proposed it, and the two inputs and
+merged result that explain its withdrawal. If that record remains eligible, Recall can
+bring the failure to another designer's attention. The old rule can change what happens
+next without regaining authority to govern the merge.
+
+The comparison with death concerns what may survive the ending of a form. Losing a life
+carries stakes a canceled task cannot convey.
 
 An exact copy can preserve an arrangement. Resemblance can preserve a recognizable pattern.
 Neither alone establishes continuity of historical identity. [Symmetry](genesis.md#symmetry)

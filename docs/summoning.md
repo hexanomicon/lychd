@@ -11,6 +11,10 @@ icon: material/fire
     maintained real-host receipt proves the complete sequence. Consult the
     **[State of Work](state-of-the-work.md#inscription-and-embodiment)** before attempting it.
 
+To explore the Altar from a checkout, follow [one Run in the developer preview](onboarding/explore/one-run.md).
+Its default browser address is `http://127.0.0.1:5173`. The fixture supplies the conversation
+and its failed Run from memory. You can inspect both without starting a worker or loading a model.
+
 A model replying to a prompt is only part of bringing LychD to life. The application must start
 from the source you built, load the model you declared, retain its committed history, and return
 the answer through the intended workflow. This rite shows how to check those parts together on
@@ -174,7 +178,8 @@ uv run --extra postgres-binary lychd --help
 podman image inspect localhost/lychd:dev --format '{{.Id}}'
 ```
 
-Help exposes `init`, `bind`, `start`, `stop`, `status` (with exact alias `st`), `logs`, `access`, and `del`.
+Help exposes `init`, `bind`, `start`, `stop`, `status` (with exact alias `st`), `logs`, `access`,
+`tether`, and `del`.
 There is no public `run` verb. Image inspection must return an ID. If construction fails, start
 with the first failed step and the supported Python range `>=3.12,<3.16`; a different package or
 image would abandon the source agreement this movement establishes.
@@ -186,11 +191,16 @@ fresh-host procedure. Existing active Runes or custom extensions change the inst
 their own acceptance plan.
 
 Preview the inscription. Resolve required `HOST` failures in its readiness report before
-continuing. The plan must also end with `Initialization plan is safe`; that message establishes
-layout safety and does not establish host readiness:
+continuing. The plan must also end with `Initialization plan is safe`:
 
 ```bash
 uv run --extra postgres-binary lychd init --dry-run
+```
+
+Read both results before applying. A safe filesystem layout can coexist with a failed host
+probe. Once both checks pass, create the homes and open the generated settings:
+
+```bash
 uv run --extra postgres-binary lychd init
 vi "$CODEX_DIR/lychd.toml"
 ```
@@ -378,10 +388,11 @@ uv run --extra postgres-binary lychd logs --lines 120
 ```
 
 !!! danger "Temporary local-browser boundary"
-    Use a dedicated browser profile on this host. Keep the listener on `127.0.0.1`; do not publish,
-    proxy, tunnel, or forward it outside the separately admitted
-    [single-owner access candidate](deployments/tumbleweed/access.md). That candidate still needs
-    installed/browser acceptance and cannot be shared among developers.
+    Use a dedicated browser profile on this host. Keep the listener on `127.0.0.1`, without an
+    ad hoc proxy, tunnel or forward. If the same owner needs a private road, the
+    [deployment profiles](deployments/index.md) distinguish native Tether from the
+    administrator-owned forward. Each still needs its own installed and browser acceptance.
+    Neither grants access to a second developer.
     Keep the optional SAQ diagnostic UI disabled, do not expose
     `/schema/scalar`, and do not mix this profile with hostile sites. The two internal SAQ workers
     are required for normal Run execution.
@@ -403,8 +414,8 @@ Open the local Altar:
 http://127.0.0.1:7134/
 ```
 
-The root opens **Orb**, with **Bridge** beside it in a fresh wide layout. On a narrow window,
-open Bridge with the edge chevron.
+The Vessel serves the compiled Altar here. The root opens **Orb**, with **Bridge** beside it
+in a fresh wide layout. On a narrow window, open Bridge with the edge chevron.
 
 ### Make the First Invocation
 
@@ -479,16 +490,22 @@ preserve dependencies while any outcome remains unknown. Follow the recovery pla
 startup. [State of Work](state-of-the-work.md#core-cli-rites) records what remains unqualified;
 completing the observations above does not certify a production lifecycle.
 
-Stopping leaves configuration and history in place. You can inspect the destructive plan without
-applying it:
+After a confirmed stop, `$CODEX_DIR` still holds the settings and Runes. Committed conversation
+and Run history belong to [PostgreSQL](sepulcher/phylactery/index.md) in
+`$CRYPT_DIR/postgres/data`. Record the session and Run identities before shutdown so you can
+check those same records after a separately authorized restart. Live subscribers and unfinished
+in-memory work can be lost. [Reanimation](sepulcher/phylactery/reanimation.md) explains which
+records allow a worker to resume.
+
+If you are considering **deletion**, inspect its plan without removing anything:
 
 ```bash
 uv run --extra postgres-binary lychd del --dry-run
 ```
 
-The plan must account for the edited Codex and durable Phylactery. Retain any blocked recovery
-handoff and resolve its named condition before replanning. Do not remove those homes or generated
-units by hand.
+The plan must account for the edited Codex and durable Phylactery. A blocked dry run exits
+with status 2. Keep its named blocker or recovery handoff and resolve it before replanning.
+Do not remove those homes or generated units by hand.
 
 The first answer is now tied to the machine and model that produced it, its committed Run, and
 the limits of the trial. If an observation is missing, return to [The Awakening](#the-awakening).

@@ -17,15 +17,17 @@ relation may help form.
 **[Enter the Altar](./altar/index.md) to act and inspect.** Begin in Bridge, where a request can
 be followed through one Run: what returned, what evidence remains, which declared score guided
 the work, and any correlated physical transition. [Atlas](./altar/atlas.md) holds the continuing
-brief, concerns, and decisions of a larger undertaking. To give the daemon its first life,
-complete [Summoning](../summoning.md) before crossing this threshold.
+brief, concerns, and decisions of a larger undertaking. To give the daemon its first life on
+your own host, follow [Summoning](../summoning.md). From a checkout, you can already
+[trace a sample Run](../onboarding/explore/one-run.md).
 
-**[Enter Transmutation](transmutation/index.md) to learn from making.** Genesis gives an undertaking
-form; Trial brings it into encounter; Canon makes its measure explicit; Revelation interprets
-what happened; Distillation prepares what the next creation should inherit. The Tree of Life
-illuminates relations throughout this Ouroboros cycle.
-[Weaver's Smith](../sepulcher/aspects/weaver/smith.md) carries its software-development
-application.
+**[Enter Transmutation](transmutation/index.md) to learn from making.** Two workers edit
+field notes offline. How will they know whether a design preserves both observations? Genesis
+and Trial follow the design into an encounter. Canon returns to the measure declared before
+the test. Revelation separates what happened from what might explain it, and Distillation
+prepares a lesson for the next attempt. The Tree of Life illuminates the relations at work
+throughout the cycle. [Weaver's Smith](../sepulcher/aspects/weaver/smith.md) takes it into
+software development.
 
 **[Follow Transcendence](./transcendence/index.md) to ask what this relation may become.** Its
 fivefold path follows how a recurrent life begins, imagines, remembers, survives rupture, and

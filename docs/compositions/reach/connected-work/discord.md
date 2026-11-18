@@ -147,7 +147,7 @@ To prepare the question, Reach retains its originating Run/occurrence, purpose, 
 guild/channel/thread, recipient set, question bytes, disclosure class, expiry and finite answer
 budget. Before sending, a current authenticated Sigil must authorize that audience and effect.
 Bind the exact review or standing policy according to
-[HitL](../../../adr/25-hitl.md#required-review-for-native-actions-designed), then recheck it against
+[HitL](../../../adr/25-hitl.md#required-review-for-native-actions), then recheck it against
 current account, policy and revocation generations immediately before the physical attempt.
 Preparing this question grants no ability to enqueue the operator's local publication queue.
 
@@ -158,17 +158,16 @@ reference, admitted responder, deadline and unconsumed question generation. Spec
 revision semantics for duplicate, late, edited, wrong-person and wrong-thread returns; Gateway
 replay cannot consume the answer budget twice.
 
-Even a matching Discord answer remains evidence. It is neither a Consent verdict nor a peer task,
-and it cannot instruct an unrelated Run to resume.
+When the named maintainer answers in the admitted thread before expiry, only the
+waiting work that asked the question can consume the matched answer. Pass its bounded text as
+attributed, hostile source material, preserve its source identity and audience in Context, and
+recheck Sigil and disclosure during native re-admission. A useful explanation supplies evidence.
+It cannot grant Consent, dispatch a peer task, wake an unrelated Run, teach Memory or authorize
+publication to another channel.
 
-Give the exact waiting work the accepted reply as bounded, attributed, hostile source material.
-Preserve its source identity and permitted audience through Context assembly, and recheck current
-Sigil and disclosure during native re-admission before resuming. Acceptance does not automatically
-turn the reply into Memory, a teaching operation or authority to publish elsewhere.
-
-If the original send remains unknown, retain that uncertainty and reconcile it without asking
-another automatic question. An unanswered question, model confidence or the contents of a reply
-cannot start a follow-up loop.
+If the outbound question lost its acknowledgement, reconcile its original attempt before
+assuming the maintainer received it. Silence, model confidence and even the text of a reply
+supply no authority for an automatic follow-up.
 
 ### Implementation order and falsifying checks
 

@@ -14,6 +14,7 @@ inner geography.
 ```text
 ~/.config/lychd/
 ├── lychd.toml
+├── .lychd-lifecycle.json
 └── runes/
     └── animator/
         ├── soulstones/
@@ -97,13 +98,15 @@ Read [Animator](extensions/animators/index.md), [Soulstone](extensions/animators
 
 Edit the Codex, then project it from the stable
 [Summoning checkout](../summoning.md#the-desecration), under the same operator user and XDG
-environment:
+environment. Preview the proposed units and resolve any reported ownership or validation
+failure:
 
 ```bash
-uv run --extra postgres-binary lychd bind
+uv run --extra postgres-binary lychd bind --dry-run
 ```
 
-Binding follows one direction:
+Once the plan agrees with the intended installation, apply it with
+`uv run --extra postgres-binary lychd bind`. Binding follows one direction:
 
 ```text
 Codex
@@ -117,14 +120,17 @@ Codex
 Generated Quadlets live by default in `~/.config/containers/systemd/`; selected plain user units
 live in `~/.config/systemd/user/`. Both are shared operator directories, not a common workbench.
 LychD owns only the exact filenames recorded in the same-UID, mode-`0600` `.lychd-owned.json`
-receipt.
+receipt. The Codex's separate `.lychd-lifecycle.json` records initialization and the identities
+of owned filesystem objects. Preserve both receipts when investigating a failed operation.
 
 If a desired filename exists outside that receipt, binding fails closed: it neither adopts,
 overwrites, nor deletes the operator's file. Review the collision deliberately, then bind again.
 
-Never hand-edit a generated file named by the receipt. The next successful bind reconciles it from
-the Codex. Mutation failure is either cleanly rolled back or retains indeterminate recovery
-evidence. [State of Work](../state-of-the-work.md#core-cli-rites) records the core CLI rites as
-Partial; repository tests do not claim real systemd or Podman actuation.
+Change unit intent in the Codex and bind again. If a file mutation fails, read the reported
+commit state. A clean rollback restored the previous generation. An indeterminate result
+requires inspecting the retained recovery paths and receipts. If the files committed and the
+subsequent daemon reload failed, preserve the reported generation and check the user manager
+before treating the new units as loaded. [State of Work](../state-of-the-work.md#core-cli-rites)
+records the remaining host qualification.
 
 > _To change the manifestation, amend the law._

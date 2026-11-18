@@ -110,8 +110,9 @@ stand in for the missing contract. [State of Work](../state-of-the-work.md#proxy
 delivery boundary.
 
 The [single-operator forwarding candidate](09-security.md#single-operator-forwarding-candidate)
-is an explicit infrastructure experiment without an HTTP reverse proxy or shared remote authority;
-it neither implements Veil nor changes its delivery boundary.
+and [Tether's same-owner SSH binding](39-vpn.md#optional-same-owner-ssh-access) forward only
+the owner's loopback connection under their respective contracts. Neither terminates HTTP on
+behalf of a shared remote audience or provides a Veil certificate lifecycle.
 
 Operating Veil adds certificate, DNS, firewall, abuse, and availability duties alongside its
 dedicated remote-transport role. A loopback-only deployment avoids those duties.

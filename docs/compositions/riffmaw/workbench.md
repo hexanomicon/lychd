@@ -135,6 +135,16 @@ uv run --locked --group music-probe python scripts/music_probe.py audition /abso
 uv run --locked --group music-probe python scripts/music_probe.py edit /absolute/work/recipe.json --expected-digest DIGEST --track bass --cutoff 900 --output /absolute/work/variant.json
 ```
 
+To hear what the edit did, validate the **original** recipe and substitute its digest for
+`DIGEST` in the `edit` command. That command writes a new `variant.json` and refuses to
+overwrite an existing destination. Make an audition for the variant as well:
+
+```bash
+uv run --locked --group music-probe python scripts/music_probe.py audition /absolute/work/variant.json --workspace /absolute/work --output /absolute/work/variant.html
+```
+
+Open both audition files and compare the bass stem, then the mix.
+
 `edit` requires the digest returned by `validate`, preserves the earlier recipe and refuses to
 overwrite the destination. `render` uses only finite sine, saw and kick programs, gain/pan/lowpass,
 and non-stretched PCM clips. Import exact mono/stereo 16/24/32-bit integer WAV at the recipe rate

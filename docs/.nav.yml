@@ -1,5 +1,6 @@
 nav:
   - Prophecy: index.md
+  - Developer onboarding: onboarding
   - Roadmap: roadmap.md
   - Summoning: summoning.md
   - Deployments: deployments

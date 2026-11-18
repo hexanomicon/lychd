@@ -13,7 +13,7 @@ The drop at one exact point in a master can invite a visual answer. Sync makes t
 
 [Kinesis](../../sepulcher/aspects/prism/kinesis.md) may use the exact map in admitted `synchronize` or constrained-generation work. Its new motion derivative keeps music digest, clock relation, anchors, and uncertainty without rewriting the map or deciding creative acceptance.
 
-A retime, frame-rate conversion, shorter master, or changed mix may make the map stale. Reject a mismatched digest/timebase and create a new map revision while preserving the earlier relation as history. Timing-only changes stale dependent synchronization approvals; changed source revisions, consent, or use boundaries must still follow each owner's invalidation rules.
+Moving an accent inside the song gives the editor a different master and cue map. A retime, frame-rate conversion, shorter master, or changed mix may make the map stale. Reject a mismatched digest/timebase and create a new map revision while preserving the earlier relation as history. Timing-only changes stale dependent synchronization approvals; changed source revisions, consent, or use boundaries must still follow each owner's invalidation rules.
 
 Consumers then judge successors against the new exact references. A shared studio control may propose these related changes together, but each owner retains its accepted records and judgment of the successor.
 

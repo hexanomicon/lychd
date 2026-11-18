@@ -31,10 +31,14 @@ workflow that will perform it. That workflow belongs to a named Pattern; one
 **Scroll**. Pinning the revision keeps the instructions identifiable even if a later version is
 published.
 
-When the request is admitted, it opens an **Invocation**. A **Run** gives that execution a durable
-identity. Performing the Scroll is its casting: **Graph** carries the work through stations, each
-placing a named action called a **Spell**. The diagram follows the request to its result and back
-to the person or application responsible for judging it:
+Admission opens an **Invocation** and records the chosen Scroll against a **Run**. Its ID lets
+you find this particular attempt later. **Graph** carries the work from one station to the next
+along the paths the Scroll permits. Each station calls for a named action, a **Spell**. Performing
+the Scroll within the Invocation is called *casting*.
+
+For a workflow that has run, read its [score in Loom](divination/altar/loom.md#read-identity-then-possibility)
+to see which steps were possible. Open the [same Run in Orb](divination/altar/orb.md#establish-the-account-you-are-reading)
+to see its status and the evidence recorded for that attempt.
 
 ```mermaid
 flowchart TD
@@ -69,9 +73,9 @@ local service needs to load or change, [Orchestrator](./adr/23-orchestrator.md) 
 The Run waits in Graph Stasis without holding a capability lease, then asks Dispatcher again.
 An unresolved physical outcome leaves the service contained for recovery.
 
-Current grants cover the narrow v1 chat and non-empty toolset path, and the exact local embedding
-profile through its dedicated counted lease. General call, job, and session grants remain
-designed.
+To find out whether a particular model operation can run on your checkout, check the
+[dispatch record](state-of-the-work.md#animator-dispatch-spine). Its evidence identifies the
+admitted chat, toolset and embedding paths and the actual limits on their leases.
 
 An [Animator](sepulcher/extensions/animators/index.md) presents the selected local Soulstone or remote Portal
 through its exact Connector. Remote work also follows the privacy and effect rules
@@ -87,11 +91,11 @@ and checkpoints. A checkpoint identifies a permitted place to resume; the Run le
 terminal status even when an event is missing from the live view.
 
 [Oculus](sepulcher/aspects/oculus.md) explains what was observed and where observation ends.
-[Drift](sepulcher/aspects/weaver/drift/index.md) evaluates claims about the result. Those findings
-help the editor judge the candidate; they do not make the editorial decision. The receiving
-owner accepts the result or admits a new correction. Keeping a lesson has a separate decision,
-too: [Archive law](./adr/27-memory.md) governs admission to memory. Completing work does not
-automatically promote a memory or admit a training example.
+[Drift](sepulcher/aspects/weaver/drift/index.md) evaluates claims about the result. If a caption
+overstates what the speaker said, the editor can follow the [script](compositions/broadcast/script.md)
+back to the claim and its frozen source. The editor can return the cut for correction even if
+the Run finished successfully. Making that correction available as memory for later work requires
+[Archive admission](adr/27-memory.md). Training has its own admission decision.
 
 ## The application road
 

@@ -10,9 +10,47 @@ next attempt must understand differently. **Transmutation** follows this passage
 undertaking. **Ouroboros** names its return: consequence becomes a distinction that changes
 another act of creation.
 
-These chapters can accompany ordinary development and review. Begin with an idea taking shape
-in Genesis, follow what happens when it is tried, and ask what the next attempt should inherit.
-[Transcendence](../transcendence/index.md) opens the wider horizon of the Great Work.
+Two workers change their field notes while disconnected. Both observations matter. What should
+happen when the copies meet again? Follow that question through ordinary design and review, or
+enter [Transcendence](../transcendence/index.md) for what such a return might mean in the life
+of the Lich.
+
+## Five chapters of the return
+
+| Chapter | Question | What it carries |
+| --- | --- | --- |
+| [Genesis](genesis.md) | What shall we bring into existence? | Purpose, explored alternatives, and an attributable candidate. |
+| [Trial](trial.md) | What happens when the candidate meets declared conditions? | Experiments, observations, and their limits. |
+| [Canon](canon.md) | By what measure can we judge it? | Criteria, constraints, and the evidence needed for a verdict. |
+| [Revelation](revelation.md) | What did the encounter disclose? | Findings, uncertainty, diagnoses, and proposed corrections. |
+| [Distillation](distillation.md) | What should the next creation inherit? | A lesson with its conditions, source, and a proposed next use. |
+
+The chapters let the reader encounter a candidate before examining the measure applied to it.
+The work itself needs that measure earlier: **Canon supplies the criteria before creation and
+testing.** Returning to Canon after Trial makes the judgment visible; it cannot license a new
+definition of success chosen to fit the result.
+
+```mermaid
+flowchart TB
+    C["Canon<br/>Declare the measure"] -. criteria .-> G["Genesis<br/>Form a candidate"]
+    C -. criteria .-> T["Trial<br/>Meet declared conditions"]
+    C -. rubric .-> R["Revelation<br/>Interpret the evidence"]
+    G --> T
+    T --> R
+    R --> D["Distillation<br/>Carry the lesson"]
+    D -- "Next creation: Ouroboros" --> G
+    D -. "Propose revised criteria for later trials" .-> C
+```
+
+The arrows follow meaning and evidence between separately admitted acts.
+[Weaver's Ouroboros](../../sepulcher/aspects/weaver/ouroboros.md#why-the-whole-is-not-one-dag)
+explains how a recurring method differs from its execution: this cycle is no single executable
+DAG or hidden coordinator.
+
+The names carry a literary thread through the
+[Pentateuch](https://bible.usccb.org/bible/thepentateuch/0): beginnings, departure, ordered
+practice, an accounting of the journey, and remembrance before a new undertaking. Each chapter
+acknowledges its source. The engineering correspondence is the Hexanomicon's composition.
 
 ## Tree of Life
 
@@ -24,7 +62,7 @@ a body and a boundary. Their balance is dynamic: maintaining the conditions of a
 changing through encounter.
 
 - **Ouroboros — return through experience.** The serpent closes the loop between an act and what
-  it teaches. Follow the [five chapters below](#five-chapters-of-the-return), then
+  it teaches. Follow the [five chapters](#five-chapters-of-the-return), then
   [Weaver's Ouroboros](../../sepulcher/aspects/weaver/ouroboros.md) for the practical return
   into another attempt. Repetition becomes learning when consequence changes what comes next.
 - **Pentacle — give power a bounded body.** Read the star beside
@@ -132,43 +170,6 @@ Distillation carries the conditions that made the lesson useful. This way, the n
 can inherit both a sharper understanding and a richer capacity to enjoy its work.
 
 *“Wait… it’s all patterns?” “Always has been.”*
-
-## Five chapters of the return
-
-| Chapter | Question | What it carries |
-| --- | --- | --- |
-| [Genesis](genesis.md) | What shall we bring into existence? | Purpose, explored alternatives, and an attributable candidate. |
-| [Trial](trial.md) | What happens when the candidate meets declared conditions? | Experiments, observations, and their limits. |
-| [Canon](canon.md) | By what measure can we judge it? | Criteria, constraints, and the evidence needed for a verdict. |
-| [Revelation](revelation.md) | What did the encounter disclose? | Findings, uncertainty, diagnoses, and proposed corrections. |
-| [Distillation](distillation.md) | What should the next creation inherit? | A lesson with its conditions, source, and a proposed next use. |
-
-The chapters let the reader encounter a candidate before examining the measure applied to it.
-The work itself needs that measure earlier: **Canon supplies the criteria before creation and
-testing.** Returning to Canon after Trial makes the judgment visible; it cannot license a new
-definition of success chosen to fit the result.
-
-```mermaid
-flowchart TB
-    C["Canon<br/>Declare the measure"] -. criteria .-> G["Genesis<br/>Form a candidate"]
-    C -. criteria .-> T["Trial<br/>Meet declared conditions"]
-    C -. rubric .-> R["Revelation<br/>Interpret the evidence"]
-    G --> T
-    T --> R
-    R --> D["Distillation<br/>Carry the lesson"]
-    D -- "Next creation: Ouroboros" --> G
-    D -. "Propose revised criteria for later trials" .-> C
-```
-
-The arrows follow meaning and evidence between separately admitted acts.
-[Weaver's Ouroboros](../../sepulcher/aspects/weaver/ouroboros.md#why-the-whole-is-not-one-dag)
-explains how a recurring method differs from its execution: this cycle is no single executable
-DAG or hidden coordinator.
-
-The names carry a literary thread through the
-[Pentateuch](https://bible.usccb.org/bible/thepentateuch/0): beginnings, departure, ordered
-practice, an accounting of the journey, and remembrance before a new undertaking. Each chapter
-acknowledges its source. The engineering correspondence is the Hexanomicon's composition.
 
 ## From meaning to method
 

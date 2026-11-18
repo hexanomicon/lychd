@@ -21,6 +21,6 @@ Bind script spans, narration, captions, storyboard, all asset revisions, and tra
 
 `broadcast.review_package@2` returns findings against pacing, claim/image relation, continuity, captions, legibility, loudness balance, and target fit. `broadcast.revise_from_correction@2` permits a bounded forward repair. Wrong digests, timebases, claims, or use limits produce findings/refusal instead of an approximate edit.
 
-The timeline also determines which changes need new creative judgment. Generative video editing requests new upstream visual work and cannot be treated as a deterministic trim. Pinned FFmpeg or equivalent tools may probe, trim, concatenate, retime, overlay, mix, mux, and encode under the timeline. The tools execute those operations; they neither decide the edit nor admit stochastic media facets.
+Moving the same music master earlier changes Broadcast's timeline. Moving an accent inside the music requires a successor from [Riffmaw](../riffmaw/sync.md). Generative video editing requests new upstream visual work and cannot be treated as a deterministic trim. Pinned FFmpeg or equivalent tools may probe, trim, concatenate, retime, overlay, mix, mux, and encode under the timeline. The tools execute those operations; they neither decide the edit nor admit stochastic media facets.
 
 [Render](render.md) receives the accepted timeline without permission to publish.

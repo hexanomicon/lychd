@@ -103,7 +103,7 @@ custody and retention policy. A future materializer must recheck authority on ev
 `ArtifactRef` itself supplies neither byte custody nor a bearer token; a provider URL supplies
 neither durable custody nor permission.
 
-The [first Reliquary custody profile](06-persistence.md#reliquary-custody-designed) compares the
+The [first Reliquary custody profile](06-persistence.md#reliquary-custody) compares the
 complete retained reference before materialization, including identity and classification as well
 as digest, media type, and size. Owner and trusted acquisition attribution remain separate from
 producer claims. Quarantine inspection requires different authority from an admitted read.

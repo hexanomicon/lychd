@@ -94,10 +94,13 @@ advertisement, local reservation, fencing, artifact transfer, durable spool, can
 settlement, or fleet-evidence path ships. [State of Work](../state-of-the-work.md#legion-federation)
 owns that boundary; [Legion](../sepulcher/aspects/legion.md) owns operated doctrine.
 
-Safe delivery proves fresh resource evidence, deployment variants, and fenced admission on one host;
-then disjoint Master/Node assemblies with negative composition tests; credential-backed Ward;
-durable Intercom and node journal; partition, replay, cancellation, restore, version-skew, artifact,
-and two-node GPU behaviour; and finally fleet projection.
+Qualify placement in this order:
+
+1. Establish fresh resource evidence, deployment variants and fenced admission on one host.
+2. Exercise disjoint Master and Node assemblies, including negative composition tests.
+3. Qualify credential-backed Ward, then durable Intercom and the node journal.
+4. Exercise partition, replay, cancellation, restore, version skew, artifact handling and two-node GPU behavior.
+5. Project the resulting fleet evidence.
 
 Legion grows one cognitive continuity without sharing Soul authority, but deliberately costs node
 identity, journals, fencing, reconciliation, evidence, and proof of native resource intelligence on

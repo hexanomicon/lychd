@@ -66,7 +66,7 @@ until both namespace names have been re-attested, including after a normally ret
 Only that identity evidence permits verified restoration; a mismatch preserves the replacement
 and reports typed recovery.
 
-The Designed [Reliquary profile](06-persistence.md#reliquary-custody-designed) binds an explicitly
+The bounded [Reliquary profile](06-persistence.md#reliquary-custody) binds an explicitly
 supplied isolated private root to its exact owned identity; it introduces no implicit Crypt path
 or container mount. Artifact identifiers and producer labels never supply unchecked path
 components. Reads and publication re-attestation use nonblocking, no-follow opens and verify the
@@ -89,20 +89,19 @@ identity interfaces, temporary Btrfs clone FSIDs and uncertain observations refu
 effects. A filesystem UUID is not proof against an administrator cloning or rolling back the
 entire filesystem; restoration remains a separately reconciled operation.
 
-Identity is captured from pinned descriptors at creation and checked again before authority is
-used. Live device/inode comparisons, no-follow traversal, ownership checks and same-parent mount
-checks remain mandatory; a persistent match supplies no mount-crossing permission. Consumers
-use freshly attested live identities for race protection. Changed persistent identity blocks
-init resealing as well as operation. Legacy version-1/2 receipts remain readable evidence but
-cannot authorize operation or be silently upgraded; no migration or manual receipt-rebasing
-procedure is supplied by this change. Shared XDG parents, mounts, source checkouts, and external
-model shelves remain outside that grant. `del` is a separately confirmed destructive lifecycle:
-it joins receipt authority to a live inventory, stops managed installation state, and refuses
-unknown mounts, identity mismatches, invalid receipts, foreign objects, or ambiguous ancestry. Recursive
-walks reject mount crossings and possible Btrfs root/stub signatures. Deletion moves a
-re-attested leaf to a collision-resistant private sibling before type-specific removal; mismatch or
-failure restores it when possible, otherwise leaves a typed recovery marker. Published init
-creations are never pathname-deleted as rollback.
+Capture identity from pinned descriptors at creation and re-attest before use. Even a persistent
+match requires live device/inode comparison, no-follow traversal, ownership checks and same-parent
+mount checks. A changed persistent identity blocks both operation and init resealing. Version-1/2
+receipts remain readable evidence. They grant no operating authority and have no silent upgrade,
+migration or manual rebasing procedure. Shared XDG parents, mounts, source checkouts and external
+model shelves stay outside the grant.
+
+`del` requires separate confirmation. It compares the receipt with live inventory and stops
+managed installation state. Unknown mounts, identity mismatches, invalid receipts, foreign objects
+or ambiguous ancestry refuse deletion. A recursive walk rejects mount crossings and possible Btrfs
+root/stub signatures. After re-attestation, deletion moves a leaf to a collision-resistant private
+sibling before type-specific removal. A mismatch or failure restores the leaf when possible and
+otherwise leaves a typed recovery marker. Init rollback never deletes published creations by path.
 
 ## PostgreSQL substrate
 

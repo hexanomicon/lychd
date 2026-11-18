@@ -251,8 +251,6 @@ expansion, and sequence faithful to what their sources supplied.
 
 ## Reading direction
 
-For interface review and design, use the following composition and acceptance case.
-
 Place the selected account's qualifications where the reader judges it: Run identity, canonical
 status, capture class, snapshot time, retained and loaded boundaries, and omissions stay beside
 the graph and records. Summaries show the supplied subject; selection opens exact identity and
@@ -262,10 +260,6 @@ cannot bury the account's limits.
 
 The proposed [shared workflow station inspector](index.md#shared-workflow-station-inspector)
 opens on the selected attempt in Orb and gives access to the verified station definition.
-
-A future cross-instrument map may lead to Orb with an explicit Run scope. Orb follows the
-observed account and its capture limits. Loom retains the declared workflow, and Nexus retains
-readiness and physical transitions.
 
 The diagram must distinguish declared permission from supplied record membership and observed
 traversal. Sequence and equal spacing establish order, not elapsed time or causality. Unknown

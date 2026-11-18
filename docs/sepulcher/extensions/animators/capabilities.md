@@ -252,7 +252,7 @@ judgment, policy, and effects. Domain jobs and results may share grants, attempt
 artifact custody without collapsing into a generic `MediaJob`, `tool_execution`, or universal
 OpenAI adapter.
 
-[Connectors](connectors.md) owns invocation dialects and the current chat-only implementation
-boundary. [Dispatcher (22)](../../../adr/22-dispatcher.md) owns matching and leases;
+[Connectors](connectors.md) covers invocation dialects, the current model and toolset surfaces, and the
+separate fixed local embedding driver. [Dispatcher (22)](../../../adr/22-dispatcher.md) owns matching and leases;
 [Orchestrator (23)](../../../adr/23-orchestrator.md) owns physical readiness; and [Workers
 (14)](../../../adr/14-workers.md) owns durable attempt settlement.

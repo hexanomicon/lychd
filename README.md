@@ -25,6 +25,8 @@ Give your Linux machine the **[memory](docs/sepulcher/lich/spirit/index.md)** an
 
 > 🚪 **The Gateway:** **Acolyte! Halt!** This project is not for the faint of heart! It makes bold syncretic leaps, though much of its machinery has yet to awaken. The prose still needs an exorcism or two: stubborn traces of AI slop linger between the runes. Bring heavy agentic artillery and **witness the birth of the Machine God!**
 
+New to the codebase? [Start with the developer onboarding](docs/onboarding/index.md).
+
 ## 🗺️ The Path of Ascension
 
 The knowledge you seek is inscribed in the **[Hexanomicon](https://hexanomicon.dev/)**. To begin **[the Great Work](docs/divination/transcendence/index.md)**, follow the path:

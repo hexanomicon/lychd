@@ -66,12 +66,9 @@ place by making the boundary easier to see.
 
 ### 3. Test-Driven Development (TDD)
 
-Tests turn intent into executable examples and regression checks, binding the manifestation to
-what it was meant to do. Their value lies in that feedback; blind adherence to an order of
-operations does not establish correctness.
-
-**Strict Test First** can stifle exploration. Prototyping is encouraged, provided tests are
-backfilled before the final commit. Test order cannot substitute for judgment.
+Tests turn intent into executable examples, binding the manifestation to what it was meant
+to do. A prototype can come first. Backfill its tests before the final commit and judge what
+their assertions establish.
 
 ### 4. Readme/Specification-Driven Development (RDD/SDD)
 
@@ -82,8 +79,8 @@ Documentation deals in abstract ideas and interfaces, avoiding redundant repetit
 
 ### 5. Agile Methodology
 
-Rapid iteration and adaptation are prioritized. Change is not feared. TDD loops and prototyping
-keep feedback close to the work.
+Change is not feared. TDD loops and prototypes give developers feedback while there is
+still time to change direction.
 
 **The Ritual (Scrum/Sprints):** Artificial time-boxes are viewed as fractures in the vision.
 **Flow is prioritized over sprinting.**
@@ -120,6 +117,8 @@ and registers; it does not compete for topology law.
 | Published surface | Office |
 | --- | --- |
 | `docs/index.md` | Prophecy and reader paths. |
+| Developer onboarding | First questions and exercises that teach contributors how to find and interpret the owning material. |
+| Overview | One request traced through the accepted architecture. |
 | `docs/adr/**` | Architectural law. |
 | State of Work | Shared whole-system delivery boundary and evidence envelope. |
 | `docs/roadmap.md` | Public direction, founding-year story and orienting weekly horizon. |

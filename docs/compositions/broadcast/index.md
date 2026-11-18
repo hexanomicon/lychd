@@ -24,7 +24,14 @@ handles the separate consequence and any later correction.
 
 ## The local candidate
 
-`broadcast.studio` revision `4` publishes `broadcast.build_local_package@3`. Frozen sources, editorial brief, target profile, and admitted visual, music, timed-language, and picture-sound assets can become `EditorialPackage@2` and `PublicationCandidate@2`. A publication receipt exists only after a separate release effect.
+`broadcast.studio` revision `4` defines `broadcast.build_local_package@3`. You can trace this
+design on paper. Its Patterns have no executable registration in the current application
+catalogue. [State of Work](../../state-of-the-work.md#composition-portfolio-delivery) records
+which applications can run.
+
+The design takes frozen sources, an editorial brief, a target profile, and admitted visual,
+music, timed-language, and picture-sound assets. It returns `EditorialPackage@2` and
+`PublicationCandidate@2`. A publication receipt exists only after a separate release effect.
 
 Broadcast owns source words/claims, picture sound, editorial judgment, and destination receipts. [Atelier](../atelier/) retains visual/VFX lineage; [Riffmaw](../riffmaw/) music; [Language Edition](../language-edition/) timed-language editions. A delivery adapter cannot inherit editorial judgment. Unattended publication, engagement farming, borrowed asset authority, and unreviewed egress remain outside this application.
 

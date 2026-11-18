@@ -322,13 +322,16 @@ limits, and content identity. Partial bytes stay incomplete until verification a
 Conflicts, insufficient space, missing access, and failed transfers remain visible. Both originals
 survive; mirroring, overwrite, deletion, and cleanup need separately designed operations.
 
-If an action response is lost, reconcile the device's operation record and current state before
-claiming its outcome. Reconnect queries that identity instead of repeating a queue change or
-another effect. Until reconciliation succeeds, the outcome remains unknown.
+If a selected photo transfer to the PC loses its acknowledgement, look up the original
+operation on reconnect. Verify any committed destination against the size and digest of the
+representation the phone actually supplied. Partial bytes remain incomplete. Under current access
+and grants, the transfer may resume from verified portions. Leave the original in place if the
+destination cannot be verified. An expired or revoked grant stops the transfer.
 
-A transfer may resume its verified portions only under current access and grants; retry cannot
-preserve expired or revoked authority. Network-dependent agent commands do not silently execute
-when connectivity returns. The offline player continues independently.
+A queue edit has a different result to check. If the phone lost its acknowledgement after adding
+a track, query that same edit before claiming success. Adding the track again could put it in the
+queue twice. Any action with missing confirmation remains unknown until its operation record and device state reconcile. Network-dependent commands do not run merely because connectivity returns.
+The local player can continue offline.
 
 The first device fixture should prove offline playback, locked-screen and headset behavior,
 rejection of an unpaired peer on the same Wi-Fi, revocation, and lost acknowledgement without a

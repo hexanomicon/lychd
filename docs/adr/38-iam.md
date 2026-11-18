@@ -207,7 +207,7 @@ Changed bytes, selection, policy, roles or custody identity invalidate affected 
 
 ## Trusted local custody {#trusted-local-custody}
 
-The Designed [Reliquary profile](06-persistence.md#reliquary-custody-designed)
+The bounded [Reliquary profile](06-persistence.md#reliquary-custody)
 `same-host-trusted-bootstrap@1` accepts a subject only from trusted host composition. It requires
 a mandatory injected current authorizer for import, quarantine inspection, admission, read, hold,
 hold release, and deletion. Each decision names the actual subject, store and object, complete
@@ -259,7 +259,7 @@ relationship assertion or authority to emit events into that Run.
 
 ## Trusted local Scout profile
 
-The Designed opt-in Scout profile binds one authenticated local operator to a host-owned subject
+The opt-in Scout profile binds one authenticated local operator to a host-owned subject
 and authentication generation in the single control process and event loop. Its mandatory current
 host authorizer separately decides public-locator classification, review disclosure/judgment,
 Fetch, Extract and transient material consumption. Every decision binds the actual subject,
@@ -292,8 +292,9 @@ does not revoke it. Withdrawal uses Run cancellation or current host-policy revo
 injects current authority again and never restores a live permit from a receipt.
 
 This local composition seam supplies no remote Principal enrollment, Ward session, cross-process
-revocation or isolation from trusted same-process code. Runtime activation remains Designed until
-the complete assembly and its effectful refusal, revocation and recovery evidence are delivered.
+revocation or isolation from trusted same-process code. [Scout's evidence](../state-of-the-work.md#scout-web-acquisition)
+separates the selected page and model-free feed workflows, transport qualification, and the
+remaining deployment and recovery limits.
 
 The separate [Reach operator research profile](30-webcrawler.md#explicit-reach-operator-research-profile)
 uses a private operator-authored standing public catalogue and a distinct local attempt owner.
@@ -304,7 +305,7 @@ pending-only consent operation retain their existing law.
 
 ## Outbound peer authority profile
 
-The Designed [outbound public-text profile](26-a2a.md#peer-task-jsonrpc-1) introduces narrowly
+The opt-in [outbound public-text profile](26-a2a.md#peer-task-jsonrpc-1) introduces narrowly
 enrolled peer Principals, credentials and current task authority under Ward. The local initiating
 operator, local workload signing credential and remote result-verification credential are distinct.
 Actual local password possession establishes the initiating marker; its public fields, Sigil,
@@ -351,17 +352,20 @@ hostile same-UID isolation, human account system, incoming-task IAM or public re
 [Veil](40-proxy.md) owns hostile ingress and trusted-proxy canonicalization; [Tether](39-vpn.md)
 owns private reachability. Ward authenticates and authorizes traffic arriving through either.
 The credential-gated `magus:*` context remains confined to the instance's trusted operator and
-never establishes a remote Principal. The sole transport experiment is
-[Security's single-operator forwarding candidate](09-security.md#single-operator-forwarding-candidate):
-the same owner accesses their own instance through an exact private road. It grants no additional
-person a role and must not share the instance credential among developers.
-Its dedicated password is unavailable to shared-Pod model services;
+never establishes a remote Principal. The same owner may use either
+[Tether's native SSH binding](39-vpn.md#optional-same-owner-ssh-access) or
+[the infrastructure forwarding candidate](09-security.md#single-operator-forwarding-candidate)
+to reach their own instance. Neither road grants anyone else a role. Each developer needs
+a separate instance, its dedicated credential and a browser profile for that instance.
+
+The instance password is unavailable to shared-Pod model services;
 rotation replaces that secret and restarts the Vessel. No cookie, network-origin header, or
 unauthenticated bootstrap route supplies fallback authority.
 
-This Covenant records **Designed** law. The inactive local candidate profile above supplies no
-registered application service. Remote Principal enrollment, remote sessions, general object
-authorization, delegation, tenant isolation and deployed IAM remain undelivered.
+General multi-user IAM remains **Designed**. The inactive local candidate profile above supplies no
+registered application service. The outbound peer profile enrolls only the peers admitted for
+its bounded public tasks. General remote Principal enrollment, remote sessions, general object
+authorization, delegation, tenant isolation and deployed multi-user IAM remain undelivered.
 [State of Work](../state-of-the-work.md#remote-iam) owns the exact boundary.
 
 ## Consequences

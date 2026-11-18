@@ -216,9 +216,10 @@ current local metadata-inspection authority; `altar:read` alone is insufficient.
 contains historical receipt identities, selected source revisions, scores, character/result bounds
 and recorded budget omissions, with no prompt, source body, answer or provider payload.
 
-The capture class is a matching retained request. Public recall accepts caller-supplied identities,
-so even an exactly matching receipt may precede workflow execution. The view cannot claim actual
-consumption, provider transmission, complete Context, or restored process-local assembly. Missing,
+What if the receipt predates the Run's recall step? Public recall accepts caller-supplied
+identities, so that receipt can still match. The view reports a matching retained request. It
+cannot establish actual consumption, provider transmission, complete Context or recovery of the
+process-local assembly. Missing,
 unsupported, denied, failed and successfully empty selections remain distinguishable. Later source
 revocation does not rewrite the old selection or grant access to its former content. This read
 neither appends structural evidence nor changes a Run; Archive owns its retained metadata.

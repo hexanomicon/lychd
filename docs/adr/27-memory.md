@@ -408,9 +408,10 @@ derivatives in declared generations, not neuronal connections or model-weight up
 Consolidation may proceed alongside ordinary work and Shadow exploration. Consumers keep their
 admitted revision bindings; new material enters through declared Context and Pattern boundaries
 under current authority. Source lifecycle and derivative eligibility are rechecked at the owned
-resolution boundaries: a pinned reference cannot revive revoked or superseded material. A notice
-of a candidate or invalidation neither adopts replacement content nor proves that another
-consumer adopted it. Invalidation can require refusal while a replacement still awaits admission.
+resolution boundaries. A pinned reference cannot revive revoked or superseded material. A
+consumer may have to refuse while a replacement awaits admission. Receiving a candidate or an
+invalidation notice neither adopts replacement content nor establishes that another consumer
+has adopted it.
 
 Record curation remains distinct from revising the machinery that uses memory. Graph, prompt
 contract, or schema changes remain separately owned candidates, coordinated by

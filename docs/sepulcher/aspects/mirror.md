@@ -7,7 +7,7 @@ icon: material/mirror
 
 A temporary Agent finishes its step; the act outlasts it. **Mirror** keeps the act and its
 contributors bound to an operative identity, so a later reader can ask who spoke, under whose
-authority, and through which revision. Every admitted Invocation records an exact Persona revision
+authority, and through which revision. In the designed contract, each admitted Invocation records an exact Persona revision
 or an explicit no-Persona choice under [Identity](../../adr/32-identity.md).
 
 Full Persona lineage remains **Designed**. The

@@ -31,7 +31,7 @@ infrastructure control plane.
 
 ## Delegation through Intercom
 
-Legion uses an owned-node profile over the future [Intercom](../../adr/26-a2a.md). A node-initiated
+Legion would use a dedicated owned-node profile over [Intercom](../../adr/26-a2a.md). A node-initiated
 authenticated channel may avoid a public listener. Transport identity supplies evidence to Ward;
 application permission is still a separate decision.
 

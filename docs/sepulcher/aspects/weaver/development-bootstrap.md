@@ -228,14 +228,18 @@ creates neither a native application boundary nor an executable contract revisio
 
 ### First implementation queue
 
-Revalidate this queue against current source before claiming a task. Its entries describe
-missing proof or future work, not completed issues or promises of delivery dates.
+Use these stages to locate the next missing *observation*. Read the
+[delegation evidence](../../../state-of-the-work.md#delegated-agent-execution) before claiming a
+stage. B1 has independent PostgreSQL settlement cases. B2 has a clean replacement-process
+receipt for the effect-free reference and a captured queue. Neither result qualifies an abrupt
+crash, a real broker, or a foreign provider. A new assignment should say which uncovered behavior
+it will test.
 
 | Task | Smallest useful slice and dependencies | Acceptance that closes the slice |
 | --- | --- | --- |
 | **B0: Preserve the baseline** | Inventory current changes; select an exact admitted input closure and record focused gate results. | Operator work retained; pre-existing failures attributed; task surface reproducible. |
-| **B1: Real database settlement** | Extend the existing delegation PostgreSQL receipt with independent concurrent sessions. Depends on B0. | RUNNING wins against conditional LOST; LOST prevents late RUNNING; result/event adoption occurs once; event failure rolls back; interruption remains attributable. |
-| **B2: Recovery across processes** | Exercise real migrations, Run admission and retained delegated Graph wait/resume through distinct coordinator processes. Depends on B1. | One admitted job and terminal adoption after restart; exact request replay cannot launch twice; uncertain effects stay contained. |
+| **B1: Real database settlement** | Verify settlement across independent concurrent PostgreSQL sessions. Depends on B0. | RUNNING wins against conditional LOST; LOST prevents late RUNNING; result/event adoption occurs once; event failure rolls back; interruption remains attributable. |
+| **B2: Recovery across processes** | Verify migrated Run admission and retained delegated Graph wait/resume through distinct coordinator processes. Depends on B1. | One admitted job and terminal adoption after restart; exact request replay cannot launch twice; uncertain effects stay contained. |
 | **B3: Versioned launch policy** | Bind exact source projection, paths, model/effective settings, tool/effect policy, budgets, artifact custody and verifier identity at admission. Can be designed alongside B1. | Invalid/missing/stale fields refuse; request and launch digest correlate; unsupported settings refuse; old retained Runs keep their admitted interpretation. |
 | **B4: Trusted host qualification** | Implement the selected host/Gate road using B3 and durable settlement; first qualify it with an inert adversarial executable and no provider. | Root/secret/egress escapes refused; child processes cancelled; resource limits exercised; uncertain start reconciled; artifacts survive coordinator loss. |
 | **B5: One real delegated artifact** | Qualify the reviewed CLI against harmless public/synthetic input, then an admitted repository projection. Depends on B2–B4. | Exact model/billing path observed, bounded output admitted, independent fixed checks pass, no forbidden effects. |
@@ -465,18 +469,13 @@ admitted experiment; many useful improvements concern Context, tools, instructio
 
 ## Start the first campaign
 
-Use a bounded goal after filling the task record and selecting the actual candidate surface:
-
-```text
-Complete task B1 from the Development bootstrap guide against its recorded input closure.
-Establish the owning contract and reproduce the missing evidence before editing.
-Use the requested model and record effective settings. Give independent investigators
-closed packets; keep one writer and a separate verification context. Preserve operator work.
-Run the focused PostgreSQL receipt and required repository gates; retain failures and unrun checks.
-Deliver the exact candidate, test receipts, updated owning documentation and next eligible task.
-Stop when B1 is verified or its declared budget/premise prevents completion. Do not start B2,
-merge, publish, deploy, purchase capacity or widen permissions from this request alone.
-```
+Choose an uncovered, authorized milestone and substitute its actual name and acceptance
+conditions in the task record. For example, a team reviewing delegated restart could ask which
+guarantees rely on clean process exit or the captured queue. First read the
+[existing two-process test](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_delegated_process_recovery_pg.py).
+Then name one missing observation, bind the permitted fixture and effects, and reserve
+verification time. Return the exact candidate and receipts, including failures or an unmet
+prerequisite. The next milestone starts only under its own authorization.
 
 The final boundary is the task's actual authorization. A wider campaign may already authorize
 successor tasks or source effects; record that standing scope and re-admit each successor under

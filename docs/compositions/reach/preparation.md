@@ -11,7 +11,7 @@ server where you can install an application.
 
 The separate offline profile **`reach.prepare@1`** checks a prospective request. It does not
 change **`reach.discord@1`** or deliver live **`reach.external_converse@1`**.
-[State of Work](../../state-of-the-work.md#composition-portfolio-delivery) owns delivery status;
+[State of Work](../../state-of-the-work.md#reach-operator-profiles) owns delivery status;
 [architecture](architecture.md) explains the preparation boundary and the remaining live path.
 
 ## 1. Create the private application

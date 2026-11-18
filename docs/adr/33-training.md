@@ -155,10 +155,10 @@ Dispatcher consumes a registered capability; files alone cannot create one. Revi
 immutable, and supersession requires a new Bundle and decision. Rollback routes new work to an
 earlier digest and quarantines the suspect candidate while preserving completed effects.
 
-A later privacy, authority, license, contamination or leakage failure must be traced through the
-exact Dataset, Run, Bundle, claims and promotion descendants. Policy may block serving or reuse,
-quarantine or delete controlled artifacts, invalidate affected claims, and require clean
-admission and rebuilding. Source deletion cannot untrain produced weights.
+If a privacy, authority or licensing failure, contamination or leakage comes to light after training,
+trace the affected Dataset, Run, Bundle, claims and promotion descendants. Policy may block
+serving or reuse, quarantine or delete controlled artifacts, invalidate affected claims, or
+require clean admission and rebuilding. Deleting a source cannot untrain the produced weights.
 
 Retrieval remains appropriate for current, mutable, attributable knowledge. Exporting all history
 to a provider, or allowing a trainer to select, evaluate and deploy itself, collapses the separate

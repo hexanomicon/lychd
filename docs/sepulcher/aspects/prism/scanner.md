@@ -12,7 +12,9 @@ is one projection of that return, not the document's canonical replacement.
 
 The semantic boundary remains stable while engines change. No OCR adapter ships; vision remains
 Partial in [State](../../../state-of-the-work.md#vision-admission). The implementation study below
-was reviewed on **2026-08-07**. Its candidates require their own Assimilation and bake.
+was reviewed on **2026-08-07**. Another extractor can enter through the same
+[Assimilation](../weaver/assimilation.md) and fixture bake. Its own profile must carry the
+evidence and rights for the proposed use.
 
 ## What the Scanner route actually owes
 
@@ -103,8 +105,3 @@ fidelity, wall time, CPU/GPU memory, concurrency, cancellation, crash containmen
 license closure. Promote profiles, not project logos: PaddleOCR may qualify for simple Slovak scans
 while failing formulae; Xberg may qualify for native extraction but not difficult scans; MinerU may
 win a bounded complex-PDF route without becoming admissible to strict-FOSS Core.
-
-The pragmatic first bake compares three candidate routes, each through its exact profiles: PaddleOCR direct plus PP-StructureV3,
-Xberg for broad native extraction and selective OCR, and MinerU for difficult documents behind its
-license gate. Later candidates can enter through Assimilation without changing Prism's Scanner
-contract or silently enlarging the initial Core.

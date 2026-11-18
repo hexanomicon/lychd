@@ -121,82 +121,47 @@ procedure before proposing trained weights for use.
 
 ## Obtain training authority over one snapshot
 
-Storage, evaluation, and training are separate uses. Permission to retain a Run or to accept its
-artifact does not permit training on it. A Training Intent names the Principal, purpose, target
-capability, exact base digest, allowed data classes, resource envelope, and promotion authority.
-[Corpus admission](corpus.md#admit-one-snapshot) then establishes training-specific consent,
-license, or other authority over the exact nominated material and derivative uses.
+Show the exact examples and fields proposed for training, why they matter, who may receive
+them, how long they will be retained, and what it means for a correction to influence weights.
+The approving Principal must hold training-specific authority for those records and derivative
+uses. A contributor may explain a correction without holding the rights to every record it
+mentions. The compiler can proceed within the admitted scope. Missing rights or an expanded
+use block the affected examples.
 
-Make admission a concrete choice over the proposed material. Show which examples and fields
-would enter, why they are useful, who may receive them, how long they would be retained, and
-what learned influence would mean. Once valid authorization covers that scope, compiler
-operations need not each become a new approval request. Missing authority or an expanded use
-still blocks the affected material.
-
-Minimize private material and preserve provenance through redaction and transformation. An
-anonymized explanation may still reveal its source or encode a distinctive private fact. Keep
-the source classification, transformation limits, and derivative lineage attached. Admission
-freezes membership and exclusions; a negative ledger prevents rejected or duplicate material from
-returning through a later compilation attempt.
+Follow [Corpus admission](corpus.md#admit-one-snapshot) to record the authority, privacy
+limits, frozen membership, and exclusions. Redacting a distinctive private fact may still leave
+its source recognizable.
 
 ## Separate practice from examination
 
-Group duplicates, revisions, sibling trajectories, and generated variants before splitting the
-corpus. Freeze train, development, and sealed-holdout membership before training-facing generation.
-Otherwise a corrected trace can enter training while its lightly reworded sibling appears to
-test generalization.
-
-Compile one immutable Dataset Manifest from that admitted snapshot. Version the schema and
-compiler; retain labels, transformations, source references, split digests, and balance and
-contamination statistics. Human explanations are attributable training inputs where admitted,
-not an excuse to smuggle test answers into metadata.
-
-Held-out benchmark tasks, answers, evaluator rationales, and downstream target artifacts stay
-outside training, retrieval, augmentation, preference construction, and candidate selection.
-Disclose any benchmark used to select the corpus; an untouched control is then needed for an
-independent promotion claim. A development result can guide another attempt, but repeatedly
-tuning against a sealed evaluation result consumes its independence.
+Keep a corrected trace and its reworded siblings in one lineage group. Freeze the groups before
+generating training examples. Hold out whole task families if the claim is transfer to unfamiliar
+work. Repeatedly tuning against those results consumes their independence.
+[Compilation](corpus.md#compile-without-leakage) carries labels and split digests into the
+immutable Dataset Manifest and keeps examination material out of trainer inputs.
 
 ## Train a bounded candidate
 
-The [Training Run](training-run.md) receives the exact Manifest, base and tokenizer/configuration
-digests, objective, and versioned Recipe. Pin the method, dependencies, hyperparameters,
-randomness, resource budget, expected improvement, regression limits, and stops. Orchestrator
-admits physical resources; an idle window supplies neither corpus authority nor a reason to
-disturb unrelated work.
-
-Execute inside the admitted filesystem, credential, network, process, and resource boundaries,
-with fresh Run-owned outputs and retained receipts. The trainer cannot enlarge its corpus with
-ambient history or replace serving weights. Failure or cancellation preserves logs, terminal
-truth, completed checkpoints, and quarantined partials. A retry receives a new Training Run.
-
-Freeze candidate bytes and lineage into a Candidate Bundle. For an adapter, bind the exact base
-digest and serving compatibility. Loss and development metrics help diagnose training; they do
-not establish that the candidate is useful, safe, or ready to activate.
+The [Training Run](training-run.md) pins the Manifest, base, objective, and Recipe. For this
+experiment, specify how much better the candidate should distinguish a justified question from
+an unnecessary one, which regressions would end the trial, and what resources the attempt may
+use. A lower training loss can help explain what happened. Freeze the candidate before asking
+whether the distinction transfers.
 
 ## Let the candidate leave its teacher
 
-Independent [Drift evaluation](../weaver/drift/index.md) compares the frozen candidate with the base
-or currently promoted baseline under matched serving conditions and budgets. Use the sealed
-target holdout, deterministic contract gates, independently judged qualitative criteria, named
-regression suites, and authority-boundary Cases. Test transfer to unfamiliar tasks and distinguish
-appropriate refusal from blanket hesitation. Include quality, latency, memory, cost, human
-attention, and recovery; retain uncertainty and failed or blocked trials.
+Compare the frozen candidate with the base or currently promoted revision at matched serving
+conditions and budgets in an [independent Drift trial](candidate-handoff.md#independent-trial).
+Fix the comparison and its stopping rule before examining the result. An inconclusive trial
+may prompt a new investigation. It gives the trainer no mandate to keep tuning against the
+same examination. Score both sides of the distinction. A candidate that asks permission
+less often may also miss a change of recipient. A cautious candidate may repeatedly interrupt
+work the caller already authorized. Record the human attention saved or spent alongside quality,
+latency, cost, memory, and recovery. Retain blocked trials and uncertainty.
 
-The trainer cannot change the candidate or choose easier evaluation after seeing results. An
-iteration stops according to its declared budget and thresholds. It never continues training
-until its own judge likes the answer. An unresolved result may justify a separately bounded
-investigation; it cannot silently become a favorable verdict.
-
-Through [Candidate handoff](candidate-handoff.md), the owning policy and required Magus/HitL
-authority decide on the exact Bundle, evidence, capability envelope, compatible serving engine,
-rollout observations, stops, and rollback target. Present the expected gain, remaining tradeoff,
-and fallback together so approval names a reviewable candidate. The serving owner registers and
-activates that exact revision for admitted work.
-
-Observe the promoted revision within its approved envelope. Regression, contamination, or a
-later privacy or authority failure can require stopping use, invalidating affected claims, and
-routing new work to a prior digest. Preserve the Dataset, Run, Bundle, evaluation, decision, and
-descendant lineage under their retention rules. Rollback cannot undo completed effects; deleting
-a source record cannot remove its influence from already produced weights. A clean replacement
-requires clean admission and another evidenced passage through the forge.
+[Candidate handoff](candidate-handoff.md#eligibility-is-not-promotion) takes those Outcomes to
+the promotion owner. The decision binds the exact Bundle, permitted uses, rollout, stops, and
+fallback. If a later privacy failure invalidates this corpus, follow the lineage to the affected
+weights and claims. Returning new work to an earlier digest leaves completed effects and the
+learned influence in existing weights intact. A clean replacement requires
+[new admission and rebuilding](candidate-handoff.md#observe-roll-back-invalidate).

@@ -55,9 +55,11 @@ trusted installed-hybrid receipt remain frozen historical observations of their 
 They do not qualify a rebuilt Vessel or authorize fallback control. Follow the current
 [CLI boundary](../../state-of-the-work.md#core-cli-rites) before an installation operation.
 
-Shutdown stops workers before their collaborators and queues. Process death loses active tasks,
-subscribers, leases, and other volatile state. Only records committed through the
-[Phylactery](../phylactery/index.md) can enter a supported return path.
+Shutdown stops workers before their collaborators and queues. Process death loses live tasks,
+subscribers and the in-memory lease ledger. An external effect may still need reconciliation.
+On the PostgreSQL profile, the next Vessel reads the
+[Phylactery](../phylactery/index.md) to recover committed conversation history and decide the
+fate of each Run. The presence of a queued job or a checkpoint alone cannot authorize replay.
 
 Follow [Ghouls](ghouls.md) from admission to settlement, or
 [Reanimation](../phylactery/reanimation.md) across process death.

@@ -11,10 +11,14 @@ A spoken answer can be generated yet never heard. **Echo** follows an utterance 
 armed capture to transcription, an ordinary Agent step, optional synthesis, and observed delivery.
 Source, consent, language, interruption, and playback chronology remain attached throughout.
 
-The first passage is visible push-to-talk and record-and-send. Audio admission is Partial; a
-separate local engineering probe exercises speech without native Echo grants or Bridge admission.
-[State](../../state-of-the-work.md#audio-admission) owns delivery and
-[Audio](../../adr/37-audio.md) owns the accepted law.
+To put a spoken draft into Bridge, use [Dictate and review](../../divination/altar/bridge.md#dictate-and-review).
+That optional path captures a short utterance in the browser, transcribes it locally under the
+configured CPU profile, and returns text you can correct before sending. For measurements on a
+specific device or speech engine, use the separate [local engineering probe](echo-local-probe.md).
+
+Echo's general push-to-talk, record-and-send contract is broader. Its `stt` and `tts` labels
+currently issue no callable Animator grants. [State](../../state-of-the-work.md#audio-admission)
+records what runs, and [Audio](../../adr/37-audio.md) owns the accepted law.
 
 ## The resonance path
 

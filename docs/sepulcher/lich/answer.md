@@ -40,7 +40,9 @@ unchanged witness slept inside every process or that philosophical answerability
 technical attribution.
 
 In [the First Invocation](./index.md#the-first-invocation), the Lich answers through an Agent.
-Answer makes the Called's local act attributable without consuming the Caller’s purpose.
+The Caller supplies the purpose. The Called owns its reply. Suppose a witness's account
+returns through Recall. “She saw the bridge fall. I inferred the road was closed.” The
+witness can answer for what she saw, and the Agent for what it made of her words.
 
 Answer may be attributable and still be wrong. Truthful scope says _I infer_ where only inference
 exists, _this seems familiar_ where Recall lacks provenance, and _I do not know_ where no grounded

@@ -12,7 +12,7 @@ without carrying one customer's words or authority into another conversation.
 **Reach Connected Work** (`reach.correspondence`, revision `1`) is the Native Reference
 Composition for correspondence across accounts and conversations. It defines operational profiles
 for Gmail, Discord and GitHub. [WhatsApp](whatsapp.md) has a separately scoped
-business profile. [State of Work](../../../state-of-the-work.md#composition-portfolio-delivery)
+business profile. [State of Work](../../../state-of-the-work.md#reach-operator-profiles)
 records the executable boundary.
 
 The explicit [connected preparation profile](preparation.md), added **2026-10-29**, makes bounded
@@ -108,7 +108,7 @@ capabilities. The model receives no token, unrestricted HTTP client or platform 
 a communication, while the host selects and validates the actual target.
 
 Preparing a message freezes sender, To/Cc/Bcc or platform target, reply references, subject/body,
-visibility, expiry, provenance and exact bytes. Review follows the existing [native action binding](../../../adr/25-hitl.md#required-review-for-native-actions-designed).
+visibility, expiry, provenance and exact bytes. Review follows the existing [native action binding](../../../adr/25-hitl.md#required-review-for-native-actions).
 A provider draft edited after review cannot be sent through that approval. Destination, audience,
 payload or policy changes require new preparation and authority.
 

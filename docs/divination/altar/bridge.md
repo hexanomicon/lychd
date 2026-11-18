@@ -28,18 +28,13 @@ retained reading workspace. The dock's **Open Séance** opens the actual supplie
 there. Inspection preserves the live Bridge selection until you choose **Continue in Bridge**.
 **Back to workspace** returns to the work you were viewing.
 
-Open the side panel with the named **Bridge** control at the work area's edge. New layouts start on the left;
-a saved side is preserved. Resize its divider, choose the left or right side,
-or collapse it while retaining the conversation. Ordinary instrument navigation does not destroy
-the selected session, its live reconstruction or a later draft. On a narrow window, the panel is
-a modal sheet; Escape closes it and returns focus to its opener. The layout's remembered width,
-side and open state contain no conversation text or request bodies.
+When you move to another instrument, you can [keep Bridge beside the work](index.md#keep-bridge-beside-the-work).
+The selected session, its live reconstruction and your later draft stay in the open document.
+Remembered layout settings contain no conversation text or request bodies.
 
-After completing [Altar setup](index.md), open `http://127.0.0.1:7134/bridge` in the dedicated
-browser profile on the same host. Existing session, Run and consent URLs open their exact Bridge
-focus. Keep the listener on literal `127.0.0.1`; do not proxy, tunnel, or forward it outside the
-separate [single-owner access candidate](../../deployments/tumbleweed/access.md), whose
-installed/browser qualification remains pending.
+After [local Altar setup](index.md#bring-one-intent), open `http://127.0.0.1:7134/bridge` in the
+dedicated same-host browser profile. A link that names a session, Run or consent opens that exact
+focus in Bridge.
 
 ## First meeting and naming ceremony { #naming-ceremony }
 
@@ -351,7 +346,8 @@ the open browser document. The existing public-note links below remain compatibi
 [Memory](memory.md) distinguishes the document-local quotation collection, public-note lifecycle
 and explicit Recall.
 
-Choose **Manage public notes** in Bridge. The **Configured profile** identifies the collection;
+You can also reach this panel through **Tools → Public sources → Manage public notes** in Bridge.
+The **Configured profile** identifies the collection;
 **Current Bridge default** separately says whether the actual default requests this exact profile.
 Unavailable and failed reads stay distinct. This configuration establishes neither storage/model
 readiness, the next routed Run nor an earlier Run's binding.
@@ -397,10 +393,6 @@ or embeddings:
 | `/api/v1/archive/bridge-default` | The actual admission default and its complete managed-profile match, or unavailable. This reveals no other collection and performs no storage, history, readiness or Run work. |
 | `/api/v1/archive/notes` | Metadata for every lifecycle, including candidates, archived revisions and revoked tombstones. `limit` is 1–50; optional `source_key` matches exactly. Follow the opaque `next_cursor` with the same source filter; absence returns an empty page, while changed binding or storage failure refuses. |
 | `/api/v1/archive/notes/{record_id}` | One retained record's current metadata and lifecycle version. A missing record refuses rather than replaying an effect or restoring revoked content. |
-
-After an uncertain lifecycle response, read the exact record, inspect its current version and make
-a new explicit decision. Do not automatically repeat a stale transition. Listing metadata does
-not make a note eligible for recall or establish which profile an admitted Bridge Run uses.
 
 The existing writes require the same local access and CSRF protection as other Altar mutations:
 
@@ -492,13 +484,10 @@ query and threshold; completion never launches it automatically.
 
 ### Recall semantic sources
 
-Choose **Recall** in the shared [Memory panel](memory.md), or follow the legacy exact focus below.
-Opening the section does not submit a query or send an answer request.
-
-Choose **Recall public sources** in Bridge, or open `/bridge?notes=recall`. This separate view
-returns attributed public-note sources; it does not generate an answer or admit a Run. Ordinary
-revision 3 public-note answers remain lexical. Opening the view reads only the authorized configured
-profile and generation. These metadata do not prove that semantic recall is enabled, that the
+Choose **Recall** in the shared [Memory panel](memory.md). In Bridge, **Tools → Public sources →
+Recall public sources** and `/bridge?notes=recall` open the same view. Opening it reads only the
+authorized profile and generation. Submitting a query here returns attributed sources. For a
+lexical answer in a Run, use [Bridge revision 3](#public-note-answers). These metadata do not prove that semantic recall is enabled, that the
 generation is registered, that notes have eligible derivations, or that the exact model is warm.
 
 Prepare those prerequisites separately through the existing [Archive derivation and semantic
@@ -649,8 +638,6 @@ reauthorize the request. Pinning itself would grant neither retrieval nor mutati
 Neither action is available yet. Follow their development through [Loom](loom.md) and the [delivery record](../../state-of-the-work.md#bridge-surface).
 
 ## Reading direction
-
-For interface review and design, use the following composition and acceptance case.
 
 Give the conversation the widest readable area so a reader can follow one offered text through
 its exact Run status to a reply, an explicit missing reply, consent, or unresolved admission.

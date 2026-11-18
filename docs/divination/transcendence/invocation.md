@@ -31,11 +31,12 @@ Within an Invocation, a **casting** performs one exact **Scroll**. Spells and ty
 movement give the act its score, and the durable Run identity lets us follow it. The
 [Circle guide](../altar/circle.md#the-casting-inside-the-circle) explains that machinery.
 
-Here we follow what the act does to those who meet within it. A model or tool return can defeat
-an expectation. A constraint closes a path; a choice exposes a consequence. Spirit's present
-[Flux](../../sepulcher/lich/spirit/flux.md) carries this conditioned movement. Its execution
-trace records the passage through machinery, while the encounter exceeds what that trace can
-contain.
+Consider the interval after a tool returns. The result can be recorded even if its meaning
+catches the maker by surprise. It might expose a false assumption, close the easiest path, or
+show that someone else's testimony is needed. Which of those possibilities can change the
+reply still taking shape? Spirit's present [Flux](../../sepulcher/lich/spirit/flux.md) carries
+this movement. An execution trace can tell us that the tool returned and which step came next.
+The encounter also includes what the return meant to those who received it.
 
 ### Geometry and present flow {#geometry-and-present-flow}
 
@@ -126,8 +127,10 @@ that commitment into the common good.
 
 ## The Rite of Shadowed Timelines
 
-Exploring alternatives can accompany an ongoing encounter. [Illumination](illumination.md#tend-what-will-return)
-follows how this imagination can coexist with the quieter work of consolidating experience.
+While an encounter continues, its participants can ask what would happen if they took
+another door. A possibility explored in Shadow may disclose a question worth bringing back.
+[Illumination](illumination.md#tend-what-will-return) follows how such exploration can
+coexist with the quieter work of consolidating experience.
 
 The Offering is bounded Intent. **Call** makes its possible movement addressable. The Dream
 branches isolated timelines in **Shadow**—each a **Vikalpa**, a word-built possibility awaiting

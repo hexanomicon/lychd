@@ -7,7 +7,7 @@ icon: material/home-lock
 
 Reach sleeps when home sleeps. `reach.home.public@1` keeps its Ward, Vessel, Workers, corpus, effect ledger, and Phylactery in one home-local `ApplicationDeploymentManifest@1`, with no VPS, Tether, Veil, public listener, callback, or inbound A2A road.
 
-This profile is **Designed, not deployable**. [State of Work](../../../state-of-the-work.md#composition-portfolio-delivery) records Reach’s delivery boundary.
+This profile is **Designed, not deployable**. [State of Work](../../../state-of-the-work.md#reach-operator-profiles) records Reach’s delivery boundary.
 
 The profile admits public corpus/Context and guest effects. Its separated services narrow parser and credential compromise, but do not isolate the body from home-account or Vessel compromise, which may expose private home truth and resident credentials.
 

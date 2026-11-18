@@ -38,7 +38,7 @@ generation or host Core test deployment. The image entrypoint and `create_app()`
 single-process/no-reload policy and reject unsupported upstream supervisor or alternate-listener
 configuration. Existing images must be rebuilt to acquire changed runtime behavior.
 
-The read-only developer fixture also runs in the explicit container test/development image,
+The developer fixture also runs in the explicit container test/development image,
 with a fixed internal listener and loopback-only host publication. Its test records and security
 remain separate from production authority. Direct application construction inside an OCI test
 process is an in-process test technique, not another deployment profile.
@@ -108,22 +108,23 @@ batched heartbeat thread; Run invocations retain their own broker heartbeat. The
 lifespan is the sole worker retirement owner; the queue plugin registers startup only.
 There is no hot-reload contract.
 
-### Isolated developer fixture (Designed)
+### Isolated developer fixture
 
-One explicit developer entry may compose a disposable, read-only fixture for local browser work.
-Production remains the default. The fixture is selected before ambient Settings sources, Rune or
-extension discovery, or database and SAQ construction can run. It receives explicit Settings,
-fresh fixture-only credentials, and empty Rune and extension assemblies; it reads no operator
-configuration, secrets, or runtime control files.
+For local browser work, a separate entrypoint constructs a disposable fixture. Production
+remains the default. The fixture receives explicit Settings, fresh credentials and empty Rune
+and extension registries before ambient Settings, extension discovery, PostgreSQL or SAQ could
+run. It reads no operator configuration, secrets or runtime control files.
 
-The fixture shares the real controllers, dependency providers, OpenAPI, authentication, Host,
-CORS, Origin, and CSRF boundaries. An additional admission guard refuses every unsafe HTTP
-method before controller or domain admission, including unversioned routes. Valid credentials
-do not permit fixture mutations. Reads remain free of execution and host effects. The common
-pure server policy still requires one process, one event loop, and the fixed internal
-`0.0.0.0:8000` TCP listener behind loopback-only host publication,
-refusing reload, extra workers, alternate sockets, and a separate metrics listener. This fixture
-grants no VPN, tunnel, or remote access.
+The fixture shares production controllers, dependency providers, OpenAPI and the normal
+authentication, Host, CORS, Origin and CSRF checks. Its default guard also refuses every unsafe
+HTTP method before controller admission, including unversioned routes. The explicitly selected
+Canvas authoring profile admits only Canvas and Project authoring in disposable memory under
+the ordinary handler scopes. Both profiles refuse conversation execution, consent decisions
+and physical transitions.
+
+The launcher fixes the internal TCP listener at `0.0.0.0:8000`, with loopback-only host
+publication, one process and one event loop. It refuses reload, extra workers, alternate sockets
+and a separate metrics listener. The fixture grants no VPN, tunnel or remote access.
 
 Existing memory repositories retain one visibly labelled synthetic conversation and terminal
 Run. Bridge and Orb project that same Run and link its exact registered Pattern revision into
@@ -139,10 +140,10 @@ admission or durable recovery, connects no queues, and starts no workers or main
 All fixture state ends with the process; durable operation retains the production startup and
 recovery contract above.
 
-This option admits a development composition, not a deployed Phylactery or production macOS
-support. [State of Work](../state-of-the-work.md#current-evidence-envelope) owns its delivery and
-receipt boundary; [CONTRIBUTING](https://github.com/hexanomicon/lychd/blob/main/CONTRIBUTING.md#browser-development-and-its-backend)
-owns the startup and browser workflow when supplied. This design alone establishes neither.
+Use the [local browser workflow](https://github.com/hexanomicon/lychd/blob/main/CONTRIBUTING.md#browser-development-and-its-backend)
+to start the fixture. [State of Work](../state-of-the-work.md#current-evidence-envelope) records
+the browser evidence for this development composition. A fixture session establishes neither a
+deployed Phylactery nor production macOS support.
 
 ### Where implementation belongs
 

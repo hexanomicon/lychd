@@ -101,16 +101,15 @@ and blocks continuation.
 
 ## Containment rule and delivery boundary
 
-Compensation can reopen the prior world only after exact proof of its restoration. When the
-physical result remains indeterminate, containment latches and recovery is required; another retry
-cannot supply that recovery. Signal authority stays equally narrow: the trusted Vessel alone
-writes the Reactor inbox, and the host consumer alone claims it. Tombs, Soulstones, and untrusted
-extensions receive neither inbox nor journal.
+Compensation may reopen admission only after it proves the exact prior state was restored.
+An uncertain physical result latches containment until the owner reconciles it. Retrying
+the transition cannot settle that uncertainty.
 
-The mediated protocol and its isolated receipts are available within their stated boundary, but no
-repository test proves an operator's Quadlet/Podman/GPU host. [State of Work](../state-of-the-work.md#host-reactor-protocol)
-and [its systemd/Podman embodiment record](../state-of-the-work.md#systemd-podman-embodiment) own
-that delivery distinction.
+Only the trusted Vessel writes the Reactor inbox. Only the host consumer claims its intents.
+Tombs, Soulstones, and untrusted extensions receive neither the inbox nor the journal.
+[Host Reactor protocol receipts](../state-of-the-work.md#host-reactor-protocol) cover the
+mediated exchange. Qualifying that exchange on an operator's Quadlet/Podman/GPU host requires
+[separate host evidence](../state-of-the-work.md#systemd-podman-embodiment).
 
 ## Consequences
 

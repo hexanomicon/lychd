@@ -11,67 +11,37 @@ Once work has chosen a score, **Spellweaver** keeps it intact through execution,
 and ending. It is LychD's singular logical workflow jurisdiction: it validates immutable
 **Scrolls** and admits their casting. Code and existing paths retain the short name `Weaver`.
 
-A **Pattern** names the score's lineage; a Scroll fixes one immutable revision. Within it, an
-Agent call, Gate, tool, effect, wait, or delegation may deserve an independently named **Spell**.
-A Scroll-local station places that Spell's exact contract, fixing the relationship before work
-begins.
-
-Future packages may contribute Spell contracts and Scroll declarations through separate
-Spellweaver-shaped stores. Executable implementations and adapters remain separate Extension or
-effect-owner registrations; publication and activation are not implied by contribution. The Core
-office retains workflow authority. Spellweaver never inherits the policy or physical control of
-the offices it sequences. [ADR 28](../../../adr/28-workflow.md) owns the complete contract.
-
 ## From Product to performance
 
-A [Composition or Suite](../../../compositions/products-and-suites.md) publishes the score for its
-work. A Product packages that choice; application records, judgment, and effects remain with their
-owners.
+A [Composition or Suite](../../../compositions/products-and-suites.md) publishes a score.
+A **Pattern** gives its lineage a name, and a **Scroll** fixes one immutable revision. A
+**Spell** names an action independently of that score. Each station places its exact contract,
+whether the action calls an Agent, waits, delegates work, or produces an effect. Core's Bridge
+and delegated rite predate the Portfolio and retain their original ownership.
 
-- **Pattern** is one named executable-score lineage published by its application owner: normally a
-  Composition, or a Suite for coordination only; one immutable revision is a **Scroll**. The two
-  delivered Core Patterns are an explicit retained pre-Portfolio exception.
-- **Spell** is one independently named semantic action contract; a station places it in that
-  Scroll.
-- **Invocation** opens one bounded [Circle](../../../divination/altar/circle.md).
-- **Casting** performs the exact Scroll inside that Invocation.
-- **Run** is the durable execution and ledger identity of that Invocation.
+An **Invocation** opens one bounded [Circle](../../../divination/altar/circle.md). Its
+**Casting** performs the selected Scroll. The **Run** records that Invocation durably, including
+the chosen score, so a worker returning from a pause can find the same revision. Graph advances
+work between stations. In the [public-page score](https://github.com/hexanomicon/lychd/blob/main/src/lychd/agents/workflows/scout_chat.py),
+the station `await_page_consent` binds to the Python node `AwaitPageConsent`. Its declared
+edges allow the Run to wait, proceed to acquisition, or settle without contacting the page.
+The score places that decision. The consent owner supplies the verdict. [Loom](../../../divination/altar/loom.md)
+lets a reader inspect the declared topology.
 
-A Suite Casting opens one parent coordination Invocation/Run from its Suite-owned Scroll and
-separate child Composition Invocations/Runs. The parent owns correlation and aggregate settlement,
-never a member's records, judgment, consent, credentials, or effects.
+A Product packages the application choice. A Suite can coordinate it by opening a parent Run
+and separate Runs for its member Compositions. The parent correlates and settles their results.
+Each member keeps its own records, judgment, consent, credentials, and effects.
 
-Graph is the typed topology that advances Scroll state among Spell placements. The
-[Loom](../../../divination/altar/loom.md) is a read-only projection of its declared truth. The
-current fixed registry has no independent Spell catalogue or teaching surface.
+[Pattern lifecycle](pattern-lifecycle.md#identity-before-motion) explains which revisions can be
+inspected, selected for new work, or resumed from an existing Run. For example,
+`delegated_rite@1` uses the effect-free reference adapter. Revision 2 pins an
+[explicit runtime and profile](delegated-agents.md#pin-effective-configuration) for new admissions.
+For application-selected workflows, including Creation and Scavenger, see the
+[Portfolio delivery record](../../../state-of-the-work.md#composition-portfolio-delivery).
 
-The current registry is fixed and source-defined:
-
-```text
-bridge_chat@1 (default) / bridge_chat@2 (configured exact capability)
-WeaveContext → Converse → AwaitConsent? → ProjectReply → End
-
-bridge_chat@3 (configured public Archive and exact capability)
-RecallNotes → AnswerNotes → SettleNoteAnswer → End
-
-bridge_chat@4 (configured Scout and exact local capability)
-PreparePageReview → AwaitPageConsent → AcquireAndAnswerPage → SettlePageAnswer → End
-
-bridge_chat@5 (configured semantic generation and exact local capability)
-RecallSemanticNotes → AnswerSemanticNotes → SettleSemanticAnswer → End
-
-delegated_rite@1 (default) / delegated_rite@2 (configured exact runtime)
-DispatchDelegate ⇢ ProjectDelegatedReply → End
-```
-
-Admission commits the chosen workflow name and exact manifest snapshot with the Run. That
-choice lasts: resume looks up the stored score and never routes the Intent again.
-
-The registry is executable substrate, not a general workflow platform. `delegated_rite@1`
-exercises only the deterministic reference adapter. Revision 2 pins an
-[explicit registered runtime and profile](delegated-agents.md#pin-effective-configuration) for new
-admissions and retains that selection across resume. Neither revision supplies foreign-runtime
-containment or an execution plane.
+[ADR 28](../../../adr/28-workflow.md) distinguishes the designed package stores for Spell and
+Scroll declarations from executable bindings, publication, and activation. The current
+source-defined registry has no independent Spell catalogue or teaching surface.
 
 ## Choose a Bridge capability
 

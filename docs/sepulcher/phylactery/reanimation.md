@@ -31,43 +31,44 @@ whole-body boundary separate.
 
 ## Perform one bounded reanimation
 
-Begin only after the four [Awakening](../../summoning.md#the-awakening) observations agree.
-Reanimation cannot complete a host's unfinished first life. Run the commands below from the stable
-[Summoning checkout](../../summoning.md#the-desecration), under the same operator user and XDG
-environment.
+For a planned host trial, first establish the four [Awakening witnesses](../../summoning.md#the-awakening)
+and record the settled session and Run you want to find on the far side. Stop submissions and
+let visible work settle. Active work needs a supported durable boundary or explicit acceptance
+of its loss. Neither an idle Bridge nor `lychd status` supplies a complete Run census.
 
-Before restarting, stop submissions and let Bridge-visible work settle. Active work must either
-reach a supported durable boundary or have its loss accepted. There is no complete Run census
-or graceful drain command proving zero-loss restart; if unseen work or continuity matters, do
-not restart. [State](../../state-of-the-work.md#core-cli-rites) records the current `status` and
-`stop` limits. Direct Systemd action bypasses Orchestrator admission and lease drain.
+The public CLI refuses active-Vessel lifecycle control. An operator planning to interrupt the
+process needs an independently authorized plan to identify the owned units and containers,
+close admission, establish terminal state, and preserve dependencies wherever the outcome is
+unknown. [Close the rite](../../summoning.md#close-the-rite) explains these requirements.
+If the plan calls for
+`systemctl --user restart lychd-vessel.service`, that action bypasses Orchestrator admission
+and lease drain. If required continuity or the fate of unseen work is uncertain, stop
+at observation. An unexpected process death can still be investigated from the records below.
 
 ### The generated body {#the-generated-body}
 
-`lychd bind` and the Scribe project Codex intent into owned units atomically. Edit that intent,
-never paste or hand-edit a generated Quadlet. The generated Vessel has a restart policy and a
-migration gate before start; real [systemd/Podman embodiment](../../state-of-the-work.md#systemd-podman-embodiment)
+The generated Vessel has a restart policy and a migration gate. Keep the existing binding for a
+process-only return. If the Codex itself changed, the [binding rite](../codex.md#the-rite-of-binding)
+projects the new intent into owned units. Editing a generated Quadlet by hand would lose that
+source of truth. The actual [systemd/Podman embodiment](../../state-of-the-work.md#systemd-podman-embodiment)
 still needs operator validation.
 
-When Codex or unit intent changed, bind first. Otherwise restart the existing projection:
+After the new process starts, observe it from the stable
+[Summoning checkout](../../summoning.md#the-desecration), under the same operator user and XDG
+environment:
 
 ```bash
-# Only when Codex or generated-unit intent changed:
-uv run --extra postgres-binary lychd bind --dry-run
-uv run --extra postgres-binary lychd bind
-
-systemctl --user restart lychd-vessel.service
 uv run --extra postgres-binary lychd status
 systemctl --user show lychd-migrate.service \
   --property=Result --property=ExecMainStatus
 uv run --extra postgres-binary lychd logs services --lines 200
 ```
 
-The current `stop` cannot stop an active Vessel without the authenticated lifecycle port.
-`status` establishes unit and mount truth; the migration unit must report `Result=success` and
-`ExecMainStatus=0`. Neither proves model warmth. Repeat Nexus readiness and a benign same-host
-[Bridge](../../divination/altar/index.md) reply. Disagreement among state, readiness, and reply
-returns the investigation to [The Awakening](../../summoning.md#the-awakening).
+Read the unit and mount observations. Require migration `Result=success` and `ExecMainStatus=0`.
+Reopen the original session and match its retained reply and Run identity. Then check Nexus
+readiness and submit a benign same-host [Bridge](../../divination/altar/index.md) turn if the
+trial admits new work. A new reply tests current service. Reading the earlier one tests
+retention. Disagreement returns the investigation to [The Awakening](../../summoning.md#the-awakening).
 
 ## Reanimation — a new Vessel judges durable truth
 
@@ -123,7 +124,11 @@ hop, but still awaits a worker claim. `FAILED / ghoul lost` identifies work that
 without a supported durable boundary. A surviving or republished SAQ job preserves queued labor,
 not the old in-memory event stream.
 
-Retain the host, unit, image, database, queue, Run, shutdown, and recovery observations before
-promoting the result to an operator receipt.
+If a terminal Run still has a checkpoint, inspect the ledger and terminal evidence before
+drawing a conclusion from that row. In the [PostgreSQL cleanup test](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_terminal_checkpoint_recovery_pg.py),
+deletion of one checkpoint fails. Both Runs stay `DONE` and receive their ordered terminal
+evidence. Once the fault is lifted, a later sweep clears the checkpoint without replaying a Run.
+The test replaces the recovery adapters against the same database. A host trial must also
+retain its actual host, unit, image, database, queue, Run, shutdown and recovery observations.
 
 > _Inscribe the breath before it passes beyond recall._

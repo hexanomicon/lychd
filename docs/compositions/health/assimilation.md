@@ -48,7 +48,7 @@ nothing.
 
 ## Partial completion and departure
 
-Intake can finish even when parts of the source remain unresolved. Return the accepted claims
+A reviewer can accept the supported claims in a discharge note while leaving an illegible medication line unresolved. Return the accepted claims
 alongside an exact list of unread, unsupported, disputed, or unreviewed regions. Cancellation
 stops new processing and keeps only material allowed by intake policy. On restart, use source
 digest, acquisition identity, processing revision, and completed-region receipts to avoid duplicate

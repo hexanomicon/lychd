@@ -230,16 +230,21 @@ the Crawl4AI renderer candidate remains Designed rather than deployable.
 
 ## Scribe inscription
 
-Scribe materializes one validated generation transactionally: render and validate in staging,
-verify the prior ownership receipt and exact binding sites, make same-filesystem backups, replace
-the declared files, remove only stale receipt-named files, publish the new receipt, and daemon
-reload. A changed source, generation, site, secret, filename, mode, symlink, or foreign collision
-refuses; a failed transaction restores the previous files and receipt. Ambiguity authorizes no
-deletion. Filename resemblance never proves ownership.
+Before planning, Scribe resolves each runtime-bearing `.container`, `.pod`, and generated or
+plain systemd source to its runtime unit. Two source names that systemd would collapse onto
+one unit invalidate the manifest.
 
-Before planning, the complete ownership manifest also requires a one-to-one mapping from every currently runtime-bearing `.container`,
-`.pod`, and generated/plain systemd source to its resolved runtime unit; different source names
-that systemd would collapse onto one unit refuse together.
+For an admitted generation, Scribe renders and validates in staging, verifies the previous
+ownership receipt and exact binding sites, and makes same-filesystem backups. It replaces the
+declared files, removes only stale files named in the receipt, and publishes the new receipt.
+Changed source, generation, site, secret, filename or mode, a symlink, or a foreign collision
+stops the operation. A familiar filename alone supplies no authority to delete.
+
+If a mutation fails, rollback restores only paths whose identities it can still prove. A
+concurrent edit survives. An interrupted or uncertain rollback reports an indeterminate
+transaction and preserves the available recovery evidence. After a successful commit, Bind
+asks the user manager to reload. If reload fails, the reported generation remains committed
+on disk. See [The Rite of Binding](../sepulcher/codex.md#the-rite-of-binding).
 
 Compilation and materialization are available within their declared State boundary. A rendered
 generation supplies no receipt that an operator's host actually started Podman, systemd, GPU, or

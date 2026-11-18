@@ -48,16 +48,16 @@ umbrella. Both frontend gates regenerate the API contract, and the build also up
 static projection. Review that output with the source that produced it. A generated diff guard
 catches disagreement.
 
-Automatic pull-request, `dev` and `main` checks run repository lint, formatting, strict typing and the
-explicit core test selection owned by `make test-ci`, plus the Altar check/build with its generated
-diff guard and a clean documentation build. These checks always report, including changes outside
-their source directories. The core selection uses in-process substitutes and excludes real host
-and container qualification. Full ordinary Python checks and disposable PostgreSQL receipts remain
-manually dispatched jobs in Repository Checks while host-runner compatibility is unresolved;
-changes still require the broader gates appropriate to their boundary. The Pages workflow
-separately publishes the documentation artifact on `main`. The tag/manual release-candidate
-workflow remains separate: passing ordinary checks does not bind release archives or prove
-installation on a host.
+Pull requests and pushes to `dev` or `main` run Core lint, formatting, strict typing and the
+`make test-ci` selection, plus Altar check/build, the generated diff guard, and a clean
+documentation build. These jobs report even for changes outside their source directories. The
+automatic Core selection uses in-process substitutes. It excludes real host and container
+qualification. While host-runner compatibility is unresolved, full ordinary Python checks and
+disposable PostgreSQL checks have their own manually dispatched jobs. Run the broader gates a
+change requires.
+
+Pages publishes documentation on `main`. The separate tag/manual release-candidate workflow
+checks release artifacts. Ordinary CI establishes neither archive identity nor installation on a host.
 
 The separate CodeQL workflow analyzes Actions, Python and JavaScript/TypeScript, and compiles
 Android, Minecraft server and Minecraft voice production sources into distinct Java/Kotlin

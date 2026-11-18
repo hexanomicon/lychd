@@ -10,8 +10,8 @@ promise: what can this revision actually support, and where is the evidence?
 
 The supported runtime is local and loopback-oriented, with a single user, one control process,
 and a managed container Vessel. Host-native Core deployment and Core test deployment are retired;
-Core checks run only in the explicit OCI test image. The fresh production-image and Ward
-PostgreSQL observation is recorded separately from retained observations below.
+Core checks run only in the explicit OCI test image. The [evidence envelope](#current-evidence-envelope) dates the production-image and Ward
+PostgreSQL observations and identifies which source revisions they cover.
 
 Start with an outcome, then read its whole record. State, proved subset, limit, and evidence must
 be read together. The Covenants own architectural decisions; this ledger explains what their
@@ -25,7 +25,8 @@ delivery evidence supports.
 | Local text chat | **Partial:** retained source, browser and installed-hybrid receipts record structured replies and a bounded useful task under their dated profiles. | General answer quality, wider browser acceptance and full generated installed deployment remain pending. See [vLLM](#vllm-integration), [Bridge](#bridge-surface) and [persistence](#phylactery-first-light). |
 | Browser safety | **Loopback only:** a dedicated local credential precedes the fixed Sigil; Host, Origin, CORS, CSRF, and generated bind policy are bounded locally. | Remote IAM and hostile-browser acceptance remain unsupported. |
 | PostgreSQL lifecycle | **Historical restart receipts:** source TCP, source-browser and installed-hybrid profiles retained structured history across native boots before retirement. | These frozen profiles do not qualify current OCI tests or a rebuilt Vessel; checkpoint-plus-consent recovery, crash and full generated deployment remain unqualified. |
-| Major blockers | Authenticated caller authority, privacy-safe egress, artifact custody, managed host/model lifecycle receipts, native Oculus, and resource-aware scheduling. | Remote transport, federation, executable evolution, durable recall, and vision/audio bytes remain Partial or Designed. |
+| Can I run a Composition from the Portfolio? | The [Portfolio record](#composition-portfolio-delivery) identifies the selected Creation and Scavenger workflows. [Blockworld](#blockworld-experiments), [Reach](#reach-operator-profiles) and [Companion Android](#companion-android-client) each have a separate record of their trials. | An accepted design such as Broadcast still needs executable registration and evidence for the requested operation. |
+| Major blockers | Authenticated caller authority, privacy-safe egress, artifact custody, managed host/model lifecycle receipts, durable [Oculus](#native-oculus) traces, and resource-aware scheduling. | Remote transport, federation, executable evolution, durable recall, and vision/audio bytes remain Partial or Designed. |
 
 ## How to read this page
 
@@ -86,7 +87,9 @@ enrolled-peer qualification is added.
 
 The combined migration source keeps lineage `0015`–`0020`, then appends disclosure custody at
 `0021`, Intercom at `0022`, native peer Graph custody at `0023`, private companion aliases at
-`0024`, dictation custody at `0025`, and approved private vocabulary at the current head `0026`.
+`0024`, dictation custody at `0025`, and approved private vocabulary at `0026`.
+The [naming migration](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/migrations/versions/0027_primus_naming.py)
+follows at `0027` and adds the table for accepted [names](#primus-naming).
 Reconciling that source does not renew either the 21 October production observation or the imported
 22–23 October peer and companion observations. Their source maps, migration identities,
 dependencies, and limits remain dated evidence. Qualification of the current combined source
@@ -1515,8 +1518,9 @@ controlled-failure/useful-reply, exact Orb/Loom journey and retained reload. It 
 Consent, other castings or public-note browser acceptance.
 
 **Boundary — Not yet:** There is no ordinary installed production-browser receipt, durable cross-process event/token
-delivery, general multi-approval, Attention, or notification channel. Text is the only command
-modality, and no focused Circle workspace composes Scroll, active Spell placement,
+delivery, general multi-approval, Attention, or notification channel. Bridge admits text,
+including reviewed or explicitly auto-sent [dictation](#audio-admission). No focused Circle
+workspace composes Scroll, active Spell placement,
 Context/authority, capability, and evidence projections.
 Selected-session turns and model history still hydrate that one conversation. There is no general
 storage quota or retention policy; archive paging and stream limits do not bound every retained
@@ -1537,7 +1541,7 @@ they do not qualify production deployment or live effects.
 - **Verification:** [Circle identity/action tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/pages/bridge/components/CircleRun.test.ts)
 - **Verification:** [Configured composer projection tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_bridge_composer.py)
 - **Verification:** [Bridge tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_bridge.py), [archive tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_bridge_archive.py), [stream admission tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_bridge_stream_budget.py), [PostgreSQL archive receipts](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_db_consent_pg.py), and [client recovery tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/pages/bridge/components/BridgeView.test.ts), [initial read recovery tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/shared/InstrumentReadRecovery.test.ts), [shell navigation tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/pages/bridge/components/BridgeShellNavigation.test.ts), [client review tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/shared/ConsentCard.test.ts), and [decision transport tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/api/client.test.ts), plus [complete-history tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/cortex/test_context.py), [native binding tests](https://github.com/hexanomicon/lychd/blob/main/tests/codex/test_native_consent.py), and [reviewer and decision tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_native_consent_review.py).
-- **Law:** [Frontend](./adr/15-frontend.md), [Context](./adr/21-context.md), and [native Consent review](./adr/25-hitl.md#required-review-for-native-actions-designed)
+- **Law:** [Frontend](./adr/15-frontend.md), [Context](./adr/21-context.md), and [native Consent review](./adr/25-hitl.md#required-review-for-native-actions)
 
 ### Nexus transition board {#nexus-transition-board}
 
@@ -1639,12 +1643,19 @@ lifecycle, graph-failure, editor or general accessibility acceptance.
 
 **State:** Partial
 
-**Proved now:** The Portfolio publishes Native Reference Composition contracts and examples.
-Executable catalogue membership has a narrower boundary: default boot contains Core
-`bridge_chat` revisions 1, 2 and 3 and `delegated_rite` revisions 1 and 2. An explicit application
-selector additionally registers the bounded `creation.investigate@2` Pattern.
-`scavenger.observe_market@2` is registered for historical resolution but admits new work only
-under its explicit selector.
+**Proved now:** The Portfolio publishes application contracts and worked examples. An editor can
+follow [Broadcast](./compositions/broadcast/index.md) from source to a publication candidate on
+paper. Its Patterns have no executable registration. For working examples, compare Creation
+and Scavenger below with the [Blockworld experiments](#blockworld-experiments),
+[Reach operator profiles](#reach-operator-profiles), and the [Android client](#companion-android-client).
+
+Core registers multiple revisions so it can recover the exact instructions of an earlier Run.
+For a new, unnamed Bridge request, an unconfigured boot routes to `bridge_chat@1`; the
+`/delegate` command routes to `delegated_rite@1`. [Bridge configuration](#configured-bridge-casting)
+selects other active profiles. Accepted [naming](#primus-naming) pins the naming-aware variant
+of the selected Bridge revision. The registry also retains `scavenger.observe_market@2` for
+historical lookup. New Scavenger work requires its explicit selector. Selecting Creation adds
+`creation.investigate@2` to the registry.
 
 Accepted designs include [Health](./compositions/health/index.md), for attributable personal
 clinical records and bounded diagnostic and care proposals; [Keeper](./compositions/keeper/index.md),
@@ -1672,7 +1683,56 @@ supplies the complete seed, displays source/coverage and every occurrence, and s
 filtering, Run cancellation, and terminal payload deletion. [Scout's evidence boundary](#scout-web-acquisition)
 owns the assembled development proof and remaining installed, public-network, and process limits.
 
-Blockworld has an explicitly assembled, inactive one-block placement Pattern. Portable tests
+**Boundary — Not yet:** Selecting Creation or Scavenger enables the bounded work described above. The
+application still has no general Composition or Product catalogue, shared store, Suite
+execution or application scheduler. Each other profile needs its own explicit assembly.
+
+Crucible is a designed Weaver choreography, not a
+registered Pattern, parallel Graph, dossier schema, or Altar surface.
+
+Keeper and Cultivator's durable record contracts do not supply database models or migrations.
+
+[Transmuter](compositions/knowledge-and-interpretation/transmuter/index.md), `transmuter.intake` revision 1,
+defines source-attributed extraction, synthesis, and dossier correction. Its Patterns have no
+executable registration, general import adapter, dossier store, or Memory/Identity handoff.
+
+[Accounting Office](compositions/professional-operations/accounting-office/index.md), `accounting.office`
+revision 1, defines entity-scoped evidence, reviewed postings, reconciliation, and period close.
+Its mail/bank ports, entity books, jurisdiction profiles, and accounting Patterns await
+implementation. Live account access, tax filing, and supported-country qualification remain open.
+
+[Workshop](compositions/professional-operations/workshop.md), `workshop.service` revision 1,
+defines guided technical-service casework for Mechanic's passenger-vehicle profile. Its Python
+namespace contains only a docstring. The service-case store, executable profile, Pattern, and
+operator entry point await implementation; the network-disabled qualification fixture has yet to run.
+
+[Thorn](compositions/security-and-trust/thorn/index.md), `thorn.defense` revision 1,
+defines authorized assessment, incident response, cooperative investigation, and reviewed findings
+or corrections. Its five Pattern contracts await registered implementations, a private case store,
+response adapters, peer exchange, and reporting adapters. The synthetic trials await execution;
+deterrence remains unmeasured.
+
+[Signet](compositions/security-and-trust/signet.md), `signet.qualification` revision 1,
+defines compute-node qualification, certificate renewal/revocation, and per-request evidence.
+Its Linux host conditions distinguish privileged inspection from enforced private processing.
+The scanner, certificate issuer, privileged host collector, request stamps, and qualified
+confidential inference path await implementation. Its synthetic acceptance cases supply the
+qualification plan.
+
+**Evidence**
+
+- **Source:** [Workflow registry](https://github.com/hexanomicon/lychd/blob/main/src/lychd/agents/workflows/__init__.py)
+- **Verification:** [Workflow routing tests](https://github.com/hexanomicon/lychd/blob/main/tests/agents/test_router.py)
+- **Source:** [Scavenger finite values](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/scavenger/schemas.py)
+- **Verification:** [Scavenger value and projection tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/test_scavenger_values.py)
+- **Topic:** [Composition Portfolio](./compositions/index.md)
+- **Law:** [Workflow](./adr/28-workflow.md)
+
+### Blockworld placement, Horizon assist and companion lab {#blockworld-experiments}
+
+**State:** Partial
+
+**Proved now:** Blockworld has an explicitly assembled, inactive one-block placement Pattern. Portable tests
 exercise real Run admission, the worker, serial Graph, native Consent review, HTTP decision, and
 resume against a composite memory store and inert effect port. They reconstruct serialized fixture
 state in fresh services, preserve canonical Run and exact command through interruption, and
@@ -1689,6 +1749,8 @@ refuses execution despite earlier approval. The world is inert and the queue cap
 process: this does not establish broker delivery or automatic recovery of an orphaned running
 worker after process death.
 
+#### Horizon assist
+
 A separate opt-in Horizon-assist profile admits strict finite text or externally transcribed
 instructions through native Run admission, worker execution and a serial Graph. Its Linux Unix
 socket adapter pins one client process generation and reported world label, enforces exclusive endpoint ownership,
@@ -1703,6 +1765,17 @@ debug/clipboard, keyboard and unknown nested fields cannot enter returned status
 Portable socket/Run tests preserve useful renderer/server fields and the missing/null/malformed
 server distinctions while checking exclusion from results and events.
 This profile does not implement the managed placement mission or its authoritative receipts.
+
+Fixed Slovak/Czech/English feedback distinguishes task start, refusal, client report and unknown
+effect. Optional synthesis or settled player failure preserves the game outcome and marks the
+reply stage separately. Unchanged idle ticks retain private evidence without repeated console
+announcements. An explicit playback option validates PCM before a fixed local player invocation,
+keeps capture closed, joins the owned process group on stop and records player exit rather than
+human hearing. Failed player retirement ends the session. Synthetic tests cover launch expiry,
+late process adoption, repeated cancellation, failed retirement and preservation of native game
+outcomes; they do not qualify a physical speaker or microphone.
+
+#### Fabric companion lab
 
 A separate opt-in Fabric companion lab connects typed Slovak/Czech/English text instructions
 and explicitly transcribed WAV to a finite operator FIFO, native Run admission and a serial
@@ -1790,6 +1863,8 @@ transport; the original console fails both stale-action and delayed-recording ne
 A fresh empty-server headless check and two synthetic CPU Whisper/Supertonic voice cases passed
 after this change. These do not qualify a human microphone or physical playback. The maintained
 receipt distinguishes this source requalification from unchanged historical cohorts.
+
+#### Speech, input and client observations
 
 The private companion console also offers explicit `--output human` with Slovak, Czech and
 English labels. It displays bounded, escaped original recognition before parsing, preserves
@@ -1957,6 +2032,8 @@ exercise these boundaries, ordered console input and separate Whisper/synthesis 
 This slice made no actual speech, game, device, GPU or interpreter request, changed no profile
 file and does not improve or qualify the preceding synthetic language-quality results.
 
+#### Weather, time and held input
+
 The separate opt-in `weather@1` profile adds clear/rain with one fixed 600-engine-tick timer
 programme over shared `server_weather`, anchored at the overworld. Host policy and a distinct
 `blockworld:weather` scope are checked before handoff; independent server permission defaults
@@ -2071,16 +2148,9 @@ Private qualification records are referenced by random opaque IDs; their paths a
 digests remain local. Public source fingerprints identify the published code, not anonymized
 operator material.
 
-Fixed Slovak/Czech/English feedback distinguishes task start, refusal, client report and unknown
-effect. Optional synthesis or settled player failure preserves the game outcome and marks the
-reply stage separately. Unchanged idle ticks retain private evidence without repeated console
-announcements. An explicit playback option validates PCM before a fixed local player invocation,
-keeps capture closed, joins the owned process group on stop and records player exit rather than
-human hearing. Failed player retirement ends the session. Synthetic tests cover launch expiry,
-late process adoption, repeated cancellation, failed retirement and preservation of native game
-outcomes; they do not qualify a physical speaker or microphone.
+#### Horizon supervision and finite building
 
-The same explicit local assembly can register finite idle and follow tick scores. A process-local
+The opt-in Horizon assembly can register finite idle and follow tick scores. A process-local
 supervisor coalesces tick bursts, preserves operator priority and the shared action budget, and
 settles interrupted effects before replacement. Idle observes without a command or model call;
 follow uses a separately pinned query-only own-client pose feed, finite segments, freshness and
@@ -2116,23 +2186,54 @@ voice plan is admitted only by its exact phrase; speech does not invent a bluepr
 client has no atomic expected-before placement primitive, so observed preconditions do not
 exclude concurrent changes and these results remain client observations, not placement receipts.
 
-Companion has a pure Kotlin/JVM model for memory-only client interaction: expiring text drafts,
-exact review before a separate submit request, reconnect without replay, observed presentation
-and playback state, and separate local stop/cancel controls. Its pinned harness compiles and tests
-those local transitions. A submit signal establishes neither native admission nor a settled handoff;
-its one-signal guarantee follows the returned state lineage and provides no transport deduplication.
+**Boundary — Not yet:** Blockworld's managed mission has no server or bot deployment, authoritative game adapter, production route or
+review producer registration. Horizon's player has portable process and failure tests. Audible
+replies, multiplayer following and shared-world building still need live qualification. The
+finite idle/follow/build supervisor runs only in the opt-in local profile. Free-form model
+planning, broker delivery, application scheduling and restart continuation remain open.
 
-A native Android Compose screen now exposes the offline text-draft path. The person chooses a
-positive whole-second lifetime, edits against the original deadline, sees idle expiry, and cancels
-locally before starting a fresh session. The Activity preserves its state across configuration
-recreation within the same process; process death restores neither the draft nor unsubmitted form
-input. Review and Submit remain disabled while disconnected. The prototype lives in the opt-in
-`offline` application alongside the existing audio client. Its Kotlin/JVM reducer has passed the
-shared JDK 17 toolchain checks. ViewModel and instrumented Activity tests are authored, including
-input batches before recomposition and lifecycle-bound expiry sampling; this combined checkout
-has not yet been qualified with an Android SDK, emulator or handset.
+The Fabric companion lab has no qualified human microphone, physical playback, Prism join or
+live player-follow session. Its fixed home chunk ticket does not establish ticking throughout
+the whole control box. It supplies no inventory, mining, building, arbitrary console execution,
+durable command recovery, normal-boot registration or qualified Windows operation.
+Its controller lock and generation records are local fail-closed protection, not Phylactery
+mission recovery or authenticated server proof.
 
-Reach now has an effect-free preparation foundation: strict provider-neutral account, subject,
+Live placement effects and a deployed Linux placement service still need their own evidence.
+
+**Evidence**
+
+- **Source:** [Blockworld workflow](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/blockworld/workflow.py), [placement custody](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/blockworld.py), and [placement migration](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/migrations/versions/0011_blockworld_placement.py)
+- **Verification:** [Portable placement workflow tests](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_blockworld_placement_vertical.py), [PostgreSQL placement transactions](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_db_blockworld_pg.py), [migration cycles and downgrade refusal](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_db_migrations_pg.py), and [PostgreSQL worker and review vertical](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_blockworld_postgres_vertical.py)
+- **Source:** [Companion native score](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/blockworld/companion.py), [operator session](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/companion_session.py), [HTTP effect adapter](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/companion_bridge.py), [voice/text entry](https://github.com/hexanomicon/lychd/blob/main/scripts/companion_lab.py), and [Fabric delivery client](https://github.com/hexanomicon/lychd/tree/main/clients/minecraft)
+- **Source:** [Reviewed dialogue](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/blockworld/companion_dialogue.py), [private recipe store](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/companion_memory.py), and [inactive Dump & Search score](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/blockworld/companion_search.py)
+- **Verification:** [Dialogue/recipe cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/blockworld/test_companion_dialogue.py), [console admission](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_companion_dialogue.py), [source-only PostgreSQL adapter and migration parity](https://github.com/hexanomicon/lychd/blob/main/tests/unit/db/test_companion_memory.py), and [injected catalogue workflow](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/blockworld/test_companion_search.py). These use offline substitutes. Live recipe persistence/migration and voice turns remain unqualified; the search score supplies no live game catalogue, foreign subagent, structure placement or summon adapter.
+- **Verification:** [Companion native and transport cases](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_companion.py), [console/audio regressions](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_companion_lab.py), [dated CPU receipt](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/blockworld/companion-cpu-runtime.json), and [historical integrity and freshness refusal](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/blockworld/test_companion_receipt.py)
+- **Verification:** [Human console journey and failure cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_companion_human.py), [literal multilingual view](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_companion_view.py), and [query-only native status](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_companion_status.py)
+- **Source:** [Local gesture control](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/companion_control.py) and [separate Fabric voice client](https://github.com/hexanomicon/lychd/tree/main/clients/minecraft-voice)
+- **Verification:** [Real-socket/native control cases](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_companion_control.py), [control identity/quota/projection cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_companion_control.py), [pure Java input/transport cases](https://github.com/hexanomicon/lychd/tree/main/clients/minecraft-voice/src/test/java/org/lychd/voice), and [actual client GameTest](https://github.com/hexanomicon/lychd/blob/main/clients/minecraft-voice/src/gametest/java/org/lychd/voice/ClientControlGameTest.java)
+- **Verification:** [Real controller GameTest](https://github.com/hexanomicon/lychd/blob/main/clients/minecraft/src/gametest/java/org/lychd/companion/gametest/ControllerGameTest.java) and [opt-in build and evidence limits](https://github.com/hexanomicon/lychd/blob/main/clients/minecraft/README.md)
+- **Topic:** [Companion lab](./compositions/blockworld/companion-lab.md)
+- **Source:** [Captured instruction and local profile](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/blockworld/companion_intent.py) and [closed model response boundary](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/companion_intent.py)
+- **Verification:** [Intent contract regressions](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/blockworld/test_companion_intent.py) and [response identity, completion and reasoning exclusion](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_companion_intent.py)
+- **Source:** [Bounded companion feedback](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/blockworld/companion_feedback.py)
+- **Verification:** [Localized observed-state and uncertainty tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/blockworld/test_companion_feedback.py)
+- **Verification:** [One-cell native, provenance and availability cases](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_companion_cell.py)
+- **Source:** [Horizon assist score](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/blockworld/horizon_assist.py), [explicit native Run assembly](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/blockworld/horizon_assist_runtime.py), and [bounded client adapter](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/horizon_control.py)
+- **Verification:** [Connected Run/Graph and client-boundary tests](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_horizon_assist.py) and [voice-to-Graph session tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_blockworld_voice.py)
+- **Source:** [Outcome feedback](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/blockworld/horizon_feedback.py)
+- **Verification:** [Feedback and optional-reply failure cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_blockworld_feedback.py) and [voice/player integration cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_blockworld_playback.py)
+- **Source:** [Finite behavior scores](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/blockworld/horizon_behaviors.py), [local supervisor](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/horizon_supervisor.py), and [query-only target feed](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/horizon_observer.py)
+- **Verification:** [Native behavior and checkpoint tests](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_horizon_behaviors.py), [supervisor race and containment tests](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_horizon_supervisor.py), and [exact-person query-boundary tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_horizon_observer.py)
+- **Source:** [Finite client-observed build score](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/blockworld/horizon_build.py)
+- **Verification:** [Native build/checkpoint cases](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_horizon_build.py), [closed placement socket boundary](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_horizon_placement_control.py), and [connected build/supervisor/voice cases](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_horizon_build_supervisor.py)
+- **Topic:** [Horizon assist](./compositions/blockworld/horizon-assist.md)
+
+### Reach preparation and operator profiles {#reach-operator-profiles}
+
+**State:** Partial
+
+**Proved now:** Reach now has an effect-free preparation foundation: strict provider-neutral account, subject,
 group and conversation policy, ordered request rules, content-free refusals and an explicit
 `reach.prepare@1` native Graph. Its Discord interface compiles non-secret TOML and normalizes
 selected guild mentions and commands before Intent creation. An offline helper validates policy
@@ -2140,6 +2241,8 @@ and previews an installation URL. Portable fixtures pass through real Run admiss
 Graph with empty guest scopes for both Discord-shaped and Telegram-shaped observations; the latter
 proves shared preparation, not a Telegram adapter. The preparation profile is absent from normal
 application assembly and does not implement the published public Discord conversation contract.
+
+#### Discord operator profile
 
 The separate Discord operator development profile adds an explicitly started SDK edge and an
 OCI-only native documents worker. Shared eligibility precedes real memory Run admission,
@@ -2154,7 +2257,9 @@ SDK registration, plan ordering, concurrent custody, expiry, reconciliation and 
 
 An explicit private conversation profile selects one static persona and exact local
 `Qwen3.8-27B` binding while document search remains the default. Each OCI-only
-`reach.operator_converse@8` Run/Graph obtains an exact Dispatcher Chat lease without tools.
+`reach.operator_converse@9` Run obtains an exact Dispatcher Chat lease without tools. Its
+[workflow test](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/test_reach_research.py)
+checks the corresponding `reach-operator-conversation-v9` checkpoint schema.
 The closed host relay performs fresh health/model observations against one fixed loopback
 endpoint and supplies no runtime lifecycle control. An opt-in
 private `enable_thinking` setting can select the same local model's supported separated-reasoning
@@ -2191,8 +2296,8 @@ an optional cosmetic receipt; research first delivers the model's interpreted pl
 earlier mechanical textual acknowledgement. A separate bounded focus query selects local sections
 without becoming public acknowledgement or source authority. Structured plans require its nonempty
 value; explicit current targets retain precedence over focus, while resolved focus can replace a
-weak partial-word heading match. Conversation checkpoint schema v8
-retains that selector, while source bodies stay transient. Web metadata eligibility uses the current
+weak partial-word heading match. The checkpoint retains that selector, while source bodies
+stay transient. Web metadata eligibility uses the current
 question and actual anchors, with exact configured-reference fallback from only the last two
 admitted history entries. A positive signal retains the complete standing web catalogue for readable
 alternatives; it supplies no new destination or semantic relevance proof. Short ordinary questions
@@ -2246,7 +2351,8 @@ all three input axes reserve it before freezing and recheck it at dispatch. Two 
 and one correction remain. Separate review-attempt/retry metadata preserves the first failure
 without private output; false profiles omit the new trace fields. Older closed readers may report
 protocol-error capture gaps for opt-in extensions and continue. No live Orb/Nexus consumption is
-claimed. Pattern revision 8 rejects old manifests; checkpoint shape 8 remains.
+claimed. Revision 8 introduced this retry under its own manifest and v8 checkpoint. New
+conversation Runs use the revision 9 binding above.
 The probe's unchanged twelve-operation cap includes this retry; no native broker turn cap or
 restart replay guarantee is added.
 These candidate mechanics still require actual profile-specific semantic qualification; fixture
@@ -2321,6 +2427,8 @@ acquisition bodies out of checkpoint state, cached Context and native history. T
 supporting citations and explicit unavailable-source notices rather than treating a blocked page
 as read. Humour and expression selection retain those attribution limits.
 
+#### Headless research and publication
+
 An explicitly prepared profile may now select at most 32,000 combined input characters; the
 default remains 20,000, with unchanged context, completion, timeout, call, 49,152-byte payload and
 65,536-byte frame limits. Planning asks for concise focus keywords/section labels and a public
@@ -2377,47 +2485,19 @@ Independently selected local publications still carry already authorized produce
 an edge-only private queue to exact guild channels. Offline and mock-HTTP cases do not qualify
 a live model, Discord dialogue or production deployment.
 
-**Boundary — Not yet:** Creation's one application selector supplies no general Composition or
-Product catalogue, shared store, Suite execution or application scheduler. Other Portfolio members
-have no domain/effect path enabled in normal application assembly.
+#### Connected Work preparation
 
-Blockworld's
-managed mission has no server or bot deployment, authoritative game adapter, production route or
-review producer registration. Horizon assist has no live-qualified multiplayer following or
-shared-world building, speech playback, free-form model planner, broker delivery or restart continuation.
-Its finite idle/follow/build supervisor is an opt-in local profile, not application scheduling or a
-deployed companion. Its portable behavior evidence does not establish live two-client gameplay.
+The separate explicit `reach.connect.prepare@1` profile now supplies immutable Email, Chat, Forge
+and Social requests, exact connection/partition/target policy, provider-specific application payload
+builders and finite WUPHF batch preparation through an inactive native serial Graph. Gmail and
+Fastmail have distinct MIME/REST and JMAP preparation; Discord, Telegram bot, WhatsApp business,
+GitHub timeline and Facebook Page/LinkedIn/X organic text plans preserve their provider semantics.
+Radicle, unsupported history reads, attachments, social replies and paid campaigns refuse or remain
+design work. Preparation performs no network, authentication, provider draft save, send or model
+call, and its policy is not current effect authority. This does not implement the successor's
+durable records/outbox, service attempts, required review, provider qualification or live deployment.
 
-The Fabric companion lab has no qualified human microphone, physical playback, Prism join or
-live player-follow session. Its fixed home chunk ticket does not establish ticking throughout
-the whole control box. It supplies no inventory, mining, building, arbitrary console execution,
-durable command recovery, normal-boot registration or qualified Windows operation.
-Its controller lock and generation records are local fail-closed protection, not Phylactery
-mission recovery or authenticated server proof. Its portable
-fixture alone does not establish database atomicity or migration safety; those boundaries have
-separate disposable PostgreSQL receipts. Neither fixture qualifies live game effects or a deployed
-Linux operation.
-
-Crucible is a designed Weaver choreography, not a
-registered Pattern, parallel Graph, dossier schema, or Altar surface.
-
-Keeper and Cultivator's durable record contracts do not supply database models or migrations.
-
-[Transmuter](compositions/knowledge-and-interpretation/transmuter/index.md), `transmuter.intake` revision 1,
-defines source-attributed extraction, synthesis, and dossier correction. Its Patterns have no
-executable registration, general import adapter, dossier store, or Memory/Identity handoff.
-
-[Accounting Office](compositions/professional-operations/accounting-office/index.md), `accounting.office`
-revision 1, defines entity-scoped evidence, reviewed postings, reconciliation, and period close.
-Its mail/bank ports, entity books, jurisdiction profiles, and accounting Patterns await
-implementation. Live account access, tax filing, and supported-country qualification remain open.
-
-[Workshop](compositions/professional-operations/workshop.md), `workshop.service` revision 1,
-defines guided technical-service casework for Mechanic's passenger-vehicle profile. Its Python
-namespace contains only a docstring. The service-case store, executable profile, Pattern, and
-operator entry point await implementation; the network-disabled qualification fixture has yet to run.
-
-The public Reach contract still supplies no default SDK connection, Ward enrollment, durable
+**Boundary — Not yet:** The public Reach contract still supplies no default SDK connection, Ward enrollment, durable
 application turn/outbox, recovery or deployable home/VPS profile. The explicit operator profile
 has no persistent native history, automatic restart, installed service,
 qualified live Discord session or actual server-setup receipt. A new worker generation refuses
@@ -2446,33 +2526,6 @@ OAuth/installation flow, credential service, registered operational corresponden
 live provider transport, and qualified private-mail deployment. The owner–agent probe remains
 separately scoped.
 
-The separate explicit `reach.connect.prepare@1` profile now supplies immutable Email, Chat, Forge
-and Social requests, exact connection/partition/target policy, provider-specific application payload
-builders and finite WUPHF batch preparation through an inactive native serial Graph. Gmail and
-Fastmail have distinct MIME/REST and JMAP preparation; Discord, Telegram bot, WhatsApp business,
-GitHub timeline and Facebook Page/LinkedIn/X organic text plans preserve their provider semantics.
-Radicle, unsupported history reads, attachments, social replies and paid campaigns refuse or remain
-design work. Preparation performs no network, authentication, provider draft save, send or model
-call, and its policy is not current effect authority. This does not implement the successor's
-durable records/outbox, service attempts, required review, provider qualification or live deployment.
-
-[Thorn](compositions/security-and-trust/thorn/index.md), `thorn.defense` revision 1,
-defines authorized assessment, incident response, cooperative investigation, and reviewed findings
-or corrections. Its five Pattern contracts await registered implementations, a private case store,
-response adapters, peer exchange, and reporting adapters. The synthetic trials await execution;
-deterrence remains unmeasured.
-
-[Signet](compositions/security-and-trust/signet.md), `signet.qualification` revision 1,
-defines compute-node qualification, certificate renewal/revocation, and per-request evidence.
-Its Linux host conditions distinguish privileged inspection from enforced private processing.
-The scanner, certificate issuer, privileged host collector, request stamps, and qualified
-confidential inference path await implementation. Its synthetic acceptance cases supply the
-qualification plan.
-
-The separate offline text screen supplies no device capture/playback, transport, persistence, credential
-enrollment, or authoritative Companion records and receipts. Emulator evidence does not qualify
-physical devices or every Android version allowed by the declared minimum SDK.
-
 **Evidence**
 
 - **Source:** [Connected request values and policy](https://github.com/hexanomicon/lychd/tree/main/src/lychd/compositions/reach/connected), [provider request builders](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/reach/connected/providers.py), and [offline connected helper](https://github.com/hexanomicon/lychd/blob/main/scripts/reach_connect_prepare.py)
@@ -2499,35 +2552,6 @@ physical devices or every Android version allowed by the declared minimum SDK.
 - **Verification:** [Native two-call research and source-custody cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/test_reach_research.py), [document catalogue and excerpt cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/test_reach_document_research.py), [acknowledgement and broker custody cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_reach_research_broker.py), [source authority and attempt cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_reach_scout_worker.py), and [same-audience plan delivery cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/interface/test_nadir_research_progress.py). These authored cases do not themselves record a live deployment.
 - **Law:** [Explicit Reach research profile](./adr/30-webcrawler.md#explicit-reach-operator-research-profile) and [separate operator authority](./adr/38-iam.md#trusted-local-scout-profile).
 - **Topic:** [Discord operator profile](./compositions/reach/operator.md)
-- **Source:** [Companion native score](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/blockworld/companion.py), [operator session](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/companion_session.py), [HTTP effect adapter](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/companion_bridge.py), [voice/text entry](https://github.com/hexanomicon/lychd/blob/main/scripts/companion_lab.py), and [Fabric delivery client](https://github.com/hexanomicon/lychd/tree/main/clients/minecraft)
-- **Source:** [Reviewed dialogue](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/blockworld/companion_dialogue.py), [private recipe store](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/companion_memory.py), and [inactive Dump & Search score](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/blockworld/companion_search.py)
-- **Verification:** [Dialogue/recipe cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/blockworld/test_companion_dialogue.py), [console admission](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_companion_dialogue.py), [source-only PostgreSQL adapter and migration parity](https://github.com/hexanomicon/lychd/blob/main/tests/unit/db/test_companion_memory.py), and [injected catalogue workflow](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/blockworld/test_companion_search.py). These use offline substitutes. Live recipe persistence/migration and voice turns remain unqualified; the search score supplies no live game catalogue, foreign subagent, structure placement or summon adapter.
-- **Verification:** [Companion native and transport cases](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_companion.py), [console/audio regressions](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_companion_lab.py), [dated CPU receipt](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/blockworld/companion-cpu-runtime.json), and [historical integrity and freshness refusal](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/blockworld/test_companion_receipt.py)
-- **Verification:** [Human console journey and failure cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_companion_human.py), [literal multilingual view](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_companion_view.py), and [query-only native status](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_companion_status.py)
-- **Source:** [Local gesture control](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/companion_control.py) and [separate Fabric voice client](https://github.com/hexanomicon/lychd/tree/main/clients/minecraft-voice)
-- **Verification:** [Real-socket/native control cases](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_companion_control.py), [control identity/quota/projection cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_companion_control.py), [pure Java input/transport cases](https://github.com/hexanomicon/lychd/tree/main/clients/minecraft-voice/src/test/java/org/lychd/voice), and [actual client GameTest](https://github.com/hexanomicon/lychd/blob/main/clients/minecraft-voice/src/gametest/java/org/lychd/voice/ClientControlGameTest.java)
-- **Verification:** [Real controller GameTest](https://github.com/hexanomicon/lychd/blob/main/clients/minecraft/src/gametest/java/org/lychd/companion/gametest/ControllerGameTest.java) and [opt-in build and evidence limits](https://github.com/hexanomicon/lychd/blob/main/clients/minecraft/README.md)
-- **Topic:** [Companion lab](./compositions/blockworld/companion-lab.md)
-- **Source:** [Captured instruction and local profile](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/blockworld/companion_intent.py) and [closed model response boundary](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/companion_intent.py)
-- **Verification:** [Intent contract regressions](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/blockworld/test_companion_intent.py) and [response identity, completion and reasoning exclusion](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_companion_intent.py)
-- **Source:** [Bounded companion feedback](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/blockworld/companion_feedback.py)
-- **Verification:** [Localized observed-state and uncertainty tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/blockworld/test_companion_feedback.py)
-- **Verification:** [One-cell native, provenance and availability cases](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_companion_cell.py)
-- **Source:** [Horizon assist score](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/blockworld/horizon_assist.py), [explicit native Run assembly](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/blockworld/horizon_assist_runtime.py), and [bounded client adapter](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/horizon_control.py)
-- **Verification:** [Connected Run/Graph and client-boundary tests](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_horizon_assist.py) and [voice-to-Graph session tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_blockworld_voice.py)
-- **Source:** [Outcome feedback](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/blockworld/horizon_feedback.py)
-- **Verification:** [Feedback and optional-reply failure cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_blockworld_feedback.py) and [voice/player integration cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_blockworld_playback.py)
-- **Source:** [Finite behavior scores](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/blockworld/horizon_behaviors.py), [local supervisor](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/horizon_supervisor.py), and [query-only target feed](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/horizon_observer.py)
-- **Verification:** [Native behavior and checkpoint tests](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_horizon_behaviors.py), [supervisor race and containment tests](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_horizon_supervisor.py), and [exact-person query-boundary tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_horizon_observer.py)
-- **Source:** [Finite client-observed build score](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/blockworld/horizon_build.py)
-- **Verification:** [Native build/checkpoint cases](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_horizon_build.py), [closed placement socket boundary](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_horizon_placement_control.py), and [connected build/supervisor/voice cases](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_horizon_build_supervisor.py)
-- **Topic:** [Horizon assist](./compositions/blockworld/horizon-assist.md)
-- **Source:** [Blockworld workflow](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/blockworld/workflow.py), [placement custody](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/blockworld.py), [placement migration](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/migrations/versions/0011_blockworld_placement.py), [Workflow registry](https://github.com/hexanomicon/lychd/blob/main/src/lychd/agents/workflows/__init__.py), [client interaction model](https://github.com/hexanomicon/lychd/blob/main/clients/android/interaction/src/main/kotlin/org/lychd/companion/interaction/Interaction.kt), [Android screen](https://github.com/hexanomicon/lychd/blob/main/clients/android/offline/src/main/kotlin/org/lychd/companion/CompanionScreen.kt), and [Activity state](https://github.com/hexanomicon/lychd/blob/main/clients/android/offline/src/main/kotlin/org/lychd/companion/OfflineDraftViewModel.kt)
-- **Verification:** [Portable placement workflow tests](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_blockworld_placement_vertical.py), [PostgreSQL placement tests](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_db_blockworld_pg.py), [PostgreSQL worker and review vertical](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_blockworld_postgres_vertical.py), [Workflow routing tests](https://github.com/hexanomicon/lychd/blob/main/tests/agents/test_router.py), [client interaction tests](https://github.com/hexanomicon/lychd/blob/main/clients/android/interaction/src/test/kotlin/org/lychd/companion/interaction/InteractionTest.kt), [ViewModel tests](https://github.com/hexanomicon/lychd/blob/main/clients/android/offline/src/test/kotlin/org/lychd/companion/OfflineDraftViewModelTest.kt), [Activity tests](https://github.com/hexanomicon/lychd/blob/main/clients/android/offline/src/androidTest/kotlin/org/lychd/companion/CompanionScreenTest.kt), [production-lifecycle tests](https://github.com/hexanomicon/lychd/blob/main/clients/android/offline/src/androidTest/kotlin/org/lychd/companion/CompanionLifecycleTest.kt), and [client check commands](https://github.com/hexanomicon/lychd/blob/main/clients/android/README.md)
-- **Source:** [Scavenger finite values](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/scavenger/schemas.py)
-- **Verification:** [Scavenger value and projection tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/test_scavenger_values.py)
-- **Topic:** [Composition Portfolio](./compositions/index.md)
-- **Law:** [Workflow](./adr/28-workflow.md)
 
 ### Offline music and Comfy engineering probes {#music-comfy-engineering-probes}
 
@@ -2553,7 +2577,9 @@ realtime/latency proof, engine containment, Comfy deployment, loaded-model attes
 MiniMax generation. Lost, damaged or unpinned Comfy staging and conflicting final files still
 require manual reconciliation; targeted
 cancellation refuses. Stable operator-owned external directories and the optional native profile
-remain explicit prerequisites. Portfolio and general-service delivery stay Designed.
+remain explicit prerequisites. See the [Portfolio](#composition-portfolio-delivery) for which
+applications can run and the [service capability record](#general-service-capabilities) for
+the proposed general job interface.
 
 **Evidence**
 
@@ -2588,6 +2614,23 @@ lint with no issues. Debug and unsigned release APKs build with the pinned toolc
 compilation receipts include the local-status adapter/UI and callback wiring, but remain separate
 from actual-device readings and the outstanding handset probe.
 
+#### Offline text drafts
+
+Companion has a pure Kotlin/JVM model for memory-only client interaction: expiring text drafts,
+exact review before a separate submit request, reconnect without replay, observed presentation
+and playback state, and separate local stop/cancel controls. Its pinned harness compiles and tests
+those local transitions. A submit signal establishes neither native admission nor a settled handoff;
+its one-signal guarantee follows the returned state lineage and provides no transport deduplication.
+
+A native Android Compose screen now exposes the offline text-draft path. The person chooses a
+positive whole-second lifetime, edits against the original deadline, sees idle expiry, and cancels
+locally before starting a fresh session. The Activity preserves its state across configuration
+recreation within the same process; process death restores neither the draft nor unsubmitted form
+input. Review and Submit remain disabled while disconnected. The prototype lives in the opt-in
+`offline` application alongside the existing audio client. Its Kotlin/JVM reducer has passed the
+shared JDK 17 toolchain checks. ViewModel and instrumented Activity tests are authored, including
+input batches before recomposition and lifecycle-bound expiry sampling; the offline prototype still needs its own SDK, emulator or handset evidence.
+
 **Boundary — Not yet:** There is no enrolled handset or real-device validation receipt, live
 network engine, protected mobile ingress, Ward/Familiar enrollment, authenticated working-view
 projection, object-scoped authorization, semantic event subscription,
@@ -2596,8 +2639,14 @@ Suite execution. Host work stays unavailable in release; local status has an ind
 Current diagnostics and callback wiring still need actual-device checks. Music, photo access and
 copy sync remain planned work.
 
+The separate offline text screen supplies no device capture/playback, transport, persistence, credential
+enrollment, or authoritative Companion records and receipts. Emulator evidence does not qualify
+physical devices or every Android version allowed by the declared minimum SDK.
+
 **Evidence**
 
+- **Source:** [client interaction model](https://github.com/hexanomicon/lychd/blob/main/clients/android/interaction/src/main/kotlin/org/lychd/companion/interaction/Interaction.kt), [Android screen](https://github.com/hexanomicon/lychd/blob/main/clients/android/offline/src/main/kotlin/org/lychd/companion/CompanionScreen.kt), and [Activity state](https://github.com/hexanomicon/lychd/blob/main/clients/android/offline/src/main/kotlin/org/lychd/companion/OfflineDraftViewModel.kt)
+- **Verification:** [client interaction tests](https://github.com/hexanomicon/lychd/blob/main/clients/android/interaction/src/test/kotlin/org/lychd/companion/interaction/InteractionTest.kt), [ViewModel tests](https://github.com/hexanomicon/lychd/blob/main/clients/android/offline/src/test/kotlin/org/lychd/companion/OfflineDraftViewModelTest.kt), [Activity tests](https://github.com/hexanomicon/lychd/blob/main/clients/android/offline/src/androidTest/kotlin/org/lychd/companion/CompanionScreenTest.kt), [production-lifecycle tests](https://github.com/hexanomicon/lychd/blob/main/clients/android/offline/src/androidTest/kotlin/org/lychd/companion/CompanionLifecycleTest.kt), and [client check commands](https://github.com/hexanomicon/lychd/blob/main/clients/android/README.md)
 - **Source:** [Android client](https://github.com/hexanomicon/lychd/tree/main/clients/android), [Bridge transport](https://github.com/hexanomicon/lychd/blob/main/clients/android/core/src/main/kotlin/io/github/hexanomicon/lychd/companion/core/KtorBridgeTransport.kt), [presentation policy](https://github.com/hexanomicon/lychd/blob/main/clients/android/core/src/main/kotlin/io/github/hexanomicon/lychd/companion/core/presentation/PresentationPolicy.kt), [interaction controller](https://github.com/hexanomicon/lychd/blob/main/clients/android/app/src/main/kotlin/io/github/hexanomicon/lychd/companion/CompanionController.kt), and [foreground recorder](https://github.com/hexanomicon/lychd/blob/main/clients/android/app/src/main/kotlin/io/github/hexanomicon/lychd/companion/audio/ForegroundRecorder.kt)
 - **Verification:** [Core tests](https://github.com/hexanomicon/lychd/tree/main/clients/android/core/src/test/kotlin/io/github/hexanomicon/lychd/companion/core), [presentation tests](https://github.com/hexanomicon/lychd/blob/main/clients/android/core/src/test/kotlin/io/github/hexanomicon/lychd/companion/core/presentation/PresentationPolicyTest.kt), [controller tests](https://github.com/hexanomicon/lychd/blob/main/clients/android/app/src/test/kotlin/io/github/hexanomicon/lychd/companion/CompanionControllerTest.kt), [WAV tests](https://github.com/hexanomicon/lychd/blob/main/clients/android/app/src/test/kotlin/io/github/hexanomicon/lychd/companion/audio/Pcm16WavFileTest.kt), and [wire generator tests](https://github.com/hexanomicon/lychd/blob/main/clients/android/tools/test_generate_wire.py)
 - **Topic:** [Android Development](./compositions/companion/android-development.md) and [Access and Views](./compositions/companion/access-and-views.md)
@@ -2608,7 +2657,8 @@ copy sync remain planned work.
 
 **State:** Partial
 
-The same field also projects native components, selected extension declarations and explicitly
+**Proved now:** Orb opens a paginated Run catalogue and a parallel pan/zoom field. The field
+also projects native components, selected extension declarations and explicitly
 selected structural source windows. Its independent runtime reader works without a Run and after
 Run completion. Generic call nodes group exact attempts, keep HTTP responses separate from effect
 outcomes, and use safe contributed icon metadata. Initial history, reconnect, replay and source
@@ -2616,7 +2666,7 @@ replacement establish silent baselines; only new continuously observed activity 
 The semantic inspector exposes the same evidence without motion. Runtime is a bounded latest
 window, separate from the Run timeline; it supplies no historical runtime playback.
 
-**Proved now:** Orb opens a paginated Run catalogue and a parallel pan/zoom field. At most three
+At most three
 live lenses retain 100 records each; the visible catalogue refreshes every five seconds; zoom or explicit controls disclose Run, station/subject,
 supplied occurrence, and loaded records. Exact pinned workflow graphs show declared permissions
 separately from retained evidence. Catalogue queries select bounded metadata without loading
@@ -3210,14 +3260,14 @@ graph. Injected-authorizer tests prove consultation and refusal, not deployed ca
 Activation checks metadata and controls; only an authorized payload read establishes byte
 integrity. Native Linux physical retirement and power-loss recovery still need receipts. Known
 restore, clone or uncertain history cannot activate; in-place rollback by a hostile same-UID
-process is outside this trusted profile. Intent and Bridge remain text-only, with no artifact or
-required-modality fields in the Run ledger. A bare `ArtifactRef` grants neither custody nor access.
+process is outside this trusted profile. A Bridge Intent carries text. The Run ledger has no
+artifact or required-modality fields. A bare `ArtifactRef` grants neither custody nor access.
 
 **Evidence**
 
 - **Source:** [Artifact reference](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/artifacts.py), [custody contract](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/artifact_custody.py), [local adapter](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/artifact_custody.py), and [Intent](https://github.com/hexanomicon/lychd/blob/main/src/lychd/agents/router.py)
 - **Verification:** [Custody contract tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/test_artifact_custody.py), [filesystem lifecycle and refusal tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_artifact_custody.py), [delegated coordinator tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/delegation/test_coordinator.py), and [PostgreSQL delegated-artifact receipt](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_db_run_ledger_pg.py)
-- **Law:** [Persistence](./adr/06-persistence.md#reliquary-custody-designed), [Vision](./adr/36-vision.md), and [trusted local authority](./adr/38-iam.md#trusted-local-custody)
+- **Law:** [Persistence](./adr/06-persistence.md#reliquary-custody), [Vision](./adr/36-vision.md), and [trusted local authority](./adr/38-iam.md#trusted-local-custody)
 
 ## Evolution and federation {#evolution-and-federation}
 
@@ -3427,7 +3477,7 @@ before recovery starts; metadata never forces cold/error observations to warm. F
 controls distinguish this real-adapter observation from metadata hydration or forcing warm state.
 The test requires a separately admitted bounded outer unit and an independent terminal audit;
 its [semantic memory adaptation requirements](https://github.com/hexanomicon/lychd/blob/main/tests/README.md)
-retains the trusted operator and fixed host/profile boundary. It does not activate a model through
+retain the trusted operator and fixed host/profile boundary. It does not activate a model through
 the Orchestrator or exercise normal Settings database socket configuration.
 
 **Boundary — Not yet:** Ordinary Bridge3 remains lexical RAG for explicit same-host public notes.

@@ -302,8 +302,7 @@ meaning inherits the certificate's enforced protections and assumptions. An insp
 stamp retains the weaker observation claim. Neither a signature nor a reported deletion proves
 that an unobserved copy never existed.
 
-Refusal, interruption and inconclusive evidence remain distinct from success. Missing final
-evidence leaves completion unproven; the client must not invent a successful stamp, automatically
+Refusal, interruption and inconclusive evidence remain distinct from success. Even if the answer bytes reached the client, a missing final stamp leaves completion unproven; the client must not invent a successful stamp, automatically
 repeat the request or infer that no disclosure occurred. Later revocation can invalidate reliance
 on a prior result without erasing its historical record.
 
