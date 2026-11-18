@@ -17,7 +17,7 @@ from psycopg.conninfo import make_conninfo
 from lychd.system.pg_backup import capture, verify
 
 
-def test_recovered_cluster_retains_only_the_captured_commit(tmp_path: Path) -> None:
+def test_recovered_cluster_retains_only_the_captured_commit(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     directory = os.environ.get("LYCHD_PG_BIN")
     if not directory:
         pytest.skip("Set LYCHD_PG_BIN to a PostgreSQL 18 bin directory to run physical recovery.")
@@ -51,6 +51,7 @@ def test_recovered_cluster_retains_only_the_captured_commit(tmp_path: Path) -> N
             connection.execute("INSERT INTO proof VALUES ('captured')")
         with pytest.raises(ValueError, match="outside"):
             capture(pg_bin, source, source, port=port, user="backup_test", passfile=passfile)
+        monkeypatch.setenv("PGPASSWORD", "unrelated-inherited-password")
         output = capture(pg_bin, source, destination, port=port, user="backup_test", passfile=passfile)
         with psycopg.connect(database) as connection:
             connection.execute("INSERT INTO proof VALUES ('after capture')")

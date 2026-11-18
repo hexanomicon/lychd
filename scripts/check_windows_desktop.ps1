@@ -20,8 +20,12 @@ if ($TrialSid) {
     if (-not $env:LOCALAPPDATA.StartsWith("$userHome\", [StringComparison]::OrdinalIgnoreCase)) {
         throw 'Application data did not resolve inside the test account.'
     }
-    $env:TMP = $env:TEMP = Join-Path $env:LOCALAPPDATA 'Temp'
-    [void][IO.Directory]::CreateDirectory($env:TEMP)
+    # The runner image may grant packaged applications access to the default Temp tree.
+    # Start from a fresh test-owned directory directly beneath this disposable account.
+    $testTemp = Join-Path $userHome ('lychd-trial-' + [guid]::NewGuid().ToString('N'))
+    [void](New-Item -ItemType Directory -Path $testTemp)
+    & icacls.exe $testTemp /inheritance:r /grant:r "*${TrialSid}:(OI)(CI)F"
+    $env:TMP = $env:TEMP = $testTemp
     $env:HOME = $userHome
     $env:USERNAME = $identity.Name.Split('\')[-1]
     $env:LYCHD_PG_BIN = Join-Path $env:ProgramFiles 'PostgreSQL\18\bin'

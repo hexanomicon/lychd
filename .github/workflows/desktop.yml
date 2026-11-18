@@ -100,19 +100,31 @@ jobs:
         env:
           PGHOSTADDR: 127.0.0.2
         run: uv run --no-sync python scripts/check_desktop_startup.py
-      - name: Check out the qualified llama.cpp CPU source
-        if: env.BRIDGE_CHAT == 'true'
+      - name: Check out the macOS llama.cpp CPU source
+        if: runner.os == 'macOS' && env.BRIDGE_CHAT == 'true'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           repository: ggml-org/llama.cpp
           ref: af6528e6df5d798f7f1363ec1141699be0f638e2
           path: .ci-llama
           persist-credentials: false
-      - name: Build the CPU inference server
-        if: env.BRIDGE_CHAT == 'true'
+      - name: Build the macOS CPU inference server
+        if: runner.os == 'macOS' && env.BRIDGE_CHAT == 'true'
         run: |
           cmake -S .ci-llama -B .ci-llama/build -DCMAKE_BUILD_TYPE=Release -DGGML_METAL=OFF -DGGML_OPENMP=OFF -DLLAMA_CURL=OFF
           cmake --build .ci-llama/build --config Release --target llama-server --parallel 3
+      - name: Install the pinned official Windows CPU inference archive
+        if: runner.os == 'Windows' && env.BRIDGE_CHAT == 'true'
+        shell: pwsh
+        run: |
+          $archive = Join-Path $env:RUNNER_TEMP 'llama-b12494-bin-win-cpu-x64.zip'
+          $source = 'https://github.com/ggml-org/llama.cpp/releases/download/b12494/llama-b12494-bin-win-cpu-x64.zip'
+          curl.exe --fail --location --silent --show-error --max-filesize 25488851 --max-time 180 --output $archive $source
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if ((Get-FileHash $archive -Algorithm SHA256).Hash -ne '04a6c6389359f7b3aa7c94e6e373beb1df4afeca7a0851856a0d826a29afa1b7') {
+            throw 'Windows inference distribution checksum mismatch.'
+          }
+          Expand-Archive -LiteralPath $archive -DestinationPath .ci-llama/build/bin
       - name: Verify the pinned model and locate the inference server
         if: env.BRIDGE_CHAT == 'true'
         shell: pwsh

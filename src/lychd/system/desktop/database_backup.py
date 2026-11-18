@@ -8,7 +8,6 @@ from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING
 
 import click
-import psycopg
 
 from lychd.system.desktop.private import private_directory, publish_file, verify_private_directory
 from lychd.system.pg_backup import capture
@@ -37,5 +36,5 @@ def capture_registered(pg_bin: Path, source: Path, destination: Path, db: Databa
             record = f"127.0.0.1:{db.port}:*:{_field(db.user)}:{_field(db.password.get_secret_value())}\n"
             publish_file(passfile, record.encode("utf-8"))
             return capture(pg_bin, source, destination, port=db.port, user=db.user, passfile=passfile)
-    except (OSError, ValueError, psycopg.Error, subprocess.CalledProcessError) as exc:
+    except (OSError, ValueError, subprocess.CalledProcessError) as exc:
         raise click.ClickException(str(exc)) from exc

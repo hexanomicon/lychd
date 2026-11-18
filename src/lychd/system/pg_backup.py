@@ -10,7 +10,6 @@ import tempfile
 from pathlib import Path
 
 import click
-import psycopg
 
 
 def _control_id(pg_bin: Path, cluster: Path) -> str:
@@ -65,50 +64,65 @@ def capture(pg_bin: Path, source: Path, destination: Path, *, port: int, user: s
     # PGHOSTADDR must never redirect the physical copy away from this dedicated cluster.
     env = {key: value for key, value in os.environ.items() if not key.upper().startswith("PG")}
     env.update(PGPASSFILE=str(passfile), PGHOSTADDR="127.0.0.1", PGSSLMODE="disable", PGGSSENCMODE="disable")
-    with psycopg.connect(
-        host="127.0.0.1",
-        hostaddr="127.0.0.1",
-        port=port,
-        user=user,
-        dbname="postgres",
-        passfile=str(passfile),
-        sslmode="disable",
-        gssencmode="disable",
-        connect_timeout=5,
-    ) as connection:
-        identity = connection.execute(
-            "SELECT current_setting('data_directory'), system_identifier::text FROM pg_control_system()"
-        ).fetchone()
-        if identity is None or not source.samefile(identity[0]) or identity[1] != source_id:
-            msg = "The running PostgreSQL server does not own the selected data directory."
-            raise ValueError(msg)
-        if connection.execute("SELECT 1 FROM pg_tablespace WHERE pg_tablespace_location(oid) <> ''").fetchone():
-            msg = "This single-volume profile requires every tablespace inside the dedicated cluster."
-            raise ValueError(msg)
-        output = Path(tempfile.mkdtemp(prefix="lychd-postgres-", dir=destination))
-        if os.name == "nt":
-            from lychd.system.desktop.private import private_directory
+    env.update(PGCLIENTENCODING="UTF8", PGCONNECT_TIMEOUT="5")
+    # Run both clients in the same libpq environment. PGPASSWORD and PGSERVICE from
+    # a parent process can take precedence over a passfile in an in-process connection.
+    identity = subprocess.run(  # noqa: S603
+        [
+            _executable(pg_bin, "psql"),
+            "--no-psqlrc",
+            "--no-password",
+            "--tuples-only",
+            "--no-align",
+            "--host=127.0.0.1",
+            f"--port={port}",
+            f"--username={user}",
+            "--dbname=postgres",
+            "--command",
+            (
+                "SELECT json_build_array(current_setting('data_directory'), system_identifier::text,"
+                " EXISTS(SELECT FROM pg_tablespace WHERE pg_tablespace_location(oid) <> '')) FROM pg_control_system()"
+            ),
+        ],
+        capture_output=True,
+        encoding="utf-8",
+        env=env,
+        check=False,
+    )
+    if identity.returncode:
+        msg = f"PostgreSQL could not verify the selected cluster: {identity.stderr.strip()}"
+        raise ValueError(msg)
+    location, running_id, external_tablespaces = json.loads(identity.stdout)
+    if not source.samefile(location) or running_id != source_id:
+        msg = "The running PostgreSQL server does not own the selected data directory."
+        raise ValueError(msg)
+    if external_tablespaces:
+        msg = "This single-volume profile requires every tablespace inside the dedicated cluster."
+        raise ValueError(msg)
+    output = Path(tempfile.mkdtemp(prefix="lychd-postgres-", dir=destination))
+    if os.name == "nt":
+        from lychd.system.desktop.private import private_directory
 
-            private_directory(output)
-        cluster = output / "cluster"
-        click.echo(f"Capture directory: {output}", err=True)
-        subprocess.run(  # noqa: S603
-            [
-                _executable(pg_bin, "pg_basebackup"),
-                "--host=127.0.0.1",
-                f"--port={port}",
-                f"--username={user}",
-                "--no-password",
-                "--format=plain",
-                "--wal-method=stream",
-                "--manifest-checksums=SHA256",
-                "--no-clean",
-                "--pgdata",
-                cluster,
-            ],
-            env=env,
-            check=True,
-        )
+        private_directory(output)
+    cluster = output / "cluster"
+    click.echo(f"Capture directory: {output}", err=True)
+    subprocess.run(  # noqa: S603
+        [
+            _executable(pg_bin, "pg_basebackup"),
+            "--host=127.0.0.1",
+            f"--port={port}",
+            f"--username={user}",
+            "--no-password",
+            "--format=plain",
+            "--wal-method=stream",
+            "--manifest-checksums=SHA256",
+            "--no-clean",
+            "--pgdata",
+            cluster,
+        ],
+        env=env,
+        check=True,
+    )
     verify(pg_bin, cluster, source_id)
     with (output / "verified.json").open("x", encoding="ascii") as receipt:
         json.dump({"postgres_major": 18, "system_identifier": source_id}, receipt)
@@ -126,7 +140,7 @@ def main(pg_bin: Path, source: Path, destination: Path, port: int, user: str, pa
     """Capture a dedicated local cluster into a fresh directory on an operator-selected volume."""
     try:
         output = capture(pg_bin, source, destination, port=port, user=user, passfile=passfile)
-    except (OSError, ValueError, psycopg.Error, subprocess.CalledProcessError) as exc:
+    except (OSError, ValueError, subprocess.CalledProcessError) as exc:
         raise click.ClickException(str(exc)) from exc
     click.echo(f"Verified PostgreSQL backup: {output}")
 

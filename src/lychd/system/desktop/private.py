@@ -59,7 +59,8 @@ while($p -and ($p -eq $homeDir -or $p.StartsWith($homeDir+'\\',[StringComparison
         foreach($r in $a.Access) {
             if($r.AccessControlType -eq 'Allow' -and ([int]$r.FileSystemRights -band 0xD0156) -and
                $trusted -notcontains $r.IdentityReference.Translate([Security.Principal.SecurityIdentifier]).Value) {
-                throw 'Desktop path writable by another account'
+                $sid=$r.IdentityReference.Translate([Security.Principal.SecurityIdentifier]).Value
+                throw "Desktop path writable by another account: $p; SID=$sid; rights=$($r.FileSystemRights); propagation=$($r.PropagationFlags)"
             }
         }
     }

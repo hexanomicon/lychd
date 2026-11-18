@@ -312,7 +312,9 @@ def test_installer_and_shutdown_pin_admin_connections(tmp_path: Path, monkeypatc
     monkeypatch.setattr(desktop, "_DATA", tmp_path)
     monkeypatch.setattr(desktop, "PATH_POSTGRES_ROOT_DIR", tmp_path)
     monkeypatch.setattr(desktop, "postgres_program", Mock(return_value="initdb"))
-    monkeypatch.setattr(desktop.subprocess, "check_output", Mock(return_value="initdb (PostgreSQL) 18.0"))
+    monkeypatch.setattr(
+        desktop, "subprocess", SimpleNamespace(check_output=Mock(return_value="initdb (PostgreSQL) 18.0"))
+    )
     monkeypatch.setattr(
         desktop, "_prepare_installation", Mock(return_value=SimpleNamespace(server=SimpleNamespace(database=db)))
     )
@@ -325,3 +327,24 @@ def test_installer_and_shutdown_pin_admin_connections(tmp_path: Path, monkeypatc
         pytest.fail("management proceeded without a verified database")
     assert len(connect.call_args_list) == 2
     assert all(call.kwargs["hostaddr"] == "127.0.0.1" for call in connect.call_args_list)
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Uses the real Windows DACL")
+def test_windows_refuses_foreign_write_on_ancestry(tmp_path: Path) -> None:
+    import subprocess
+    from pathlib import Path
+
+    from lychd.system.desktop.private import check_path, private_directory
+
+    directory = tmp_path / "acl-trial"
+    private_directory(directory)
+    target = directory / "unpublished"
+    check_path(target)
+    icacls = Path(os.environ["SYSTEMROOT"]) / "System32" / "icacls.exe"
+    subprocess.run([icacls, directory, "/grant", "*S-1-5-32-545:(M)"], check=True)  # noqa: S603
+    try:
+        with pytest.raises(subprocess.CalledProcessError):
+            check_path(target)
+        assert not target.exists()
+    finally:
+        subprocess.run([icacls, directory, "/remove:g", "*S-1-5-32-545"], check=True)  # noqa: S603
