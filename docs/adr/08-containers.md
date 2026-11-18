@@ -30,8 +30,8 @@ turn and a restart, using the documented package, real database and selected eng
 
 Linux with systemd, cgroup v2 and rootless Podman/Quadlet is the primary deployment target.
 Its host stack is open, inspectable and replaceable. macOS and Windows are secondary personal
-host targets. The platform guide identifies the implemented operations and the evidence still
-needed on each. A browser on any of these systems can also connect to an admitted installation.
+host targets. The [platform comparison](../deployments/platform-differences.md) identifies the implemented
+operations and the evidence still needed on each. A browser on any of these systems can also connect to an admitted installation.
 [Deployment profiles](../deployments/index.md) and [State of Work](../state-of-the-work.md)
 own the operating instructions and delivery evidence.
 

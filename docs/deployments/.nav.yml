@@ -1,5 +1,6 @@
 nav:
   - Overview: index.md
+  - Platform differences: platform-differences.md
   - Personal macOS and Windows hosts: desktop.md
   - Desktop installers: desktop-packages.md
   - Desktop volume snapshots: volume-snapshots.md
