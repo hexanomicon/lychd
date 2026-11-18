@@ -60,6 +60,7 @@ def test_database_refuses_unmarked_and_wrong_major(tmp_path: Path, monkeypatch: 
 def test_launch_agent_uses_interpreter_and_retains_user_files(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, *, legacy: bool
 ) -> None:
+    login.private_directory(tmp_path)
     monkeypatch.setattr(login, "sys", SimpleNamespace(platform="darwin", executable=login.sys.executable))
     uid = getattr(os, "getuid", lambda: 0)()
     monkeypatch.setattr(login, "os", SimpleNamespace(environ=os.environ, getuid=lambda: uid))
@@ -101,6 +102,7 @@ def test_other_editions_login_blocks_install_before_provisioning(
 ) -> None:
     from click.testing import CliRunner
 
+    login.private_directory(tmp_path)
     monkeypatch.setattr(desktop, "PATH_POSTGRES_ROOT_DIR", tmp_path / "management")
     monkeypatch.setattr(login, "_PROFILE", tmp_path / "registration.json")
     login.publish_file(login._PROFILE, b'{"interpreter": "original-edition", "identifier": "owner"}')
@@ -145,6 +147,7 @@ def test_configure_model_binds_typed_chat_and_preserves_extensions(
 def test_windows_login_task_uses_interactive_limited_principal(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, *, legacy: bool
 ) -> None:
+    login.private_directory(tmp_path)
     monkeypatch.setattr(login, "os", SimpleNamespace(environ={**os.environ, "SYSTEMROOT": str(tmp_path / "Windows")}))
     monkeypatch.setattr(login, "sys", SimpleNamespace(platform="win32", executable=login.sys.executable))
     monkeypatch.setattr(login, "_PROFILE", tmp_path / "login.json")
