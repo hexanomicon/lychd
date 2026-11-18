@@ -84,7 +84,7 @@ Vessel, PostgreSQL and the browser. The [native setup](deployments/desktop.md#ch
 uses separate XDG roots. Container isolation and accelerator performance have separate evidence.
 
 The [portable Compose deployment](deployments/container-desktop.md) was built and exercised on a
-[Linux Docker runner](https://github.com/hexanomicon/lychd/actions/runs/44311383918). The caged
+Linux Docker runner in CI occurrence `44311383918`. The deployment guide links that occurrence. The caged
 production image required browser authentication. Recreating the project containers over the
 retained named volumes preserved the credential and a committed PostgreSQL row. A separate [Linux Compose browser trial](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/runtime/bridge-portable-linux-2026-11-18.json)
 used the same project with a pinned CPU engine and GGUF on rootless Podman. After recreating the
