@@ -45,6 +45,7 @@ class LlamacppConnector(OpenAICompatibleConnector, EmbeddingConnector):
         router_query_model_id: str | None,
         generation_defaults: GenerationProfile,
         embedding_profile: EmbeddingProfile | None = None,
+        schema_without_tools: bool = False,
     ) -> None:
         """Initialize llama.cpp connector with runtime lifecycle metadata."""
         super().__init__(
@@ -52,6 +53,7 @@ class LlamacppConnector(OpenAICompatibleConnector, EmbeddingConnector):
             base_url=base_url,
             model_infos=model_infos,
             default_model_id=default_model_id,
+            schema_without_tools=schema_without_tools,
             # A lease authorizes inference, never router loading or LRU eviction.
             default_query={"autoload": "false"} if mode == "router" else None,
         )

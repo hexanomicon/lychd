@@ -58,7 +58,7 @@ def test_database_refuses_unmarked_and_wrong_major(tmp_path: Path, monkeypatch: 
 def test_launch_agent_uses_interpreter_and_retains_user_files(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(login, "sys", SimpleNamespace(platform="darwin", executable=login.sys.executable))
     uid = getattr(os, "getuid", lambda: 0)()
-    monkeypatch.setattr(login.os, "getuid", lambda: uid, raising=False)
+    monkeypatch.setattr(login, "os", SimpleNamespace(environ=os.environ, getuid=lambda: uid))
     monkeypatch.setattr(login, "_PROFILE", tmp_path / "login.json")
     path = tmp_path / "agent.plist"
     monkeypatch.setattr(login, "_plist", lambda: path)
@@ -334,17 +334,30 @@ def test_windows_refuses_foreign_write_on_ancestry(tmp_path: Path) -> None:
     import subprocess
     from pathlib import Path
 
-    from lychd.system.desktop.private import check_path, private_directory
+    from lychd.system.desktop.private import (
+        check_path,
+        private_directory,
+        verify_private_directory,
+        verify_private_file,
+    )
 
     directory = tmp_path / "acl-trial"
     private_directory(directory)
     target = directory / "unpublished"
     check_path(target)
     icacls = Path(os.environ["SYSTEMROOT"]) / "System32" / "icacls.exe"
-    subprocess.run([icacls, directory, "/grant", "*S-1-5-32-545:(M)"], check=True)  # noqa: S603
+    subprocess.run([icacls, directory, "/grant", "*S-1-3-4:(OI)(CI)F"], check=True)  # noqa: S603
+    inherited = directory / "credential"
+    inherited.write_bytes(b"test")
+    verify_private_directory(directory)
+    verify_private_file(inherited)
+    check_path(target)
+    subprocess.run([icacls, directory, "/grant", "*S-1-5-32-545:(OI)(CI)M"], check=True)  # noqa: S603
     try:
         with pytest.raises(subprocess.CalledProcessError):
             check_path(target)
+        with pytest.raises(subprocess.CalledProcessError):
+            verify_private_file(inherited)
         assert not target.exists()
     finally:
         subprocess.run([icacls, directory, "/remove:g", "*S-1-5-32-545"], check=True)  # noqa: S603

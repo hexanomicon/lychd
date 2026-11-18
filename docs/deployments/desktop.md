@@ -50,7 +50,9 @@ current revision's migrations.
 
 Substitute actual existing paths, including the full executable filename. The following command
 declares the `personal:chat:personal-model` capability, enables the built-in llama.cpp extension
-and selects it for Bridge. Run it before starting Vessel. Use a separate free port for each engine.
+and selects it for Bridge. The generated Rune enables llama.cpp's JSON-schema output for
+structured replies without active function tools. Tool-enabled requests retain the separate
+tool protocol. Run this command before starting Vessel. Use a separate free port for each engine.
 
 ```bash title="macOS"
 uv run --no-sync lychd desktop configure-model \
@@ -66,6 +68,51 @@ load through the [extension registry](../sepulcher/extensions/index.md). The nat
 accepts trusted, fixed-model llama.cpp processes on IPv4 loopback. A router, an arbitrary
 program or an untrusted extension requires its own execution contract. An unresolved prior
 transition blocks startup until the operator verifies the recorded process and port.
+
+### Choose between two local models in Nexus
+
+Start with the working `personal` model above. Stop the foreground Vessel with
+`uv run --no-sync lychd stop` before editing. Keep the second GGUF under the same
+`native_model_root` and check that port 8082 is free. In the configuration directory reported
+by `lychd platform`, create a new `runes/animator/soulstones/llamacpp/alternate.toml`.
+Use the actual absolute model path. TOML single quotes also accept literal Windows paths
+such as `'C:\Models\alternate.gguf'`.
+
+```toml title="alternate.toml"
+name = "alternate"
+startup_mode = "single"
+structured_output = "json-schema"
+model_path = '/absolute/path/to/Models/alternate.gguf'
+served_model_id = "alternate-model"
+port = 8082
+base_url = "http://127.0.0.1:8082/v1"
+```
+
+Both Runes use the default exclusive conflict declaration. Starting one evicts the other.
+Each needs its own name, model identity and loopback port. Keep the existing engine and
+extension settings. In the existing `[weaver.bridge]` table of `lychd.toml`, replace the
+generated `capability_key` selection with this two-route preference. Save any previous
+custom Bridge selection you intend to restore.
+
+```toml title="lychd.toml"
+[weaver.bridge]
+revision = "2"
+
+[weaver.bridge.preference]
+schema_version = 1
+routes = [
+  { capability_key = "personal:chat:personal-model", weight = 1 },
+  { capability_key = "alternate:chat:alternate-model", weight = 1 },
+]
+```
+
+Start `uv run --no-sync lychd desktop session`. In **Nexus**, choose the desired capability,
+open **Preview**, check the launch and eviction names, and choose **Request transition**.
+Wait for the selected capability to show **active**, then send a fresh Bridge turn. With
+this preference Bridge requires a warm, eligible route, including for the first turn after
+startup. To change models while Vessel is running, repeat the Nexus transition for the other
+capability. Open **Orb** for each Run and compare the recorded Animator and model identities.
+[Using Nexus](../divination/altar/nexus.md) · [Bridge preference at admission](../adr/22-dispatcher.md#bridge-preference-at-admission).
 
 ## Open Altar and talk in Bridge
 
@@ -88,7 +135,9 @@ To stop the database too, run `uv run --no-sync lychd desktop stop` after the Ve
 `lychd desktop status` queries the dedicated PostgreSQL cluster. A second Vessel targeting the
 same database must refuse before startup recovery can affect the first one's work.
 
-The automated qualification uses a disposable OS account, the same CLI and a real browser. It
+The automated qualification uses a disposable OS account, the same CLI and a real browser.
+For reproducible short replies it sets `temperature = 0.0` and `max_tokens = 128` in the
+personal Rune’s `[generation]` table. Operators can choose a larger output budget. The trial
 saves the opened Bridge, the completed reply, the same reply after restarting PostgreSQL and
 Vessel, and a JSON receipt with the Run ID and the model and engine hashes. Maintainers can run
 the **Desktop host CI** workflow with the browser-chat input selected. Retrieve its
@@ -161,17 +210,24 @@ needs other stores and current revocation history. [Snapshot contract](../adr/07
 [Windows VSS security](https://learn.microsoft.com/en-us/windows/win32/vss/security-considerations-for-requestors) ·
 [PostgreSQL physical backup](https://www.postgresql.org/docs/18/app-pgbasebackup.html).
 
+### Connect a desktop browser to a Linux host
+
+When the same owner runs Core on Linux, a desktop browser can use that deployment's admitted
+same-owner SSH loopback binding. Follow the [Tether operator guide](../sepulcher/aspects/tether.md)
+for the binding, browser origin and independent revocation check. The Linux host retains
+responsibility for tunnel and service configuration.
+
 ## Animator ownership
 
 On Linux the Reactor applies the declared conflicts through systemd and generated Quadlets.
 In the personal profile the same orchestration contract selects the native process actuator.
 Vessel starts a configured executable using fixed arguments, verifies ownership of its loopback
-listener, and waits for it to release its resources before switching. Login registration starts
+listener, and waits for the conflicting foreground process to exit before launching its replacement. Login registration starts
 Vessel under the desktop account. A request to Bridge grants no general host command execution.
 
 We considered llama-swap for its model routing and swap matrix. Adding it as another lifecycle
 owner would require coordinating its independent unload decisions with LychD's grants and
-observations. The personal profile uses its existing extension and Reactor instead. A future
+observations. The personal profile uses the existing llama.cpp extension and the native process actuator. A future
 adapter for an externally managed server needs its own authority and readiness contract.
 [Upstream swap matrix](https://github.com/mostlygeek/llama-swap/blob/a109800cc5340e7722895b7baf78b3d16ef19311/docs/kb/guides/routing/groups-and-matrix.md)
 · [Containers and switching](../adr/08-containers.md).

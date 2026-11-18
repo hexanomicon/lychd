@@ -88,6 +88,16 @@ def _intent(registry: CapabilityRegistry, target: str, prior: tuple[str, ...] = 
     )
 
 
+async def _assert_serving(port: int | None) -> None:
+    assert port is not None
+    reader, writer = await asyncio.open_connection("127.0.0.1", port)
+    writer.write(b"GET / HTTP/1.0\r\n\r\n")
+    await writer.drain()
+    assert b"200 OK" in await asyncio.wait_for(reader.readline(), 5)
+    writer.close()
+    await writer.wait_closed()
+
+
 @pytest.mark.asyncio
 async def test_switch_owned_foreground_listeners_and_replay(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     registry, settings, runes = _profile(tmp_path)
@@ -114,12 +124,7 @@ async def test_switch_owned_foreground_listeners_and_replay(tmp_path: Path, monk
         await actuator.apply(first)
         await actuator.apply(first)
         assert len(children) == 1
-        reader, writer = await asyncio.open_connection("127.0.0.1", runes["alpha"].port)
-        writer.write(b"GET / HTTP/1.0\r\n\r\n")
-        await writer.drain()
-        assert b"200 OK" in await asyncio.wait_for(reader.readline(), 5)
-        writer.close()
-        await writer.wait_closed()
+        await _assert_serving(runes["alpha"].port)
         with pytest.raises(RuntimeError, match="unresolved"):
             NativeRuntimeActuator(registry, settings)
         with pytest.raises(RuntimePreconditionError, match="different intent"):
@@ -128,7 +133,14 @@ async def test_switch_owned_foreground_listeners_and_replay(tmp_path: Path, monk
         await actuator.apply(second)
         assert children[0].poll() is not None
         assert children[1].poll() is None
-        await actuator.apply(build_compensation_intent(second))
+        with pytest.raises(RuntimePreconditionError, match="no longer matches"):
+            await actuator.apply(first)
+        assert len(children) == 2
+        assert children[1].poll() is None
+        compensation = build_compensation_intent(second)
+        await actuator.apply(compensation)
+        await actuator.apply(compensation)
+        assert len(children) == 3
         assert children[1].poll() is not None
         assert children[2].poll() is None
         with pytest.raises(RuntimePreconditionError):
@@ -138,7 +150,11 @@ async def test_switch_owned_foreground_listeners_and_replay(tmp_path: Path, monk
     assert all(child.poll() is not None for child in children)
     next_owner = NativeRuntimeActuator(registry, settings)
     await next_owner.verify_startup()
-    await next_owner.aclose()
+    try:
+        with pytest.raises(RuntimePreconditionError, match="no longer matches"):
+            await next_owner.apply(first)
+    finally:
+        await next_owner.aclose()
 
 
 @pytest.mark.asyncio

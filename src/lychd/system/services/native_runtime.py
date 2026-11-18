@@ -259,6 +259,7 @@ class NativeRuntimeActuator:
         raise RuntimeError(_UNSETTLED)
 
     async def _replayed(self, db: sqlite3.Connection, intent: TransitionIntent) -> bool:
+        """Acknowledge a completed intent only while its owned process outcome still holds."""
         if db.execute("SELECT 1 FROM transition WHERE done=0").fetchone():
             raise RuntimeError(_UNSETTLED)
         row = db.execute("SELECT intent FROM transition WHERE id=?", (intent.transition_id,)).fetchone()
@@ -267,12 +268,27 @@ class NativeRuntimeActuator:
         if row[0] != intent.model_dump_json():
             msg = "Native transition ID was reused with a different intent."
             raise RuntimePreconditionError(msg)
-        for name, child in self._children.items():
-            if child.poll() is not None or not await asyncio.to_thread(
-                _owns_listener, child.pid, self._upstreams[name]
+        live = self._owned_processes(db)
+        for name, pid in live.items():
+            port = self._upstreams.get(name)
+            if (
+                port is None
+                or not await asyncio.to_thread(_owns_listener, pid, port)
+                or self._children[name].poll() is not None
             ):
                 raise RuntimeError(_UNSETTLED)
+        desired = (set(intent.expected_active_animators) - set(intent.evict_animators)) | set(intent.launch_animators)
+        if desired != live.keys() or intent.config_generation != capability_config_generation(self._registry):
+            msg = "Completed native transition no longer matches the current configuration or active processes."
+            raise RuntimePreconditionError(msg)
         return True
+
+    def _owned_processes(self, db: sqlite3.Connection) -> dict[str, int]:
+        recorded = dict(db.execute("SELECT name, pid FROM child"))
+        live = {name: child.pid for name, child in self._children.items() if child.poll() is None}
+        if recorded != live or live.keys() != self._children.keys():
+            raise RuntimeError(_UNSETTLED)
+        return live
 
     def _validate(self, db: sqlite3.Connection, intent: TransitionIntent) -> None:
         spec = self._registry.get_capability(intent.target_capability_key)
@@ -283,10 +299,7 @@ class NativeRuntimeActuator:
         ):
             msg = "Native transition target or configuration generation is stale."
             raise RuntimePreconditionError(msg)
-        recorded = dict(db.execute("SELECT name, pid FROM child"))
-        live = {name: child.pid for name, child in self._children.items() if child.poll() is None}
-        if recorded != live:
-            raise RuntimeError(_UNSETTLED)
+        live = self._owned_processes(db)
         prior = set(intent.expected_active_animators)
         if set(live) != prior:
             msg = "Native transition expected a different set of owned processes."

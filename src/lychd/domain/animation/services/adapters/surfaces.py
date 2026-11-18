@@ -33,6 +33,7 @@ class OpenAICompatibleConnector(Connector, ModelConnector, ToolConnector):
         provider_name: str = "openai-compatible",
         toolsets: Sequence[AbstractToolset] = (),
         default_query: Mapping[str, str] | None = None,
+        schema_without_tools: bool = False,
     ) -> None:
         """Store readiness, base URL, models, auth, profile policy, and toolsets."""
         self._link = link
@@ -42,6 +43,7 @@ class OpenAICompatibleConnector(Connector, ModelConnector, ToolConnector):
         self._api_key_secret_name = api_key_secret_name
         self._default_surface = default_surface
         self._provider_name = provider_name
+        self._schema_without_tools = schema_without_tools
         self._toolsets = tuple(toolsets)
         self._default_query = dict(default_query) if default_query else None
         self._observed_model_ids: tuple[str, ...] | None = None
@@ -106,6 +108,7 @@ class OpenAICompatibleConnector(Connector, ModelConnector, ToolConnector):
             provider=provider,
             responses=selected_surface == ModelSurface.RESPONSES,
             profile=provider_profile,
+            schema_without_tools=self._schema_without_tools,
         )
 
     def get_toolsets(self) -> Sequence[AbstractToolset]:

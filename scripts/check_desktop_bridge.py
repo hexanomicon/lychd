@@ -22,11 +22,14 @@ from contextlib import contextmanager
 from http import HTTPStatus
 from pathlib import Path
 from typing import TYPE_CHECKING
+from urllib.parse import urljoin
 from uuid import uuid4
 
+import tomlkit
 from check_desktop_startup import check_registered_backup, check_routes, request
 
 from lychd.domain.web.contracts import MessageAccepted, MessageIntent
+from lychd.system.constants import PATH_SOULSTONES_DIR
 from lychd.system.services.local_access import load_local_access
 
 if TYPE_CHECKING:
@@ -76,7 +79,16 @@ def completed_reply(page: Page, run_id: str) -> str:
     turn = page.locator(
         f'article.turn--agent[data-run-id="{run_id}"]:is([data-state="done"],[data-state="failed"],[data-state="cancelled"])'
     )
-    turn.wait_for(timeout=240_000)
+    from playwright.sync_api import TimeoutError as BrowserTimeout
+
+    try:
+        turn.wait_for(timeout=240_000)
+    except BrowserTimeout as exc:
+        # Report only the public Run status from this synthetic trial.
+        status = page.request.get(urljoin(page.url, f"/api/v1/orb/runs/{run_id}?after_seq=-1"))
+        state = status.json()["run"]["status"] if status.ok else f"HTTP {status.status}"
+        msg = f"Bridge Run {run_id} did not display a settled turn within four minutes (Orb: {state})."
+        raise RuntimeError(msg) from exc
     state = turn.get_attribute("data-state")
     if state != "done":
         msg = f"Bridge Run {run_id} ended with state {state}."
@@ -174,6 +186,12 @@ def main() -> None:
         subprocess.run(
             [*CLI, "desktop", "configure-model", "--engine", str(args.engine), "--model", str(args.model)], check=True
         )
+        # This disposable account owns the generated Rune. Bound a single arithmetic turn
+        # through its public generation settings, leaving operator defaults unrestricted.
+        rune = PATH_SOULSTONES_DIR / "llamacpp" / "personal.toml"
+        config = tomlkit.parse(rune.read_text(encoding="utf-8"))
+        config["generation"] = {"max_tokens": 128, "temperature": 0.0}
+        rune.write_text(tomlkit.dumps(config), encoding="utf-8")
         access = load_local_access()
         credential = base64.b64encode(f"{access.username}:{access.password.get_secret_value()}".encode()).decode(
             "ascii"
@@ -209,6 +227,8 @@ def main() -> None:
                 "prompt": prompt,
                 "retained_answer": answer,
                 "platform": sys.platform,
+                "max_tokens": 128,
+                "temperature": 0.0,
             }
         (args.output / "receipt.json").write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
     finally:

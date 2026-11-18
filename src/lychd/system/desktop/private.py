@@ -5,7 +5,6 @@ from __future__ import annotations
 import os
 import stat
 import subprocess
-import sys
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
@@ -29,7 +28,7 @@ def check_path(path: Path) -> None:
             msg = f"Refusing redirected desktop path: {component}"
             raise ValueError(msg)
         if (
-            sys.platform != "win32"
+            os.name != "nt"
             and component.is_relative_to(Path.home())
             and (info.st_uid != os.getuid() or info.st_mode & (stat.S_IWGRP | stat.S_IWOTH))
         ):
@@ -49,16 +48,18 @@ def _check_windows_ancestry(path: Path) -> None:
     script = """
 $ErrorActionPreference='Stop'
 $u=[Security.Principal.WindowsIdentity]::GetCurrent().User.Value
-$trusted=@($u,'S-1-5-18','S-1-5-32-544','S-1-3-0')
+$owners=@($u,'S-1-5-18','S-1-5-32-544')
+# CREATOR OWNER and OWNER RIGHTS are ACE trustees, never acceptable object owners.
+$trustees=$owners+@('S-1-3-0','S-1-3-4')
 $homeDir=[IO.Path]::GetFullPath($env:USERPROFILE)
 $p=[IO.Path]::GetFullPath($env:LYCHD_DESKTOP_CHECK_PATH)
 while($p -and ($p -eq $homeDir -or $p.StartsWith($homeDir+'\\',[StringComparison]::OrdinalIgnoreCase))) {
     if([IO.Directory]::Exists($p) -or [IO.File]::Exists($p)) {
         $a=if([IO.Directory]::Exists($p)){[IO.Directory]::GetAccessControl($p)}else{[IO.File]::GetAccessControl($p)}
-        if($trusted -notcontains $a.GetOwner([Security.Principal.SecurityIdentifier]).Value) {throw 'Foreign path owner'}
+        if($owners -notcontains $a.GetOwner([Security.Principal.SecurityIdentifier]).Value) {throw 'Foreign path owner'}
         foreach($r in $a.Access) {
             if($r.AccessControlType -eq 'Allow' -and ([int]$r.FileSystemRights -band 0xD0156) -and
-               $trusted -notcontains $r.IdentityReference.Translate([Security.Principal.SecurityIdentifier]).Value) {
+               $trustees -notcontains $r.IdentityReference.Translate([Security.Principal.SecurityIdentifier]).Value) {
                 $sid=$r.IdentityReference.Translate([Security.Principal.SecurityIdentifier]).Value
                 throw "Desktop path writable by another account: $p; SID=$sid; rights=$($r.FileSystemRights); propagation=$($r.PropagationFlags)"
             }
@@ -78,7 +79,7 @@ def private_directory(directory: Path) -> None:
     """Ensure this directory is owned and accessible only by the current user."""
     check_path(directory)
     directory.mkdir(mode=0o700, parents=True, exist_ok=True)
-    if sys.platform != "win32":
+    if os.name != "nt":
         if directory.stat().st_uid != os.getuid():
             msg = f"Refusing foreign-owned private directory: {directory}"
             raise ValueError(msg)
@@ -116,7 +117,8 @@ def _verify_windows_acl(path: Path) -> None:
         "$a=if([IO.Directory]::Exists($p)){[IO.Directory]::GetAccessControl($p)}else{[IO.File]::GetAccessControl($p)};"
         "if($a.GetOwner([Security.Principal.SecurityIdentifier]) -ne $u -or @($a.Access).Count -eq 0)"
         "{throw 'Unverified file owner or ACL'};"
-        "foreach($r in $a.Access){if($r.IdentityReference.Translate([Security.Principal.SecurityIdentifier]) -ne $u)"
+        "foreach($r in $a.Access){$sid=$r.IdentityReference.Translate([Security.Principal.SecurityIdentifier]).Value;"
+        "if($sid -ne $u.Value -and $sid -ne 'S-1-3-4')"
         "{throw 'Unexpected file permissions'}}"
     )
     subprocess.run(  # noqa: S603 -- fixed script, path conveyed separately.
@@ -132,7 +134,7 @@ def verify_private_directory(directory: Path) -> None:
     if not directory.is_dir():
         msg = f"Native journal path must be a directory: {directory}"
         raise ValueError(msg)
-    if sys.platform == "win32":
+    if os.name == "nt":
         _verify_windows_acl(directory)
     elif directory.stat().st_uid != os.getuid() or stat.S_IMODE(directory.stat().st_mode) != _PRIVATE_DIRECTORY_MODE:
         msg = f"Native journal requires an owner-only directory: {directory}"
@@ -146,7 +148,7 @@ def verify_private_file(path: Path) -> None:
         msg = f"Expected a regular credential file: {path}"
         raise ValueError(msg)
     info = path.stat()
-    if sys.platform == "win32":
+    if os.name == "nt":
         _verify_windows_acl(path)
     elif info.st_uid != os.getuid() or info.st_mode & (stat.S_IRWXG | stat.S_IRWXO):
         msg = f"Expected an owner-only credential file: {path}"
@@ -156,7 +158,7 @@ def verify_private_file(path: Path) -> None:
 def private_file(path: Path) -> None:
     """Check file ownership and restrict access before reading credentials."""
     check_path(path)
-    if sys.platform == "win32":
+    if os.name == "nt":
         _verify_windows_acl(path)
     elif path.stat().st_uid != os.getuid():
         msg = f"Refusing foreign-owned credential file: {path}"

@@ -64,6 +64,7 @@ def configure(engine: Path, model: Path, port: int) -> None:
     rune = {
         "name": "personal",
         "startup_mode": "single",
+        "structured_output": "json-schema",
         "model_path": str(model),
         "served_model_id": "personal-model",
         "port": port,

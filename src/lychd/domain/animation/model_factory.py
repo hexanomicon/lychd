@@ -8,11 +8,12 @@ Pydantic AI OpenAI-interface provider or profile resolver.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, cast, override
 
 import httpx2
 from openai import AsyncOpenAI
 from pydantic_ai._http import ConnectPoolTimeoutCap
+from pydantic_ai.exceptions import UserError
 from pydantic_ai.models import get_user_agent
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.profiles import DEFAULT_PROFILE, InlineDefsJsonSchemaTransformer
@@ -27,8 +28,9 @@ if TYPE_CHECKING:
     from types import TracebackType
     from typing import Self
 
-    from pydantic_ai.models import Model
+    from pydantic_ai.models import Model, ModelRequestParameters
     from pydantic_ai.profiles import ModelProfile, ModelProfileSpec
+    from pydantic_ai.settings import ModelSettings
 
 __all__ = [
     "LOCAL_COMPAT_PROFILE",
@@ -222,18 +224,50 @@ def validate_openai_interface_target(
         raise ValueError(msg)
 
 
+class _SchemaWithoutToolsModel(OpenAIChatModel):
+    """Select a grammar for structured model replies while retaining ordinary tool dispatch."""
+
+    @override
+    def prepare_request(
+        self, model_settings: ModelSettings | None, model_request_parameters: ModelRequestParameters
+    ) -> tuple[ModelSettings | None, ModelRequestParameters]:
+        params = model_request_parameters
+        if params.function_tools or params.native_tools:
+            if params.output_mode == "native":
+                # Pydantic AI rechecks a prior auto selection before reusing it on the next step.
+                msg = "This local model cannot combine a response grammar with function tools."
+                raise UserError(msg)
+        elif params.output_object is not None:
+            params = params.with_default_output_mode("native")
+        return super().prepare_request(model_settings, params)
+
+
+def _local_schema_profile(resolved: ModelProfile) -> ModelProfile:
+    return {
+        **_local_compat_profile(resolved),
+        "supports_json_schema_output": True,
+        "native_output_requires_schema_in_instructions": True,
+    }
+
+
 def build_openai_compatible_model(
     *,
     model_id: str,
     provider: Provider[AsyncOpenAI],
     responses: bool = False,
     profile: ModelProfileSpec | None = None,
+    schema_without_tools: bool = False,
 ) -> Model:
     """Build the canonical OpenAI-compatible model on the selected API surface.
 
     Generic local compatibility replaces resolved provider defaults through the
     profile callback. With ``None``, the provider supplies its model-aware profile.
     """
+    if schema_without_tools:
+        if responses or profile is not _local_compat_profile:
+            msg = "Tool-free schema output requires a local Chat Completions endpoint."
+            raise ValueError(msg)
+        return _SchemaWithoutToolsModel(model_id, provider=provider, profile=_local_schema_profile)
     if responses:
         from pydantic_ai.models.openai import OpenAIResponsesModel
 

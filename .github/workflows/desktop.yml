@@ -100,19 +100,15 @@ jobs:
         env:
           PGHOSTADDR: 127.0.0.2
         run: uv run --no-sync python scripts/check_desktop_startup.py
-      - name: Check out the macOS llama.cpp CPU source
-        if: runner.os == 'macOS' && env.BRIDGE_CHAT == 'true'
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          repository: ggml-org/llama.cpp
-          ref: af6528e6df5d798f7f1363ec1141699be0f638e2
-          path: .ci-llama
-          persist-credentials: false
-      - name: Build the macOS CPU inference server
+      - name: Install the pinned official Apple Silicon inference archive
         if: runner.os == 'macOS' && env.BRIDGE_CHAT == 'true'
         run: |
-          cmake -S .ci-llama -B .ci-llama/build -DCMAKE_BUILD_TYPE=Release -DGGML_METAL=OFF -DGGML_OPENMP=OFF -DLLAMA_CURL=OFF
-          cmake --build .ci-llama/build --config Release --target llama-server --parallel 3
+          archive="$RUNNER_TEMP/llama-b12494-bin-macos-arm64.tar.gz"
+          curl --fail --location --silent --show-error --max-filesize 17249612 --max-time 180 --output "$archive" \
+            https://github.com/ggml-org/llama.cpp/releases/download/b12494/llama-b12494-bin-macos-arm64.tar.gz
+          echo "cb4a5089fcaaa69a493bbf86eae25002dd82966eacecd166c49282881906ab3a  $archive" | shasum -a 256 -c -
+          mkdir -p .ci-llama/build/bin
+          tar -xzf "$archive" -C .ci-llama/build/bin
       - name: Install the pinned official Windows CPU inference archive
         if: runner.os == 'Windows' && env.BRIDGE_CHAT == 'true'
         shell: pwsh
