@@ -65,6 +65,18 @@
       "source_head": "d7a29407969ee7996b47ef24bc084cfcf2974ce1",
       "job": "https://github.com/hexanomicon/lychd/actions/runs/44277364196/job/134708787339",
       "observed": "Chrome previewed and requested personal to alternate and back, retaining the original Bridge response across restart. Both processes advertised distinct model IDs using the same pinned weights. The post-commit rotation interruption was recovered with PostgreSQL stopped. Inaccessible per-installation vault records required explicit matching re-enrollment."
+    },
+    {
+      "feature": "Native VSS snapshot request and read-only exposure",
+      "source_head": "4907efd25c25edf7eecd65bb916b800129753373",
+      "job": "https://github.com/hexanomicon/lychd/actions/runs/44278342756/job/134712144234",
+      "observed": "The elevated operator captured a disposable NTFS drive using the Microsoft VSS provider. Its exposed shadow retained the original bytes after the live file changed."
+    },
+    {
+      "feature": "Packaged macOS login service",
+      "source_head": "f16c964f69acbef6802dedb6ec45840901a9b2e7",
+      "job": "https://github.com/hexanomicon/lychd/actions/runs/44279211097/job/134715128544",
+      "observed": "The packaged interpreter registered a per-user LaunchAgent, served the local API with authentication enforced, stopped and removed its registration. The same-edition repair and persisted-row checks then completed."
     }
   ]
 }

@@ -1,6 +1,6 @@
 # The administrative runner installs dependencies. A separate standard account runs the personal profile.
-param([string] $TrialSid, [switch] $BridgeChat, [switch] $TetherTrial, [switch] $VolumeTrial, [string] $VolumeDrive,
-      [string] $PackageBuild, [ValidatePattern('^[0-9a-f]{40}$')][string] $PackageRevision)
+param([string] $TrialSid, [switch] $BridgeChat, [switch] $TetherTrial, [switch] $VolumeTrial, [switch] $VolumeProbe, [string] $VolumeDrive,
+      [string] $PackageBuild, [ValidatePattern('^[0-9a-f]{40}$')][string] $PackageRevision, [ValidatePattern('^[0-9a-f]{40}$')][string] $PreviousRevision)
 
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
@@ -36,6 +36,10 @@ if ($TrialSid) {
         & "$root/tether-trial.exe" '-test.v' '-test.timeout=2m'
         exit $LASTEXITCODE
     }
+    if ($PreviousRevision) {
+        & "$root/deployments/desktop-packaging/check-upgrade.ps1" -BuildDirectory $root -Revision $PackageRevision -PreviousRevision $PreviousRevision
+        exit 0
+    }
     if ($PackageRevision) {
         & "$root/deployments/desktop-packaging/check-install.ps1" -BuildDirectory $root -Revision $PackageRevision
         exit 0
@@ -43,7 +47,8 @@ if ($TrialSid) {
     $python = "$root\.venv\Scripts\python.exe"
     $cli = "$root\.venv\Scripts\lychd.exe"
     if ($VolumeTrial) {
-        & $python scripts/check_volume_trial.py --root $VolumeDrive
+        if ($VolumeProbe) { & $python scripts/check_volume_trial.py --root $VolumeDrive --probe-exposure }
+        else { & $python scripts/check_volume_trial.py --root $VolumeDrive }
         exit $LASTEXITCODE
     }
     & $cli --help
@@ -88,6 +93,7 @@ try {
         finally { Pop-Location }
     } elseif ($PackageRevision) {
         Copy-Item -LiteralPath "$PackageBuild/artifacts" -Destination "$stage/artifacts" -Recurse
+        if ($PreviousRevision) { Copy-Item -LiteralPath "$PackageBuild/previous" -Destination "$stage/previous" -Recurse }
     } else {
         $env:UV_PYTHON_INSTALL_DIR = "$stage\runtime"
         & uv python install --no-bin 3.14.8
@@ -106,10 +112,12 @@ try {
     $argsLine = "-NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"$stage\scripts\check_windows_desktop.ps1`" -TrialSid $sid"
     if ($TetherTrial) { $argsLine += ' -TetherTrial' }
     if ($PackageRevision) { $argsLine += " -PackageRevision $PackageRevision" }
+    if ($PreviousRevision) { $argsLine += " -PreviousRevision $PreviousRevision" }
     if ($VolumeTrial) {
         . "$stage\scripts\check_volume_vhd.ps1"
         $drive = New-TrialDatabaseVolume $stage $sid
         $argsLine += " -VolumeTrial -VolumeDrive $drive"
+        if ($VolumeProbe) { $argsLine += " -VolumeProbe" }
     }
     if ($env:BRIDGE_CHAT -eq 'true') { $argsLine += ' -BridgeChat' }
     $stdout = Join-Path $env:RUNNER_TEMP "lychd-$id.out"

@@ -75,7 +75,8 @@ TCP peer. It cannot use source IP as application identity.
    originates the TLS connection on the loopback leg. For example, an HTTP API receives HTTP
    inside WireGuard and HTTPS on loopback. An ordinary browser will treat a private HTTP origin
    accordingly. For a credential-free connectivity check against a service with a health endpoint,
-   use `curl --noproxy "*" --connect-timeout 5 http://10.93.0.1:8443/health`. Confirm the service
+   run `curl --noproxy "*" --connect-timeout 5 http://10.93.0.1:8443/health` on macOS or Linux.
+   In Windows PowerShell, run `curl.exe --noproxy "*" --connect-timeout 5 http://10.93.0.1:8443/health`. Confirm the service
    observes the request. Verify a different destination port fails and the same request stops
    reaching the service when the grant is revoked. Keep application credentials out of shell
    history and check the client binding's failure behavior before sending them.

@@ -66,17 +66,17 @@ def windows_record(cut: str) -> dict[str, str]:
         powershell(
             """
 $p=[Environment]::GetFolderPath('ProgramFiles')
-$d=Join-Path $p ('LychD-Volume-'+$env:LYCHD_CUT)
-$f=Join-Path $d 'snapshot.json'
+$d=[IO.Path]::Combine($p,('LychD-Volume-'+$env:LYCHD_CUT))
+$f=[IO.Path]::Combine($d,'snapshot.json')
 $trusted=@('S-1-5-18','S-1-5-32-544','S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464')
 foreach($item in @($p,$d,$f)) {
-  if((Get-Item -LiteralPath $item).Attributes -band [IO.FileAttributes]::ReparsePoint){throw 'Redirected requestor receipt'}
-  $acl=Get-Acl -LiteralPath $item
+  if([IO.File]::GetAttributes($item) -band [IO.FileAttributes]::ReparsePoint){throw 'Redirected requestor receipt'}
+  $acl=if([IO.Directory]::Exists($item)){[IO.Directory]::GetAccessControl($item)}else{[IO.File]::GetAccessControl($item)}
   if($trusted -notcontains $acl.GetOwner([Security.Principal.SecurityIdentifier]).Value){throw 'Foreign requestor receipt owner'}
   foreach($ace in $acl.Access) {
     $sid=$ace.IdentityReference.Translate([Security.Principal.SecurityIdentifier]).Value
     if($ace.AccessControlType -eq 'Allow' -and ([int]$ace.FileSystemRights -band 0xD0156) -and
-       !($ace.PropagationFlags -band [Security.AccessControl.PropagationFlags]::InheritOnly) -and $trusted -notcontains $sid){throw 'Writable requestor receipt'}
+       !($ace.PropagationFlags -band [Security.AccessControl.PropagationFlags]::InheritOnly) -and $trusted -notcontains $sid){throw "Writable requestor receipt: $item; $sid; $($ace.FileSystemRights)"}
   }
 }
 [IO.File]::ReadAllText($f)

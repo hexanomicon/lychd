@@ -17,9 +17,9 @@ from psycopg.conninfo import make_conninfo
 
 from lychd.system.constants import PATH_POSTGRES_ROOT_DIR
 from lychd.system.desktop import desktop_settings, postgres_program
-from lychd.system.desktop.private import private_directory
+from lychd.system.desktop.private import private_directory, publish_file
 from lychd.system.desktop.volume_native import snapshot_view
-from lychd.system.desktop.volume_storage import STORAGE, authority, diskutil
+from lychd.system.desktop.volume_storage import STORAGE, authority, diskutil, volume_id
 
 CLI = [sys.executable, "-m", "lychd.system.desktop"]
 
@@ -194,7 +194,38 @@ def verify_restored(backup: Path, conninfo: str) -> None:
         subprocess.run([*ctl, "-m", "fast", "stop"], check=True)  # noqa: S603
 
 
+def probe_exposure(root: Path) -> None:
+    """Read a real, frozen, user-private file on an operator-exposed VSS drive as the standard user."""
+    identity = volume_id(root)
+    cut = str(uuid4())
+    folder = root / STORAGE
+    folder.mkdir()
+    private_directory(folder)
+    witness = folder / "probe.txt"
+    publish_file(witness, b"captured")
+    publish_file(root / f".lychd-volume-request-{cut}", identity.encode("ascii"))
+    deadline = time.monotonic() + 90
+    receipt = Path(os.environ["PROGRAMFILES"]) / f"LychD-Volume-{cut}" / "snapshot.json"
+    while not receipt.exists():
+        if time.monotonic() >= deadline:
+            msg = "Operator did not publish the VSS drive inventory."
+            raise RuntimeError(msg)
+        time.sleep(0.5)
+    identifier = json.loads(receipt.read_bytes())["ID"]
+    witness.write_bytes(b"later")
+    view = snapshot_view(identity, identifier, cut)
+    if (view.root / STORAGE / witness.name).read_bytes() != b"captured":
+        msg = "Standard account could not read the frozen witness."
+        raise RuntimeError(msg)
+    print(f"Standard-account read-only VSS exposure verified: {identifier} ({view.provider})")  # noqa: T201
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", required=True, type=Path)
-    trial(parser.parse_args().root)
+    parser.add_argument("--probe-exposure", action="store_true")
+    args = parser.parse_args()
+    if args.probe_exposure:
+        probe_exposure(args.root)
+    else:
+        trial(args.root)

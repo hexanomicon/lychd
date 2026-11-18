@@ -2,6 +2,7 @@ name: Desktop installers (no publication)
 
 on:
   pull_request:
+    types: [opened, reopened, synchronize, edited]
     paths:
       - ".github/actions/desktop-postgres/**"
       - "scripts/check_desktop_package_rows.py"
@@ -28,6 +29,15 @@ on:
       - "uv.lock"
       - ".nvmrc"
   workflow_dispatch:
+    inputs:
+      previous_run:
+        description: Successful Desktop installers run ID for an optional populated upgrade trial
+        type: string
+        required: false
+      previous_revision:
+        description: Full edition revision from that run's provenance.json
+        type: string
+        required: false
 
 permissions:
   contents: read
@@ -94,3 +104,39 @@ jobs:
           path: ${{ runner.temp }}/lychd-desktop/artifacts/
           if-no-files-found: error
           retention-days: 14
+
+  upgrade:
+    name: Populated two-edition upgrade (${{ matrix.os }})
+    needs: native
+    if: >-
+      (github.event_name == 'workflow_dispatch' && inputs.previous_run != '') ||
+      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository &&
+       contains(github.event.pull_request.body, '[desktop-upgrade '))
+    permissions:
+      actions: read
+      contents: read
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, windows-2025]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Verify both installers against the selected same-project artifacts
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: ./deployments/desktop-packaging/fetch-upgrade.ps1 -BuildDirectory "$env:RUNNER_TEMP/lychd-upgrade"
+      - uses: ./.github/actions/desktop-postgres
+      - name: Recover a pre-switch backup and verify old and new commits in the upgraded database
+        shell: pwsh
+        run: |
+          $build = Join-Path $env:RUNNER_TEMP 'lychd-upgrade'
+          if ($IsWindows) {
+              ./scripts/check_windows_desktop.ps1 -PackageBuild $build -PackageRevision $env:GITHUB_SHA -PreviousRevision $env:PREVIOUS_EDITION
+          } else {
+              ./deployments/desktop-packaging/check-upgrade.ps1 -BuildDirectory $build -Revision $env:GITHUB_SHA -PreviousRevision $env:PREVIOUS_EDITION
+          }

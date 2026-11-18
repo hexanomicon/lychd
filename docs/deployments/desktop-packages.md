@@ -129,8 +129,17 @@ relocated interpreter, provisions PostgreSQL 18 and commits a row. It repairs a 
 file, checks that first row and commits a second. It retires the deployment, removes the program
 and reinstalls the same edition. Both rows must still be present. Windows runs these operations
 in a separate standard account. The trial checks macOS LaunchAgent startup and Windows
-interactive task registration against the isolated interpreter invocation. This trial exercises same-revision recovery. A migration between
-different releases needs a populated upgrade trial for that version pair. The separate desktop-host
+interactive task registration against the isolated interpreter invocation. This trial exercises same-revision recovery. To qualify two specific
+editions, supply a successful earlier Desktop installers run ID and the full revision printed in
+its provenance to the workflow dispatch inputs. For a same-repository PR, put
+`[desktop-upgrade RUN_ID PREVIOUS_REVISION]` alone on a line in its description. Both native
+artifacts from the earlier run must still be available. The optional jobs check their GitHub ZIP
+digests and installer checksums before execution. Each job provisions the old edition, commits
+a row, captures its verified physical backup and retires it. An unavailable PostgreSQL executable
+forces the candidate's first provisioning attempt to fail before migration. The old edition reads
+the row from a separate restored cluster. After restoring the executable path, the new edition
+uses the original database, reads the first row, commits a second and checks both. The result
+qualifies that edition pair and that failure point. The separate desktop-host
 CI exercises authenticated Vessel startup. Windows Server CI, macOS CI and credentialed signing each have
 distinct evidence. Physical workstation, clean-account Gatekeeper/SmartScreen acceptance
 and cold login require target observations. [Platform qualification](desktop.md)
