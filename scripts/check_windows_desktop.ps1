@@ -46,6 +46,33 @@ if ($TrialSid) {
     }
     $python = "$root\.venv\Scripts\python.exe"
     $cli = "$root\.venv\Scripts\lychd.exe"
+    # Both child probes use the Vessel's standard account. This checks an ACL between accounts.
+    $protectedFile = Join-Path $root 'administrator-canary.txt'
+    try {
+        [void][IO.File]::ReadAllText($protectedFile)
+        throw 'The standard account read the administrator-only canary.'
+    } catch [UnauthorizedAccessException] {
+        # Expected denial from the Windows file open.
+    }
+    $ownFile = Join-Path $testTemp 'standard-user-canary.txt'
+    $probe = @'
+import sys
+from pathlib import Path
+from lychd.system.vessel_mode import require_native_user
+require_native_user()
+own, protected = map(Path, sys.argv[1:])
+own.write_text("standard-user", encoding="ascii")
+if own.read_text(encoding="ascii") != "standard-user":
+    raise SystemExit("The native account could not read its private canary.")
+try:
+    protected.read_bytes()
+except PermissionError as exc:
+    if exc.winerror != 5:  # ERROR_ACCESS_DENIED
+        raise
+else:
+    raise SystemExit("The native account read the administrator-only canary.")
+'@
+    & $python -I -c $probe $ownFile $protectedFile
     if ($VolumeTrial) {
         if ($VolumeProbe) { & $python scripts/check_volume_trial.py --root $VolumeDrive --probe-exposure }
         else { & $python scripts/check_volume_trial.py --root $VolumeDrive }
@@ -54,7 +81,7 @@ if ($TrialSid) {
     & $cli --help
     & $cli platform
     & $cli desktop --help
-    & $python -m pytest -q -o addopts= -p no:cacheprovider tests/unit/cli/test_native_entry.py tests/unit/domain/web/test_vessel_owner.py tests/unit/system/desktop tests/integration/test_native_pg_backup.py
+    & $python -m pytest -q -o addopts= -p no:cacheprovider tests/unit/cli/test_native_entry.py tests/unit/domain/web/test_vessel_owner.py tests/unit/system/desktop tests/unit/system/services/test_native_runtime.py tests/integration/test_native_pg_backup.py
     $env:PGHOSTADDR = '127.0.0.2'
     if ($BridgeChat) {
         & $python scripts/check_desktop_bridge.py --browser msedge --engine "$root\engine\llama-server.exe" --model "$root\model.gguf" --output "$root\artifacts\bridge-evidence"
@@ -66,6 +93,23 @@ if ($TrialSid) {
 
 if (-not $elevated -or $env:GITHUB_ACTIONS -ne 'true' -or $env:RUNNER_ENVIRONMENT -ne 'github-hosted') {
     throw 'This account-provisioning trial requires a disposable GitHub-hosted Windows runner.'
+}
+if (-not $TetherTrial -and -not $PackageRevision) {
+    # Exercise the checked-out policy before provisioning the trial account or installing LychD.
+    $sourceRoot = Join-Path (Split-Path $PSScriptRoot) 'src'
+    $probe = @'
+import sys
+sys.path.insert(0, sys.argv[1])
+from lychd.system.vessel_mode import require_native_user
+try:
+    require_native_user()
+except ValueError as exc:
+    if str(exc) != "Run native Vessel as the ordinary installation user.":
+        raise
+else:
+    raise SystemExit("The elevated runner was admitted to native Vessel.")
+'@
+    & python -I -c $probe $sourceRoot
 }
 $id = [guid]::NewGuid().ToString('N')
 $name = 'LychDCI' + $id.Substring(0, 10)
@@ -95,6 +139,12 @@ try {
         Copy-Item -LiteralPath "$PackageBuild/artifacts" -Destination "$stage/artifacts" -Recurse
         if ($PreviousRevision) { Copy-Item -LiteralPath "$PackageBuild/previous" -Destination "$stage/previous" -Recurse }
     } else {
+        $protectedFile = Join-Path $stage 'administrator-canary.txt'
+        [IO.File]::WriteAllText($protectedFile, 'administrator-only')
+        & icacls.exe $protectedFile /inheritance:r /grant:r '*S-1-5-18:F' '*S-1-5-32-544:F'
+        if ([IO.File]::ReadAllText($protectedFile) -ne 'administrator-only') {
+            throw 'The administrative control could not read its protected canary.'
+        }
         $env:UV_PYTHON_INSTALL_DIR = "$stage\runtime"
         & uv python install --no-bin 3.14.8
         $python = @(Get-ChildItem -Path "$stage\runtime\cpython-3.14.8-*\python.exe")

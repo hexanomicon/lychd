@@ -9,7 +9,9 @@ services:
     user: "1001:1001"
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]
-    tmpfs: [/tmp]
+    pids_limit: 1024
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,noexec,size=128m,mode=1777
     command:
       - --model
       - /models/personal-model.gguf

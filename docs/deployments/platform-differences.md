@@ -91,13 +91,31 @@ The same fixed-model Runes and Nexus request select a managed `llama-server.exe`
 
 ### Linux {#authority-linux}
 
-In managed container mode, Vessel can write a bounded transition request to its mounted inbox and read the Host Reactor's transition journal at `triggers/journal`. A systemd path unit wakes the host consumer. Authority comes from validating the typed request, configuration, ownership and observed state. A changed file alone authorizes nothing. Native Linux instead launches trusted processes with the account’s own file permissions. Choose managed containers for the stronger isolation boundary. The Vessel receives no root shell, Podman socket or systemd bus. Trusted code, selected mounts, rootless isolation and the applicable host SELinux policy each constrain a different part of the deployment. Some storage operations require an independently authorized administrator acting on an exact identity. [Host Reactor and privilege](../adr/10-privilege.md) · [Container mount boundaries](../adr/13-layout.md#host-and-container-geography)
+In native mode the installer protects the config, data and cache roots with mode `0700`.
+It gives each model launch a private working directory. For native GPU use with a separate
+user, install the engine and weights on a user- or root-owned path and keep personal data private to
+your own login. For per-container mount enforcement, use the managed profile.
+[Native filesystem access](desktop.md#which-host-files-can-a-native-vessel-read)
+
+In managed container mode, Vessel can write a bounded transition request to its mounted inbox and read the Host Reactor's transition journal at `triggers/journal`. A systemd path unit wakes the host consumer. Authority comes from validating the typed request, configuration, ownership and observed state. A changed file alone authorizes nothing. The container receives neither a Podman socket nor a systemd bus. The Host Reactor exposes only its declared operations. Trusted code, selected mounts, rootless isolation and the applicable host SELinux policy each constrain a different part of the deployment. Some storage operations require an independently authorized administrator acting on an exact identity. [Host Reactor and privilege](../adr/10-privilege.md) · [Container mount boundaries](../adr/13-layout.md#host-and-container-geography)
 
 ### macOS {#authority-macos}
+
+For native development with personal documents kept private, use a separate standard macOS
+login and keep those documents inaccessible to that login. The model gets private temporary
+storage for each launch and can use Metal with the account's normal permissions. For a mount
+boundary around Vessel itself, the portable container attaches its runtime secrets read-only
+and keeps the chosen GGUF in the model container. [Native filesystem access](desktop.md#which-host-files-can-a-native-vessel-read) · [Portable mounts](container-desktop.md#which-files-does-each-container-receive)
 
 The personal account already has permission to launch its own trusted engine. Vessel invokes its scoped actuator directly. Normal chat and switching need no root daemon, watched command file or password prompt. The same-user engine can access files available to that account, so install only trusted engines and extensions. An approved OS utility and its operator own privileged whole-volume snapshot creation separately. Adding an extension to the registry does not authorize host operations. [Host policy](../adr/08-containers.md#supported-host-policy) · [Extension contract](../adr/05-extensions.md)
 
 ### Windows {#authority-windows}
+
+Native startup and credential retrieval inspect the process token and refuse elevation. A
+dedicated standard Windows account can read the GGUF you grant it while an NTFS access
+control list excludes it from your private documents. Its fresh working directory also serves
+as the model's temporary and AppData directories. For mount-level restrictions choose the
+portable container. [Native filesystem access](desktop.md#which-host-files-can-a-native-vessel-read) · [Portable mounts](container-desktop.md#which-files-does-each-container-receive)
 
 Vessel and its engine run with the ordinary user's token. Private file ACLs protect against other ordinary accounts. Code running as the installation user can exercise that user's access. Keep elevated dependency setup and the one-shot VSS producer outside the running Vessel. Neither Nexus nor Bridge provides generic PowerShell execution, service control or elevation. Untrusted workloads require a separately qualified isolation boundary on either desktop. [Privilege boundaries](../adr/10-privilege.md) · [Desktop storage authority](volume-snapshots.md#capture)
 

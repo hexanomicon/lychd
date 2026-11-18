@@ -93,6 +93,13 @@ on physical macOS and Windows still needs host-side checks of the published loop
 resource limits and restart. The [repeatable CI workflow](https://github.com/hexanomicon/lychd/blob/main/.github/workflows/portable-vessel.yml)
 uses the [portable install/recreation test](https://github.com/hexanomicon/lychd/blob/main/scripts/check_portable_vessel.py).
 
+That test opens files under the running Vessel's unprivileged identity. A Linux Compose trial
+on rootless Podman denied access to the database administrator credential and denied writes to
+a runtime credential and the image. The same process wrote to its lab volume. The native
+[engine launch tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_native_runtime.py)
+exercise private scratch, descriptor closure, refused paths and cleanup on Linux. Native Vessel
+and its engine share their OS account's file permissions. [Native file access](deployments/desktop.md#which-host-files-can-a-native-vessel-read)
+
 The desktop custody trial on 18 November 2026 recovered the five generated values from
 the login Keychain on macOS and CurrentUser DPAPI on Windows. The
 [macOS and Windows host jobs](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/runtime/desktop-platform-checks-2026-11-18.json)

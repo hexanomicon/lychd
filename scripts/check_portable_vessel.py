@@ -8,8 +8,82 @@ import json
 import shutil
 import subprocess
 import time
+from collections.abc import Callable
 from http import HTTPStatus
+from pathlib import PurePosixPath
 from uuid import uuid4
+
+
+def pids_limit_path(membership: str, mountinfo: str) -> str:
+    groups = [line.split(":", 2) for line in membership.splitlines()]
+    legacy = next((path for _, controllers, path in groups if "pids" in controllers.split(",")), None)
+    group = legacy if legacy is not None else next((path for hierarchy, _, path in groups if hierarchy == "0"), None)
+    if group is not None:
+        for line in mountinfo.splitlines():
+            before, after = line.split(" - ")
+            filesystem, _, options = after.split()[:3]
+            if (legacy is None and filesystem == "cgroup2") or (
+                legacy is not None and filesystem == "cgroup" and "pids" in options.split(",")
+            ):
+                root, mount = map(PurePosixPath, before.split()[3:5])
+                # A private cgroup namespace reports the mounted subtree as its own root.
+                relative = PurePosixPath(group).relative_to(root if PurePosixPath(group).is_relative_to(root) else "/")
+                return str(mount / relative / "pids.max")
+    msg = "Cannot locate the container's pids cgroup controller."
+    raise RuntimeError(msg)
+
+
+def check_container_limits(compose: Callable[..., str]) -> None:
+    mountinfo = compose("exec", "-T", "vessel", "cat", "/proc/self/mountinfo")
+    mounts = {fields[4]: set(fields[5].split(",")) for fields in map(str.split, mountinfo.splitlines())}
+    if "ro" not in mounts["/"] or not {"rw", "nosuid", "nodev", "noexec"} <= mounts["/tmp"]:  # noqa: S108 -- inspecting a container mount
+        msg = "The Vessel requires a read-only root and restricted writable /tmp."
+        raise RuntimeError(msg)
+    for service in ("vessel", "database"):
+        membership = compose("exec", "-T", service, "cat", "/proc/self/cgroup")
+        service_mounts = (
+            mountinfo if service == "vessel" else compose("exec", "-T", service, "cat", "/proc/self/mountinfo")
+        )
+        limit = compose("exec", "-T", service, "cat", pids_limit_path(membership, service_mounts))
+        if limit != "512":
+            msg = f"Expected a 512-task cgroup ceiling for {service}, found {limit}."
+            raise RuntimeError(msg)
+
+
+def check_vessel_files(compose: Callable[..., str]) -> None:
+    compose("exec", "-T", "database", "test", "-r", "/run/lychd/admin/value")
+    compose(
+        "exec",
+        "-T",
+        "vessel",
+        "python",
+        "-c",
+        """import errno
+import os
+import tempfile
+from pathlib import Path
+
+pid1_uid = next(line.split()[2] for line in Path("/proc/1/status").read_text().splitlines() if line.startswith("Uid:"))
+if os.geteuid() == 0 or os.geteuid() != int(pid1_uid):
+    raise RuntimeError("Probe must use the unprivileged Vessel process identity")
+for path, flags, allowed_errors in (
+    ("/run/lychd/admin/value", os.O_RDONLY, {errno.ENOENT, errno.EACCES}),
+    ("/run/lychd/runtime/value", os.O_WRONLY, {errno.EROFS, errno.EACCES}),
+    ("/app/LICENSE", os.O_WRONLY, {errno.EROFS, errno.EACCES}),
+):
+    try:
+        fd = os.open(path, flags | os.O_NOFOLLOW)
+    except OSError as exc:
+        if exc.errno not in allowed_errors:
+            raise
+    else:
+        os.close(fd)
+        raise RuntimeError(f"Unexpected access to {path}")
+with tempfile.NamedTemporaryFile(dir="/home/lich/.local/share/lychd/lab") as probe:
+    probe.write(b"lab control")
+    probe.flush()
+""",
+    )
 
 
 def main() -> None:
@@ -58,6 +132,8 @@ def main() -> None:
     postgres = ("exec", "-T", "database", "psql", "-v", "ON_ERROR_STOP=1", "-U", "lich", "-d", "lychd", "-Atc")
     try:
         compose("up", "-d", "--no-build", "--wait", "--wait-timeout", "180")
+        check_container_limits(compose)
+        check_vessel_files(compose)
         password = check_access()
         compose(*postgres, "CREATE TABLE placement_probe AS SELECT 19 AS answer")
         compose("down")

@@ -16,6 +16,7 @@ on:
       - "tests/integration/test_native_pg_backup.py"
       - "tests/unit/cli/test_native_entry.py"
       - "tests/unit/system/desktop/**"
+      - "tests/unit/system/services/test_native_runtime.py"
       - "tests/unit/domain/web/test_vessel_owner.py"
   push:
     branches: [dev]
@@ -65,10 +66,10 @@ jobs:
           uv run --no-sync python -c "from lychd.app import create_app; from lychd.interface.server import run_native_server"
       - name: Check desktop routing and the database ownership protocol
         if: runner.os == 'macOS'
-        run: uv run --no-sync python -m pytest -q -o addopts= tests/unit/cli/test_native_entry.py tests/unit/domain/web/test_vessel_owner.py tests/unit/system/desktop
+        run: uv run --no-sync python -m pytest -q -o addopts= tests/unit/cli/test_native_entry.py tests/unit/domain/web/test_vessel_owner.py tests/unit/system/desktop tests/unit/system/services/test_native_runtime.py
       - name: Check Linux native routing and foreground lifecycle
         if: runner.os == 'Linux'
-        run: uv run --no-sync python -m pytest -q -o addopts= tests/unit/cli/test_native_entry.py tests/unit/system/desktop/test_linux_foreground.py
+        run: uv run --no-sync python -m pytest -q -o addopts= tests/unit/cli/test_native_entry.py tests/unit/system/desktop/test_linux_foreground.py tests/unit/system/services/test_native_runtime.py
       - uses: ./.github/actions/desktop-postgres
       - name: Recover an actual committed PostgreSQL row
         if: runner.os != 'Windows'

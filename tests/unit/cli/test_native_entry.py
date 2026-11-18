@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ctypes
 import json
 import subprocess
 import sys
@@ -13,7 +14,7 @@ import pytest
 from click.testing import CliRunner
 
 from lychd import __main__ as entry
-from lychd.system import constants
+from lychd.system import constants, vessel_mode
 
 
 @pytest.mark.parametrize("operating_system", ["darwin", "win32"])
@@ -188,3 +189,13 @@ def test_portable_diagnostics_work_without_original_model_file(monkeypatch: pyte
     args = run.call_args.args[0]
     assert args[-2:] == ["ps", "--all"]
     assert str(tmp_path / "compose.chat.yaml") not in args
+
+
+@pytest.mark.parametrize("success", [False, True])
+def test_unknown_windows_token_elevation_refuses(monkeypatch: pytest.MonkeyPatch, *, success: bool) -> None:
+    # A successful query with a short output is also insufficient evidence.
+    library = Mock()
+    library.GetTokenInformation.return_value = success
+    monkeypatch.setattr(ctypes, "WinDLL", Mock(return_value=library), raising=False)
+    with pytest.raises(ValueError, match="Cannot verify the elevation"):
+        vessel_mode._windows_process_elevated()  # pyright: ignore[reportPrivateUsage]

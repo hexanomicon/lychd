@@ -6,7 +6,9 @@ x-core: &core
   read_only: true
   cap_drop: [ALL]
   security_opt: [no-new-privileges:true]
-  tmpfs: [/tmp]
+  pids_limit: 512
+  tmpfs:
+    - /tmp:rw,nosuid,nodev,noexec,size=128m,mode=1777
 
 services:
   provision:
@@ -24,6 +26,7 @@ services:
 
   database:
     image: docker.io/pgvector/pgvector:pg18-trixie
+    pids_limit: 512
     user: postgres
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]
