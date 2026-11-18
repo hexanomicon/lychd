@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import plistlib
 from types import SimpleNamespace
@@ -55,7 +56,10 @@ def test_database_refuses_unmarked_and_wrong_major(tmp_path: Path, monkeypatch: 
         desktop.require_cluster()
 
 
-def test_launch_agent_uses_interpreter_and_retains_user_files(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+@pytest.mark.parametrize("legacy", [False, True])
+def test_launch_agent_uses_interpreter_and_retains_user_files(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, *, legacy: bool
+) -> None:
     monkeypatch.setattr(login, "sys", SimpleNamespace(platform="darwin", executable=login.sys.executable))
     uid = getattr(os, "getuid", lambda: 0)()
     monkeypatch.setattr(login, "os", SimpleNamespace(environ=os.environ, getuid=lambda: uid))
@@ -74,13 +78,38 @@ def test_launch_agent_uses_interpreter_and_retains_user_files(tmp_path: Path, mo
         return CompletedProcess[str](args, 1 if "print" in args else 0, stdout="")
 
     monkeypatch.setattr(login, "subprocess", SimpleNamespace(run=run))
+    if legacy:
+        login.publish_file(
+            login._PROFILE, json.dumps({"interpreter": login.sys.executable, "identifier": "owner"}).encode()
+        )
     login.enable()
     payload = plistlib.loads(path.read_bytes())
-    assert payload["ProgramArguments"] == [login.sys.executable, "-m", "lychd.system.desktop", "session"]
+    prefix = [] if legacy else ["-I", "-B"]
+    assert payload["ProgramArguments"] == [login.sys.executable, *prefix, "-m", "lychd.system.desktop", "session"]
     assert calls[-1][1:3] == ["bootstrap", f"gui/{uid}"]
     path.write_bytes(plistlib.dumps({"Label": "another-user"}))
     with pytest.raises(click.ClickException, match="unrecognized"):
         login.enable()
+    path.write_bytes(plistlib.dumps(payload))
+    login.disable()
+    assert not path.exists()
+    assert not login._PROFILE.exists()
+
+
+def test_other_editions_login_blocks_install_before_provisioning(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from click.testing import CliRunner
+
+    monkeypatch.setattr(desktop, "PATH_POSTGRES_ROOT_DIR", tmp_path / "management")
+    monkeypatch.setattr(login, "_PROFILE", tmp_path / "registration.json")
+    login.publish_file(login._PROFILE, b'{"interpreter": "original-edition", "identifier": "owner"}')
+    programs = Mock()
+    monkeypatch.setattr(desktop, "postgres_program", programs)
+    result = CliRunner().invoke(desktop.install)
+    assert result.exit_code == 1
+    assert "Disable login with its original interpreter" in result.output
+    programs.assert_not_called()
 
 
 def test_configure_model_binds_typed_chat_and_preserves_extensions(
@@ -112,7 +141,10 @@ def test_configure_model_binds_typed_chat_and_preserves_extensions(
     assert rune["base_url"] == "http://127.0.0.1:8081/v1"
 
 
-def test_windows_login_task_uses_interactive_limited_principal(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+@pytest.mark.parametrize("legacy", [False, True])
+def test_windows_login_task_uses_interactive_limited_principal(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, *, legacy: bool
+) -> None:
     monkeypatch.setattr(login, "os", SimpleNamespace(environ={**os.environ, "SYSTEMROOT": str(tmp_path / "Windows")}))
     monkeypatch.setattr(login, "sys", SimpleNamespace(platform="win32", executable=login.sys.executable))
     monkeypatch.setattr(login, "_PROFILE", tmp_path / "login.json")
@@ -121,10 +153,18 @@ def test_windows_login_task_uses_interactive_limited_principal(tmp_path: Path, m
         monkeypatch.delenv(name, raising=False)
     calls: list[list[str]] = []
 
-    def run(args: list[str], **_: object) -> None:
+    passed_arguments: list[str] = []
+
+    def run(args: list[str], *, env: dict[str, str], check: bool) -> None:
+        assert check
         calls.append(args)
+        passed_arguments.append(env["LYCHD_LOGIN_ARGUMENTS"])
 
     monkeypatch.setattr(login, "subprocess", SimpleNamespace(run=run))
+    if legacy:
+        login.publish_file(
+            login._PROFILE, json.dumps({"interpreter": login.sys.executable, "identifier": "owner"}).encode()
+        )
     login.enable()
     script = calls[-1][-1]
     assert "-LogonType Interactive -RunLevel Limited" in script
@@ -134,6 +174,10 @@ def test_windows_login_task_uses_interactive_limited_principal(tmp_path: Path, m
     assert "Check $existing[0]" in script
     assert "LYCHD_LOGIN_IDENTIFIER" in script
     login.disable()
+    expected_args = "-m lychd.system.desktop session"
+    if not legacy:
+        expected_args = "-I -B " + expected_args
+    assert passed_arguments == [expected_args, expected_args]
     assert not login._PROFILE.exists()
 
 

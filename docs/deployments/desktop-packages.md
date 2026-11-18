@@ -44,7 +44,8 @@ and successful platform verification.
 
 Open the verified installer as the account that will own the database. It places program
 files in a directory named for that exact revision. Substitute the full revision below
-and keep the terminal open. These functions run the bundled interpreter in isolated mode.
+and define the function in each terminal you use, including the second terminal for
+`lychd access` or `lychd stop`. These functions run the bundled interpreter in isolated mode.
 
 ```bash title="macOS"
 edition="$HOME/Applications/LychD Editions/<full-revision>"
@@ -79,7 +80,9 @@ credentials, cold login and backup. [Personal desktop operation](desktop.md)
 - **Upgrade.** Back up the database, settings and credentials through the
   [desktop recovery procedure](desktop.md). Stop the running Vessel with `lychd stop`,
   then use the **old** edition's `lychd desktop uninstall` to retire its login registration
-  and stop the dedicated database. Install the new edition alongside it. Select the new
+  and stop the dedicated database. If the old program files were already removed,
+  repair that exact trusted edition first. Provisioning with a different interpreter refuses
+  while the earlier login registration exists. Install the new edition alongside it. Select the new
   edition in the terminal function, run `lychd desktop install` and qualify the persisted
   chat. Re-enable login through the new edition if required.
 - **Recover.** Keep the old verified installer with its matching pre-upgrade backup and
@@ -125,7 +128,8 @@ The native CI trial installs the edition, imports the application and bundled Al
 relocated interpreter, provisions PostgreSQL 18 and commits a row. It repairs a missing program
 file, checks that first row and commits a second. It retires the deployment, removes the program
 and reinstalls the same edition. Both rows must still be present. Windows runs these operations
-in a separate standard account. This trial exercises same-revision recovery. A migration between
+in a separate standard account. The trial checks macOS LaunchAgent startup and Windows
+interactive task registration against the isolated interpreter invocation. This trial exercises same-revision recovery. A migration between
 different releases needs a populated upgrade trial for that version pair. The separate desktop-host
 CI exercises authenticated Vessel startup. Windows Server CI, macOS CI and credentialed signing each have
 distinct evidence. Physical workstation, clean-account Gatekeeper/SmartScreen acceptance

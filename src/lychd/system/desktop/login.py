@@ -14,7 +14,7 @@ from pathlib import Path
 import click
 
 from lychd.system.constants import PATH_POSTGRES_ROOT_DIR
-from lychd.system.desktop.private import check_path, private_directory, private_file, publish_file
+from lychd.system.desktop.private import check_path, private_directory, publish_file, verify_private_file
 
 _LABEL = "org.lychd.vessel"
 _PROFILE = PATH_POSTGRES_ROOT_DIR / "desktop-login" / "registration.json"
@@ -26,36 +26,50 @@ _KEYS = (
 )
 
 
-def _registration(*, create: bool = False) -> dict[str, str]:
-    """Persist a private identifier before registration, permitting interruption and readback."""
+def read_registration() -> dict[str, str]:
+    """Check the recorded login owner without changing files or contacting the service manager."""
     check_path(_PROFILE)
-    if not _PROFILE.exists() and create:
-        from lychd.system.desktop import postgres_program
-
-        private_directory(_PROFILE.parent)
-        values = {key: os.environ[key] for key in _KEYS if key in os.environ}
-        if any(os.environ.get(key.removesuffix("_FILE")) for key in _KEYS[1:]):
-            msg = "Login registration requires generated credentials or explicit runtime credential file references."
-            raise click.ClickException(msg)
-        values.update(
-            LYCHD_PG_BIN=str(Path(postgres_program("pg_ctl")).resolve().parent),
-            interpreter=sys.executable,
-            identifier=secrets.token_hex(20),
-        )
-        publish_file(_PROFILE, json.dumps(values).encode("utf-8"))
     if not _PROFILE.exists():
         return {}
-    private_file(_PROFILE)
+    verify_private_file(_PROFILE)
     values = json.loads(_PROFILE.read_text(encoding="utf-8"))
     if values.get("interpreter") != sys.executable or not values.get("identifier"):
-        msg = "The login registration belongs to a different interpreter or installation."
+        msg = (
+            "The login registration belongs to another installation. Disable login with its original interpreter first."
+        )
+        raise click.ClickException(msg)
+    if "python_mode" in values and values["python_mode"] != "isolated":
+        msg = "The login registration has an unrecognized Python invocation."
         raise click.ClickException(msg)
     return values
 
 
+def _create_registration() -> None:
+    """Publish the identity and exact execution mode before contacting the OS."""
+    from lychd.system.desktop import postgres_program
+
+    private_directory(_PROFILE.parent)
+    values = {key: os.environ[key] for key in _KEYS if key in os.environ}
+    if any(os.environ.get(key.removesuffix("_FILE")) for key in _KEYS[1:]):
+        msg = "Login registration requires generated credentials or explicit runtime credential file references."
+        raise click.ClickException(msg)
+    values.update(
+        LYCHD_PG_BIN=str(Path(postgres_program("pg_ctl")).resolve().parent),
+        interpreter=sys.executable,
+        identifier=secrets.token_hex(20),
+        python_mode="isolated",
+    )
+    publish_file(_PROFILE, json.dumps(values).encode("utf-8"))
+
+
+def _arguments(registration: dict[str, str]) -> list[str]:
+    module = ["-m", "lychd.system.desktop", "session"]
+    return ["-I", "-B", *module] if registration.get("python_mode") == "isolated" else module
+
+
 def load_environment() -> None:
     """Recover the executable directory and runtime credential files for this login."""
-    values = _registration()
+    values = read_registration()
     for key in _KEYS:
         if key in values:
             os.environ.setdefault(key, values[key])
@@ -65,7 +79,7 @@ def _plist() -> Path:
     return Path.home() / "Library" / "LaunchAgents" / f"{_LABEL}.plist"
 
 
-def _windows(identifier: str, *, remove: bool) -> None:
+def _windows(registration: dict[str, str], *, remove: bool) -> None:
     binary = Path(os.environ["SYSTEMROOT"]) / "System32/WindowsPowerShell/v1.0/powershell.exe"
     script = """
 $ErrorActionPreference='Stop'
@@ -73,7 +87,7 @@ $u=[Security.Principal.WindowsIdentity]::GetCurrent()
 $n='LychD-Vessel-'+$u.User.Value
 $d='LychD '+$env:LYCHD_LOGIN_IDENTIFIER
 $x=$env:LYCHD_LOGIN_INTERPRETER
-$argsText='-m lychd.system.desktop session'
+$argsText=$env:LYCHD_LOGIN_ARGUMENTS
 function UserSid($name) {
     if ($name -match '^S-1-') {return $name}
     return ([Security.Principal.NTAccount]::new($name)).Translate([Security.Principal.SecurityIdentifier]).Value
@@ -111,7 +125,8 @@ if ($existing.Count) {
         [binary, "-NoProfile", "-NonInteractive", "-Command", script],
         env={
             **{key: value for key, value in os.environ.items() if key.upper() != "PSMODULEPATH"},
-            "LYCHD_LOGIN_IDENTIFIER": identifier,
+            "LYCHD_LOGIN_IDENTIFIER": registration["identifier"],
+            "LYCHD_LOGIN_ARGUMENTS": " ".join(_arguments(registration)),
             "LYCHD_LOGIN_INTERPRETER": sys.executable,
             "LYCHD_LOGIN_REMOVE": "1" if remove else "0",
         },
@@ -119,14 +134,15 @@ if ($existing.Count) {
     )
 
 
-def _mac(identifier: str, *, remove: bool) -> None:
+def _mac(registration: dict[str, str], *, remove: bool) -> None:
+    identifier = registration["identifier"]
     path = _plist()
     check_path(path)
     domain = f"gui/{os.getuid()}"
     service = f"{domain}/{_LABEL}"
     expected = {
         "Label": _LABEL,
-        "ProgramArguments": [sys.executable, "-m", "lychd.system.desktop", "session"],
+        "ProgramArguments": [sys.executable, *_arguments(registration)],
         "EnvironmentVariables": {"LYCHD_LOGIN_IDENTIFIER": identifier},
         "RunAtLoad": True,
         "StandardErrorPath": str(PATH_POSTGRES_ROOT_DIR / "desktop-session.log"),
@@ -162,13 +178,16 @@ def _mac(identifier: str, *, remove: bool) -> None:
 
 def enable() -> None:
     """Register an unelevated service, verifying any preexisting task before use."""
-    values = _registration(create=True)
-    (_windows if sys.platform == "win32" else _mac)(values["identifier"], remove=False)
+    values = read_registration()
+    if not values:
+        _create_registration()
+        values = read_registration()
+    (_windows if sys.platform == "win32" else _mac)(values, remove=False)
 
 
 def disable() -> None:
     """Remove only the registered task whose account, executable and installation match."""
-    values = _registration()
+    values = read_registration()
     if values:
-        (_windows if sys.platform == "win32" else _mac)(values["identifier"], remove=True)
+        (_windows if sys.platform == "win32" else _mac)(values, remove=True)
         _PROFILE.unlink()

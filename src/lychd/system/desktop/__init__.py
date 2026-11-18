@@ -204,8 +204,10 @@ def install() -> None:
     from psycopg import sql
 
     from lychd.db.bootstrap import bootstrap_database
+    from lychd.system.desktop.login import read_registration
     from lychd.system.desktop.volume_cluster import bind_installation
 
+    read_registration()
     binary = postgres_program("initdb")
     version = subprocess.check_output([binary, "--version"], text=True)
     if not re.match(rf"initdb \(PostgreSQL\) {_MAJOR}(?:\.|\s|$)", version):

@@ -158,8 +158,10 @@ issues below for hardware, GPU and cold-login trials.
 
 For automatic startup use `uv run --no-sync lychd desktop enable-login` under the intended
 account once foreground startup works. macOS registers a user LaunchAgent and Windows registers
-an interactive, unelevated scheduled task. Both use the installed interpreter. Keep that
-environment at its registered path. Disable login with the original interpreter before moving it
+an interactive, unelevated scheduled task. New registrations launch the installed interpreter in isolated
+mode, so Python ignores user-site packages and inherited Python environment settings. Existing
+registrations keep their original invocation until disabled and re-enabled. Keep the registered
+environment at its original path. Disable login with the original interpreter before moving it
 or changing credential file references, then register the new environment. These profiles begin at login. They use the rights of
 that account, including access to its files. For a shared or hostile workload use a separately
 qualified isolation boundary.

@@ -35,6 +35,45 @@ function Invoke-Removal {
         Remove-Item -LiteralPath $edition -Recurse -Force
     }
 }
+function Test-EditionLogin {
+    if ($IsWindows) {
+        if ($env:USERNAME -cnotmatch '^LychDCI[0-9a-f]{10}$' -or $BuildDirectory -notlike "$env:ProgramData\LychD-CI-*") {
+            throw 'Login qualification requires the disposable standard user from the Windows trial harness.'
+        }
+    } elseif ($env:GITHUB_ACTIONS -ne 'true' -or $env:RUNNER_ENVIRONMENT -ne 'github-hosted') {
+        throw 'Login qualification requires the disposable hosted macOS runner.'
+    }
+    & $python -I -B -m lychd desktop enable-login
+    try {
+        if ($IsWindows) {
+            $sid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+            $task = Get-ScheduledTask -TaskPath '\' -TaskName "LychD-Vessel-$sid"
+            if ($task.Principal.RunLevel -ne 'Limited' -or $task.Actions[0].Arguments -cne '-I -B -m lychd.system.desktop session') {
+                throw 'Expected a limited task launching the isolated interpreter.'
+            }
+        } else {
+            $service = "gui/$(/usr/bin/id -u)/org.lychd.vessel"
+            $deadline = [datetime]::UtcNow.AddSeconds(120)
+            $ready = $false
+            while ([datetime]::UtcNow -lt $deadline) {
+                try {
+                    $reply = Invoke-WebRequest -Uri 'http://127.0.0.1:7134/api/v1/altar/status' -TimeoutSec 2 -SkipHttpErrorCheck
+                    if ($reply.StatusCode -eq 401) { $ready = $true; break }
+                } catch [System.Net.Http.HttpRequestException] {}
+                Start-Sleep -Seconds 1
+            }
+            if (-not $ready) { throw 'The LaunchAgent did not present the authenticated local API.' }
+            & $python -I -B -m lychd stop
+            $deadline = [datetime]::UtcNow.AddSeconds(30)
+            while ((& /bin/launchctl print $service) -match '^\s*state = running$') {
+                if ([datetime]::UtcNow -gt $deadline) { throw 'The LaunchAgent did not exit.' }
+                Start-Sleep -Seconds 1
+            }
+        }
+    } finally {
+        & $python -I -B -m lychd desktop disable-login
+    }
+}
 Invoke-Installation
 $tether = if ($IsWindows) { "$edition/desktop-tether.exe" } else { "$edition/desktop-tether" }
 & $tether -help
@@ -55,7 +94,10 @@ $markers = foreach ($directory in $profilePaths.config, $profilePaths.data) {
 & $python -I -B -c 'import sys; from pathlib import Path; from lychd.app import create_app; from lychd.interface.web.altar import PATH_ALTAR_INDEX; from lychd.interface.server import run_native_server; import psycopg; assert sys.version_info[:3] == (3,14,8) and PATH_ALTAR_INDEX.is_relative_to(Path(sys.executable).resolve().parents[2]) and PATH_ALTAR_INDEX.is_file() and psycopg.pq.__impl__ == "binary"'
 $rowCheck = (Resolve-Path "$PSScriptRoot/../../scripts/check_desktop_package_rows.py").Path
 & $python -I -B -m lychd desktop install
-try { & $python -I -B $rowCheck seed }
+try {
+    Test-EditionLogin
+    & $python -I -B $rowCheck seed
+}
 finally { & $python -I -B -m lychd desktop stop }
 # Damage only a package-owned file created by this trial.
 Remove-Item -LiteralPath "$edition/edition.json"
