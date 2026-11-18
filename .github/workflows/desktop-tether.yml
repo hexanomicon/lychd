@@ -5,11 +5,13 @@ on:
     paths:
       - "clients/desktop-tether/**"
       - ".github/workflows/desktop-tether.yml"
+      - "scripts/check_windows_desktop.ps1"
   push:
     branches: [dev]
     paths:
       - "clients/desktop-tether/**"
       - ".github/workflows/desktop-tether.yml"
+      - "scripts/check_windows_desktop.ps1"
   workflow_dispatch:
 
 permissions:
@@ -38,4 +40,11 @@ jobs:
       - run: go mod verify
       - run: go vet ./...
       - run: go build -trimpath -mod=readonly .
-      - run: go test -mod=readonly -v -timeout 2m ./...
+      - name: Exercise WireGuard peers as the macOS login user
+        if: runner.os == 'macOS'
+        run: go test -mod=readonly -v -timeout 2m ./...
+      - name: Exercise WireGuard peers under a new standard Windows account
+        if: runner.os == 'Windows'
+        working-directory: .
+        shell: pwsh
+        run: ./scripts/check_windows_desktop.ps1 -TetherTrial

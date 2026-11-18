@@ -92,6 +92,8 @@ if ($IsMacOS) {
 $hash = (Get-FileHash -LiteralPath $artifact).Hash.ToLowerInvariant()
 $edition.artifact = [IO.Path]::GetFileName($artifact)
 $edition.sha256 = $hash
+$edition.artifact_bytes = (Get-Item -LiteralPath $artifact).Length
 $edition.signing = if ($Sign) { 'platform-verified' } else { 'unsigned-candidate' }
 $edition | ConvertTo-Json | Set-Content "$out/provenance.json" -Encoding utf8NoBOM
 "$hash  $($edition.artifact)" | Set-Content "$out/SHA256SUMS" -Encoding ascii
+Write-Output "Built $($edition.artifact) ($($edition.artifact_bytes) bytes, SHA-256 $hash, $($edition.signing))."

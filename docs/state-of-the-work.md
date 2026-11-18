@@ -75,6 +75,22 @@ recovered the same Run, answer and model grant. Both also recovered a committed 
 from a verified physical backup. Windows 11 workstation setup, cold login, GPU performance
 and signed OS distribution have separate qualification criteria.
 
+The desktop custody trial on 18 November 2026 recovered the five generated values from
+the login Keychain on macOS and CurrentUser DPAPI on Windows. The
+[macOS and Windows host jobs](https://github.com/hexanomicon/lychd/actions/runs/44271144485)
+exercised the installed Settings consumer. A subsequent
+[macOS database trial](https://github.com/hexanomicon/lychd/actions/runs/44274890229/job/134700391439)
+closed a live runtime session during password rotation and recovered a committed row from a
+cold APFS file clone in another PostgreSQL instance. A later write stayed on the source.
+The measured database pause was 1.068 seconds and capture plus hashing took 1.720 seconds for
+that fixture. [Desktop recovery](deployments/desktop.md#storage-networking-and-recovery)
+documents the separate whole-volume and disk-loss paths.
+
+The [Apple Silicon package trial](https://github.com/hexanomicon/lychd/actions/runs/44274890330/job/134700392838)
+used the bundled interpreter and Altar and verified committed rows across repair, program removal
+and reinstall. Production Developer ID notarization and Windows Authenticode signing require
+the corresponding release identities. [Edition installation and verification](deployments/desktop-packages.md)
+
 The 20 October 2026 container-only correction retired the former Core host-native runtime,
 including native stop, credential-source, server/TCP, and host fixtures. Core pytest, lint,
 format checks, and typing now enter `Containerfile.tests` through the Makefile and bounded OCI
@@ -409,6 +425,7 @@ ritual.
 
 **Evidence**
 
+- **Topic:** [Desktop volume captures and independent restore](deployments/volume-snapshots.md)
 - **Source:** [Btrfs preparation](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/btrfs.py)
 - **Verification:** [Layout tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_layout.py)
 - **Law:** [Snapshots](./adr/07-snapshots.md)
@@ -4056,6 +4073,13 @@ roads. Boot helpers recreate ephemeral directories and resume only prior activat
 The CLI and Ansible profile delegate these effects to the native service. The optional same-owner
 SSH binding permits only the existing owner web loopback destination; it grants no application
 identity or remote IAM role.
+
+The separate [desktop offered-service profile](deployments/desktop-tether.md) admits one
+WireGuard public key and private service address per grant. Native two-peer tests on
+[macOS and Windows](https://github.com/hexanomicon/lychd/actions/runs/44274890145) exercised
+encrypted TCP, the backend certificate pin, live stream closure and continued access for the
+other peer. A fresh helper process requires fresh enrollment. Physical LAN, firewall and
+client routing trials remain with the platform owners.
 
 **Boundary — Not yet:** Repository tests use bounded effect ports and policy fixtures; they do not
 qualify an arbitrary installed Podman/pasta/kernel combination, wider fleet operation, measured

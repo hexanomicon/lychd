@@ -75,6 +75,9 @@ def test_os_vault_readback_and_runtime_settings(recovery: Path, monkeypatch: pyt
         assert credentials.resolve_vault_reference(name, path, record) == expected
         with pytest.raises(ValueError, match="matching generated"):
             credentials.resolve_vault_reference(name, recovery / path.name, record)
+    other = active / _NAMES[1].lower()
+    with pytest.raises(ValueError, match=r"Keychain item is unavailable|DPAPI could not access"):
+        credentials.resolve_vault_reference(_NAMES[1], other, (active / _NAMES[0].lower()).read_text("ascii"))
     for name in _NAMES:
         monkeypatch.setenv(f"{name}_FILE", str(active / name.lower()))
     settings = Settings()

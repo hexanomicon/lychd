@@ -428,7 +428,12 @@ def backup(destination: Path, method: str) -> None:
 
         try:
             output = clone_database(
-                _data(), destination.absolute(), db, postgres_program("pg_controldata"), stop_cluster, lambda: start_cluster(db.port)
+                _data(),
+                destination.absolute(),
+                db,
+                postgres_program("pg_controldata"),
+                stop_cluster,
+                lambda: start_cluster(db.port),
             )
         except (OSError, ValueError) as exc:
             raise click.ClickException(str(exc)) from exc

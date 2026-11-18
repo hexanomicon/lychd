@@ -17,9 +17,15 @@ preparation and model steps in [Personal desktop hosts](desktop.md#choose-the-in
 
 ## Verify and install an edition
 
-Choose the operating system and full source revision. The **Desktop installers (no
-publication)** workflow retains unsigned candidates for qualified testing. Its downloadable
-artifact contains the installer, `SHA256SUMS` and `provenance.json`. The latter records the
+For an unsigned test candidate, sign in to GitHub and open the [Desktop installers
+workflow](https://github.com/hexanomicon/lychd/actions/workflows/desktop-release.yml).
+Select the successful run for the intended change. In **Artifacts**, download
+`desktop-installer-macOS-<revision>` or `desktop-installer-Windows-<revision>` and extract
+the ZIP. Candidates expire after 14 days. For a pull request the revision is GitHub's tested
+merge commit. A manually dispatched build uses the selected ref's commit.
+
+The ZIP contains `LychD-macos-arm64-<revision>.pkg` or `LychD-windows-x64-<revision>.exe`,
+`SHA256SUMS` and `provenance.json`. The latter records the
 revision, target, Python, uv and Go versions, wheel and lockfile digests, signing mode and final
 installer digest. Compare the source revision and digest with the independently trusted
 build or release record. A checksum copied alongside a download only detects corruption.

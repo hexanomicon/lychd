@@ -1,5 +1,5 @@
 # The administrative runner installs dependencies. A separate standard account runs the personal profile.
-param([string] $TrialSid, [switch] $BridgeChat, [switch] $VolumeTrial, [string] $VolumeDrive,
+param([string] $TrialSid, [switch] $BridgeChat, [switch] $TetherTrial, [switch] $VolumeTrial, [string] $VolumeDrive,
       [string] $PackageBuild, [ValidatePattern('^[0-9a-f]{40}$')][string] $PackageRevision)
 
 $ErrorActionPreference = 'Stop'
@@ -32,6 +32,10 @@ if ($TrialSid) {
     $env:LYCHD_PG_BIN = Join-Path $env:ProgramFiles 'PostgreSQL\18\bin'
     $env:PYTHONDONTWRITEBYTECODE = '1'
     $env:PYTHONNOUSERSITE = '1'
+    if ($TetherTrial) {
+        & "$root/tether-trial.exe" -test.v -test.timeout 2m
+        exit $LASTEXITCODE
+    }
     if ($PackageRevision) {
         & "$root/deployments/desktop-packaging/check-install.ps1" -BuildDirectory $root -Revision $PackageRevision
         exit 0
@@ -76,7 +80,13 @@ try {
     & git archive --format=tar "--output=$stage\source.tar" HEAD
     & tar.exe -xf "$stage\source.tar" -C $stage
     Remove-Item -LiteralPath "$stage\source.tar"
-    if ($PackageRevision) {
+    if ($TetherTrial) {
+        # Compile the exact checked-out revision from the read-only archive above.
+        # The standard account only executes this fixed, staged test binary.
+        Push-Location -LiteralPath "$stage/clients/desktop-tether"
+        try { & go test -mod=readonly -c -o "$stage/tether-trial.exe" . }
+        finally { Pop-Location }
+    } elseif ($PackageRevision) {
         Copy-Item -LiteralPath "$PackageBuild/artifacts" -Destination "$stage/artifacts" -Recurse
     } else {
         $env:UV_PYTHON_INSTALL_DIR = "$stage\runtime"
@@ -94,6 +104,7 @@ try {
     }
     Start-Service seclogon
     $argsLine = "-NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"$stage\scripts\check_windows_desktop.ps1`" -TrialSid $sid"
+    if ($TetherTrial) { $argsLine += ' -TetherTrial' }
     if ($PackageRevision) { $argsLine += " -PackageRevision $PackageRevision" }
     if ($VolumeTrial) {
         . "$stage\scripts\check_volume_vhd.ps1"
