@@ -1,0 +1,66 @@
+name: Dedicated desktop database volumes
+
+on:
+  pull_request:
+    paths:
+      - ".github/actions/desktop-postgres/**"
+      - '.github/workflows/desktop-volumes.yml'
+      - 'src/lychd/system/desktop/**'
+      - 'scripts/check_volume*'
+      - 'scripts/check_windows_desktop.ps1'
+      - 'tests/unit/system/desktop/test_volume.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  volume:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, windows-2025]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: '0.13.0'
+          python-version: '3.14.8'
+      - uses: ./.github/actions/desktop-postgres
+      - name: Exercise registration, cold cut and resumption on an APFS disk image
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          set -euo pipefail
+          uv sync --locked --no-default-groups --extra postgres-binary --group test --no-editable
+          image="$RUNNER_TEMP/lychd-volume.sparseimage"
+          mount="/Volumes/LychD-CI"
+          test ! -e "$mount"
+          hdiutil create -size 2g -type SPARSE -fs APFS -volname LychD-CI "$image"
+          hdiutil attach -nobrowse -owners on "$image"
+          trap 'hdiutil detach "$mount"' EXIT
+          .venv/bin/python scripts/check_volume_trial.py --root "$mount"
+      - name: Recover a committed row from a VSS shadow using a standard desktop account
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./scripts/check_windows_desktop.ps1 -VolumeTrial
+
+  vss-producer:
+    name: Native VSS requestor and read-only drive exposure
+    runs-on: windows-2025
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: '0.13.0'
+          python-version: '3.14.8'
+      - name: Read a user-private, frozen VSS file as a standard account
+        shell: pwsh
+        run: ./scripts/check_windows_desktop.ps1 -VolumeTrial -VolumeProbe

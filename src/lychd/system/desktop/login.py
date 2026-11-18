@@ -14,9 +14,10 @@ from pathlib import Path
 import click
 
 from lychd.system.constants import PATH_POSTGRES_ROOT_DIR
-from lychd.system.desktop.private import check_path, private_directory, private_file, publish_file
+from lychd.system.desktop.private import check_path, private_directory, publish_file, verify_private_file
 
 _LABEL = "org.lychd.vessel"
+_MAX_RUN_COMMAND = 260
 _PROFILE = PATH_POSTGRES_ROOT_DIR / "desktop-login" / "registration.json"
 _KEYS = (
     "LYCHD_PG_BIN",
@@ -26,36 +27,66 @@ _KEYS = (
 )
 
 
-def _registration(*, create: bool = False) -> dict[str, str]:
-    """Persist a private identifier before registration, permitting interruption and readback."""
+def read_registration() -> dict[str, str]:
+    """Check the recorded login owner without changing files or contacting the service manager."""
     check_path(_PROFILE)
-    if not _PROFILE.exists() and create:
-        from lychd.system.desktop import postgres_program
-
-        private_directory(_PROFILE.parent)
-        values = {key: os.environ[key] for key in _KEYS if key in os.environ}
-        if any(os.environ.get(key.removesuffix("_FILE")) for key in _KEYS[1:]):
-            msg = "Login registration requires generated credentials or explicit runtime credential file references."
-            raise click.ClickException(msg)
-        values.update(
-            LYCHD_PG_BIN=str(Path(postgres_program("pg_ctl")).resolve().parent),
-            interpreter=sys.executable,
-            identifier=secrets.token_hex(20),
-        )
-        publish_file(_PROFILE, json.dumps(values).encode("utf-8"))
     if not _PROFILE.exists():
         return {}
-    private_file(_PROFILE)
+    verify_private_file(_PROFILE)
     values = json.loads(_PROFILE.read_text(encoding="utf-8"))
     if values.get("interpreter") != sys.executable or not values.get("identifier"):
-        msg = "The login registration belongs to a different interpreter or installation."
+        msg = (
+            "The login registration belongs to another installation. Disable login with its original interpreter first."
+        )
+        raise click.ClickException(msg)
+    if "python_mode" in values and values["python_mode"] != "isolated":
+        msg = "The login registration has an unrecognized Python invocation."
+        raise click.ClickException(msg)
+    if "windows_startup" in values and (
+        values["windows_startup"] != "current-user-run" or values.get("python_mode") != "isolated"
+    ):
+        msg = "The login registration has an unrecognized Windows startup provider."
         raise click.ClickException(msg)
     return values
 
 
+def _create_registration() -> None:
+    """Publish the identity and exact execution mode before contacting the OS."""
+    from lychd.system.desktop import postgres_program
+
+    private_directory(_PROFILE.parent)
+    values = {key: os.environ[key] for key in _KEYS if key in os.environ}
+    if any(os.environ.get(key.removesuffix("_FILE")) for key in _KEYS[1:]):
+        msg = "Login registration requires generated credentials or explicit runtime credential file references."
+        raise click.ClickException(msg)
+    values.update(
+        LYCHD_PG_BIN=str(Path(postgres_program("pg_ctl")).resolve().parent),
+        interpreter=sys.executable,
+        identifier=secrets.token_hex(20),
+        python_mode="isolated",
+    )
+    if sys.platform == "win32":
+        values["windows_startup"] = "current-user-run"
+        _windows_run_command(values)
+    publish_file(_PROFILE, json.dumps(values).encode("utf-8"))
+
+
+def _arguments(registration: dict[str, str]) -> list[str]:
+    module = ["-m", "lychd.system.desktop", "session"]
+    return ["-I", "-B", *module] if registration.get("python_mode") == "isolated" else module
+
+
+def _windows_run_command(registration: dict[str, str]) -> str:
+    command = f'"{registration["interpreter"]}" {" ".join(_arguments(registration))}'
+    if len(command.encode("utf-16-le")) > 2 * _MAX_RUN_COMMAND:
+        msg = "The login command exceeds the Windows Run limit of 260 characters. Start `lychd desktop session` after sign-in."
+        raise click.ClickException(msg)
+    return command
+
+
 def load_environment() -> None:
     """Recover the executable directory and runtime credential files for this login."""
-    values = _registration()
+    values = read_registration()
     for key in _KEYS:
         if key in values:
             os.environ.setdefault(key, values[key])
@@ -65,7 +96,7 @@ def _plist() -> Path:
     return Path.home() / "Library" / "LaunchAgents" / f"{_LABEL}.plist"
 
 
-def _windows(identifier: str, *, remove: bool) -> None:
+def _windows(registration: dict[str, str], *, remove: bool) -> None:
     binary = Path(os.environ["SYSTEMROOT"]) / "System32/WindowsPowerShell/v1.0/powershell.exe"
     script = """
 $ErrorActionPreference='Stop'
@@ -73,7 +104,40 @@ $u=[Security.Principal.WindowsIdentity]::GetCurrent()
 $n='LychD-Vessel-'+$u.User.Value
 $d='LychD '+$env:LYCHD_LOGIN_IDENTIFIER
 $x=$env:LYCHD_LOGIN_INTERPRETER
-$argsText='-m lychd.system.desktop session'
+$argsText=$env:LYCHD_LOGIN_ARGUMENTS
+if ($env:LYCHD_LOGIN_PROVIDER -eq 'current-user-run') {
+    $prefix='LychD-Vessel-'
+    $name=$prefix+$env:LYCHD_LOGIN_IDENTIFIER
+    $command=$env:LYCHD_LOGIN_COMMAND
+    $path='Software\\Microsoft\\Windows\\CurrentVersion\\Run'
+    $remove=$env:LYCHD_LOGIN_REMOVE -eq '1'
+    $key=[Microsoft.Win32.Registry]::CurrentUser.OpenSubKey($path,$true)
+    if (!$key) {
+        if ($remove) {exit 0}
+        $key=[Microsoft.Win32.Registry]::CurrentUser.CreateSubKey($path)
+    }
+    try {
+        $names=$key.GetValueNames()
+        if (!$remove -and @($names | Where-Object {$_ -like "$prefix*" -and $_ -ne $name}).Count) {
+            throw 'Preserved a startup value belonging to another LychD installation'
+        }
+        $value=$key.GetValue($name,$null,'DoNotExpandEnvironmentNames')
+        if ($names -contains $name -and ($key.GetValueKind($name) -ne 'String' -or $value -cne $command)) {
+            throw 'Preserved unrecognized current-user startup command'
+        }
+        if ($remove) {
+            $key.DeleteValue($name,$false)
+        } elseif ($names -notcontains $name) {
+            $key.SetValue($name,$command,'String')
+        }
+        $key.Flush()
+        $actual=$key.GetValue($name,$null,'DoNotExpandEnvironmentNames')
+        if (($remove -and $key.GetValueNames() -contains $name) -or (!$remove -and ($actual -cne $command -or $key.GetValueKind($name) -ne 'String'))) {
+            throw 'Current-user startup registration readback failed'
+        }
+    } finally {$key.Dispose()}
+    exit 0
+}
 function UserSid($name) {
     if ($name -match '^S-1-') {return $name}
     return ([Security.Principal.NTAccount]::new($name)).Translate([Security.Principal.SecurityIdentifier]).Value
@@ -91,7 +155,11 @@ function Check($task) {
         throw 'Preserved unrecognized scheduled task'
     }
 }
-$existing=@(Get-ScheduledTask -TaskPath '\\' | Where-Object TaskName -eq $n)
+try {$existing=@(Get-ScheduledTask -TaskPath '\\' | Where-Object TaskName -eq $n)}
+catch {
+    if ($_.FullyQualifiedErrorId -ne 'CmdletizationQuery_NotFound_TaskPath,Get-ScheduledTask') {throw}
+    $existing=@()
+}
 if ($existing.Count) {
     Check $existing[0]
     if ($env:LYCHD_LOGIN_REMOVE -eq '1') {
@@ -111,7 +179,10 @@ if ($existing.Count) {
         [binary, "-NoProfile", "-NonInteractive", "-Command", script],
         env={
             **{key: value for key, value in os.environ.items() if key.upper() != "PSMODULEPATH"},
-            "LYCHD_LOGIN_IDENTIFIER": identifier,
+            "LYCHD_LOGIN_IDENTIFIER": registration["identifier"],
+            "LYCHD_LOGIN_ARGUMENTS": " ".join(_arguments(registration)),
+            "LYCHD_LOGIN_PROVIDER": registration.get("windows_startup", "scheduled-task"),
+            "LYCHD_LOGIN_COMMAND": _windows_run_command(registration) if "windows_startup" in registration else "",
             "LYCHD_LOGIN_INTERPRETER": sys.executable,
             "LYCHD_LOGIN_REMOVE": "1" if remove else "0",
         },
@@ -119,14 +190,15 @@ if ($existing.Count) {
     )
 
 
-def _mac(identifier: str, *, remove: bool) -> None:
+def _mac(registration: dict[str, str], *, remove: bool) -> None:
+    identifier = registration["identifier"]
     path = _plist()
     check_path(path)
     domain = f"gui/{os.getuid()}"
     service = f"{domain}/{_LABEL}"
     expected = {
         "Label": _LABEL,
-        "ProgramArguments": [sys.executable, "-m", "lychd.system.desktop", "session"],
+        "ProgramArguments": [sys.executable, *_arguments(registration)],
         "EnvironmentVariables": {"LYCHD_LOGIN_IDENTIFIER": identifier},
         "RunAtLoad": True,
         "StandardErrorPath": str(PATH_POSTGRES_ROOT_DIR / "desktop-session.log"),
@@ -162,13 +234,16 @@ def _mac(identifier: str, *, remove: bool) -> None:
 
 def enable() -> None:
     """Register an unelevated service, verifying any preexisting task before use."""
-    values = _registration(create=True)
-    (_windows if sys.platform == "win32" else _mac)(values["identifier"], remove=False)
+    values = read_registration()
+    if not values:
+        _create_registration()
+        values = read_registration()
+    (_windows if sys.platform == "win32" else _mac)(values, remove=False)
 
 
 def disable() -> None:
     """Remove only the registered task whose account, executable and installation match."""
-    values = _registration()
+    values = read_registration()
     if values:
-        (_windows if sys.platform == "win32" else _mac)(values["identifier"], remove=True)
+        (_windows if sys.platform == "win32" else _mac)(values, remove=True)
         _PROFILE.unlink()

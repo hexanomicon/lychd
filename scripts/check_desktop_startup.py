@@ -7,6 +7,7 @@ from __future__ import annotations
 import base64
 import http.client
 import json
+import os
 import subprocess
 import sys
 import time
@@ -14,8 +15,12 @@ from http import HTTPStatus
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+import psycopg
+
 from lychd.system.desktop.private import private_directory
 from lychd.system.services.local_access import load_local_access
+
+_INTERRUPTED_ROTATION = 74
 
 
 def request(route: str, credential: str | None = None) -> tuple[int, bytes, str | None]:
@@ -73,6 +78,8 @@ def _exercise_vessel(cli: list[str], credential: str) -> None:
 
 def check_registered_backup(cli: list[str]) -> None:
     """Exercise the installed backup command and inspect its verified recovery copy."""
+    if sys.platform == "darwin":
+        subprocess.run([sys.executable, str(Path(__file__).with_name("check_desktop_apfs_clone.py"))], check=True)
     with TemporaryDirectory() as destination:
         parent = Path(destination).resolve()
         private_directory(parent)
@@ -82,6 +89,94 @@ def check_registered_backup(cli: list[str]) -> None:
         if str(evidence["postgres_major"]) != "18" or (receipt.parent / "cluster/postmaster.pid").exists():
             msg = "Expected a verified, inactive PostgreSQL 18 recovery copy."
             raise RuntimeError(msg)
+
+
+def interrupt_rotation(destination: Path) -> None:
+    """Test-only fault at the filesystem publication following the committed role change."""
+    from unittest.mock import patch
+
+    from lychd.system.constants import PATH_POSTGRES_ROOT_DIR
+    from lychd.system.desktop import desktop, password_rotation
+    from lychd.system.desktop.private import publish_file
+
+    active = PATH_POSTGRES_ROOT_DIR / "desktop-credentials" / "lychd_runtime_db_password"
+
+    def interrupt(path: Path, value: bytes, *, replace: bool = False) -> None:
+        if path == active and replace:
+            os._exit(_INTERRUPTED_ROTATION)
+        publish_file(path, value, replace=replace)
+
+    with patch.object(password_rotation, "publish_file", interrupt):
+        desktop.main(["rotate-runtime-password", "--recovery-directory", str(destination)], standalone_mode=False)
+
+
+def check_password_rotation(cli: list[str]) -> None:
+    """Keep a real runtime connection open across the CLI operation and retest both passwords."""
+    from lychd.config.settings import Settings
+    from lychd.system.constants import PATH_POSTGRES_ROOT_DIR
+    from lychd.system.desktop import postgres_program
+    from lychd.system.desktop.credentials import load_credentials
+
+    load_credentials()
+    db = Settings().server.database
+    if not db.runtime_password:
+        msg = "Missing original runtime credential"
+        raise RuntimeError(msg)
+    previous = db.runtime_password.get_secret_value()
+    from psycopg.conninfo import make_conninfo
+
+    args = {
+        "host": "127.0.0.1",
+        "hostaddr": "127.0.0.1",
+        "user": db.runtime_user,
+        "dbname": db.database,
+        "port": str(db.port),
+    }
+    conninfo = make_conninfo(**args)
+    with TemporaryDirectory() as directory:
+        target = Path(directory).resolve()
+        private_directory(target)
+        with psycopg.connect(conninfo, autocommit=True, password=previous) as old_session:
+            interrupted = subprocess.run([sys.executable, __file__, "--interrupt-rotation", str(target)], check=False)
+            if interrupted.returncode != _INTERRUPTED_ROTATION:
+                msg = "Rotation failed to reach the injected post-commit interruption."
+                raise RuntimeError(msg)
+            try:
+                old_session.execute("SELECT current_user")
+            except psycopg.OperationalError:
+                pass
+            else:
+                msg = "Previously open runtime connection survived rotation"
+                raise RuntimeError(msg)
+            # A reboot stops this account-owned database. Reproduce its stopped state before retry.
+            subprocess.run(
+                [
+                    postgres_program("pg_ctl"),
+                    "-w",
+                    "-D",
+                    str(PATH_POSTGRES_ROOT_DIR / "native-data"),
+                    "-m",
+                    "fast",
+                    "stop",
+                ],
+                check=True,
+            )
+            subprocess.run(
+                [*cli, "desktop", "rotate-runtime-password", "--recovery-directory", str(target)], check=True
+            )
+        try:
+            unexpected = psycopg.connect(conninfo, autocommit=True, password=previous)
+        except psycopg.OperationalError:
+            pass
+        else:
+            unexpected.close()
+            msg = "The previous password still authenticates"
+            raise RuntimeError(msg)
+        current = (target / "lychd_runtime_db_password").read_text(encoding="ascii")
+        with psycopg.connect(conninfo, autocommit=True, password=current) as fresh:
+            if fresh.execute("SELECT current_user").fetchone() != (db.runtime_user,):
+                msg = "Runtime role identity mismatch after password rotation"
+                raise RuntimeError(msg)
 
 
 def main() -> None:
@@ -96,6 +191,7 @@ def main() -> None:
     subprocess.run([*cli, "desktop", "install"], check=True)
     try:
         subprocess.run([*cli, "desktop", "install"], check=True)
+        check_password_rotation(cli)
         check_registered_backup(cli)
         local = load_local_access()
         auth = base64.b64encode(f"{local.username}:{local.password.get_secret_value()}".encode()).decode("ascii")
@@ -106,4 +202,10 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    match sys.argv[1:]:
+        case ["--interrupt-rotation", destination]:
+            interrupt_rotation(Path(destination))
+        case []:
+            main()
+        case _:
+            raise SystemExit(2)

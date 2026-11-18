@@ -75,6 +75,31 @@ recovered the same Run, answer and model grant. Both also recovered a committed 
 from a verified physical backup. Windows 11 workstation setup, cold login, GPU performance
 and signed OS distribution have separate qualification criteria.
 
+The desktop custody trial on 18 November 2026 recovered the five generated values from
+the login Keychain on macOS and CurrentUser DPAPI on Windows. The
+[macOS and Windows host jobs](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/runtime/desktop-platform-checks-2026-11-18.json)
+exercised the installed Settings consumer. A subsequent
+[macOS database trial](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/runtime/desktop-platform-checks-2026-11-18.json)
+closed a live runtime session during password rotation and recovered a committed row from a
+cold APFS file clone in another PostgreSQL instance. A later write stayed on the source.
+The measured database pause was 1.068 seconds and capture plus hashing took 1.720 seconds for
+that fixture. [Desktop recovery](deployments/desktop.md#storage-networking-and-recovery)
+documents the separate whole-volume and disk-loss paths.
+On Windows Server 2025, a standard account recovered the committed row from a dedicated NTFS
+volume in a second PostgreSQL 18 instance. A storage operator created the VSS snapshot. The
+later source write, an unrelated volume and the revoked capture were excluded. PostgreSQL paused
+for 11.721 seconds during this trial and capture took 18.273 seconds. [Windows volume receipt](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/runtime/desktop-platform-checks-2026-11-18.json)
+
+In subsequent browser trials, Chrome on macOS and Edge under a standard Windows account
+requested two opposite exclusive transitions in Nexus. Each checked the active engine identity
+and recovered the original Bridge reply after restarting. Both used two native processes with
+the same pinned weights and different served names. [Native browser receipts](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/runtime/desktop-platform-checks-2026-11-18.json)
+
+The [Apple Silicon and standard-user Windows package trials](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/runtime/desktop-platform-checks-2026-11-18.json)
+used the bundled interpreters and Altar and verified committed rows across repair, program removal
+and reinstall. Production Developer ID notarization and Windows Authenticode signing require
+the corresponding release identities. [Edition installation and verification](deployments/desktop-packages.md)
+
 The 20 October 2026 container-only correction retired the former Core host-native runtime,
 including native stop, credential-source, server/TCP, and host fixtures. Core pytest, lint,
 format checks, and typing now enter `Containerfile.tests` through the Makefile and bounded OCI
@@ -409,6 +434,7 @@ ritual.
 
 **Evidence**
 
+- **Topic:** [Desktop volume captures and independent restore](deployments/volume-snapshots.md)
 - **Source:** [Btrfs preparation](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/btrfs.py)
 - **Verification:** [Layout tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_layout.py)
 - **Law:** [Snapshots](./adr/07-snapshots.md)
@@ -4056,6 +4082,14 @@ roads. Boot helpers recreate ephemeral directories and resume only prior activat
 The CLI and Ansible profile delegate these effects to the native service. The optional same-owner
 SSH binding permits only the existing owner web loopback destination; it grants no application
 identity or remote IAM role.
+
+The separate [desktop offered-service profile](deployments/desktop-tether.md) admits one
+WireGuard public key and private service address per grant. Native two-peer tests on
+[macOS and Windows](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/runtime/desktop-platform-checks-2026-11-18.json) exercised
+encrypted TCP, the backend certificate pin, live stream closure and continued access for the
+other peer. The Windows standard-account trial verified the test SID and unelevated token before
+opening either WireGuard connection. A fresh helper process requires fresh enrollment. Physical LAN, firewall and
+client routing trials remain with the platform owners.
 
 **Boundary — Not yet:** Repository tests use bounded effect ports and policy fixtures; they do not
 qualify an arbitrary installed Podman/pasta/kernel combination, wider fleet operation, measured

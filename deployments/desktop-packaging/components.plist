@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Treat bundled interpreter files as ordinary payload. Never relocate a matching app elsewhere. -->
+<plist version="1.0"><array/></plist>

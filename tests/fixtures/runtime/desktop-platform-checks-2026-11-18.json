@@ -1,0 +1,96 @@
+{
+  "date": "2026-11-18",
+  "profiles": {
+    "macos": "macOS 15 Apple Silicon GitHub-hosted runner",
+    "windows": "Windows Server 2025 x64 GitHub-hosted runner"
+  },
+  "checks": [
+    {
+      "feature": "OS vault and portable recovery",
+      "source_head": "f9d3774f92b5cac53e4f8208fafbc1918388335b",
+      "jobs": {
+        "macos": "https://github.com/hexanomicon/lychd/actions/runs/44271144485/job/134687762262",
+        "windows": "https://github.com/hexanomicon/lychd/actions/runs/44271144485/job/134687762747"
+      },
+      "observed": "All five generated values read back from macOS Keychain and Windows CurrentUser DPAPI. Installed runtime settings consumed the sealed local-access value."
+    },
+    {
+      "feature": "APFS per-file CoW clone, runtime password rotation and browser chat",
+      "source_head": "fbbd489adf70671c402501ba273af7dbe728bb05",
+      "job": "https://github.com/hexanomicon/lychd/actions/runs/44274890229/job/134700391439",
+      "clone_pause_seconds": 1.068,
+      "clone_total_seconds": 1.72,
+      "observed": "Second PostgreSQL 18 instance recovered exactly 19 from clone; subsequent write 20 remained on source. Runtime role rejected previous password and closed old session. The APFS trial used an ordinary user without a volume-snapshot entitlement."
+    },
+    {
+      "feature": "Dedicated APFS image",
+      "source_head": "fbbd489adf70671c402501ba273af7dbe728bb05",
+      "job": "https://github.com/hexanomicon/lychd/actions/runs/44274890176/job/134700391505",
+      "observed": "Selected disposable APFS volume for PostgreSQL, rejected missing snapshot and resumed the live server. Independently identified the system's existing read-only APFS snapshot. Creating a fresh entitled volume snapshot was outside this run."
+    },
+    {
+      "feature": "WireGuard two-peer offer",
+      "source_head": "fbbd489adf70671c402501ba273af7dbe728bb05",
+      "jobs": {
+        "macos": "https://github.com/hexanomicon/lychd/actions/runs/44274890145/job/134700391452",
+        "windows": "https://github.com/hexanomicon/lychd/actions/runs/44274890145/job/134700390732"
+      },
+      "observed": "Two encrypted peers, exact TCP service, pinned backend certificate, unrelated traffic refusal, stream limit, live revocation, surviving peer and fresh process enrollment. Windows runner account had administrative capability."
+    },
+    {
+      "feature": "Apple Silicon program edition",
+      "source_head": "fbbd489adf70671c402501ba273af7dbe728bb05",
+      "checkout_revision": "facbba4494718ca6211566b3cb4c8ccbe0717990",
+      "job": "https://github.com/hexanomicon/lychd/actions/runs/44274890330/job/134700392838",
+      "observed": "Unsigned per-user installer with bundled Python and Altar. Committed database rows survived repair, removal of the edition and reinstall of the same edition."
+    },
+    {
+      "feature": "Ordinary-account exact-service Tether",
+      "source_head": "d7a29407969ee7996b47ef24bc084cfcf2974ce1",
+      "jobs": {
+        "windows": "https://github.com/hexanomicon/lychd/actions/runs/44277359065/job/134708777149",
+        "macos": "https://github.com/hexanomicon/lychd/actions/runs/44277359065/job/134708777460"
+      },
+      "observed": "Fresh Windows SID and nonadministrative token verified before the Go trial. Two real WireGuard clients exercised exact TCP service, backend pin, ICMP/UDP and other-port refusals, stream cap, active revocation and unrelated peer continuity."
+    },
+    {
+      "feature": "Windows program edition",
+      "source_head": "fbbd489adf70671c402501ba273af7dbe728bb05",
+      "checkout_revision": "facbba4494718ca6211566b3cb4c8ccbe0717990",
+      "job": "https://github.com/hexanomicon/lychd/actions/runs/44274890330/job/134700393346",
+      "observed": "Unsigned per-user installer with bundled Python and Altar. A separate standard-user account checked committed PostgreSQL rows after edition repair, uninstall and reinstall. Windows Server 2025 x64."
+    },
+    {
+      "feature": "Native Nexus swap, interrupted credential rotation and re-enrollment",
+      "source_head": "d7a29407969ee7996b47ef24bc084cfcf2974ce1",
+      "jobs": {
+        "macos": "https://github.com/hexanomicon/lychd/actions/runs/44277364196/job/134708787339",
+        "windows": "https://github.com/hexanomicon/lychd/actions/runs/44277364196/job/134708786669"
+      },
+      "observed": "Chrome and Edge previewed and requested personal to alternate and back, retaining the original Bridge response across restart. Both processes advertised distinct model IDs using the same pinned weights. The post-commit rotation interruption was recovered with PostgreSQL stopped. Inaccessible per-installation vault records required explicit matching re-enrollment."
+    },
+    {
+      "feature": "Native VSS snapshot request and read-only exposure",
+      "source_head": "4907efd25c25edf7eecd65bb916b800129753373",
+      "job": "https://github.com/hexanomicon/lychd/actions/runs/44278342756/job/134712144234",
+      "observed": "The elevated operator captured a disposable NTFS drive using the Microsoft VSS provider. Its exposed shadow retained the original bytes after the live file changed."
+    },
+    {
+      "feature": "Packaged macOS login service",
+      "source_head": "f16c964f69acbef6802dedb6ec45840901a9b2e7",
+      "job": "https://github.com/hexanomicon/lychd/actions/runs/44279211097/job/134715128544",
+      "observed": "The packaged interpreter registered a per-user LaunchAgent, served the local API with authentication enforced, stopped and removed its registration. The same-edition repair and persisted-row checks then completed."
+    },
+    {
+      "feature": "Dedicated NTFS VSS snapshot and PostgreSQL recovery",
+      "source_head": "2e73d95a0fe1ab2b011239a69b4abd6cad812f48",
+      "job": "https://github.com/hexanomicon/lychd/actions/runs/44281044957/job/134721517756",
+      "provider_id": "b5946137-7b9f-4925-af80-51abd60b20d5",
+      "pause_seconds": 11.720783,
+      "total_capture_seconds": 18.272633,
+      "free_bytes_before": 3118379008,
+      "free_bytes_after": 2917502976,
+      "observed": "On a disposable NTFS VHD, a separate elevated operator acquired the shadow. The standard desktop account verified and recovered it in a second PostgreSQL 18 instance. Only the committed 'captured' row was present. A different volume, a revoked grant and the earlier generation after re-registration were refused."
+    }
+  ]
+}

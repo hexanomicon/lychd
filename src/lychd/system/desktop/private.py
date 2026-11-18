@@ -8,7 +8,14 @@ import subprocess
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
+from lychd.system.path_policy import physically_contains
+
 _PRIVATE_DIRECTORY_MODE = 0o700
+
+
+def overlaps(left: Path, right: Path) -> bool:
+    """Compare physical directory ancestry, including aliases on case-insensitive volumes."""
+    return physically_contains(left, right) or physically_contains(right, left)
 
 
 def check_path(path: Path) -> None:
@@ -167,7 +174,28 @@ def private_file(path: Path) -> None:
         path.chmod(0o600)
 
 
-def publish_file(path: Path, content: bytes) -> None:
+def _commit_file(source: Path, target: Path, *, replace: bool) -> None:
+    """Request durable publication of a complete file on the same local filesystem."""
+    if os.name == "nt":
+        import ctypes
+
+        kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+        move = kernel.MoveFileExW
+        move.argtypes = [ctypes.c_wchar_p, ctypes.c_wchar_p, ctypes.c_uint32]
+        move.restype = ctypes.c_int
+        # MOVEFILE_WRITE_THROUGH, plus MOVEFILE_REPLACE_EXISTING only for an owned replacement.
+        if not move(str(source), str(target), 8 | int(replace)):
+            raise ctypes.WinError(ctypes.get_last_error())
+    else:
+        source.replace(target)
+        directory = os.open(target.parent, os.O_RDONLY | os.O_DIRECTORY)
+        try:
+            os.fsync(directory)
+        finally:
+            os.close(directory)
+
+
+def publish_file(path: Path, content: bytes, *, replace: bool = False) -> None:
     """Publish complete content within the serialized desktop management operation."""
     check_path(path)
     with NamedTemporaryFile(dir=path.parent, delete=False) as stream:
@@ -177,9 +205,11 @@ def publish_file(path: Path, content: bytes) -> None:
             stream.flush()
             os.fsync(stream.fileno())
             stream.close()
-            if path.exists():
+            if replace:
+                verify_private_file(path)
+            elif path.exists():
                 raise FileExistsError(path)
-            temporary.replace(path)
+            _commit_file(temporary, path, replace=replace)
         finally:
             stream.close()
             temporary.unlink(missing_ok=True)

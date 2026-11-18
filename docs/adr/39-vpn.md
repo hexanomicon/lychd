@@ -42,8 +42,8 @@ The Tether service remains outside the shared application Pod. It receives no br
 application secrets, database credentials, or host-mutation channel; granting `CAP_NET_ADMIN`
 inside that Pod is not an acceptable shortcut.
 
-Local desktop inference uses loopback. A managed tunnel on a desktop host needs independent
-route isolation, key custody and revocation acceptance, including after restore. For future
+Local desktop inference uses loopback. The [desktop offered service](#desktop-offered-service)
+has independent route isolation, key custody and revocation requirements, including after restore. For future
 guest-to-host networking see the [VM profile](../deployments/desktop.md#virtual-machines).
 
 ## Offered network and imported attachments {#offered-and-imported-roads}
@@ -191,6 +191,26 @@ is a separate legacy access path with its own custody and evidence; it does not 
 Independent revocation is Tether's practical return. Operating that private road requires
 security-sensitive peer and route management, backup, rotation, recovery, and an account of
 uncertain direct reachability.
+
+## Desktop offered service
+
+The personal desktop profile admits a foreground, unprivileged owner process for one expressly
+selected application service. A separate in-memory WireGuard device and TCP/IP stack for each
+peer exposes one private IPv4 TCP destination. Each device has its own UDP listener, ephemeral
+private key and one peer source address. The process creates no host interface, route, DNS policy,
+IP forwarding, privileged helper or key file. The operator selects a dedicated loopback TLS
+backend, its exact public certificate and expected hostname at launch. Only that authenticated
+local TLS connection receives peer application bytes. The backend must authenticate its own
+remote callers without granting authority to loopback. The owner's Bridge and Core administration
+are outside this profile.
+
+The owner console admits peers against its fresh session and revokes by peer and generation.
+Observed local revocation closes that peer's device, listener and live relays before acknowledging.
+Other peer lifecycles remain independent. A fresh process starts with no granted peers. Captured
+commands cannot restore authority in a new session, and re-enrollment requires an independent
+current consent decision and exchange of the new public key. The profile admits no automatic
+restore of active memory or grants after suspension. See [desktop operation](../deployments/desktop-tether.md)
+and the [Tether delivery record](../state-of-the-work.md#vpn-tether).
 
 ## Native rootless stream profile
 

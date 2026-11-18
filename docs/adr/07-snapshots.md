@@ -75,6 +75,14 @@ A personal desktop can select a full physical backup for its dedicated PostgreSQ
 WAL and independent restore check. A fast snapshot driver needs the necessary OS authority,
 a consistent cut across every involved volume, and its own recovery evidence.
 
+The [desktop cold volume capture](../deployments/volume-snapshots.md) registers one dedicated
+APFS or NTFS volume before installing PostgreSQL. Its off-volume authority binds the volume,
+database system identifier and capture generation. An operator supplies the native snapshot. macOS also permits an unprivileged cold PostgreSQL
+copy through APFS per-file clones on a common volume. It records the cut, file hashes, pause
+and completion time. The clone shares the source disk.
+A successful copy into an inactive directory is a database recovery result. Opening application
+admission requires the remaining stores and current consent history described above.
+
 ## Delivery boundary
 
 This protocol is designed. Filesystem preparation does not prove freeze, PostgreSQL capture,

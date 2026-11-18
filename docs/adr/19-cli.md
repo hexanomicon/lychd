@@ -50,7 +50,8 @@ never an extension-supplied Click callback. This group grants neither generic ex
 nor arbitrary host commands; the future run-operation namespace remains separate.
 
 On macOS and Windows, `platform` reports the native profile and resolved paths. The
-`desktop` group owns per-user database provisioning, login registration and model selection.
+`desktop` group owns per-user database provisioning, login registration, model selection, credential custody and
+[volume registration and recovery](../deployments/volume-snapshots.md).
 `start` runs the native Vessel in the foreground, `stop` requests retirement of the current
 database owner, and `access` retrieves the local browser login. Only host-owned commands enter
 this namespace. See the [desktop guide](../deployments/desktop.md).

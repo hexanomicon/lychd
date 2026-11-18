@@ -1,5 +1,6 @@
 # The administrative runner installs dependencies. A separate standard account runs the personal profile.
-param([string] $TrialSid, [switch] $BridgeChat)
+param([string] $TrialSid, [switch] $BridgeChat, [switch] $TetherTrial, [switch] $VolumeTrial, [switch] $VolumeProbe, [string] $VolumeDrive,
+      [string] $PackageBuild, [ValidatePattern('^[0-9a-f]{40}$')][string] $PackageRevision, [ValidatePattern('^[0-9a-f]{40}$')][string] $PreviousRevision, [switch] $PackageLoginOnly)
 
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
@@ -31,8 +32,25 @@ if ($TrialSid) {
     $env:LYCHD_PG_BIN = Join-Path $env:ProgramFiles 'PostgreSQL\18\bin'
     $env:PYTHONDONTWRITEBYTECODE = '1'
     $env:PYTHONNOUSERSITE = '1'
+    if ($TetherTrial) {
+        & "$root/tether-trial.exe" '-test.v' '-test.timeout=2m'
+        exit $LASTEXITCODE
+    }
+    if ($PreviousRevision) {
+        & "$root/deployments/desktop-packaging/check-upgrade.ps1" -BuildDirectory $root -Revision $PackageRevision -PreviousRevision $PreviousRevision
+        exit 0
+    }
+    if ($PackageRevision) {
+        & "$root/deployments/desktop-packaging/check-install.ps1" -BuildDirectory $root -Revision $PackageRevision -LoginOnly:$PackageLoginOnly
+        exit 0
+    }
     $python = "$root\.venv\Scripts\python.exe"
     $cli = "$root\.venv\Scripts\lychd.exe"
+    if ($VolumeTrial) {
+        if ($VolumeProbe) { & $python scripts/check_volume_trial.py --root $VolumeDrive --probe-exposure }
+        else { & $python scripts/check_volume_trial.py --root $VolumeDrive }
+        exit $LASTEXITCODE
+    }
     & $cli --help
     & $cli platform
     & $cli desktop --help
@@ -67,12 +85,23 @@ try {
     & git archive --format=tar "--output=$stage\source.tar" HEAD
     & tar.exe -xf "$stage\source.tar" -C $stage
     Remove-Item -LiteralPath "$stage\source.tar"
-    $env:UV_PYTHON_INSTALL_DIR = "$stage\runtime"
-    & uv python install --no-bin 3.14.8
-    $python = @(Get-ChildItem -Path "$stage\runtime\cpython-3.14.8-*\python.exe")
-    if ($python.Count -ne 1) { throw 'Expected one staged CPython 3.14.8 interpreter.' }
-    $env:UV_PROJECT_ENVIRONMENT = "$stage\.venv"
-    & uv sync --project $stage --python $python[0].FullName --locked --no-default-groups --extra postgres-binary --group test --group desktop-browser --no-editable --link-mode copy
+    if ($TetherTrial) {
+        # Compile the exact checked-out revision from the read-only archive above.
+        # The standard account only executes this fixed, staged test binary.
+        Push-Location -LiteralPath "$stage/clients/desktop-tether"
+        try { & go test -mod=readonly -c -o "$stage/tether-trial.exe" . }
+        finally { Pop-Location }
+    } elseif ($PackageRevision) {
+        Copy-Item -LiteralPath "$PackageBuild/artifacts" -Destination "$stage/artifacts" -Recurse
+        if ($PreviousRevision) { Copy-Item -LiteralPath "$PackageBuild/previous" -Destination "$stage/previous" -Recurse }
+    } else {
+        $env:UV_PYTHON_INSTALL_DIR = "$stage\runtime"
+        & uv python install --no-bin 3.14.8
+        $python = @(Get-ChildItem -Path "$stage\runtime\cpython-3.14.8-*\python.exe")
+        if ($python.Count -ne 1) { throw 'Expected one staged CPython 3.14.8 interpreter.' }
+        $env:UV_PROJECT_ENVIRONMENT = "$stage\.venv"
+        & uv sync --project $stage --python $python[0].FullName --locked --no-default-groups --extra postgres-binary --group test --group desktop-browser --no-editable --link-mode copy
+    }
     if ($env:BRIDGE_CHAT -eq 'true') {
         Copy-Item -LiteralPath (Split-Path -Parent $env:BRIDGE_ENGINE) -Destination "$stage\engine" -Recurse
         Copy-Item -LiteralPath $env:BRIDGE_MODEL -Destination "$stage\model.gguf"
@@ -81,6 +110,16 @@ try {
     }
     Start-Service seclogon
     $argsLine = "-NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"$stage\scripts\check_windows_desktop.ps1`" -TrialSid $sid"
+    if ($TetherTrial) { $argsLine += ' -TetherTrial' }
+    if ($PackageRevision) { $argsLine += " -PackageRevision $PackageRevision" }
+    if ($PackageLoginOnly) { $argsLine += ' -PackageLoginOnly' }
+    if ($PreviousRevision) { $argsLine += " -PreviousRevision $PreviousRevision" }
+    if ($VolumeTrial) {
+        . "$stage\scripts\check_volume_vhd.ps1"
+        $drive = New-TrialDatabaseVolume $stage $sid
+        $argsLine += " -VolumeTrial -VolumeDrive $drive"
+        if ($VolumeProbe) { $argsLine += " -VolumeProbe" }
+    }
     if ($env:BRIDGE_CHAT -eq 'true') { $argsLine += ' -BridgeChat' }
     $stdout = Join-Path $env:RUNNER_TEMP "lychd-$id.out"
     $stderr = Join-Path $env:RUNNER_TEMP "lychd-$id.err"
@@ -96,6 +135,7 @@ try {
         RedirectStandardError = $stderr
     }
     $process = Start-Process @options -PassThru
+    if ($VolumeTrial) { Invoke-TrialVolumeRequest $drive $process $stage $stdout $stderr }
     if (-not $process.WaitForExit(1200000)) {
         $process.Kill($true)
         throw 'The Windows desktop trial exceeded 20 minutes.'
@@ -110,7 +150,7 @@ try {
         foreach ($item in @("$stage\artifacts", $source)) {
             if ((Get-Item -LiteralPath $item).Attributes -band [IO.FileAttributes]::ReparsePoint) { throw 'Redirected evidence directory.' }
         }
-        foreach ($file in @('01-bridge.png', '02-answer.png', '03-restarted.png', 'receipt.json')) {
+        foreach ($file in @('01-bridge.png', '02-answer.png', '03-restarted.png', '04-nexus.png', 'receipt.json')) {
             $item = Get-Item -LiteralPath (Join-Path $source $file)
             if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint -or $item.PSIsContainer) { throw 'Invalid evidence file.' }
             Copy-Item -LiteralPath $item.FullName -Destination (Join-Path $destination $file)
@@ -119,7 +159,16 @@ try {
     if ($process.ExitCode -ne 0) { throw "Desktop account exited with code $($process.ExitCode)." }
 }
 finally {
+    if ($VolumeTrial -and $process -and !$process.HasExited) { $process.Kill($true); $process.WaitForExit() }
+    if ($VolumeTrial -and (Get-Command Stop-TrialVolumeProcesses -ErrorAction SilentlyContinue)) {
+        if ($stdout -and (Test-Path -LiteralPath $stdout)) { Get-Content -LiteralPath $stdout -Tail 35 -ErrorAction Continue }
+        if ($stderr -and (Test-Path -LiteralPath $stderr)) { Get-Content -LiteralPath $stderr -Tail 35 -ErrorAction Continue }
+        Stop-TrialVolumeProcesses $sid
+    }
+    if ($VolumeTrial -and (Test-Path -LiteralPath "$stage\volume.vhdx")) {
+        Dismount-DiskImage -ImagePath "$stage\volume.vhdx" -ErrorAction Continue
+    }
     Get-CimInstance Win32_UserProfile -Filter "SID='$($user.SID.Value)' AND Loaded=FALSE" | Remove-CimInstance
     Remove-LocalUser -SID $user.SID
-    if (Test-Path -LiteralPath $stage) { Remove-Item -LiteralPath $stage -Recurse -Force }
+    if (Test-Path -LiteralPath $stage) { Remove-Item -LiteralPath $stage -Recurse -Force -ErrorAction Continue }
 }

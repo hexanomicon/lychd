@@ -15,6 +15,9 @@ The Windows 11 workstation and cold-login trials are tracked in the platform iss
 
 ## Choose the installation
 
+For a packaged Python runtime and bundled web client, follow [Desktop editions](desktop-packages.md).
+The source installation below uses uv.
+
 Start with a clean personal account or a dedicated test account. Have a checked-out LychD
 revision, Git, uv, PostgreSQL **18** and the matching **server-side pgvector extension**.
 For chat, supply a trusted native `llama-server` executable built for your OS and one local GGUF
@@ -155,8 +158,14 @@ issues below for hardware, GPU and cold-login trials.
 
 For automatic startup use `uv run --no-sync lychd desktop enable-login` under the intended
 account once foreground startup works. macOS registers a user LaunchAgent and Windows registers
-an interactive, unelevated scheduled task. Both use the installed interpreter. Keep that
-environment at its registered path. Disable login with the original interpreter before moving it
+a current-user `Run` registry value with the installation identifier and quoted interpreter path.
+Existing Windows scheduled tasks retain their original enrollment until disabled. Windows caps
+a Run command at 260 UTF-16 code units. If the edition path exceeds this bound, start
+`lychd desktop session` after sign-in. [Windows Run keys](https://learn.microsoft.com/en-us/windows/win32/setupapi/run-and-runonce-registry-keys).
+New registrations launch the installed interpreter in isolated
+mode, so Python ignores user-site packages and inherited Python environment settings. Existing
+registrations keep their original invocation until disabled and re-enabled. Keep the registered
+environment at its original path. Disable login with the original interpreter before moving it
 or changing credential file references, then register the new environment. These profiles begin at login. They use the rights of
 that account, including access to its files. For a shared or hostile workload use a separately
 qualified isolation boundary.
@@ -171,11 +180,39 @@ qualified isolation boundary.
   separately from the PostgreSQL cluster, using encrypted storage. Before relying on the
   backup, recover the directory into a fresh owner-only location and run
   `lychd desktop verify-credential-backup "<recovered-directory>"` under the installation
-  account. The command compares all five files against the active generated set without
+  account. The command compares all five recovered values against the active generated set without
   displaying their contents. Keep externally supplied credentials and their file references
   recoverable through their own provider. When restoring a cluster, recover the matching
   credentials under the destination account before starting the Vessel or running install.
   An existing cluster requires the original credentials or explicit overrides.
+- **Opt-in OS credential custody.** After verifying that independent backup, run
+  `lychd desktop enable-vault "<recovered-directory>"` under the installation account.
+  Each generated file is atomically replaced after a successful OS readback. macOS stores
+  the value in the login Keychain. Windows stores a DPAPI CurrentUser envelope at the
+  original private path. Runtime and administrative processes retain their existing sets
+  of file references. A locked Keychain or unavailable Windows profile stops the read.
+  An interrupted migration can be rerun with the same backup. A copy of the vault references
+  alone cannot recover access under a fresh user profile.
+  [Apple Keychain items](https://developer.apple.com/documentation/security/keychain-items) ·
+  [Windows DPAPI](https://learn.microsoft.com/en-us/windows/win32/api/dpapi/nf-dpapi-cryptprotectdata)
+- **Recovery into a fresh account.** Recover the original five portable files into a private
+  directory under that account. Run `lychd desktop recover-credentials "<recovered-directory>"`
+  before installing against the restored dedicated cluster. This verifies every input before
+  filling missing credentials and stops on disagreement with an existing value. If restored
+  files reference a former account's vault, add `--rebind-vault` to seal matching portable values
+  under this account. This requires a record carrying a portable verifier. Keep unreadable
+  older records in an encrypted archive and use a fresh credential directory for recovery.
+  Then run
+  `desktop install`, sign in, check a known persisted conversation and re-enable the OS
+  vault with that account if desired.
+- **Runtime database password.** Stop Vessel and keep its dedicated PostgreSQL running.
+  Use `lychd desktop rotate-runtime-password --recovery-directory "<empty-private-directory>"`.
+  It verifies the cluster and managed runtime role, stages a new recovery set, changes the
+  SCRAM password, disconnects existing sessions for that role, and verifies a fresh
+  login before reopening desktop operations. Repeat the same command and destination after
+  interruption. A pending rotation can restart its own database after a reboot while Vessel
+  admission stays closed. Store the updated five-file recovery copy encrypted. The administrative,
+  Phoenix and browser credentials keep their independent lifecycles.
 - **Update.** Obtain a verified backup before changing a populated installation. Stop Vessel,
   disable login for the update, and keep the current revision and configuration. Install the new
   revision into the intended environment and run `desktop install`, then repeat the persisted
@@ -206,12 +243,21 @@ loopback port and verify a known committed row. Keep the source and restored cop
 Leave LychD admission closed during database-only recovery. Application-wide recovery additionally
 needs other stores and current revocation history. [Snapshot contract](../adr/07-snapshots.md)
 
+On macOS, a second option makes a copy-on-write clone of the dedicated database on the same
+APFS volume. Stop Vessel, leave its database running, and create a private destination
+outside the cluster. Run `lychd desktop backup --method apfs-clone --destination "<directory>"`.
+This pauses PostgreSQL, clones each file, restarts the original and hashes the inactive copy.
+The receipt records pause time, total time, free space and per-file hashes. A matching-volume
+clone shares disk failure risk with the source. Use the streamed backup for independent media.
+An actual volume snapshot uses the [dedicated storage procedure](volume-snapshots.md).
+[Apple clonefile semantics](https://raw.githubusercontent.com/apple-oss-distributions/xnu/main/bsd/man/man2/clonefile.2)
+
 | Capability | Linux | Personal macOS / Windows |
 | --- | --- | --- |
 | Supervision and isolation | Rootless Podman, systemd/Quadlet, cgroup v2 and reviewed SELinux policy where enabled. | User-owned native services and a trusted engine. A same-user process has access to that user's files. |
-| Fast filesystem capture | Btrfs storage preparation is implemented. Whole-installation restore has independent criteria. | APFS and VSS are candidates for volume-level capture. Apple's direct snapshot API needs additional entitlement and superuser authority. VSS requires appropriate backup authority. Qualify creation and recovery before selecting either. |
-| VPN and routes | Native Tether has its own [delivery record](../state-of-the-work.md#vpn-tether). | Local chat uses IPv4 loopback. Managing native host VPNs, route overlaps and live revocation requires separate platform evidence. A remote browser must use an explicitly admitted access profile. |
-| Credentials and lifecycle | Managed secrets and owned systemd resources have Linux-specific policies. | The personal profile uses private per-user files and OS access controls. Keychain/DPAPI custody, automatic multi-consumer credential rotation and system-wide unattended services need separate qualification. |
+| Fast filesystem capture | Btrfs storage preparation is implemented. Whole-installation restore has independent criteria. | [Dedicated volume setup and recovery](volume-snapshots.md) bind the volume and PostgreSQL identity to a cold cut. APFS requires an authorized producer. Windows VSS creation belongs to the storage operator. |
+| VPN and routes | Native Tether has its own [delivery record](../state-of-the-work.md#vpn-tether). | Local chat uses IPv4 loopback. The [desktop Tether helper](desktop-tether.md) offers one certificate-pinned service over a private userspace WireGuard connection for each admitted peer. A remote browser must use an explicitly admitted access profile. |
+| Credentials and lifecycle | Managed secrets and owned systemd resources have Linux-specific policies. | Private per-user files, opt-in Keychain/DPAPI custody and explicit recovery of the original generated set. System-wide unattended services have separate qualification requirements. |
 
 [Apple snapshot API](https://github.com/apple-oss-distributions/xnu/blob/main/bsd/man/man2/fs_snapshot_create.2#L86) ·
 [Windows VSS security](https://learn.microsoft.com/en-us/windows/win32/vss/security-considerations-for-requestors) ·

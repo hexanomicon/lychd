@@ -90,7 +90,7 @@ def _fallback_payloads(
     return note, payloads
 
 
-def generate_notice(*, forbidden: set[str]) -> str:
+def generate_notice(*, forbidden: set[str], desktop: bool = False) -> str:
     """Render a deterministic notice inventory for the active Python environment."""
     installed: dict[str, metadata.Distribution] = {}
     for distribution in metadata.distributions():
@@ -131,14 +131,20 @@ def generate_notice(*, forbidden: set[str]) -> str:
         sections.append("\n".join((*heading, "", rendered_payloads)))
 
     preamble = [
-        "LychD Vessel — Python Third-Party Notices",
+        "LychD Personal Desktop — Python Third-Party Notices"
+        if desktop
+        else "LychD Vessel — Python Third-Party Notices",
         "",
-        "Generated from the distributions installed in the production Python environment.",
+        "Generated from the distributions installed in the packaged desktop Python runtime."
+        if desktop
+        else "Generated from the distributions installed in the production Python environment.",
         "Every distribution must provide readable license material or match one explicitly",
         "audited same-project fallback. The generator fails closed for unexplained omissions",
         "and for forbidden bundled-binary distributions.",
         "",
-        "Debian base-image and system-library notices remain available under /usr/share/doc.",
+        "Interpreter and bundled library licenses remain with the packaged runtime and its distributions."
+        if desktop
+        else "Debian base-image and system-library notices remain available under /usr/share/doc.",
         "",
     ]
     return "\n".join(preamble) + "\n\n".join(sections) + "\n"
@@ -150,6 +156,7 @@ def main() -> None:
         description="Generate fail-closed notices from an installed Python environment.",
     )
     parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--desktop", action="store_true", help="Describe the native desktop runtime in the preamble.")
     parser.add_argument(
         "--forbid-distribution",
         action="append",
@@ -160,7 +167,7 @@ def main() -> None:
     forbidden = {_canonical_name(name) for name in arguments.forbid_distribution}
     output = arguments.output.resolve()
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(generate_notice(forbidden=forbidden), encoding="utf-8")
+    output.write_text(generate_notice(forbidden=forbidden, desktop=arguments.desktop), encoding="utf-8")
     print(f"wrote Python dependency notices to {output}")  # noqa: T201
 
 

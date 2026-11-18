@@ -73,6 +73,10 @@ class RuntimeSecretsSource(PydanticBaseSettingsSource):
                 except (OSError, UnicodeError):
                     msg = f"Secret file for {env_key} cannot be read: '{path}'."
                     raise ValueError(msg) from None
+                if override_path and value.startswith("lychd-desktop-vault:"):
+                    from lychd.system.desktop.credentials import resolve_vault_reference
+
+                    value = resolve_vault_reference(env_key, path, value)
                 if not value:
                     msg = f"Secret file for {env_key} is empty: '{path}'."
                     raise ValueError(msg)

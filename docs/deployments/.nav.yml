@@ -1,4 +1,7 @@
 nav:
   - Overview: index.md
   - Personal macOS and Windows hosts: desktop.md
+  - Desktop installers: desktop-packages.md
+  - Desktop volume snapshots: volume-snapshots.md
+  - Desktop private service: desktop-tether.md
   - Tumbleweed Server and Workstation: tumbleweed

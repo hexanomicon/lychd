@@ -13,6 +13,7 @@ from __future__ import annotations
 import argparse
 import base64
 import hashlib
+import http.client
 import json
 import re
 import subprocess
@@ -25,7 +26,7 @@ from typing import TYPE_CHECKING
 from urllib.parse import urljoin
 
 import tomlkit
-from check_desktop_startup import check_registered_backup, check_routes, request
+from check_desktop_startup import check_password_rotation, check_registered_backup, check_routes, request
 
 from lychd.domain.web.contracts import MessageAccepted, MessageIntent
 from lychd.system.constants import PATH_SOULSTONES_DIR
@@ -126,6 +127,62 @@ def verify_dispatch(page: Page, origin: str, run_id: str) -> None:
         cursor = following
 
 
+def switch_animators(page: Page, origin: str, output: Path) -> list[str]:
+    """Use the Nexus UI to evict and launch both real processes, sharing one pinned GGUF."""
+    page.goto(f"{origin}/nexus", wait_until="domcontentloaded")
+    page.get_by_role("button", name="List", exact=True).click()
+    transitions: list[str] = []
+    for old, target, port in (("personal", "alternate", 8082), ("alternate", "personal", 8081)):
+        key = f"{target}:chat:{target}-model"
+        row = page.get_by_role("article").filter(
+            has=page.get_by_role("button", name=f"Inspect managed capability {key}", exact=True)
+        )
+        with page.expect_response("**/api/v1/nexus/plan?*") as planned:
+            row.get_by_role("button", name="Preview", exact=True).click()
+        plan = planned.value.json()
+        if plan["evict_coven_ids"] != [old] or plan["launch_coven_ids"] != [target]:
+            msg = f"Nexus did not preview the exact {old} to {target} swap."
+            raise RuntimeError(msg)
+        with page.expect_response("**/api/v1/nexus/swaps") as submitted:
+            page.get_by_role("button", name="Request transition", exact=True).click()
+        if not submitted.value.ok:
+            msg = f"Nexus rejected the transition to {target}."
+            raise RuntimeError(msg)
+        ticket = submitted.value.json()["ticket"]
+        deadline = time.monotonic() + 90
+        while time.monotonic() < deadline:
+            observed = page.request.get(f"{origin}/api/v1/nexus/swaps/{ticket['id']}").json()["ticket"]
+            if observed["phase"] == "completed":
+                break
+            if observed["phase"] in {
+                "declined_no_effect",
+                "failed_restored",
+                "cancelled_restored",
+                "contained_uncertain",
+                "failed",
+            }:
+                msg = f"Nexus ended the {target} transition in {observed['phase']}."
+                raise RuntimeError(msg)
+            time.sleep(0.25)
+        else:
+            msg = f"Nexus did not complete the {target} transition."
+            raise RuntimeError(msg)
+        engine = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+        try:
+            engine.request("GET", "/v1/models")
+            response = engine.getresponse()
+            if response.status != HTTPStatus.OK or f"{target}-model" not in {
+                m["id"] for m in json.load(response)["data"]
+            }:
+                msg = f"The active loopback process did not serve {target}-model."
+                raise RuntimeError(msg)
+        finally:
+            engine.close()
+        transitions.append(ticket["request_id"])
+    capture(page, output / "04-nexus.png")
+    return transitions
+
+
 def offer(page: Page, origin: str, prompt: str, output: Path) -> tuple[str, str, str, str]:
     page.goto(f"{origin}/bridge", wait_until="domcontentloaded")
     begin = page.get_by_role("button", name="New Séance", exact=True)
@@ -184,6 +241,7 @@ def main() -> None:
     subprocess.run([*CLI, "desktop", "install"], check=True)
     try:
         subprocess.run([*CLI, "desktop", "install"], check=True)
+        check_password_rotation(CLI)
         check_registered_backup(CLI)
         subprocess.run(
             [*CLI, "desktop", "configure-model", "--engine", str(args.engine), "--model", str(args.model)], check=True
@@ -194,6 +252,13 @@ def main() -> None:
         config = tomlkit.parse(rune.read_text(encoding="utf-8"))
         config["generation"] = {"max_tokens": 128, "temperature": 0.0}
         rune.write_text(tomlkit.dumps(config), encoding="utf-8")
+        # Distinct declared service, PID, port and served identity. The same verified weights
+        # keep this trial focused on switching and avoid a second model download.
+        config["name"] = "alternate"
+        config["served_model_id"] = "alternate-model"
+        config["port"] = 8082
+        config["base_url"] = "http://127.0.0.1:8082/v1"
+        rune.with_name("alternate.toml").write_text(tomlkit.dumps(config), encoding="utf-8")
         access = load_local_access()
         credential = base64.b64encode(f"{access.username}:{access.password.get_secret_value()}".encode()).decode(
             "ascii"
@@ -210,6 +275,7 @@ def main() -> None:
                 page = browser.new_page(http_credentials=credentials, viewport={"width": 1440, "height": 960})
                 check_routes(f"Basic {credential}")
                 request_id, run_id, answer, conversation_url = offer(page, origin, prompt, args.output)
+                transitions = switch_animators(page, origin, args.output)
             with session(), playwright.chromium.launch(channel=args.browser) as browser:
                 page = browser.new_page(http_credentials=credentials, viewport={"width": 1440, "height": 960})
                 page.goto(conversation_url, wait_until="domcontentloaded")
@@ -228,6 +294,7 @@ def main() -> None:
                 "prompt": prompt,
                 "retained_answer": answer,
                 "platform": sys.platform,
+                "nexus_swap_request_ids": transitions,
                 "max_tokens": 128,
                 "temperature": 0.0,
             }

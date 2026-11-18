@@ -13,6 +13,12 @@ Choose the role of this computer before installing anything.
 | Host on macOS or Windows (secondary) | [Personal desktop hosts](desktop.md) covers installation, local browser chat, PostgreSQL recovery and hardware qualification. |
 | Use an existing installation | Use its operator-approved [Altar access](../divination/altar/index.md). The client needs a browser and the access arrangements for that host. |
 
+## Personal desktop operations
+
+- [Desktop editions](desktop-packages.md) covers installation, repair, signing and removal.
+- [Dedicated volume snapshots](volume-snapshots.md) covers APFS and Windows VSS storage selection, cold capture and recovery.
+- [Offer a private desktop service](desktop-tether.md) covers a WireGuard peer, an exact TLS service and live revocation.
+
 ## Linux host preparation
 
 - [Tumbleweed Server](tumbleweed/index.md): headless AlphaVPS, one exact source and OCI image,
