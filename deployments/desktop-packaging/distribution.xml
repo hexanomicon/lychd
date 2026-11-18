@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<installer-gui-script minSpecVersion="2">
+    <title>LychD Personal Desktop</title>
+    <options customize="never" hostArchitectures="arm64" require-scripts="false"/>
+    <domains enable_anywhere="false" enable_currentUserHome="true" enable_localSystem="false"/>
+    <choices-outline><line choice="edition"/></choices-outline>
+    <choice id="edition" title="LychD Desktop"><pkg-ref id="EDITION_ID"/></choice>
+    <pkg-ref id="EDITION_ID" version="1" auth="none">edition.pkg</pkg-ref>
+</installer-gui-script>

@@ -1,0 +1,71 @@
+name: Desktop installers (no publication)
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/desktop-release.yml"
+      - "deployments/desktop-packaging/**"
+      - "src/lychd/system/desktop/**"
+      - "clients/desktop-tether/**"
+      - "docs/deployments/desktop-packages.md"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".nvmrc"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native:
+    name: Build, install and repair (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 55
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, windows-2025]
+    steps:
+      - name: Keep reviewed license and source bytes on Windows
+        if: runner.os == 'Windows'
+        run: git config --global core.autocrlf false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: "0.13.0"
+          python-version: "3.14.8"
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: "1.26.11"
+          cache-dependency-path: clients/desktop-tether/go.sum
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version-file: ".nvmrc"
+          cache: npm
+          cache-dependency-path: clients/web/package-lock.json
+      - run: npm install --global npm@12.0.2
+      - name: Install the pinned Windows packaging compiler for the build account
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $setup = "$env:RUNNER_TEMP/innosetup-7.1.1-x64.exe"
+          $tools = "$env:RUNNER_TEMP/inno"
+          Invoke-WebRequest -OutFile $setup -Uri 'https://github.com/jrsoftware/issrc/releases/download/is-7_1_1/innosetup-7.1.1-x64.exe'
+          if ((Get-FileHash $setup).Hash -ne '8a5a6711c3766a6e5fb74f280ba0e3551e719ce94538d901fdbd1f8f9920b3f0') { throw 'Inno Setup checksum mismatch.' }
+          $result = Start-Process $setup -ArgumentList '/CURRENTUSER','/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',"/DIR=`"$tools`"" -PassThru -Wait
+          if ($result.ExitCode -ne 0) { throw "Inno Setup installation failed ($($result.ExitCode))." }
+          $tools >> $env:GITHUB_PATH
+      - name: Build the unsigned installer and exercise its installed runtime
+        shell: pwsh
+        run: |
+          $build = Join-Path $env:RUNNER_TEMP 'lychd-desktop'
+          ./deployments/desktop-packaging/build.ps1 -Revision $env:GITHUB_SHA -BuildDirectory $build
+          ./deployments/desktop-packaging/check-install.ps1 -Revision $env:GITHUB_SHA -BuildDirectory $build
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: desktop-installer-${{ runner.os }}-${{ github.sha }}
+          path: ${{ runner.temp }}/lychd-desktop/artifacts/
+          if-no-files-found: error
+          retention-days: 14
