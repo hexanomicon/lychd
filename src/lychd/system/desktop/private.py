@@ -11,6 +11,25 @@ from tempfile import NamedTemporaryFile
 _PRIVATE_DIRECTORY_MODE = 0o700
 
 
+def overlaps(left: Path, right: Path) -> bool:
+    """Compare physical directory ancestry, including aliases on case-insensitive volumes."""
+
+    def contains(parent: Path, child: Path) -> bool:
+        try:
+            identity = parent.stat()
+        except FileNotFoundError:
+            return False
+        for ancestor in (child, *child.parents):
+            try:
+                if os.path.samestat(identity, ancestor.stat()):
+                    return True
+            except FileNotFoundError:
+                continue
+        return False
+
+    return contains(left, right) or contains(right, left)
+
+
 def check_path(path: Path) -> None:
     """Refuse redirected paths and foreign-owned objects inside the user's home."""
     if not path.is_absolute() or ".." in path.parts:
@@ -167,6 +186,27 @@ def private_file(path: Path) -> None:
         path.chmod(0o600)
 
 
+def _commit_file(source: Path, target: Path, *, replace: bool) -> None:
+    """Request durable publication of a complete file on the same local filesystem."""
+    if os.name == "nt":
+        import ctypes
+
+        kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+        move = kernel.MoveFileExW
+        move.argtypes = [ctypes.c_wchar_p, ctypes.c_wchar_p, ctypes.c_uint32]
+        move.restype = ctypes.c_int
+        # MOVEFILE_WRITE_THROUGH, plus MOVEFILE_REPLACE_EXISTING only for an owned replacement.
+        if not move(str(source), str(target), 8 | int(replace)):
+            raise ctypes.WinError(ctypes.get_last_error())
+    else:
+        source.replace(target)
+        directory = os.open(target.parent, os.O_RDONLY | os.O_DIRECTORY)
+        try:
+            os.fsync(directory)
+        finally:
+            os.close(directory)
+
+
 def publish_file(path: Path, content: bytes, *, replace: bool = False) -> None:
     """Publish complete content within the serialized desktop management operation."""
     check_path(path)
@@ -181,7 +221,7 @@ def publish_file(path: Path, content: bytes, *, replace: bool = False) -> None:
                 verify_private_file(path)
             elif path.exists():
                 raise FileExistsError(path)
-            temporary.replace(path)
+            _commit_file(temporary, path, replace=replace)
         finally:
             stream.close()
             temporary.unlink(missing_ok=True)

@@ -16,6 +16,10 @@ PREFIX = "lychd-desktop-vault:"
 _SERVICE = b"org.lychd.desktop.credentials.v1"
 
 
+class VaultUnavailableError(ValueError):
+    """An intact vault envelope cannot be opened in the current OS or user profile."""
+
+
 def _dpapi(path: Path, value: bytes, *, seal: bool) -> bytes:
     """Use the current user's DPAPI profile. Input and output use private pipes."""
     binary = Path(os.environ["SYSTEMROOT"]) / "System32/WindowsPowerShell/v1.0/powershell.exe"
@@ -38,7 +42,7 @@ def _dpapi(path: Path, value: bytes, *, seal: bool) -> bytes:
     )
     if result.returncode:
         msg = "Current-user DPAPI could not access the desktop credential."
-        raise ValueError(msg)
+        raise VaultUnavailableError(msg)
     return base64.b64decode(result.stdout, validate=True)
 
 
@@ -71,7 +75,7 @@ def _mac_keychain(path: Path, token: str, value: bytes | None = None) -> bytes:
         status = lib.SecKeychainFindGenericPassword(*key, ctypes.byref(size), ctypes.byref(pointer), None)
         if status:
             msg = f"Desktop Keychain item is unavailable (OSStatus {status}). Unlock the owning Keychain."
-            raise ValueError(msg)
+            raise VaultUnavailableError(msg)
         try:
             return ctypes.string_at(pointer, size.value)
         finally:
@@ -80,17 +84,30 @@ def _mac_keychain(path: Path, token: str, value: bytes | None = None) -> bytes:
         lib.SecKeychainSetUserInteractionAllowed(allowed.value)
 
 
+def _verifier(path: Path, value: bytes) -> str:
+    """Bind a high-entropy generated credential to its purpose across account and path changes."""
+    if not re.fullmatch(rb"[A-Za-z0-9_-]{64}", value):
+        msg = "Expected a high-entropy generated desktop recovery credential."
+        raise ValueError(msg)
+    return hashlib.sha256(b"lychd-vault-recovery-v2\0" + path.name.encode("ascii") + b"\0" + value).hexdigest()
+
+
+def matches_recovery(path: Path, record: str, value: bytes) -> bool:
+    """Only a v2 envelope can verify a portable backup while its original vault is unavailable."""
+    _, _, verifier = _envelope(record)
+    return verifier is not None and secrets.compare_digest(verifier, _verifier(path, value))
+
+
 def seal_credential(path: Path, value: bytes) -> bytes:
     """Read back every sealed credential before the caller replaces a working file."""
+    verifier = _verifier(path, value)
     if sys.platform == "darwin":
-        # Generated passwords have 384 bits of entropy. A retry addresses the same Keychain item.
-        token = hashlib.sha256(value).hexdigest()
-        recovered = _mac_keychain(path, token, value)
-        record = f"{PREFIX}1:keychain:{token}"
+        recovered = _mac_keychain(path, verifier, value)
+        record = f"{PREFIX}2:keychain:{verifier}"
     elif sys.platform == "win32":
         ciphertext = _dpapi(path, value, seal=True)
         recovered = _dpapi(path, ciphertext, seal=False)
-        record = f"{PREFIX}1:dpapi:{base64.b64encode(ciphertext).decode('ascii')}"
+        record = f"{PREFIX}2:dpapi:{verifier}:{base64.b64encode(ciphertext).decode('ascii')}"
     else:
         msg = "The desktop credential vault requires macOS or Windows."
         raise ValueError(msg)
@@ -100,14 +117,51 @@ def seal_credential(path: Path, value: bytes) -> bytes:
     return record.encode("ascii")
 
 
+def _envelope(record: str) -> tuple[str, str, str | None]:
+    if not record.startswith(PREFIX):
+        msg = "Unrecognized desktop credential vault record."
+        raise ValueError(msg)
+    fields = record.removeprefix(PREFIX).split(":")
+    verifier = None
+    match fields:
+        case ["1", "keychain", token]:
+            kind, payload = "keychain", token
+        case ["2", "keychain", token]:
+            kind, payload, verifier = "keychain", token, token
+        case ["1", "dpapi", ciphertext]:
+            kind, payload = "dpapi", ciphertext
+        case ["2", "dpapi", token, ciphertext]:
+            kind, payload, verifier = "dpapi", ciphertext, token
+        case _:
+            msg = "Unrecognized desktop credential vault record."
+            raise ValueError(msg)
+    if verifier is not None and not re.fullmatch("[a-f0-9]{64}", verifier):
+        msg = "Invalid vault recovery verifier."
+        raise ValueError(msg)
+    return kind, payload, verifier
+
+
 def open_credential(path: Path, record: str) -> str:
-    """Resolve a versioned local vault record or fail closed under the wrong OS or account."""
-    if sys.platform == "darwin" and record.startswith(f"{PREFIX}1:keychain:"):
-        token = record.removeprefix(f"{PREFIX}1:keychain:")
-        if re.fullmatch("[a-f0-9]{64}", token):
-            return _mac_keychain(path, token).decode("ascii")
-    elif sys.platform == "win32" and record.startswith(f"{PREFIX}1:dpapi:"):
-        data = base64.b64decode(record.removeprefix(f"{PREFIX}1:dpapi:"), validate=True)
-        return _dpapi(path, data, seal=False).decode("ascii")
-    msg = "Unrecognized or incompatible desktop credential vault record."
-    raise ValueError(msg)
+    """Read both envelope generations and validate v2's portable, purpose-specific verifier."""
+    kind, payload, verifier = _envelope(record)
+    if kind == "keychain":
+        if not re.fullmatch("[a-f0-9]{64}", payload):
+            msg = "Invalid desktop Keychain item reference."
+            raise ValueError(msg)
+        if sys.platform != "darwin":
+            msg = "Desktop Keychain item is unavailable on this platform."
+            raise VaultUnavailableError(msg)
+        value = _mac_keychain(path, payload)
+    else:
+        data = base64.b64decode(payload, validate=True)
+        if not data:
+            msg = "Empty desktop DPAPI envelope."
+            raise ValueError(msg)
+        if sys.platform != "win32":
+            msg = "Current-user DPAPI is unavailable on this platform."
+            raise VaultUnavailableError(msg)
+        value = _dpapi(path, data, seal=False)
+    if verifier is not None and not secrets.compare_digest(verifier, _verifier(path, value)):
+        msg = "The OS vault returned a credential with a different recovery verifier."
+        raise ValueError(msg)
+    return value.decode("ascii")

@@ -380,12 +380,13 @@ def enable_vault(backup: Path) -> None:
 
 @desktop.command()
 @click.argument("backup", type=click.Path(exists=True, file_okay=False, path_type=Path))
-def recover_credentials(backup: Path) -> None:
+@click.option("--rebind-vault", is_flag=True, help="Re-seal verified inaccessible vault credentials in this account.")
+def recover_credentials(backup: Path, *, rebind_vault: bool) -> None:
     """Restore missing generated credentials from the operator's private recovery copy."""
     from lychd.system.desktop.credentials import restore_credentials
 
     try:
-        restore_credentials(backup.absolute())
+        restore_credentials(backup.absolute(), rebind_vault=rebind_vault)
     except (OSError, ValueError) as exc:
         raise click.ClickException(str(exc)) from exc
     click.echo("All generated credentials verified. The dedicated database can now be checked with desktop install.")
@@ -399,6 +400,9 @@ def rotate_runtime_password(recovery_directory: Path) -> None:
 
     require_cluster()
     settings = desktop_settings(admin=True, allow_rotation=True).server.database
+    if (PATH_POSTGRES_ROOT_DIR / "desktop-credentials" / "pending-runtime-rotation.json").exists():
+        # After a reboot the journal fences ordinary startup. Resume only the dedicated database.
+        start_cluster(settings.port)
     try:
         with _exclusive_cluster(settings) as owner:
             rotate(settings, owner, recovery_directory.absolute())

@@ -12,7 +12,7 @@ from tempfile import TemporaryDirectory
 from time import monotonic
 from typing import TYPE_CHECKING
 
-from lychd.system.desktop.private import publish_file, verify_private_directory
+from lychd.system.desktop.private import overlaps, publish_file, verify_private_directory
 from lychd.system.desktop.volume_cluster import active_id, cold_control, inventory
 
 if TYPE_CHECKING:
@@ -34,11 +34,7 @@ def clone_database(
         msg = "APFS cloning requires a native macOS host."
         raise ValueError(msg)
     verify_private_directory(destination)
-    if (
-        destination.is_relative_to(source)
-        or source.is_relative_to(destination)
-        or source.stat().st_dev != destination.stat().st_dev
-    ):
+    if overlaps(source, destination) or source.stat().st_dev != destination.stat().st_dev:
         msg = "Choose a private sibling location on the same APFS volume as the dedicated cluster."
         raise ValueError(msg)
     ident = active_id(source, db)

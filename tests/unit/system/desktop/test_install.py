@@ -260,14 +260,15 @@ def test_verify_recovered_credential_files(tmp_path: Path, monkeypatch: pytest.M
 
     from lychd.system.desktop.private import private_directory, publish_file
 
-    monkeypatch.setattr(desktop, "PATH_POSTGRES_ROOT_DIR", tmp_path)
-    monkeypatch.setattr(credentials, "PATH_POSTGRES_ROOT_DIR", tmp_path)
+    installation = tmp_path / "installation"
+    monkeypatch.setattr(desktop, "PATH_POSTGRES_ROOT_DIR", installation)
+    monkeypatch.setattr(credentials, "PATH_POSTGRES_ROOT_DIR", installation)
     names = (*credentials._RUNTIME, *credentials._ADMIN)
     for name in names:
         monkeypatch.delenv(name, raising=False)
         monkeypatch.setenv(f"{name}_FILE", "")
     credentials.load_credentials(administrative=True, provision=True)
-    original = tmp_path / "desktop-credentials"
+    original = installation / "desktop-credentials"
     backup = tmp_path / "recovered"
     private_directory(backup)
     for name in names:

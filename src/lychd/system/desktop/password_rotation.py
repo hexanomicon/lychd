@@ -14,8 +14,14 @@ import psycopg
 from lychd.db.authority import RUNTIME_AUTHORITY_QUERY, require_runtime_authority
 from lychd.db.bootstrap import set_existing_runtime_password
 from lychd.system.constants import PATH_POSTGRES_ROOT_DIR
-from lychd.system.desktop.credentials import GENERATED, generated_value, recovery_value, verify_credential_copy
-from lychd.system.desktop.private import publish_file, verify_private_directory, verify_private_file
+from lychd.system.desktop.credentials import (
+    GENERATED,
+    generated_value,
+    recovery_value,
+    verify_credential_copy,
+    verify_recovery_directory,
+)
+from lychd.system.desktop.private import overlaps, publish_file, verify_private_directory, verify_private_file
 from lychd.system.desktop.vault import PREFIX, open_credential, seal_credential
 
 if TYPE_CHECKING:
@@ -112,10 +118,7 @@ def rotate(db: DatabaseSettings, owner: psycopg.Connection[Any], destination: Pa
     """Hold the caller's verified Vessel fence throughout preparation, change and readback."""
     directory = PATH_POSTGRES_ROOT_DIR / "desktop-credentials"
     verify_private_directory(directory)
-    verify_private_directory(destination)
-    if destination.is_relative_to(PATH_POSTGRES_ROOT_DIR) or PATH_POSTGRES_ROOT_DIR.is_relative_to(destination):
-        msg = "Choose an independent, private directory outside the active database and credential tree."
-        raise ValueError(msg)
+    verify_recovery_directory(destination)
     active, current = _active(db, directory)
     ident = owner.execute(
         "SELECT system_identifier::text, current_setting('data_directory') FROM pg_control_system()"
@@ -123,7 +126,7 @@ def rotate(db: DatabaseSettings, owner: psycopg.Connection[Any], destination: Pa
     if not ident:
         msg = "Unable to identify the running database."
         raise ValueError(msg)
-    if destination.is_relative_to(Path(ident[1])):
+    if overlaps(destination, Path(ident[1])):
         msg = "The recovery set must be stored outside the live PostgreSQL cluster."
         raise ValueError(msg)
     binding = {"cluster": str(ident[0]), "role": db.runtime_user, "database": db.database, "backup": str(destination)}
@@ -140,6 +143,9 @@ def rotate(db: DatabaseSettings, owner: psycopg.Connection[Any], destination: Pa
     ).fetchall()
     if not all(row[0] for row in closed) or not _login(db, password):
         msg = "The new credential or closure of prior sessions is unconfirmed. Repeat the pending rotation."
+        raise ValueError(msg)
+    if not secrets.compare_digest(current, password.encode("ascii")) and _login(db, current.decode("ascii")):
+        msg = "The previous runtime credential still authenticates; rotation remains fenced."
         raise ValueError(msg)
     publish_file(active, replacement.encode("ascii"), replace=True)
     verify_credential_copy(destination)

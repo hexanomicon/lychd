@@ -77,16 +77,16 @@ and signed OS distribution have separate qualification criteria.
 
 The desktop custody trial on 18 November 2026 recovered the five generated values from
 the login Keychain on macOS and CurrentUser DPAPI on Windows. The
-[macOS and Windows host jobs](https://github.com/hexanomicon/lychd/actions/runs/44271144485)
+[macOS and Windows host jobs](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/runtime/desktop-platform-checks-2026-11-18.json)
 exercised the installed Settings consumer. A subsequent
-[macOS database trial](https://github.com/hexanomicon/lychd/actions/runs/44274890229/job/134700391439)
+[macOS database trial](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/runtime/desktop-platform-checks-2026-11-18.json)
 closed a live runtime session during password rotation and recovered a committed row from a
 cold APFS file clone in another PostgreSQL instance. A later write stayed on the source.
 The measured database pause was 1.068 seconds and capture plus hashing took 1.720 seconds for
 that fixture. [Desktop recovery](deployments/desktop.md#storage-networking-and-recovery)
 documents the separate whole-volume and disk-loss paths.
 
-The [Apple Silicon package trial](https://github.com/hexanomicon/lychd/actions/runs/44274890330/job/134700392838)
+The [Apple Silicon package trial](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/runtime/desktop-platform-checks-2026-11-18.json)
 used the bundled interpreter and Altar and verified committed rows across repair, program removal
 and reinstall. Production Developer ID notarization and Windows Authenticode signing require
 the corresponding release identities. [Edition installation and verification](deployments/desktop-packages.md)
@@ -4076,7 +4076,7 @@ identity or remote IAM role.
 
 The separate [desktop offered-service profile](deployments/desktop-tether.md) admits one
 WireGuard public key and private service address per grant. Native two-peer tests on
-[macOS and Windows](https://github.com/hexanomicon/lychd/actions/runs/44274890145) exercised
+[macOS and Windows](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/runtime/desktop-platform-checks-2026-11-18.json) exercised
 encrypted TCP, the backend certificate pin, live stream closure and continued access for the
 other peer. A fresh helper process requires fresh enrollment. Physical LAN, firewall and
 client routing trials remain with the platform owners.

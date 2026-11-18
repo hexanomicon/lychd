@@ -1,0 +1,48 @@
+{
+  "date": "2026-11-18",
+  "profiles": {
+    "macos": "macOS 15 Apple Silicon GitHub-hosted runner",
+    "windows": "Windows Server 2025 x64 GitHub-hosted runner"
+  },
+  "checks": [
+    {
+      "feature": "OS vault and portable recovery",
+      "source_head": "f9d3774f92b5cac53e4f8208fafbc1918388335b",
+      "jobs": {
+        "macos": "https://github.com/hexanomicon/lychd/actions/runs/44271144485/job/134687762262",
+        "windows": "https://github.com/hexanomicon/lychd/actions/runs/44271144485/job/134687762747"
+      },
+      "observed": "All five generated values read back from macOS Keychain and Windows CurrentUser DPAPI. Installed runtime settings consumed the sealed local-access value."
+    },
+    {
+      "feature": "APFS per-file CoW clone, runtime password rotation and browser chat",
+      "source_head": "fbbd489adf70671c402501ba273af7dbe728bb05",
+      "job": "https://github.com/hexanomicon/lychd/actions/runs/44274890229/job/134700391439",
+      "clone_pause_seconds": 1.068,
+      "clone_total_seconds": 1.72,
+      "observed": "Second PostgreSQL 18 instance recovered exactly 19 from clone; subsequent write 20 remained on source. Runtime role rejected previous password and closed old session. The APFS trial used an ordinary user without a volume-snapshot entitlement."
+    },
+    {
+      "feature": "Dedicated APFS image",
+      "source_head": "fbbd489adf70671c402501ba273af7dbe728bb05",
+      "job": "https://github.com/hexanomicon/lychd/actions/runs/44274890176/job/134700391505",
+      "observed": "Selected disposable APFS volume for PostgreSQL, rejected missing snapshot and resumed the live server. Independently identified the system's existing read-only APFS snapshot. Creating a fresh entitled volume snapshot was outside this run."
+    },
+    {
+      "feature": "WireGuard two-peer offer",
+      "source_head": "fbbd489adf70671c402501ba273af7dbe728bb05",
+      "jobs": {
+        "macos": "https://github.com/hexanomicon/lychd/actions/runs/44274890145/job/134700391452",
+        "windows": "https://github.com/hexanomicon/lychd/actions/runs/44274890145/job/134700390732"
+      },
+      "observed": "Two encrypted peers, exact TCP service, pinned backend certificate, unrelated traffic refusal, stream limit, live revocation, surviving peer and fresh process enrollment. Windows runner account had administrative capability."
+    },
+    {
+      "feature": "Apple Silicon program edition",
+      "source_head": "fbbd489adf70671c402501ba273af7dbe728bb05",
+      "checkout_revision": "facbba4494718ca6211566b3cb4c8ccbe0717990",
+      "job": "https://github.com/hexanomicon/lychd/actions/runs/44274890330/job/134700392838",
+      "observed": "Unsigned per-user installer with bundled Python and Altar. Committed database rows survived repair, removal of the edition and reinstall of the same edition."
+    }
+  ]
+}

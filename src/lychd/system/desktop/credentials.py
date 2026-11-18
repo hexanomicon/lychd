@@ -12,6 +12,7 @@ import click
 from lychd.system.constants import PATH_POSTGRES_ROOT_DIR
 from lychd.system.desktop.private import (
     check_path,
+    overlaps,
     private_directory,
     private_file,
     publish_file,
@@ -50,14 +51,24 @@ def load_credentials(
             os.environ[file_key] = str(path)
 
 
+def verify_recovery_directory(directory: Path) -> None:
+    """Verify private recovery storage outside the database, credentials and selected volume."""
+    from lychd.system.desktop.volume_storage import authority, selected
+
+    verify_private_directory(directory)
+    default = PATH_POSTGRES_ROOT_DIR / "native-data"
+    if overlaps(directory, PATH_POSTGRES_ROOT_DIR) or (
+        authority(default).exists() and overlaps(directory, selected(default)[0])
+    ):
+        msg = "Select a private recovery directory outside the active desktop database and credential storage."
+        raise ValueError(msg)
+
+
 def verify_credential_copy(directory: Path) -> None:
     """Compare an independent, private copy of every generated credential to this installation."""
     source = PATH_POSTGRES_ROOT_DIR / "desktop-credentials"
     verify_private_directory(source)
-    verify_private_directory(directory)
-    if directory.samefile(source):
-        msg = "Select an independent credential backup directory."
-        raise click.ClickException(msg)
+    verify_recovery_directory(directory)
     for name in GENERATED:
         original = source / name.lower()
         reference = os.environ.get(f"{name}_FILE")
@@ -70,6 +81,7 @@ def verify_credential_copy(directory: Path) -> None:
         if not value or not secrets.compare_digest(value, copy.read_bytes()):
             msg = f"Credential backup does not match {name}."
             raise click.ClickException(msg)
+        recovery_value(copy)
 
 
 def resolve_vault_reference(name: str, path: Path, record: str) -> str:
@@ -116,15 +128,14 @@ def use_os_vault(backup: Path) -> None:
     verify_credential_copy(backup)
 
 
-def restore_credentials(backup: Path) -> None:
-    """Fill missing generated files from a private recovery set. Preserve existing credentials."""
+def restore_credentials(backup: Path, *, rebind_vault: bool = False) -> None:
+    """Verify the whole portable set, then restore missing files or explicitly rebind OS records."""
+    from lychd.system.desktop.vault import VaultUnavailableError, matches_recovery, seal_credential
+
     source = PATH_POSTGRES_ROOT_DIR / "desktop-credentials"
-    verify_private_directory(backup)
+    verify_recovery_directory(backup)
     private_directory(source)
-    if backup.samefile(source):
-        msg = "Select an independent credential backup directory."
-        raise ValueError(msg)
-    pending: dict[Path, bytes] = {}
+    pending: dict[Path, tuple[bytes, bool]] = {}
     for name in GENERATED:
         target = source / name.lower()
         if os.environ.get(name) or os.environ.get(f"{name}_FILE"):
@@ -132,11 +143,24 @@ def restore_credentials(backup: Path) -> None:
             raise ValueError(msg)
         value = recovery_value(backup / name.lower())
         check_path(target)
-        if not target.exists():
-            pending[target] = value
-        elif not secrets.compare_digest(generated_value(target, name), value):
-            msg = f"Recovery would replace an existing {name}. Preserved."
-            raise ValueError(msg)
-    for target, value in pending.items():
-        publish_file(target, value)
+        exists = target.exists()
+        if exists:
+            verify_private_file(target)
+            try:
+                matches = secrets.compare_digest(generated_value(target, name), value)
+            except VaultUnavailableError:
+                if not rebind_vault:
+                    raise
+                matches = matches_recovery(target, target.read_text(encoding="ascii"), value)
+            if not matches:
+                msg = f"Recovery would replace an existing {name}. Preserved."
+                raise ValueError(msg)
+            if not rebind_vault:
+                continue
+        pending[target] = (value, exists)
+    if rebind_vault:
+        # Seal and verify the whole replacement set before publishing its first file.
+        pending = {target: (seal_credential(target, value), exists) for target, (value, exists) in pending.items()}
+    for target, (content, exists) in pending.items():
+        publish_file(target, content, replace=exists)
     verify_credential_copy(backup)

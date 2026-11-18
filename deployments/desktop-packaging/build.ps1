@@ -46,7 +46,7 @@ uv export --quiet --locked --python $python --no-default-groups --extra postgres
 uv pip install --python $python --break-system-packages --link-mode copy --only-binary :all: --require-hashes --requirements "$work/requirements.txt"
 uv pip install --python $python --break-system-packages --link-mode copy --no-deps $wheel
 uv pip check --python $python
-& $python -I -B "$root/scripts/generate_python_third_party_notices.py" --output "$payload/PYTHON_THIRD_PARTY_NOTICES.txt"
+& $python -I -B "$root/scripts/generate_python_third_party_notices.py" --desktop --output "$payload/PYTHON_THIRD_PARTY_NOTICES.txt"
 & $python -I -B -m lychd desktop --help
 $env:GOTOOLCHAIN = 'local'
 if ((go env GOVERSION) -cne 'go1.26.11') { throw 'Use Go 1.26.11 to build Tether.' }

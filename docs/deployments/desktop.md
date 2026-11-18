@@ -192,7 +192,11 @@ qualified isolation boundary.
 - **Recovery into a fresh account.** Recover the original five portable files into a private
   directory under that account. Run `lychd desktop recover-credentials "<recovered-directory>"`
   before installing against the restored dedicated cluster. This verifies every input before
-  filling missing credentials and stops on disagreement with an existing value. Then run
+  filling missing credentials and stops on disagreement with an existing value. If restored
+  files reference a former account's vault, add `--rebind-vault` to seal matching portable values
+  under this account. This requires a record carrying a portable verifier. Keep unreadable
+  older records in an encrypted archive and use a fresh credential directory for recovery.
+  Then run
   `desktop install`, sign in, check a known persisted conversation and re-enable the OS
   vault with that account if desired.
 - **Runtime database password.** Stop Vessel and keep its dedicated PostgreSQL running.
@@ -200,7 +204,8 @@ qualified isolation boundary.
   It verifies the cluster and managed runtime role, stages a new recovery set, changes the
   SCRAM password, disconnects existing sessions for that role, and verifies a fresh
   login before reopening desktop operations. Repeat the same command and destination after
-  interruption. Store the updated five-file recovery copy encrypted. The administrative,
+  interruption. A pending rotation can restart its own database after a reboot while Vessel
+  admission stays closed. Store the updated five-file recovery copy encrypted. The administrative,
   Phoenix and browser credentials keep their independent lifecycles.
 - **Update.** Obtain a verified backup before changing a populated installation. Stop Vessel,
   disable login for the update, and keep the current revision and configuration. Install the new

@@ -33,7 +33,7 @@ if ($TrialSid) {
     $env:PYTHONDONTWRITEBYTECODE = '1'
     $env:PYTHONNOUSERSITE = '1'
     if ($TetherTrial) {
-        & "$root/tether-trial.exe" -test.v -test.timeout 2m
+        & "$root/tether-trial.exe" '-test.v' '-test.timeout=2m'
         exit $LASTEXITCODE
     }
     if ($PackageRevision) {
