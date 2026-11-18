@@ -19,9 +19,13 @@ import click
 from lychd.system.constants import PATH_LYCHD_TOML, PATH_POSTGRES_ROOT_DIR
 from lychd.system.desktop.credentials import load_credentials, verify_credential_copy
 from lychd.system.desktop.private import check_path, private_directory, publish_file, verify_private_directory
+from lychd.system.desktop.volume_commands import volume
+from lychd.system.desktop.volume_storage import cluster_path
 
 if TYPE_CHECKING:
     from collections.abc import Generator
+
+    import psycopg
 
     from lychd.config.settings import DatabaseSettings, Settings
 
@@ -29,6 +33,16 @@ _DATA = PATH_POSTGRES_ROOT_DIR / "native-data"
 _MAJOR = "18"
 _STOPPED = 3
 _OWNER = "lychd-native-postgres-18-v1"
+
+
+def _data() -> Path:
+    """Resolve the selected storage once for this management command, including direct test calls."""
+    ctx = click.get_current_context(silent=True)
+    if ctx is None:
+        return cluster_path(_DATA)
+    if "desktop_cluster" not in ctx.meta:
+        ctx.meta["desktop_cluster"] = cluster_path(_DATA)
+    return Path(ctx.meta["desktop_cluster"])
 
 
 def postgres_program(name: str) -> str:
@@ -40,12 +54,15 @@ def postgres_program(name: str) -> str:
     return binary
 
 
-def _settings(*, install: bool = False, admin: bool = False) -> Settings:
+def _settings(*, install: bool = False, admin: bool = False, allow_rotation: bool = False) -> Settings:
     from lychd.config.settings import Settings
 
-    existing_cluster = _DATA.exists()
+    existing_cluster = _data().exists()
     load_credentials(
-        administrative=admin, provision=install and not existing_cluster, required=install and existing_cluster
+        administrative=admin,
+        provision=install and not existing_cluster,
+        required=install and existing_cluster,
+        allow_rotation=allow_rotation,
     )
     settings = Settings()
     db = settings.server.database
@@ -56,19 +73,19 @@ def _settings(*, install: bool = False, admin: bool = False) -> Settings:
 
 
 def _ctl(*args: str, check: bool = True) -> int:
-    return subprocess.run([postgres_program("pg_ctl"), "-D", str(_DATA), *args], check=check).returncode
+    return subprocess.run([postgres_program("pg_ctl"), "-D", str(_data()), *args], check=check).returncode
 
 
 def _require_cluster() -> None:
-    owner = _DATA / ".lychd-desktop"
+    owner = _data() / ".lychd-desktop"
     check_path(owner)
-    check_path(_DATA / "PG_VERSION")
-    if _DATA.is_symlink() or not owner.is_file() or owner.read_text(encoding="ascii") != _OWNER:
-        msg = f"Unrecognized desktop database directory at {_DATA}."
+    check_path(_data() / "PG_VERSION")
+    if _data().is_symlink() or not owner.is_file() or owner.read_text(encoding="ascii") != _OWNER:
+        msg = f"Unrecognized desktop database directory at {_data()}."
         raise click.ClickException(msg)
-    version = _DATA / "PG_VERSION"
+    version = _data() / "PG_VERSION"
     if not version.is_file() or version.read_text(encoding="ascii").strip() != _MAJOR:
-        msg = f"Expected a dedicated PostgreSQL {_MAJOR} cluster at {_DATA}."
+        msg = f"Expected a dedicated PostgreSQL {_MAJOR} cluster at {_data()}."
         raise click.ClickException(msg)
 
 
@@ -77,7 +94,7 @@ def _start(port: int) -> None:
     status_code = _ctl("status", check=False)
     if status_code == _STOPPED:  # pg_ctl indicates a stopped cluster.
         options = f"-c listen_addresses=127.0.0.1 -p {port}"
-        _ctl("-w", "-l", str(_DATA.parent / "native-postgres.log"), "-o", options, "start")
+        _ctl("-w", "-l", str(_data().parent / "native-postgres.log"), "-o", options, "start")
     elif status_code:
         msg = f"pg_ctl could not inspect the dedicated cluster (status {status_code})."
         raise click.ClickException(msg)
@@ -122,12 +139,13 @@ def desktop() -> None:
 
 
 desktop.command_class = _DesktopCommand
+desktop.add_command(volume)
 
 
 def _prepare_installation() -> Settings:
     """Initialize native settings and the protected journal before starting any services."""
     check_path(PATH_LYCHD_TOML)
-    check_path(_DATA)
+    check_path(_data())
     private_directory(PATH_POSTGRES_ROOT_DIR)
     PATH_LYCHD_TOML.parent.mkdir(parents=True, exist_ok=True)
     if not PATH_LYCHD_TOML.exists():
@@ -153,7 +171,7 @@ def _prepare_installation() -> Settings:
 
 def _initialize_cluster(binary: str, user: str, password: str) -> None:
     """Publish the dedicated cluster only after initdb and its ownership marker complete."""
-    with TemporaryDirectory(prefix=".native-install-", dir=PATH_POSTGRES_ROOT_DIR) as directory:
+    with TemporaryDirectory(prefix=".native-install-", dir=_data().parent) as directory:
         staged = Path(directory) / "cluster"
         with NamedTemporaryFile(mode="w", encoding="utf-8", dir=directory, delete_on_close=False) as secret_file:
             secret_file.write(password + "\n")
@@ -174,9 +192,9 @@ def _initialize_cluster(binary: str, user: str, password: str) -> None:
                 check=True,
             )
         (staged / ".lychd-desktop").write_text(_OWNER, encoding="ascii")
-        if _DATA.exists():
-            raise FileExistsError(_DATA)
-        staged.rename(_DATA)
+        if _data().exists():
+            raise FileExistsError(_data())
+        staged.rename(_data())
 
 
 @desktop.command()
@@ -186,6 +204,7 @@ def install() -> None:
     from psycopg import sql
 
     from lychd.db.bootstrap import bootstrap_database
+    from lychd.system.desktop.volume_cluster import bind_installation
 
     binary = postgres_program("initdb")
     version = subprocess.check_output([binary, "--version"], text=True)
@@ -198,9 +217,10 @@ def install() -> None:
         msg = "The PostgreSQL administrative credential is unavailable."
         raise click.ClickException(msg)
     password = db.password.get_secret_value()
-    if not _DATA.exists():
+    if not _data().exists():
         _initialize_cluster(binary, db.user, password)
     _start(db.port)
+    bind_installation(_DATA, db, initialize=True)
     with psycopg.connect(
         host="127.0.0.1",
         hostaddr="127.0.0.1",
@@ -211,7 +231,7 @@ def install() -> None:
         autocommit=True,
     ) as conn:
         location = conn.execute("SHOW data_directory").fetchone()
-        if location is None or not _DATA.samefile(location[0]):
+        if location is None or not _data().samefile(location[0]):
             msg = "The configured port belongs to a different PostgreSQL cluster."
             raise click.ClickException(msg)
         if not conn.execute("SELECT 1 FROM pg_available_extensions WHERE name = 'vector'").fetchone():
@@ -231,7 +251,7 @@ def start() -> None:
 
 
 @contextmanager
-def _exclusive_cluster(db: DatabaseSettings) -> Generator[None]:
+def _exclusive_cluster(db: DatabaseSettings) -> Generator[psycopg.Connection[tuple[object, ...]]]:
     """Fence bootstrap and shutdown against an active Vessel in the verified dedicated database."""
     import psycopg
 
@@ -252,7 +272,7 @@ def _exclusive_cluster(db: DatabaseSettings) -> Generator[None]:
     )
     try:
         location = connection.execute("SHOW data_directory").fetchone()
-        if not location or not _DATA.samefile(location[0]):
+        if not location or not _data().samefile(location[0]):
             msg = "Configured database endpoint does not belong to the dedicated cluster."
             raise click.ClickException(msg)
         held = connection.execute(
@@ -261,7 +281,7 @@ def _exclusive_cluster(db: DatabaseSettings) -> Generator[None]:
         if held != (True,):
             msg = "The Vessel is active. Run lychd stop before modifying the desktop database."
             raise click.ClickException(msg)
-        yield
+        yield connection
     finally:
         connection.close()
 
@@ -372,6 +392,22 @@ def recover_credentials(backup: Path) -> None:
 
 
 @desktop.command()
+@click.option("--recovery-directory", required=True, type=click.Path(exists=True, file_okay=False, path_type=Path))
+def rotate_runtime_password(recovery_directory: Path) -> None:
+    """Rotate the managed runtime DB role offline and verify an independent new recovery set."""
+    from lychd.system.desktop.password_rotation import rotate
+
+    _require_cluster()
+    settings = _settings(admin=True, allow_rotation=True).server.database
+    try:
+        with _exclusive_cluster(settings) as owner:
+            rotate(settings, owner, recovery_directory.absolute())
+    except (OSError, ValueError) as exc:
+        raise click.ClickException(str(exc)) from exc
+    click.echo("Runtime role rotated, old sessions closed and independent recovery copy verified.")
+
+
+@desktop.command()
 def uninstall() -> None:
     """Remove login integration and stop the dedicated database, preserving settings and data."""
     _stop(unregister=True)
@@ -387,5 +423,5 @@ def backup(destination: Path) -> None:
     _require_cluster()
     db = _settings(admin=True).server.database
     directory = Path(postgres_program("pg_basebackup")).absolute().parent
-    output = capture_registered(directory, _DATA, destination.absolute(), db)
+    output = capture_registered(directory, _data(), destination.absolute(), db)
     click.echo(f"Verified PostgreSQL backup: {output}")

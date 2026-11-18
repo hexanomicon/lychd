@@ -25,7 +25,7 @@ from typing import TYPE_CHECKING
 from urllib.parse import urljoin
 
 import tomlkit
-from check_desktop_startup import check_registered_backup, check_routes, request
+from check_desktop_startup import check_password_rotation, check_registered_backup, check_routes, request
 
 from lychd.domain.web.contracts import MessageAccepted, MessageIntent
 from lychd.system.constants import PATH_SOULSTONES_DIR
@@ -184,6 +184,7 @@ def main() -> None:
     subprocess.run([*CLI, "desktop", "install"], check=True)
     try:
         subprocess.run([*CLI, "desktop", "install"], check=True)
+        check_password_rotation(CLI)
         check_registered_backup(CLI)
         subprocess.run(
             [*CLI, "desktop", "configure-model", "--engine", str(args.engine), "--model", str(args.model)], check=True

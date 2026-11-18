@@ -1,3 +1,7 @@
+#if DecodeVer(Ver, 3) != "7.1.1"
+#error Use Inno Setup 7.1.1 to compile this edition
+#endif
+
 [Setup]
 AppId=org.lychd.desktop.{#Edition}
 AppName=LychD Personal Desktop

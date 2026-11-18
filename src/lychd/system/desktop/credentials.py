@@ -21,14 +21,20 @@ from lychd.system.desktop.private import (
 
 _RUNTIME = ("LYCHD_RUNTIME_DB_PASSWORD", "LYCHD_APP_SECRET_KEY", "LYCHD_LOCAL_ACCESS_PASSWORD")
 _ADMIN = ("LYCHD_DB_PASSWORD", "LYCHD_PHOENIX_DB_PASSWORD")
+GENERATED = (*_RUNTIME, *_ADMIN)
 
 
-def load_credentials(*, administrative: bool = False, provision: bool = False, required: bool = False) -> None:
+def load_credentials(
+    *, administrative: bool = False, provision: bool = False, required: bool = False, allow_rotation: bool = False
+) -> None:
     """Set standard file references without replacing explicit credentials or disclosing values."""
     directory = PATH_POSTGRES_ROOT_DIR / "desktop-credentials"
+    if not allow_rotation and (directory / "pending-runtime-rotation.json").exists():
+        msg = "A runtime credential rotation is pending. Repeat desktop rotate-runtime-password with the original recovery directory."
+        raise click.ClickException(msg)
     if provision:
         private_directory(directory)
-    for name in (*_RUNTIME, *_ADMIN) if administrative else _RUNTIME:
+    for name in GENERATED if administrative else _RUNTIME:
         file_key = f"{name}_FILE"
         if os.environ.get(name) or os.environ.get(file_key):
             continue
@@ -52,15 +58,14 @@ def verify_credential_copy(directory: Path) -> None:
     if directory.samefile(source):
         msg = "Select an independent credential backup directory."
         raise click.ClickException(msg)
-    for name in (*_RUNTIME, *_ADMIN):
+    for name in GENERATED:
         original = source / name.lower()
         reference = os.environ.get(f"{name}_FILE")
         if os.environ.get(name) or (reference and Path(reference) != original):
             msg = f"{name} has an explicit override. Verify it through the external credential owner."
             raise click.ClickException(msg)
         copy = directory / name.lower()
-        for path in (original, copy):
-            verify_private_file(path)
+        verify_private_file(copy)
         value = generated_value(original, name)
         if not value or not secrets.compare_digest(value, copy.read_bytes()):
             msg = f"Credential backup does not match {name}."
@@ -71,7 +76,7 @@ def resolve_vault_reference(name: str, path: Path, record: str) -> str:
     """Allow OS vault references only at the exact generated path for the requested secret."""
     from lychd.system.desktop.vault import open_credential
 
-    if name not in (*_RUNTIME, *_ADMIN) or path != PATH_POSTGRES_ROOT_DIR / "desktop-credentials" / name.lower():
+    if name not in GENERATED or path != PATH_POSTGRES_ROOT_DIR / "desktop-credentials" / name.lower():
         msg = "Desktop vault references are restricted to the matching generated credential file."
         raise ValueError(msg)
     verify_private_file(path)
@@ -103,7 +108,7 @@ def use_os_vault(backup: Path) -> None:
     from lychd.system.desktop.vault import PREFIX, seal_credential
 
     verify_credential_copy(backup)
-    for name in (*_RUNTIME, *_ADMIN):
+    for name in GENERATED:
         path = PATH_POSTGRES_ROOT_DIR / "desktop-credentials" / name.lower()
         if not path.read_bytes().startswith(PREFIX.encode()):
             record = seal_credential(path, recovery_value(path))
@@ -120,7 +125,7 @@ def restore_credentials(backup: Path) -> None:
         msg = "Select an independent credential backup directory."
         raise ValueError(msg)
     pending: dict[Path, bytes] = {}
-    for name in (*_RUNTIME, *_ADMIN):
+    for name in GENERATED:
         target = source / name.lower()
         if os.environ.get(name) or os.environ.get(f"{name}_FILE"):
             msg = f"Remove the external {name} override before recovering generated credentials."

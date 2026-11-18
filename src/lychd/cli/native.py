@@ -33,8 +33,18 @@ def platform() -> None:
 @click.command("start")
 def start_native() -> None:
     """Serve the personal Vessel on IPv4 loopback until interrupted."""
-    from lychd.system.desktop.credentials import load_credentials
+    import subprocess
 
+    from lychd.system.constants import PATH_POSTGRES_ROOT_DIR
+    from lychd.system.desktop.credentials import load_credentials
+    from lychd.system.desktop.volume_storage import authority
+
+    if (authority(PATH_POSTGRES_ROOT_DIR / "native-data") / "storage.json").exists():
+        # The administrative connection exists only in the short-lived verifier process.
+        subprocess.run(
+            [sys.executable, "-m", "lychd.system.desktop", "volume", "verify-start"],
+            check=True,
+        )
     load_credentials()
     from lychd.config.logging import apply_logging
     from lychd.interface.server import run_native_server

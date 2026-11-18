@@ -21,7 +21,7 @@ if ($IsMacOS) {
 if (Test-Path -LiteralPath $edition) { throw 'Package trial requires an unused edition directory.' }
 Set-Location ([IO.Path]::GetTempPath())
 function Invoke-Installation {
-    if ($IsMacOS) { & /usr/sbin/installer -pkg $artifact -target CurrentUserHome }
+    if ($IsMacOS) { & /usr/sbin/installer -pkg $artifact -target CurrentUserHomeDirectory }
     else {
         $install = Start-Process -FilePath $artifact -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART' -Wait -PassThru
         if ($install.ExitCode -ne 0) { throw "Installation returned $($install.ExitCode)." }

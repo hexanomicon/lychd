@@ -1,5 +1,5 @@
 # The administrative runner installs dependencies. A separate standard account runs the personal profile.
-param([string] $TrialSid, [switch] $BridgeChat)
+param([string] $TrialSid, [switch] $BridgeChat, [switch] $VolumeTrial, [string] $VolumeDrive)
 
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
@@ -33,6 +33,10 @@ if ($TrialSid) {
     $env:PYTHONNOUSERSITE = '1'
     $python = "$root\.venv\Scripts\python.exe"
     $cli = "$root\.venv\Scripts\lychd.exe"
+    if ($VolumeTrial) {
+        & $python scripts/check_volume_trial.py --root $VolumeDrive
+        exit $LASTEXITCODE
+    }
     & $cli --help
     & $cli platform
     & $cli desktop --help
@@ -81,6 +85,11 @@ try {
     }
     Start-Service seclogon
     $argsLine = "-NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"$stage\scripts\check_windows_desktop.ps1`" -TrialSid $sid"
+    if ($VolumeTrial) {
+        . "$stage\scripts\check_volume_vhd.ps1"
+        $drive = New-TrialDatabaseVolume $stage $sid
+        $argsLine += " -VolumeTrial -VolumeDrive $drive"
+    }
     if ($env:BRIDGE_CHAT -eq 'true') { $argsLine += ' -BridgeChat' }
     $stdout = Join-Path $env:RUNNER_TEMP "lychd-$id.out"
     $stderr = Join-Path $env:RUNNER_TEMP "lychd-$id.err"
@@ -96,6 +105,7 @@ try {
         RedirectStandardError = $stderr
     }
     $process = Start-Process @options -PassThru
+    if ($VolumeTrial) { Invoke-TrialVolumeRequest $drive $process $stage }
     if (-not $process.WaitForExit(1200000)) {
         $process.Kill($true)
         throw 'The Windows desktop trial exceeded 20 minutes.'
@@ -119,6 +129,10 @@ try {
     if ($process.ExitCode -ne 0) { throw "Desktop account exited with code $($process.ExitCode)." }
 }
 finally {
+    if ($VolumeTrial -and $process -and !$process.HasExited) { $process.Kill($true); $process.WaitForExit() }
+    if ($VolumeTrial -and (Test-Path -LiteralPath "$stage\volume.vhdx")) {
+        Dismount-DiskImage -ImagePath "$stage\volume.vhdx" -ErrorAction Continue
+    }
     Get-CimInstance Win32_UserProfile -Filter "SID='$($user.SID.Value)' AND Loaded=FALSE" | Remove-CimInstance
     Remove-LocalUser -SID $user.SID
     if (Test-Path -LiteralPath $stage) { Remove-Item -LiteralPath $stage -Recurse -Force }

@@ -84,7 +84,6 @@ if ($IsMacOS) {
     else { Move-Item "$work/unsigned.pkg" $artifact }
 } else {
     $compiler = (Get-Command ISCC.exe -CommandType Application).Source
-    if ((Get-Item $compiler).VersionInfo.ProductVersion -notmatch '^7\.1\.1(?:\.|$)') { throw 'Use Inno Setup 7.1.1.' }
     if ($Sign) { & "$PSScriptRoot/sign-windows.ps1" -Artifact $tether }
     & $compiler "/DEdition=$Revision" "/DPayload=$payload" "/F$stem" "/O$out" "$PSScriptRoot/desktop.iss"
     $artifact = "$out/$stem.exe"

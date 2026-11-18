@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+# ruff: noqa: INP001 -- Standalone packaging script in the native Go module.
 """Collect notices for the selected platform's desktop Tether build."""
 
 from __future__ import annotations

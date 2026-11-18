@@ -24,7 +24,10 @@ import (
 	"golang.zx2c4.com/wireguard/tun/netstack"
 )
 
-const maxStreams = 32
+const (
+	maxStreams        = 32
+	maxStreamLifetime = time.Hour
+)
 
 type backendTarget struct {
 	port      uint16
@@ -134,6 +137,8 @@ func (r *road) serve(ctx context.Context, peer netip.Addr, backend backendTarget
 
 func relay(ctx context.Context, incoming net.Conn, backend backendTarget) {
 	defer incoming.Close()
+	ctx, cancel := context.WithTimeout(ctx, maxStreamLifetime)
+	defer cancel()
 	dialer := tls.Dialer{NetDialer: &net.Dialer{Timeout: 5 * time.Second}, Config: backend.tlsConfig}
 	target, err := dialer.DialContext(ctx, "tcp4", net.JoinHostPort("127.0.0.1", fmt.Sprint(backend.port)))
 	if err != nil {
@@ -142,7 +147,8 @@ func relay(ctx context.Context, incoming net.Conn, backend backendTarget) {
 	defer target.Close()
 	stop := context.AfterFunc(ctx, func() {
 		incoming.Close()
-		target.Close()
+		// Interrupt network I/O without waiting for a TLS close-notify reply.
+		target.(*tls.Conn).NetConn().Close()
 	})
 	defer stop()
 	// Preserve TCP half-close. Revocation interrupts both copy directions.

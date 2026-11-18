@@ -40,7 +40,8 @@ TCP peer. It cannot use source IP as application identity.
 
     Each peer needs its own private IPv4 address, public key and unprivileged UDP port. The helper
     refuses a repeated identity, overlapping address, repeated key or occupied port. An active
-    session supports up to eight peers and 32 simultaneous streams per peer.
+    session supports up to eight peers and 32 simultaneous streams per peer. Each stream closes
+   after one hour. The loopback TCP connection and TLS handshake have a five-second deadline.
 
 4. Send the returned `server_public_key`, the admitted peer address, exact service address and
    the owner's reachable numeric UDP endpoint to the authenticated device. On that device, select
@@ -52,11 +53,31 @@ TCP peer. It cannot use source IP as application identity.
    and any public UDP port mapping belong to the owner. The helper requires no network administrator
    role and performs no firewall, NAT or client configuration.
 
+    For example, this is the peer-side configuration for the laptop above. Replace the example
+    outer address with the owner's reachable IPv4 address and the actual external UDP port.
+    Generate the device key in its WireGuard client. Keep that private key on the device.
+
+    ```ini
+    [Interface]
+    PrivateKey = <private-key-on-this-device>
+    Address = 10.93.0.2/32
+
+    [Peer]
+    PublicKey = <server_public_key-from-this-grant>
+    Endpoint = 192.0.2.10:51821
+    AllowedIPs = 10.93.0.1/32
+    ```
+
 5. Use the application's normal authentication inside the tunnel and test an actual request.
    The TCP stream on the private service address carries the application protocol. The helper
    originates the TLS connection on the loopback leg. For example, an HTTP API receives HTTP
    inside WireGuard and HTTPS on loopback. An ordinary browser will treat a private HTTP origin
-   accordingly. This profile excludes owner Bridge, client-certificate authentication, transparent
+   accordingly. For a credential-free connectivity check against a service with a health endpoint,
+   use `curl --noproxy "*" --connect-timeout 5 http://10.93.0.1:8443/health`. Confirm the service
+   observes the request. Verify a different destination port fails and the same request stops
+   reaching the service when the grant is revoked. Keep application credentials out of shell
+   history and check the client binding's failure behavior before sending them.
+   This profile excludes owner Bridge, client-certificate authentication, transparent
    end-to-end TLS and services that trust loopback callers.
 
 The helper generates each grant's WireGuard private key in memory and reports only its public key.

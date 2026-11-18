@@ -28,7 +28,14 @@ _ROLE_MARKER = "lychd:database-role:v1:"
 _BOOTSTRAP_LOCK = 736249818645
 
 
-def _prepare_role(connection: psycopg.Connection[Any], name: str, password: SecretStr | None, kind: str) -> None:
+def _prepare_role(
+    connection: psycopg.Connection[Any],
+    name: str,
+    password: SecretStr | None,
+    kind: str,
+    *,
+    existing_only: bool = False,
+) -> None:
     """Verify existing authority before password changes, after transactional PUBLIC repair."""
     if password is None:
         msg = f"Missing {kind} database credential; bind must provision it before bootstrap"
@@ -46,6 +53,9 @@ def _prepare_role(connection: psycopg.Connection[Any], name: str, password: Secr
         (kind, name),
     ).fetchone()
     if row is None:
+        if existing_only:
+            msg = f"Existing LychD {kind} role is required for rotation."
+            raise ValueError(msg)
         connection.execute(
             SQL("CREATE ROLE {} LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS NOINHERIT").format(
                 Identifier(name)
@@ -70,6 +80,21 @@ def _verify_administrator(connection: psycopg.Connection[Any], settings: Databas
     ):
         msg = "PostgreSQL TCP authentication is unsafe; install the generated SCRAM HBA policy before bootstrap"
         raise ValueError(msg)
+
+
+def set_existing_runtime_password(connection: psycopg.Connection[Any], settings: DatabaseSettings, value: str) -> None:
+    """Recheck managed role authority and commit a libpq-generated SCRAM verifier."""
+    from pydantic import SecretStr
+
+    _verify_administrator(connection, settings)
+    with connection.transaction():
+        connection.execute("SELECT pg_advisory_xact_lock(%s)", (_BOOTSTRAP_LOCK,))
+        verifier = connection.pgconn.encrypt_password(
+            value.encode("ascii"), settings.runtime_user.encode(), b"scram-sha-256"
+        )
+        _prepare_role(
+            connection, settings.runtime_user, SecretStr(verifier.decode("ascii")), "runtime", existing_only=True
+        )
 
 
 def _prepare_databases(settings: DatabaseSettings) -> None:

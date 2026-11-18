@@ -14,6 +14,8 @@ from http import HTTPStatus
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+import psycopg
+
 from lychd.system.desktop.private import private_directory
 from lychd.system.services.local_access import load_local_access
 
@@ -84,6 +86,56 @@ def check_registered_backup(cli: list[str]) -> None:
             raise RuntimeError(msg)
 
 
+def check_password_rotation(cli: list[str]) -> None:
+    """Keep a real runtime connection open across the CLI operation and retest both passwords."""
+    from lychd.config.settings import Settings
+    from lychd.system.desktop.credentials import load_credentials
+
+    load_credentials()
+    db = Settings().server.database
+    if not db.runtime_password:
+        msg = "Missing original runtime credential"
+        raise RuntimeError(msg)
+    previous = db.runtime_password.get_secret_value()
+    from psycopg.conninfo import make_conninfo
+
+    args = {
+        "host": "127.0.0.1",
+        "hostaddr": "127.0.0.1",
+        "user": db.runtime_user,
+        "dbname": db.database,
+        "port": str(db.port),
+    }
+    conninfo = make_conninfo(**args)
+    with TemporaryDirectory() as directory:
+        target = Path(directory).resolve()
+        private_directory(target)
+        with psycopg.connect(conninfo, autocommit=True, password=previous) as old_session:
+            subprocess.run(
+                [*cli, "desktop", "rotate-runtime-password", "--recovery-directory", str(target)], check=True
+            )
+            try:
+                old_session.execute("SELECT current_user")
+            except psycopg.OperationalError:
+                pass
+            else:
+                msg = "Previously open runtime connection survived rotation"
+                raise RuntimeError(msg)
+        try:
+            unexpected = psycopg.connect(conninfo, autocommit=True, password=previous)
+        except psycopg.OperationalError:
+            pass
+        else:
+            unexpected.close()
+            msg = "The previous password still authenticates"
+            raise RuntimeError(msg)
+        current = (target / "lychd_runtime_db_password").read_text(encoding="ascii")
+        with psycopg.connect(conninfo, autocommit=True, password=current) as fresh:
+            if fresh.execute("SELECT current_user").fetchone() != (db.runtime_user,):
+                msg = "Runtime role identity mismatch after password rotation"
+                raise RuntimeError(msg)
+
+
 def main() -> None:
     if sys.platform not in {"win32", "darwin"}:
         msg = "Use a disposable Windows or macOS account."
@@ -96,6 +148,7 @@ def main() -> None:
     subprocess.run([*cli, "desktop", "install"], check=True)
     try:
         subprocess.run([*cli, "desktop", "install"], check=True)
+        check_password_rotation(cli)
         check_registered_backup(cli)
         local = load_local_access()
         auth = base64.b64encode(f"{local.username}:{local.password.get_secret_value()}".encode()).decode("ascii")

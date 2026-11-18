@@ -15,6 +15,9 @@ The Windows 11 workstation and cold-login trials are tracked in the platform iss
 
 ## Choose the installation
 
+For a packaged Python runtime and bundled web client, follow [Desktop editions](desktop-packages.md).
+The source installation below uses uv.
+
 Start with a clean personal account or a dedicated test account. Have a checked-out LychD
 revision, Git, uv, PostgreSQL **18** and the matching **server-side pgvector extension**.
 For chat, supply a trusted native `llama-server` executable built for your OS and one local GGUF
@@ -192,6 +195,13 @@ qualified isolation boundary.
   filling missing credentials and stops on disagreement with an existing value. Then run
   `desktop install`, sign in, check a known persisted conversation and re-enable the OS
   vault with that account if desired.
+- **Runtime database password.** Stop Vessel and keep its dedicated PostgreSQL running.
+  Use `lychd desktop rotate-runtime-password --recovery-directory "<empty-private-directory>"`.
+  It verifies the cluster and managed runtime role, stages a new recovery set, changes the
+  SCRAM password, disconnects existing sessions for that role, and verifies a fresh
+  login before reopening desktop operations. Repeat the same command and destination after
+  interruption. Store the updated five-file recovery copy encrypted. The administrative,
+  Phoenix and browser credentials keep their independent lifecycles.
 - **Update.** Obtain a verified backup before changing a populated installation. Stop Vessel,
   disable login for the update, and keep the current revision and configuration. Install the new
   revision into the intended environment and run `desktop install`, then repeat the persisted
@@ -225,8 +235,8 @@ needs other stores and current revocation history. [Snapshot contract](../adr/07
 | Capability | Linux | Personal macOS / Windows |
 | --- | --- | --- |
 | Supervision and isolation | Rootless Podman, systemd/Quadlet, cgroup v2 and reviewed SELinux policy where enabled. | User-owned native services and a trusted engine. A same-user process has access to that user's files. |
-| Fast filesystem capture | Btrfs storage preparation is implemented. Whole-installation restore has independent criteria. | APFS and VSS are candidates for volume-level capture. Apple's direct snapshot API needs additional entitlement and superuser authority. VSS requires appropriate backup authority. Qualify creation and recovery before selecting either. |
-| VPN and routes | Native Tether has its own [delivery record](../state-of-the-work.md#vpn-tether). | Local chat uses IPv4 loopback. Managing native host VPNs, route overlaps and live revocation requires separate platform evidence. A remote browser must use an explicitly admitted access profile. |
+| Fast filesystem capture | Btrfs storage preparation is implemented. Whole-installation restore has independent criteria. | [Dedicated volume setup and recovery](volume-snapshots.md) bind the volume and PostgreSQL identity to a cold cut. APFS requires an authorized producer. Windows VSS creation belongs to the storage operator. |
+| VPN and routes | Native Tether has its own [delivery record](../state-of-the-work.md#vpn-tether). | Local chat uses IPv4 loopback. The [desktop Tether helper](desktop-tether.md) offers one certificate-pinned service over a private userspace WireGuard connection for each admitted peer. A remote browser must use an explicitly admitted access profile. |
 | Credentials and lifecycle | Managed secrets and owned systemd resources have Linux-specific policies. | Private per-user files, opt-in Keychain/DPAPI custody and explicit recovery of the original generated set. System-wide unattended services have separate qualification requirements. |
 
 [Apple snapshot API](https://github.com/apple-oss-distributions/xnu/blob/main/bsd/man/man2/fs_snapshot_create.2#L86) ·
