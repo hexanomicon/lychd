@@ -45,18 +45,20 @@ support closure has broken. Independently supported claims remain intact. Recove
 bounded [trial](trials.md) and a new claim, while causal uncertainty can move through
 [Returning findings](returning-findings.md).
 
-Missing or stale evidence leaves the Dispatcher's existing deterministic readiness order in place.
-It neither introduces retry through another candidate nor creates an intelligence floor for
-untested subjects.
-
 ## Let each consumer decide
 
-A fresh admitted claim may inform [Dispatcher](../../../../adr/22-dispatcher.md#resolution) only
-after Ward, compatibility, availability, privacy, and authority have produced an eligible set.
-Dispatcher retains selection and lease ownership. Its current readiness order prefers open
-admission, then non-error state, then active over inactive and warm over merely active, with stable
-name and capability key tie-breakers; it does not optimize quality or price. No evaluation-driven
-ordering is delivered.
+Suppose an application needs a minimum OCR accuracy in Slovak. In the
+[designed qualification path](../../../../adr/34-drift.md), the requesting owner fixes the
+criterion, threshold, applicable evidence, and freshness. A candidate lacking that evidence is
+ineligible, even when its engine is warm. The receiving owner decides whether an exact claim
+satisfies the requirement.
+
+A separate, optional ranking can compare fresh admitted claims among candidates that already
+meet those requirements and Ward, compatibility, availability, privacy, and authority checks.
+When optional ranking evidence is missing, [Dispatcher](../../../../adr/22-dispatcher.md#candidate-selection)
+uses its deterministic readiness order. It selects one candidate, issues the lease, and never
+retries another candidate merely because the first failed. Evaluation-driven qualification and
+ranking remain Designed.
 
 For [Toll](../../toll.md), retained cost and latency evidence may inform spending policy. It neither
 authorizes payment nor supplies a budget, signature, or settlement. A cheaper local success can be

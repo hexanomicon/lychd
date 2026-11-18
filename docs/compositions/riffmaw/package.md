@@ -11,7 +11,12 @@ A compound model-native layer also retains its compound digest and Riffmaw-issue
 
 ## Handoff and authority
 
-Broadcast or Foundry independently admits the exact digest, role, format, timing, rights, findings, and approval for its purpose. The bundle carries no Sigil, secret, provider/DAW session, capture permission, performer consent for another use, dialogue/picture-sound authority, editorial placement, or publication permission.
+Suppose an editor wants this master beneath an interview. Riffmaw has approved the music.
+[Broadcast](../broadcast/edit.md#admit-the-assets) still checks the bundle's exact digest, role,
+format, timing, rights, findings and approval for use in that cut. Foundry makes its own
+admission decision for use in a game. The bundle carries no Sigil, secret, provider session or
+DAW session. Another capture, a new use of a performer's work, dialogue or picture sound,
+editorial placement and publication each need the relevant owner's authority.
 
 Capture, paid generation, DAW export, and handoff remain separate effects with exact request digests/receipts. A destination may have written bytes before acknowledgement disappeared. Keep that outcome **unknown** and reconcile the write before another attempt.
 
@@ -21,7 +26,7 @@ Revocation or an invalid source makes dependent work stale while preserving its 
 
 ## Proving the bundle
 
-Begin with two local synthetic two-minute references, a frozen thirty-second guitar take, short MIDI, an approved sung fixture, and the `01:32` marker. Use pinned onset/tempo observations and an editable `FeelProfile@1` to develop an original four-section arrangement. Produce one generated candidate with a complete receipt, retain the human selection/edit, and add a vocal layer or production-effect print.
+Begin with two local synthetic two-minute references, a frozen thirty-second guitar take, short MIDI, an approved sung fixture, and [the reference moment at `01:32`](sources.md). Use pinned onset/tempo observations and an editable `FeelProfile@1` to develop an original four-section arrangement. Produce one generated candidate with a complete receipt, retain the human selection/edit, and add a vocal layer or production-effect print.
 
 Carry that work through intermediate stems, a candidate mix, and a target-conformant technical master. The final bundle must retain three sync markers, restart-safe indexing, and complete lineage so another reader can reconstruct the passage from sources to accepted music.
 

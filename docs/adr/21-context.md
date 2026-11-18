@@ -28,29 +28,29 @@ icon: material/text-box-multiple-outline
 
 ## Decision
 
-`ContextOrchestrator` owns the active field as typed, hashed `Block`s:
+The `ContextOrchestrator` arranges each request in six layers. Which parts can remain stable
+across turns, and which belong only to this call?
 
 | Layer | Name | Current content |
 | ---: | --- | --- |
-| 1 | Identity | The First One's fixed instructions. |
+| 1 | Identity | The First One's instructions, with literal forms of address when the Run pins an accepted naming snapshot. |
 | 2 | Codex | Reserved and empty. |
 | 3 | Environment | Granted capability and observed warm Coven. |
 | 4 | Karma | Session-keyed, reserved and empty. |
 | 5 | State | Governed complete Pydantic AI message groups. |
 | 6 | Query | Current request. |
 
-Layers 1–4 make the **Stable Floor**. A designed `prefix_digest` witnesses ordered content known
-to LychD; it neither proves provider KV-cache reuse nor attention or latency improvement.
+Layers 1–4 make the **Stable Floor**. The First One binds layer 1 as static instructions and its
+dynamic hook renders non-empty layers 2–4. State becomes model history and Query the user prompt.
 
 ## Blocks and assembly
 
-A complete designed Block has layer, key, text, and SHA-256 content hash, and the orchestrator
-derives `prefix_digest` from ordered stable blocks. The current `Block` carries layer, key, and text;
-the current `AssembledContext` exposes those blocks, bounded settled history, an indivisible
-continuation, query, and known active context window, but no content or prefix digest. The First One
-binds layer 1 as static instructions and its dynamic hook renders non-empty layers 2–4. State
-becomes model history and Query the user prompt, so the six-layer account does not duplicate them
-as instructions.
+Today's `Block` carries layer, key, text and an influence label. The `AssembledContext` exposes
+these blocks, bounded settled history, an indivisible continuation, the query and the known
+active context window. The
+designed Block adds a SHA-256 content hash. A `prefix_digest` over ordered stable blocks would
+then witness the content known to LychD. The current assembly exposes neither digest, and even
+matching digests would not establish provider KV-cache reuse, attention or a latency improvement.
 
 Assembly detaches nested history and continuation values from their callers. Cache reads and
 model-history projections also detach mutable messages, so downstream edits cannot change the

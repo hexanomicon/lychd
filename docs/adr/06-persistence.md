@@ -21,7 +21,7 @@ extension packages gain ambient migration authority.
 
 A deployed **Phylactery means PostgreSQL**: the one database cluster assigned to an application
 partition. Domain repositories isolate SQL mechanics, allowing bounded test substitutes and the
-explicitly isolated, disposable [developer fixture](11-backend.md#isolated-developer-fixture-designed).
+explicitly isolated, disposable [developer fixture](11-backend.md#isolated-developer-fixture).
 Those techniques do not make a process-local or in-memory store a deployed Phylactery. Committed
 application truth stays under PostgreSQL transactions, constraints, and migrations, without loose
 application-managed files forming a shadow database. The Phylactery is therefore neither a generic
@@ -181,7 +181,7 @@ transaction. A [Portal](../sepulcher/extensions/animators/portal.md) remains a r
 [Intercom](26-a2a.md) and [Legion](../sepulcher/aspects/legion.md) carry bounded work or references; none forms a
 shared database fabric.
 
-## Reliquary custody (Designed)
+## Reliquary custody
 
 Reliquary gives artifact custody a separately named store and one typed port. It shares no
 PostgreSQL transaction and is not a Phylactery backend. Its first profile,
@@ -445,9 +445,9 @@ and leave only the non-sensitive tombstone and linkage permitted by policy. Read
 unavailable evidence without reconstructing erased content or treating a digest as disclosure
 permission. The journal does not bypass an artifact owner's access, revocation or retention law.
 
-#### Native Consent bindings (Designed)
+#### Native Consent bindings
 
-The [native review contract](25-hitl.md#required-review-for-native-actions-designed) adds explicit
+The [native review contract](25-hitl.md#required-review-for-native-actions) adds explicit
 `native_review_required` and optional `native_binding` fields to Consent. Existing rows retain a
 false requirement and no binding, without rewriting their verdict or attribution. New native rows
 retain the requirement and complete binding together; missing or unsupported binding cannot be
@@ -457,10 +457,11 @@ Removing this schema must refuse while any required-native or native-bound Conse
 including settled history. The refusal check and schema removal hold a table lock that excludes
 concurrent writes, so a new binding cannot arrive between them. Rollback cannot erase or detach
 these records to make itself succeed; any custody or deletion decision is a separate owner act.
-This is **Designed** compatibility law, not an executed migration receipt. It adds no native action
-store and does not give Consent's Run lifecycle ownership of application recovery records.
+[Migration 0010](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/migrations/versions/0010_native_consent_binding.py)
+introduces those fields. It adds no native action store. The application retains custody of its
+recovery records independently of the Run and Consent lifecycle.
 
-#### Blockworld placement custody (Designed)
+#### Blockworld placement custody
 
 Blockworld's bounded placement keeps its admitted mission and native action in separate
 application records. The action retains its frozen command, exact Pattern and preparation/review

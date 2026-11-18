@@ -106,7 +106,7 @@ pending effects before activating the new owner. Rotating its secret does not es
 uncertain send occurred and cannot make that send safe to repeat.
 
 The existing missing Ward, Composition selection, service-attempt and deployment prerequisites
-remain delivery gates, recorded in [State](../../../state-of-the-work.md#composition-portfolio-delivery).
+remain delivery gates, recorded in [State](../../../state-of-the-work.md#reach-operator-profiles).
 Activation depends on the registered services, bounded secret custody and current authority described above.
 
 WhatsApp Cloud API would require the separately admitted webhook profile described in its

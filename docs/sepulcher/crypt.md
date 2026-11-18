@@ -16,8 +16,10 @@ Vessel.
 ├── triggers/
 │   ├── inbox/
 │   └── journal/
+├── runtime-guard/
 ├── postgres/
 │   ├── init_db.sh
+│   ├── pg_hba_v1.conf
 │   └── data/
 ├── snapshots/
 ├── lab/
@@ -31,11 +33,16 @@ Each chamber has one owner:
 | --- | --- | --- |
 | `triggers/inbox/` | Host Reactor transition intents | Vessel read-write when the Host Reactor is selected |
 | `triggers/journal/` | Terminal Reactor receipts | Vessel read-only when the Host Reactor is selected |
+| `runtime-guard/` | Unsettled model activation that must be reconciled | Vessel read-write, separate from Reactor receipts |
 | `postgres/data/` | Phylactery storage | PostgreSQL unit only |
 | `snapshots/` | Reserved recovery-snapshot shelf | No whole-body snapshot rite is delivered yet |
 | `lab/` | Operator workspace | Vessel read-write |
 | `extensions/` | Private Extension source | Runtime read-only |
 | `core/` | Reserved Core source | Runtime read-only |
+
+A selected [native Tether](aspects/tether.md) also keeps host-owned admission records,
+revocation tombstones and public runtime configuration under `tether/`. Its boot-local sockets
+have a separate lifetime.
 
 A location in the Crypt grants neither execution nor deletion authority. **Geography is not
 authority:** lifecycle receipts and live identity checks determine what LychD may replace or
@@ -45,14 +52,21 @@ external projects, model shelves, foreign mounts, or operator data LychD-owned.
 
 ## The Phylactery
 
-PostgreSQL owns `postgres/data/`. On a suitable Btrfs host, initialization may create that exact
-target as a verified subvolume and apply No-COW inheritance for new database files. On other
-filesystems it remains an ordinary directory. Existing files are never retrofitted, and neither
-case proves that coordinated snapshot and restore exists.
+A stopped Vessel leaves the [Phylactery](phylactery/index.md) in place. PostgreSQL owns the
+files under `postgres/data/`. On a suitable Btrfs host, fresh initialization can create that
+exact target as a verified subvolume and apply No-COW inheritance for new files. On supported
+ext4 it can create an ordinary directory. The current lifecycle receipt requires verifiable
+filesystem and object identities on Btrfs or ext4. Initialization refuses unsupported identity
+providers before creating the layout.
 
-[State of Work](../state-of-the-work.md#whole-body-snapshot-restore) records that the
-whole-body rite is still designed. [Snapshots](../adr/07-snapshots.md) defines the future
-checkpoint protocol; [Layout](../adr/13-layout.md) owns present creation and deletion safety.
+Existing database storage is a separate case. Rootless PostgreSQL may own it through a mapped
+UID. Initialization can preserve it without entering it, changing its permissions, adopting it
+for deletion, or retrofitting No-COW.
+
+For an intact cluster after process death, follow [Reanimation](phylactery/reanimation.md).
+Returning the database, code and configuration together to an earlier point requires a sealed
+[whole-body checkpoint](../adr/07-snapshots.md). The freeze, capture, restore and reconciliation
+are still [Designed](../state-of-the-work.md#whole-body-snapshot-restore).
 
 ## The Spheres
 
@@ -63,7 +77,7 @@ reference library under that design without becoming a new trust domain.
 
 The trusted Vessel receives these mounts:
 
-- the Codex read-only and the Lab read-write, independent of the active task;
+- the Codex read-only and the Lab and `runtime-guard/` read-write, independent of the active task;
 - private Extensions and reserved Core source read-only; and
 - no blanket mount of the Crypt, PostgreSQL data, binding sites, or model shelves.
 

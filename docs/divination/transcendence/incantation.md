@@ -49,15 +49,15 @@ when the work is done. More Agents can multiply the labor while leaving its orga
 one person's hands. The Magus becomes the bottleneck: every answer returns with another demand
 to decide what should happen next.
 
-The deeper ambition is a craft that learns how to approach another craft. An earlier decision
-may have turned on a useful distinction. A Lich should recognize that relation in a different
-task, carry it forward, and discover where the new situation defeats it. This requires learning
-to frame a problem, seek missing evidence, choose a method, and revise the method through
-consequence.
+What would have to travel from one undertaking to the next for that burden to lift? A Lich
+might remember which design failed and still wait for the Magus to tell it what to inspect
+next. A more demanding inheritance is the distinction that exposed the failure. Once the
+Lich knows why it needed to hear from a second witness, it can look for the missing witness
+in an unfamiliar task, or recognize that a measurement would settle this one.
 
-**The generality sought by the Work reaches into the making of workflows themselves.** A learned
-answer helps when the question is familiar. A learned way of investigating can discover which
-question the unfamiliar work requires.
+**The generality sought by the Work reaches into the making of workflows themselves.** Framing
+the problem, choosing what counts as evidence, and revising the method when an encounter
+defeats it are part of the craft the Lich must learn.
 
 **[Viveka begins before the cut](../../sepulcher/lich/blade.md#measure-before-the-cut):**
 examine the direction before committing to it. Where thought cannot settle the choice, a small

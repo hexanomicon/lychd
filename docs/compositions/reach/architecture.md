@@ -13,7 +13,7 @@ before a live bot is connected.
 The separate **`reach.prepare@1`** profile validates configuration, normalizes a synthetic event,
 and evaluates its admission policy. It does not revise **`reach.discord@1`** or deliver the
 conversation promised by **`reach.external_converse@1`**. The accepted [Habitat](habitat.md) and
-[Turn](turn.md) keep their existing meaning; [State of Work](../../state-of-the-work.md#composition-portfolio-delivery)
+[Turn](turn.md) keep their existing meaning; [State of Work](../../state-of-the-work.md#reach-operator-profiles)
 owns the shared implementation evidence.
 
 The later **[`reach.connect.prepare@1`](connected-work/preparation.md)** profile prepares bounded
@@ -134,7 +134,7 @@ provide the transport organization.
 ### Shared operator conversation
 
 The separate operator development profile uses the same Reach-owned
-`reach.operator_converse@8` Pattern behind its process boundary. That Pattern decides whether
+`reach.operator_converse@9` Pattern behind its process boundary. That Pattern decides whether
 to answer, ask for older context, research selected sources, or clarify. Generic Graph supplies
 typed execution and continuation; Reach owns those application decisions.
 

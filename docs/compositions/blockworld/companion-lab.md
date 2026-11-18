@@ -130,10 +130,10 @@ weather cannot replace or renew its movement goal or lease. Priority stop cancel
 and stops the NPC; it does not undo weather already applied. Unknown acknowledgement never
 authorizes replay. Existing NPC-only sessions retain their authority ceiling.
 
-This expands the experimental lab Pattern to revision `3`, implementation `py.5`, checkpoint
-`companion-state-v5`; it does not change the authenticated-player bounded-mission contract.
-Earlier Pattern closures are not migrated by shape compatibility. Delivery evidence remains in
-[State of Work](../../state-of-the-work.md#composition-portfolio-delivery).
+Weather entered the experimental lab at Pattern revision `3`, implementation `py.5`,
+checkpoint `companion-state-v5`. The current clock-capable revision retains the weather
+operation. Earlier Runs keep their exact Pattern closure. Delivery evidence remains in
+[State of Work](../../state-of-the-work.md#blockworld-experiments).
 
 ### Explicit day and night clock
 
@@ -403,7 +403,7 @@ retirement; canceled, too-short, forced or uncertain retirement never supplies t
 The early-finish exit-status rule is qualified against local ALSA `arecord` 1.2.16 on its `null`
 device; it does not establish compatibility with every recorder version or a physical input.
 Release requests and actual captured PCM/retirement remain distinct from physical microphone or
-hearing proof. [State of Work](../../state-of-the-work.md#composition-portfolio-delivery) owns
+hearing proof. [State of Work](../../state-of-the-work.md#blockworld-experiments) owns
 qualification; physical keys, microphone capture and human hearing still need live acceptance.
 
 The separate [voice client](https://github.com/hexanomicon/lychd/tree/main/clients/minecraft-voice)
@@ -527,14 +527,15 @@ private control credential, finite capture-attempt budget, operation observation
 handling and cleanup need their own evidence. Passing server or synthetic voice tests does not
 qualify actual focused-client interaction.
 
-The separate opt-in client GameTest has exercised the actual production initializer, mappings,
-ticks, menu transitions and disconnect against a synthetic local protocol fixture. Five record
-requests and four stops retained their original identities and deadlines; a held key did not
-replay, and the reserved stop arrived before a blocked ordinary response. The actual stopping
-event recorded retired production and fixture workers. Minecraft selected Vulkan llvmpipe inside
-a resource-limited CPU container; no GPU/audio nodes, human account or existing world were supplied.
-This qualifies client ingress and submitted HUD projection, with no native host/game action or
-speech request. Fabric substitutes input/focus, so physical interaction remains outside the proof.
+The opt-in client GameTest exercised the production initializer, mappings, ticks, menu
+transitions and disconnect against a synthetic local protocol fixture. Five recording requests
+and four stops retained their original identities and deadlines. A held key did not replay.
+The reserved stop arrived before a blocked ordinary response, and the stopping event recorded
+retirement of both production and fixture workers. Minecraft selected Vulkan llvmpipe in a
+resource-limited CPU container with no GPU/audio nodes, human account or existing world. Fabric
+substituted input and focus. The result covers client ingress and submitted HUD projection.
+The trial performed no native host/game action or speech request.
+
 Five display cases cover three synthetic mixed-result payloads: SK/CS/EN game-applied/reply-failed
 with 400-character literal feedback, uncertain playback/server work, and player exit with hearing
 unconfirmed. At 640×480 with the default font, all complete rows fit the 320×240 scaled GUI and
@@ -565,12 +566,11 @@ the bound player, validates the resulting typed command and retains stop priorit
 invent coordinates, choose another player or issue an arbitrary Minecraft command. No-action and
 clarification results are explicit terminal outcomes, with private input custody even before Run
 admission. Restored Graph state must preserve the original envelope and the exact derived command.
-Optional interpretation entered at Pattern revision 2; typed requests retain their original three-node path.
-The clock-result shape uses Pattern `4`, implementation `py.6` and checkpoint schema
-`companion-state-v6`. The weather cohort used `3`/`py.5`/`companion-state-v5`; the cell cohort used `py.4`/`companion-state-v4`; the earlier
-controller-deadline cohort used `py.3`/`companion-state-v3`.
-An older result without optional clock/weather/cell/deadline facts remains structurally parseable; that does
-not migrate or rebind an older Run's exact retained Pattern closure.
+Optional interpretation entered at Pattern revision 2. Typed requests retain their original
+three-node path. The controller-deadline cohort used `py.3`/`companion-state-v3`, followed
+by the cell cohort at `py.4`/`companion-state-v4`. [Weather](#explicit-server-weather) and
+[time](#explicit-day-and-night-clock) have their own later revisions. Older result records
+remain readable when optional facts are absent. That compatibility does not rebind a Run.
 
 A bounded live check used the explicitly selected local Qwen service and CPU Whisper/Supertonic
 speech. Synthetic Slovak idle, Czech state and English idle crossed the native Graph into the
@@ -609,36 +609,32 @@ Minecraft action-record wire schema; they do not reinterpret arbitrary server di
 
 ### Reply evidence acceptance
 
-The experimental reply path keeps the known game outcome separate from speech generation, retained
-audio and player settlement. Each admitted command must retain its request identity and real
-Run identity, or an explicit absent Run for outcomes settled before native admission. Optional
-audio records identify the same instruction; synthesis metadata stays unchanged and cannot
-claim playback. Player exit means the owned player and descendants settled, not that a human
-heard or understood the reply.
+A follow command can reach the wolf even if reply playback fails. Report the applied instruction and its actual Run. Only a later observation can show
+movement or arrival. Keep the same request UUID through synthesis and playback. For an
+instruction that expired before native admission, record the absent Run explicitly.
 
-Retain generated bytes in private `REQUEST_ID-reply.wav` and the unchanged synthesis observation
-in `REQUEST_ID-reply.json`. Use `REQUEST_ID-reply-evidence.json` to correlate the request, real or
-absent/unknown Run, game disposition, retained artifacts and player settlement separately.
+| Private record | Question it answers |
+| --- | --- |
+| `REQUEST_ID-reply.wav` | Which generated bytes were retained for this instruction? |
+| `REQUEST_ID-reply.json` | What did synthesis report? Preserve its observation unchanged. |
+| `REQUEST_ID-reply-evidence.json` | Which request and real, absent or unknown Run do the game disposition, retained artifacts and player settlement belong to? |
 
-If retaining that evidence fails, report the failure rather than claim a saved receipt. Cancelling
-the caller's wait still leaves the console-owned native outcome available for the reply.
+A failed write leaves receipt retention failed. Cancelling the caller's wait still leaves the
+console-owned native outcome available for the reply. If stop arrives before the reply coroutine
+starts, during synthesis, or during playback, settle the owned reply work. A cancelled synthesis
+wait leaves remote speech work unconfirmed. Unknown player retirement keeps audio closed while
+the operator can still use text. A known player exit confirms that the player and its descendants
+settled. Hearing and understanding require a listener's observation. None of these events repeats the follow
+command or erases its game result. Operator diagnostics remain value-free and correlated.
 
-Stop must settle owned reply work even when requested before its coroutine starts, while
-synthesis is pending, or during playback. A cancelled synthesis wait cannot prove that the
-speech server stopped working. Unknown player retirement keeps audio admission closed;
-text control and known game outcomes survive. Reply/evidence failure never causes game replay
-or erases a known action result. Operator diagnostics remain value-free and correlated.
-
-This page initially records the construction and acceptance contract. Executable delivery and
-the actual build, server, transport, native graph and speech evidence belong in
-[State of Work](../../state-of-the-work.md#composition-portfolio-delivery). A generated Quadlet or
-configuration file alone is not a running service receipt. An opt-in local lab does not register
-the profile at normal application boot or implement managed Sentinel placement.
-
-The first live proof must cross the real native graph and local transport into a headless server,
-then return an identity-correlated observation. Challenge malformed/full/expired requests, stale
-boot and stop generations, duplicate identities, cancellation, missing actors, lost replies and
-restart. Human Prism joining, microphone recognition and listening remain separately recorded
-checks. Keep this first slice small before admitting inventory, building or arbitrary mod tools.
+For the headless proof, follow the Run across the native Graph and local transport to the server
+and back with a matched observation. Exercise malformed, full and expired requests, stale boot
+and stop generations, duplicate identities, cancellation, missing actors, lost replies and
+restart. The [Blockworld delivery record](../../state-of-the-work.md#blockworld-experiments)
+identifies which build, server, transport, native Graph and speech checks have evidence. A
+generated Quadlet or configuration alone cannot establish a running service. Human Prism
+joining, microphone recognition and listening require their own observations. The opt-in lab
+has no normal-boot registration or managed Sentinel placement. Inventory, building and
+arbitrary mod tools remain outside this slice.
 
 Return to [Blockworld](index.md).

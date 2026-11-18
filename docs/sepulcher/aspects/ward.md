@@ -89,8 +89,9 @@ contribute evidence, but never mint a Sigil or application authority. [Mirror](m
 operative identity and attribution; Ward authenticates and authorizes the initiating or approving
 Principal. [Intercom](../../adr/26-a2a.md) peer scopes likewise cannot enter a local Sigil unchanged.
 
-Keep the Vessel and Altar on same-host loopback. Do not proxy, tunnel, port-forward, or remotely
-publish them outside the explicit
-[single-owner qualification candidate](../../deployments/tumbleweed/access.md), which grants no
-second person a role. [ADR 38](../../adr/38-iam.md) owns Ward law; [Security](../../adr/09-security.md)
+Keep the Vessel's browser listener on loopback. [Tether's same-owner binding](tether.md#native-profile-configuration-contract)
+preserves the existing browser authentication and grants no additional human account.
+Its [qualification record](../../state-of-the-work.md#vpn-tether) covers the bounded policy
+tests. Browser access still requires evidence on the actual installation. The infrastructure-owned
+[forwarding candidate](../../deployments/tumbleweed/access.md) has its own qualification boundary. [ADR 38](../../adr/38-iam.md) owns Ward law; [Security](../../adr/09-security.md)
 owns the wider boundary.

@@ -7,7 +7,8 @@ title: Stewardship & Acquisition
 Find the work that keeps people, living subjects, places, and supplies cared for. Health owns
 reviewed personal clinical records and decision support; Wellbeing owns ordinary eating and
 movement. Keeper owns animal care, Cultivator owns plants and cultivated fungi, and Homestead owns
-physical assets, stores, and resources. Manual records work without connected devices.
+physical assets, stores, and resources. These designs let people enter observations by hand
+when no device is connected.
 
 | Composition | Outcome |
 | --- | --- |

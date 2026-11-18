@@ -19,8 +19,9 @@ usability or acceptable burden; preserve their reasons and uncertainty, with hum
 required. If those criteria change, use the revised Rubric for a new comparison. Keep the earlier
 failed result under the terms by which it was judged.
 
-**The measure must answer to the purpose.** Counting fewer conflicts can reward a design that
-silently discards one side. No silent loss therefore remains a condition; speed and convenience
+**The measure must answer to the purpose.** The latest-version rule can report zero conflicts precisely
+because it has discarded one worker's observation. If the score rewards fewer conflicts,
+silence looks like a perfect result. No silent loss therefore remains a condition; speed and convenience
 are judged among candidates that preserve the observations. The Tree's
 [persistence and acknowledgment](genesis.md#relations-within-relations) meet here: Hod must be
 able to question what Netzach is being rewarded for continuing.

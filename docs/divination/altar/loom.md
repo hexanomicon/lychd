@@ -12,19 +12,15 @@ a retained output. The score remains read-only.
 
 ## Find the exact score
 
-After [Altar setup](index.md#bring-one-intent), open `http://127.0.0.1:7134/loom`. The catalogue retains `bridge_chat@1` through `bridge_chat@4` and
-`delegated_rite@1` and `delegated_rite@2`; the rail pairs each title with its `pattern_id@revision` and marks the default,
-other active routes, and retained revisions.
+After [Altar setup](index.md#bring-one-intent), open `http://127.0.0.1:7134/loom`.
+Loom selects the configured default, then puts the exact Pattern and revision in the address.
+For example, the unconfigured Bridge opens at `/loom/bridge_chat/1`. Copy the full address
+when you want someone to review the same score. A link without the revision is rejected.
 
-Opening `/loom` selects the configured default and replaces the URL with its exact route. Without
-`weaver.bridge`, that is `/loom/bridge_chat/1`; configuring the
-[Bridge capability selector](../../sepulcher/aspects/weaver/index.md#choose-a-bridge-capability)
-selects `/loom/bridge_chat/2`; the
-[public-note configuration](bridge.md#public-note-answers) selects
-`/loom/bridge_chat/3`. The [Scout public-page profile](../../sepulcher/aspects/scout.md#public-page-answers)
-selects `/loom/bridge_chat/4`. An exact revision link continues to open that retained score.
-
-A direct link takes the form `/loom/{pattern_id}/{revision}`. Both parts are required: `/loom/{pattern_id}` is rejected. This lets a review name the revision it concerns instead of leaving its identity to a later selection.
+Look at the labels beside `pattern_id@revision`. **Default** identifies the ordinary route for
+a new request. Other selectable entries can show **Route** with its rank or **Active route**.
+**Retained** means the revision is still available to inspect after routing changes. Use [Weaver's admission table](../../sepulcher/aspects/weaver/pattern-lifecycle.md#identity-before-motion)
+to check which Bridge or delegation score a configuration selects.
 
 Selected extensions and connected profiles can add exact inspection-only scores through the same
 catalogue. **Inspection binding** names the source, Registrant, profile, generation and publication
@@ -135,8 +131,6 @@ the whole candidate remains `castable=false`; no placeholder enters the executab
 Follow [ADR 15's editing gate](../../adr/15-frontend.md#loom-workload-and-editing-gate) for the future editor and [Spellweaver](../../sepulcher/aspects/weaver/index.md) for a candidate's passage to a published revision.
 
 ## Reading direction
-
-For interface review and design, use the following composition and acceptance case.
 
 The exact revision, source registration, entry, station counts, and declared successors should
 be legible before the reader opens digest or source detail. The computed graph has an outline

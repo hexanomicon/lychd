@@ -4,24 +4,21 @@ title: Patterns
 
 # Patterns
 
-A Pattern is a score lineage; a Scroll is an immutable revision of that score. To add an executable
-revision today, work in Core: define its manifest and graph binding using [Workflow and Pattern
-types](https://github.com/hexanomicon/lychd/blob/main/src/lychd/agents/workflows/base.py), then
-include the Workflow in the source-defined
-[registry](https://github.com/hexanomicon/lychd/blob/main/src/lychd/agents/workflows/__init__.py).
-The binding validates the graph against its declared stations and edges. Study an existing [semantic
-chat
-Workflow](https://github.com/hexanomicon/lychd/blob/main/src/lychd/agents/workflows/semantic_chat.py)
-and its [tests](https://github.com/hexanomicon/lychd/blob/main/tests/agents/test_semantic_chat.py)
-before changing the score. [Weaver](../aspects/weaver/index.md) owns authoring and execution
-details.
+A Pattern names a workflow across revisions. Each immutable **Scroll** fixes one score.
+Choose the contribution by what its reader should be able to do.
 
-Extensions can contribute an `InspectionContribution` through the inspections store for a bounded,
-exact score description. [Its
-contract](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/weaver/inspection.py) and
-[store](https://github.com/hexanomicon/lychd/blob/main/src/lychd/extensions/context.py) distinguish
-that catalogue from execution: it does not register a Workflow or permit a cast. Duplicate
-identities and conflicting exact revisions are refused. [Oculus](../aspects/oculus.md) explains what
-inspection exposes; execution owners produce runtime events, rather than activity being inferred
-from the score. The current executable registry is fixed and source-defined, even when an extension
-supplies an inspection.
+**To execute the score**, define the manifest and graph binding using Core's
+[Workflow types](https://github.com/hexanomicon/lychd/blob/main/src/lychd/agents/workflows/base.py).
+The binding checks the graph against the declared stations and edges. Include the exact
+revision in the [Workflow registry](https://github.com/hexanomicon/lychd/blob/main/src/lychd/agents/workflows/__init__.py)
+and decide separately which revision may receive new admissions. Follow the
+[semantic chat Workflow](https://github.com/hexanomicon/lychd/blob/main/src/lychd/agents/workflows/semantic_chat.py)
+and its [tests](https://github.com/hexanomicon/lychd/blob/main/tests/agents/test_semantic_chat.py).
+[Spellweaver](../aspects/weaver/index.md) explains how a Run keeps its admitted score.
+
+**To show the score**, an extension can add an
+[`InspectionContribution`](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/weaver/inspection.py)
+to the [inspections store](https://github.com/hexanomicon/lychd/blob/main/src/lychd/extensions/context.py).
+Duplicate identities and conflicting descriptions of one exact revision are refused. A reader can
+inspect an accepted score without being able to cast it. Evidence that a performance took place
+comes from the executing owner. See [Oculus](../aspects/oculus.md).

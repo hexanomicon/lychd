@@ -34,7 +34,6 @@ disposition. Merely replacing the latest receipt view cannot repair inventory al
 
 A failed or lost acknowledgment leaves acceptance unknown. Reconcile the store event
 before resending or amending; never recut the crop to repair a message failure.
-Partial acceptance retains both the collected amount and the independently accepted
-amount, with the remaining disposition unresolved or explicitly recorded.
+If three baskets were collected and Stores accepted two, record both amounts. Record what happened to the third basket or leave its disposition unresolved.
 
 Return to [Cultivator](index.md).

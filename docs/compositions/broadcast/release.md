@@ -15,7 +15,15 @@ candidate remains subject to its admitted use boundaries.
 
 Source support, claims, voice/likeness authority, privacy/Portal use, accessibility, asset admission, and render checks supply their own receipts. Publication additionally binds candidate digest, destination, audience, visibility, schedule, disclosures, cost, and approving Principal.
 
-`broadcast.publish_draft@2` and `broadcast.publish_public@2` are distinct effects over `PublicationCandidate@2`. Each pins idempotency key, payload/request digests, destination identity, reconciliation lookup, and `PublicationReceipt@1`. A lost acknowledgement leaves **unknown** remote state until inspection resolves it. Browser automation supplies no authority for an untyped retry.
+Uploading a draft and publishing publicly are separate effects over the same
+`PublicationCandidate@2`. Both `broadcast.publish_draft@2` and `broadcast.publish_public@2`
+pin the idempotency key, payload and request digests, destination identity, reconciliation
+lookup and `PublicationReceipt@1`.
+
+Suppose the destination accepts the upload and the connection drops before the receipt returns.
+Record the outcome as **unknown**. Use the pinned lookup to find out whether those bytes arrived.
+Repeating the upload through a browser could create a second copy. A retry must still use the
+authorized effect.
 
 After release, a correction or removal must still be attributable to the publication it changes. `broadcast.correct_publication@2` creates a forward correction. `broadcast.takedown@2` requests removal while preserving the publication and receipt history. If a platform refuses, authority expires, the candidate changes, remote state remains uncertain, or a gate fails, return that exact blocker.
 
@@ -23,6 +31,12 @@ Recovery begins by resolving the pinned Pattern, source, handoff, script, timeli
 
 ## Proving package
 
-Before testing an external release, prove its local candidate. Build a three-to-five-minute piece from frozen sources: linked claims, article/script, local narration with back-transcript, admitted visual/music/language/picture-sound bundles, captions, explicit timeline, deterministic render, bounded repair, `EditorialPackage@2`, and `PublicationCandidate@2`. The fixture makes no platform call.
+The proposed first test ends before any platform call. Build a three-to-five-minute piece from
+frozen sources and linked claims. Trace the article or script into local narration, transcribe
+the narration back for comparison, and place the admitted visuals, music, timed language,
+picture sound and captions on an explicit timeline. Exercise a bounded repair and a deterministic
+render. The outputs to inspect are `EditorialPackage@2` and `PublicationCandidate@2`. The
+[Portfolio delivery record](../../state-of-the-work.md#composition-portfolio-delivery) identifies
+which application Patterns can run today.
 
 Return to [Broadcast](index.md), or inspect the local candidate in [Render](render.md).

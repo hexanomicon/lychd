@@ -25,8 +25,8 @@ typed demand → interface/profile declaration → fresh state → exact WARM gr
 
 A capability-bearing Animator is the route; there is no semantic provider-pair abstraction.
 Dispatcher emits its authoritative dispatch event only after lease admission. The delivered source
-implements the narrower v1 chat-model and toolset compatibility path described below; the
-general-service records and discriminated grant union remain Designed.
+supports the v1 chat-model and toolset paths and a separately selected, operation-bound local
+embedding lease. The general-service records and discriminated grant union remain Designed.
 
 The live Animator is a capability/runtime handle, not a deployment document. It carries its exact
 Rune identity, Connector, and typed runtime surfaces while
@@ -316,7 +316,7 @@ Current code defines this immutable metadata shape and carries references in del
 requests and results. Ordinary `Intent` and Bridge admission remain text-only; they neither carry
 artifact references through the Run ledger nor infer required modalities from media types.
 Dispatcher filters explicitly supplied modality requirements. A separate, unregistered
-[trusted-local custody adapter](06-persistence.md#reliquary-custody-designed) provides bounded
+[trusted-local custody adapter](06-persistence.md#reliquary-custody) provides bounded
 retention under an injected current authorizer. Bridge artifact admission, credential-backed
 authority, and provider materialization remain separate work.
 
@@ -357,7 +357,7 @@ may select `embedding_profile = "qwen3-06b-q8-b9445@1"`, `port = 8080`,
 The operator supplies the public artifact through the existing mount configuration. Model path,
 image and profile are configured admission evidence: replacing a mounted file is not detected by
 health/inventory probes. The retained public manual fixture in
-[`tests/fixtures/embeddings/qwen3-06b-q8-b9445.json`](../../tests/fixtures/embeddings/qwen3-06b-q8-b9445.json)
+[`tests/fixtures/embeddings/qwen3-06b-q8-b9445.json`](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/embeddings/qwen3-06b-q8-b9445.json)
 is dialect qualification, not fresh runtime attestation or proof of Orchestrator activation.
 Its laboratory RLIMIT and network isolation do not become general deployment resource guarantees.
 

@@ -205,22 +205,21 @@ surface exists, provider-facing toolsets remain incapable of constituting a deli
 
 Runes, Soulstones, Portals, and Transmutation admit active schemas and definitions. A
 `SoulstoneDefinition` couples its schema to an Animator-owned runtime adapter and registers that
-schema into the shared rune store. Runtime schema discovery imports only the selected package; a
-loader is the singular TOML parser and validator, not a ledger. `__subclasses__` may audit an
-already-loaded process but cannot establish registration or change whether an admitted schema is a
-file-owning leaf. Branch ownership is computed from the exact admitted schema generation. Exact
-repeat registration is idempotent
-only for the same Registrant. Rune schema admission also reserves its exact filesystem anchor; a
-different schema cannot claim the same `relative_path`. Soulstone registration identity is the
-runtime name, Rune schema, and adapter type. The same runtime or schema with another owner fails
-closed instead of silently preserving first registration. Portal schemas likewise have one exact
-factory owner. The Vessel composition root passes the definitions, not an ordered list of anonymous callables;
-runtime dispatch looks up the Portal's exact Rune schema. A broad factory cannot claim another
-package's declaration, and a factory is total for every value its schema admits. Each definition
-also owns its optional typed probe strategy. A Portal that requests a live probe without that exact
-strategy fails closed; connector shape or a coincidental method name never selects an egress
-protocol. The factory protocol is total: schema validation must refuse values its exact owner
-cannot construct.
+schema into the shared rune store. Runtime schema discovery imports only selected packages.
+One loader parses and validates TOML. Branch ownership and the set of file-owning leaves come
+from the exact admitted schema generation. Inspecting `__subclasses__` can audit a loaded
+process, but changes neither registration nor file ownership. The loader keeps no ledger.
+
+Exact repeat registration is idempotent only for the same Registrant. A Rune schema reserves its
+`relative_path`. A Soulstone registration binds runtime name, Rune schema and adapter type.
+Another schema at the same filesystem anchor, or another owner's claim to that runtime or schema,
+fails assembly.
+
+The Vessel passes Portal definitions into runtime dispatch. The Portal's exact Rune schema
+selects its one factory owner. Each factory must construct every value its schema accepts:
+reject unsupported values during schema validation. A live probe also requires the definition's
+own typed probe strategy. Connector shape or a coincidentally named method supplies no egress
+protocol.
 
 The Rune registry deep-copies admitted schema metadata and every returned snapshot, including
 nested mutable values. Membership sealing and snapshot isolation are separate laws: trusted

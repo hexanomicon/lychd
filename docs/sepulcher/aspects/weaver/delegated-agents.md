@@ -272,8 +272,14 @@ network work.
 Codex CLI (`codex`) and Claude Code (`claude`) have unregistered protocol adapters whose default
 host refuses execution. OpenCode Go (`opencode-go`) remains a declared-only example. No effectful
 Coffin supervisor or CLI/provider process, credential isolation, or durable artifact custody is
-delivered. Database shapes and a PostgreSQL store exist without a real provider or two-process
-PostgreSQL recovery receipt; exact pre-park recovery is proved only with focused in-memory tests.
+delivered. In the [two-process PostgreSQL test](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_delegated_process_recovery_pg.py),
+one process parks a reference job and exits cleanly. Its replacement rehydrates the same request,
+adopts one terminal result and resumes the Run once, even after the configured admission profile
+changes. The test uses a captured queue. The narrower window after checkpoint creation and
+before parking has [in-memory reconciliation coverage](https://github.com/hexanomicon/lychd/blob/main/tests/cortex/test_reconcile.py).
+The two-process test begins its recovery from an already parked job. Abrupt process death, real
+broker delivery, application startup, and recovery of a foreign provider still need separate
+evidence.
 
 The [tracked delegated-coding
 playbook](https://github.com/hexanomicon/lychd/blob/main/.agents/workflows/delegated-coding.md)

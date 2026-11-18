@@ -183,9 +183,10 @@ does not admit XML. Item locators remain bounded returned data, never permission
 fetches. The consuming application owns local filtering and suitability; repeat watching needs
 current admission and finite standing policy.
 
-The [Scout source study](../sepulcher/aspects/scout.md#source-acquisition-study) records a Bazoš RSS
-premise and the next qualification obligations. It is a candidate study, not an admitted feed
-profile or delivery evidence.
+The [Scout source study](../sepulcher/aspects/scout.md#source-acquisition-study) records the
+observations behind the choice of the advertised Bazoš category feed. That study proposed the
+experiment. The later [Scavenger observations](../state-of-the-work.md#scout-web-acquisition)
+record which parts of the finite workflow ran and under what conditions.
 
 ### Model-free native feed handoff
 
@@ -633,19 +634,23 @@ to a different audience. Conversation mode requires no earlier mechanical textua
 
 ## Delivery Boundary
 
-The native public-page profile implements bounded Fetch and Extract through opt-in
-`bridge_chat@4`, with authenticated declaration, native consent and durable attempt accounting.
-It is distinct from the general provider, Search, Crawl and Render surfaces designed above.
-[State of Work](../state-of-the-work.md#scout-web-acquisition) owns its current evidence envelope:
-separately qualified network/extraction mechanisms and controlled workflow/PostgreSQL checks do
-not establish a deployed application-to-model passage or arbitrary host compatibility.
+Two native paths use bounded Fetch and Extract. The public-page path (`bridge_chat@4`) binds an
+authenticated declaration, native consent and durable attempt accounting to a local answer
+workflow. The [model-free feed path](#model-free-native-feed-handoff) binds its result to a
+specific application request and custody profile without acquiring a model lease. Neither path
+admits general Search, Crawl or Render.
+
+[State of Work](../state-of-the-work.md#scout-web-acquisition) distinguishes the network and
+extraction receipts from each workflow's controlled evidence and dated observations. A mechanism
+receipt alone establishes neither a deployed application-to-model passage nor arbitrary host
+compatibility.
 
 The pure `public-https-destination@1` checks remain preflight facts; only the admitted transport
 can establish connected-peer and transmission evidence. A locator, model declaration, generic
 runtime test or `ArtifactRef` cannot supply missing authority or custody.
 
 No Scout-owned general provider contribution, effect-scoped Agent tool, robots/rate scheduler,
-browser, download quarantine or Reliquary is delivered by that profile. Search mediation and
+browser, download quarantine or Reliquary is delivered by these profiles. Search mediation and
 renderer isolation require their own qualification; the native path cannot grant their effects
 or make the shared Pod an acceptable browser boundary. The
 [Scout topic](../sepulcher/aspects/scout.md#public-page-answers) owns configuration and operation.

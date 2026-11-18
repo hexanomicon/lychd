@@ -78,7 +78,7 @@ repetition. A fake provider cannot establish an exactly-once guarantee the real 
 | Exact service manifest and callback/ingress selection | [Containers](../../../adr/08-containers.md#versioned-application-deployments), [Configuration](../../../adr/12-configuration.md#application-and-gateway-profiles) |
 
 Before implementation, reconcile the chosen slice with those owners and current
-[delivery evidence](../../../state-of-the-work.md#composition-portfolio-delivery). The existing
+[delivery evidence](../../../state-of-the-work.md#reach-operator-profiles). The existing
 public-only Discord profile and credential-gated loopback bootstrap supply no private remote IAM,
 general service-attempt runtime, Composition selector or connected deployment by themselves.
 Private mail must not be exposed through a convenient callback or permissive local-authority shim.

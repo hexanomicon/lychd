@@ -94,8 +94,9 @@ compensation or refusal path, and illegal-repeat boundary. A checkpoint cannot s
 external effect.
 
 [Topology-A local runs](../../../state-of-the-work.md#topology-a-local-runs) are **Available**.
-[Graph Stasis and consent re-admission](../../../state-of-the-work.md#graph-stasis-consent) and
-[delegated execution](../../../state-of-the-work.md#delegated-agent-execution) are **Partial**.
-Real checkpoint-plus-Consent/delegate restart proof, distributed fencing, and general periodic
-workflow recovery remain absent. [Workers](../../../adr/14-workers.md) owns custody;
-[Spellweaver](index.md) routes the subsystem.
+For the effect-free delegated rite, a [migrated PostgreSQL test](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_delegated_process_recovery_pg.py)
+parks work in one process and resumes it once in its clean replacement. It uses a captured
+queue. [Delegated execution](../../../state-of-the-work.md#delegated-agent-execution) records
+where that proof ends. [Consent re-admission](../../../state-of-the-work.md#graph-stasis-consent)
+still lacks its own PostgreSQL checkpoint-and-restart receipt. Distributed fencing and general
+periodic workflow recovery remain open. [Workers](../../../adr/14-workers.md) owns custody.

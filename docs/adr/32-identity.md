@@ -178,11 +178,11 @@ Smith may draft or package a candidate and Spellweaver may coordinate the work; 
 with Mirror. Repetition, praise, model confidence and memory volume grant no additional scope,
 tool, trigger, queue position or hardware priority.
 
-Rollback directs future Invocations to a prior promoted revision and leaves earlier Runs and
-artifacts intact. A static prompt supplies none of the required binding, scoped memory, receipt,
-lineage or rollback. Retrieval provides hydration input, while behavioral resemblance can support
-at most a Drift finding. Automatic self-revision is refused because it bypasses the attributable
-reviewed passage.
+After rollback, future Invocations use an earlier promoted revision. Existing Runs and artifacts
+keep the revision that produced them. A static prompt cannot supply that binding, scoped memory,
+receipts, lineage or rollback. Retrieved material can feed hydration. Behavioral resemblance
+can support a Drift finding. Neither can publish a revision on Mirror's behalf. Automatic self-revision bypasses the required
+review and is refused.
 
 ## Consequences
 

@@ -66,11 +66,14 @@ credential belongs only to the Vessel and the host operator; shared Pod membersh
 access. Unsafe requests with a foreign Origin are refused even when their CSRF token is valid.
 This local credential does not establish remote identity, object isolation, or effect-time
 revocation. Dedicated-profile browser operation remains subject to its acceptance evidence.
-The [isolated developer fixture](11-backend.md#isolated-developer-fixture-designed) may use its
+The [isolated developer fixture](11-backend.md#isolated-developer-fixture) may use its
 configured loopback Vite proxy while retaining the same authentication, Host, CORS, Origin, and
-CSRF checks. Peer access, production access through a proxy, ad hoc tunnels, and non-loopback operation
-remain refused. The bounded experiment below is the sole forwarding exception. The raw SAQ administrative UI is disabled: its traceback and broker-mutation
-surfaces are not admitted operator projections.
+CSRF checks. General peer access, production reverse proxies, ad hoc tunnels and non-loopback Altar exposure
+remain refused. Two bounded paths can carry the same owner's existing loopback connection:
+[Tether's native SSH binding](39-vpn.md#optional-same-owner-ssh-access) and the
+[infrastructure experiment below](#single-operator-forwarding-candidate). Each has its own
+credential custody, revocation and qualification. The SAQ administrative UI stays disabled
+because it exposes tracebacks and broker mutations.
 
 ### Single-operator forwarding candidate
 

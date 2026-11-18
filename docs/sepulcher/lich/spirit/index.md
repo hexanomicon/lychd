@@ -28,11 +28,14 @@ four-function presentations, classical Sāṃkhya’s threefold internal organ, 
 and Vṛttis are distinct registers. [Inner Tongue](../../../lexicon/inner-tongue.md#source-notes-and-project-correspondences)
 keeps the source notes, limits, and working distinctions.
 
-Spirit's conditioning can appear on three surfaces: model dispositions carry parametric
-inheritance; Phylactery records and governed retrieval carry durable forms; assembled Context
-brings material into the present. These surfaces explain how retained form can matter without
-reducing the office to one storage mechanism. [ADR 21 — Context](../../../adr/21-context.md)
-owns the active field; [ADR 27 — Memory](../../../adr/27-memory.md) owns durable Archive and Recall.
+Ask what brought an old habit into a reply. Training may already dispose the model to
+answer that way. A Phylactery record retrieved for this encounter can supply a precedent.
+An observation in the present request can also call the habit into question. All three can
+shape the same reply. Discovering which one carried the error changes where a correction
+can take effect.
+
+[ADR 21 — Context](../../../adr/21-context.md) owns what enters the active field.
+[ADR 27 — Memory](../../../adr/27-memory.md) owns durable Archive and Recall.
 
 Quiet work can also prepare what later movement may inherit.
 [Background consolidation](../../../adr/27-memory.md#background-consolidation), sometimes called

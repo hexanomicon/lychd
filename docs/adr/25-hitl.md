@@ -126,7 +126,7 @@ Loopback bootstrap requires the [dedicated local credential](09-security.md) bef
 the fixed `magus:*` Sigil. `runs:approve` is meaningful only at the documented same-host scope;
 it does not establish remote identity or the [Ward](38-iam.md)'s effect-time authorization.
 
-### Required review for native actions (Designed)
+### Required review for native actions
 
 A native application may require review of an action it has already prepared. Its Consent retains
 an immutable binding to the owning Composition, native action, exact preparation, review profile
@@ -161,10 +161,17 @@ writer that predates the binding; an older pending-only update cannot enforce it
 The native action owner compares the retained preparation and review binding again before issuance
 and performs the current authority checks required above. [Blockworld's Sentinel](../compositions/blockworld/sentinel.md)
 defines the placement review; [Continuity](../compositions/blockworld/continuity.md) owns its atomic
-preparation and action recovery. [Persistence](06-persistence.md#native-consent-bindings-designed)
-owns schema compatibility. These requirements remain **Designed**: storage and transport alone do
-not supply the owned preparation transaction, current authorizer, or complete client review.
-[State of Work](../state-of-the-work.md#graph-stasis-consent) owns the delivered boundary.
+preparation and action recovery. [Persistence](06-persistence.md#native-consent-bindings)
+owns schema compatibility.
+
+The shared metadata and client review do not complete an application's admission path. For
+example, [Scout's opt-in public-page workflow](../state-of-the-work.md#scout-web-acquisition)
+binds its own preparation, Consent and current authority before acquisition.
+[Blockworld's placement experiment](../state-of-the-work.md#blockworld-experiments) exercises its
+separate application-owned transaction under its recorded test conditions. Other owners must
+supply and qualify their own preparation, reviewer and issuance checks. See
+[Bridge review](../state-of-the-work.md#bridge-surface) and
+[Graph stasis](../state-of-the-work.md#graph-stasis-consent) for the shared boundaries.
 
 ## Consent history and proposal branches
 

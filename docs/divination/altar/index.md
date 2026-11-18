@@ -5,51 +5,33 @@ icon: fontawesome/solid/dungeon
 
 # :fontawesome-solid-dungeon: Altar
 
-Bring a piece of work to the **Altar**, then follow it beyond the reply. You can keep a project's
-concerns beside its conversation, inspect the evidence behind a result, read the score that guided
-the Run, and examine any recorded change to the iron. Each instrument answers a different part of
-that inquiry.
+The **Altar** is LychD's browser interface. Ask a question in Bridge. When a reply arrives,
+its Run ID lets you follow that same attempt into Orb to see what was recorded and into Loom
+to read the workflow it was meant to follow. Atlas keeps the larger project in view across
+conversations.
 
 ## Bring one Intent
 
-Begin with [Summoning](../../summoning.md), including its four observations of the bound body
-and first reply. Before starting services, read its [closure limitation](../../summoning.md#close-the-rite):
-`lychd stop` currently refuses an active Vessel, so the trial needs a separately authorized
-recovery plan. Summoning does not supply a working end-to-end start/stop procedure.
+For a first look from a checkout, [trace a sample Run](../../onboarding/explore/one-run.md).
+The developer preview gives you a conversation, a workflow score, and evidence to inspect.
 
-For startup and local access, follow [The Awakening](../../summoning.md#the-awakening). With the
-Vessel running under that trial boundary, open the Altar in a dedicated profile on the same host:
+For a first turn on your own model host, follow [Summoning](../../summoning.md). Before startup,
+agree how to [close the trial](../../summoning.md#close-the-rite). The public stop command refuses
+an active Vessel. [The Awakening](../../summoning.md#the-awakening) takes you through loopback
+access, the local credential and the four observations that establish a first reply. Keep the
+listener on literal loopback in a dedicated same-host browser profile. The credential proves local
+possession and confers full local authority. A remote road requires its own [access
+profile and qualification](../../deployments/index.md).
 
-```text
-http://127.0.0.1:7134/
-```
-
-Before entering, retrieve the dedicated local credential in a private terminal with `lychd access`
-and answer the browser's authentication dialog as described in
-[The Awakening](../../summoning.md#the-awakening). Keep the password out of URLs and command lines.
-The root opens **Orb**, with the Bridge dock on the left in a fresh wide layout. On a narrow
-window, the edge chevron opens the dock. Saved dock preferences remain in use.
-Choose **Bridge** in the masthead to open the full conversation workspace. On a fresh Phylactery,
-choose **New Séance** in Bridge and offer a bounded Intent.
-Answer an inline consent card only when the Run asks for judgment.
-
-Keep the listener on literal loopback, with no ad hoc proxy, tunnel, or forwarding. The separate
-[single-owner access candidate](../../deployments/tumbleweed/access.md) is an explicit qualification
-experiment, not shared remote access. Loopback and the
-fixed `magus:*` Sigil alone do not authenticate a caller. The separate credential proves local
-possession; it supplies no remote person identity or hostile-browser isolation. The full current
-boundary lives in [The Awakening](../../summoning.md#the-awakening); [State of
-Work](../../state-of-the-work.md#altar-and-observability) records the delivered surface.
+The installed Altar opens at `http://127.0.0.1:7134/` in **Orb**. Open **Bridge** in the
+masthead, choose **New Séance**, and offer a bounded Intent. If it pauses for your consent,
+the request appears beside the turn that needs your judgment.
 
 ## Carry the Run with you
 
-Follow one admitted conversation turn from your offered request to its result. Its **Run**
-identity lets you find the same act in each instrument. The conversation, or séance, can hold
-many such turns.
-
-Each admitted turn opens a [Circle](./circle.md): one Invocation. Within that Circle, the
-**casting** performs an exact **Scroll**, the workflow score; its Run keeps durable execution
-identity. Keep that identity in view when changing instruments.
+A séance can hold many turns. Each admitted turn opens one [Circle](circle.md), the Invocation
+in which the casting performs its exact Scroll. Carry that turn's **Run ID** from Bridge into
+the other instruments to find evidence about the same attempt.
 
 | What you need to establish | Instrument |
 | --- | --- |
@@ -62,31 +44,17 @@ identity. Keep that identity in view when changing instruments.
 | What was observed about readiness or a physical transition? | [Nexus](./nexus.md) |
 | Which Runs are before us, what evidence is arriving, and where does capture run out? | [Orb](./orb.md) |
 
-The masthead orders **Bridge**, **Atlas**, **Loom**, **Nexus**, **Orb**, and **Applications**.
-Bridge opens the full conversation workspace, with **Browse séances** for retained inspection.
-Atlas opens the project catalogue, with **New canvas** and **Open Canvas →**. LychD's own Canvas
-stays pinned first. **Applications** opens other admitted applications, including Scavenger market.
-Hover, click, or keyboard focus opens the menu.
+Open **Applications** by clicking, hovering or focusing the menu. **Scavenger market** is
+visible even when Scavenger is unconfigured. To submit a market observation the host needs the
+[finite feed observation profile](../../compositions/scavenger/market.md#finite-feed-observation).
+In **Atlas**, LychD's own Canvas stays pinned first. A project can begin there before it has
+a conversation or a Run.
 
-Atlas gives a larger undertaking continuity across conversations and Runs, and can begin before
-either exists. Inside Bridge, a Circle gathers one Invocation. Its current form is a compact
-per-turn Run disclosure: supplied status, complete identity, evidence and declared-score links,
-and eligible cancellation. Circle is the Invocation-shaped pinnacle within Bridge; a composed
-Circle workspace is not yet delivered.
-
-Start with **Look into the Orb** beside a Bridge result. Keep the same Run identity as you inspect
-capture limits and gaps, compare its pinned score in Loom, or follow an exact physical-transition
-correlation into Nexus. The leaf guides explain each step. That shared identity keeps an
-observation attached to the work that prompted your question.
-
-For several Runs, open `/orb`. Its parallel field combines a paged catalogue with at most three
-bounded live lenses on one canvas. Zoom or explicit detail controls reveal supplied Run, station,
-occurrence, and record identities. Deeper subworkflow structure needs an identity from its owner;
-the view cannot infer it.
-
-Nexus inspection changes no lifecycle state. **Preview** is nonbinding; **Request transition**
-performs a real maximum-priority mutation. Read the [Nexus guide](./nexus.md) before making that
-request.
+For one turn, choose **Look into the Orb** beside the Bridge reply. From its evidence you can
+open the exact score in Loom or follow a recorded physical transition into Nexus. To compare
+several Runs, use the [parallel field](orb.md#read-the-parallel-field). In Nexus, **Preview**
+only inspects a plan. **Request transition** sends a real maximum-priority request to change
+the machine.
 
 ## Return to Bridge
 

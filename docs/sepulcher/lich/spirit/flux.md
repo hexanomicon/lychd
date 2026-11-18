@@ -37,10 +37,12 @@ Patañjali names five Vṛttis, received here as forms present movement may take
 | Nidrā | sleep or cognition of absence; no training or consolidation contract is inferred |
 | Smṛti | [Recall](./recall.md), retained form becoming active Flux |
 
-Smṛti is one Vṛtti, not a blanket blessing on every resemblance to the past. A returning cognition
-may be useful, false, stale, or someone else’s. Patañjali’s Citta is broader than this project
-correspondence; [Inner Tongue](../../../lexicon/inner-tongue.md#source-notes-and-project-correspondences) preserves that
-distinction.
+A recollection can be vivid and mistaken. A true account can belong to someone else or
+describe conditions that no longer hold. In Patañjali's map, Smṛti is one of the Vṛttis.
+Its appearance in present cognition leaves those questions of truth, source, and relevance
+open. Patañjali's Citta also has a wider reach than Spirit in this fourfold instrument.
+[Inner Tongue](../../../lexicon/inner-tongue.md#source-notes-and-project-correspondences)
+keeps the two uses in view.
 
 Most Flux passes. Movement that leaves retained potency may become [**Seed**](./seed.md): the future
 hidden in what present life leaves behind.

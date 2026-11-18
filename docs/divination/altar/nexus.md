@@ -144,8 +144,6 @@ its admission gates.
 
 ## Reading direction
 
-For interface review and design, use the following composition and acceptance case.
-
 The current layout keeps snapshot time and containment first, then the ownership map or grouped
 list, selected properties, one selected preview and its explicit request. Exact plan overlays and
 aligned eviction/launch lists describe the same supplied Animator identities. Keep inspection

@@ -5,15 +5,15 @@ icon: fontawesome/brands/whatsapp
 
 # :fontawesome-brands-whatsapp: WhatsApp assessment
 
-A customer asks a business a question on WhatsApp. Reach can prepare an answer and deliver it from
-the business's number, subject to the recipient's permission, the response window and current
-provider policy. That is useful correspondence; it does not establish access to the operator's
-existing personal chats.
+A customer writes to a business on WhatsApp. Reach can prepare the business's text reply
+offline. Sending from its number would require a separately admitted Business Platform
+connection, the recipient's permission, an eligible response window or template, and current
+provider policy. The proposed connection has no access to the operator's existing personal chats.
 
-This assessment was reviewed **2026-10-21**. [Reach Connected Work](index.md) scopes
-`reach.whatsapp.business@1` as an optional Business Platform profile after Gmail, Discord and
-GitHub. It reuses Reach's preparation, authority and effect ledger but needs its own intake,
-onboarding, eligibility and billing contracts. No WhatsApp connection is implemented or qualified.
+This assessment was reviewed **2026-10-21**. [Reach Connected Work](index.md) places the optional
+`reach.whatsapp.business@1` profile after Gmail, Discord and GitHub. It would reuse Reach's
+preparation, authority and effect ledger, with its own intake, onboarding, eligibility and
+billing contracts. Live WhatsApp delivery remains unimplemented and unqualified.
 
 ## Three distinct routes
 

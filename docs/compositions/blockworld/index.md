@@ -13,12 +13,12 @@ A reviewed blueprint on a private plot is the first journey: establish the finit
 
 `blockworld.inhabitant` revision `2` publishes `blockworld.bounded_mission@2`. Admission binds a finite mission, server mode, authenticated bot, exact world epoch and capabilities, plot lease, blueprint, tools, and budgets. Its return is verified action receipts, a durable mission cursor, and completion or exact non-completion. Public autonomy, unrestricted exploration, administrator commands, remote shell, and cross-plot power remain outside the mission.
 
-Revision `1` and `blockworld.bounded_mission@1` remain historical design contracts, retired in favour of revision `2`. Their mission authority, five reads and five effects, verified receipts, and refusal to repeat an uncertain placement remain unchanged. Revision `2` adds required preparation, exact command/review binding, and native action continuity for the bounded placement operation. These requirements do not reinterpret revision `1` or establish parked-state compatibility. This design retirement defines no executable migration; [State of Work](../../state-of-the-work.md#composition-portfolio-delivery) owns registration and delivery.
+Revision `1` and `blockworld.bounded_mission@1` remain historical design contracts, retired in favour of revision `2`. Their mission authority, five reads and five effects, verified receipts, and refusal to repeat an uncertain placement remain unchanged. Revision `2` adds required preparation, exact command/review binding, and native action continuity for the bounded placement operation. These requirements do not reinterpret revision `1` or establish parked-state compatibility. This design retirement defines no executable migration; [State of Work](../../state-of-the-work.md#blockworld-experiments) owns registration and delivery.
 
 The bounded-mission code slice is an inactive, one-block test workflow assembled explicitly with
 inert effects. It is not registered at normal boot and does not connect to Minecraft. The separate
 [Horizon-assist profile](horizon-assist.md) supplies an experimental attached-client passage.
-[State of Work](../../state-of-the-work.md#composition-portfolio-delivery) keeps their evidence and
+[State of Work](../../state-of-the-work.md#blockworld-experiments) keeps their evidence and
 remaining game checks distinct.
 
 Blockworld records why the inhabitant acts and what it can account for: inhabitant, mission, world-local relationship, project, memory-candidate, lease, action, and receipt records. The server remains authoritative for blocks, entities, inventory, and game time. An [Avatar](../avatar/index.md) may project the Lich through the inhabitant, but gains no mission, inventory, lease, or world effect.
@@ -41,7 +41,7 @@ A [Prism Launcher client on macOS](https://prismlauncher.org/download/macos/) is
 [Prism](../../sepulcher/aspects/prism/voxel-and-block-export.md) is a different component: its
 designed block-export path supplies blueprints for separate mission admission. An existing launcher
 instance does not establish game/modpack compatibility or provide Blockworld integration;
-[State of Work](../../state-of-the-work.md#composition-portfolio-delivery) records delivery.
+[State of Work](../../state-of-the-work.md#blockworld-experiments) records delivery.
 
 ## Server
 

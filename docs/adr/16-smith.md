@@ -133,21 +133,21 @@ whole recurrent process a DAG. Immutable records of its unfolded occurrences may
 
 ### Progressive bootstrap and recurring work
 
-Operator-controlled campaigns are the initial execution road. They retain their actual platform,
-task, worker and artifact identities, observed permissions and explicit evidence gaps; they do
-not manufacture native Runs, containment receipts or evaluation records. A native coordinator
-can replace a handoff only after its typed contract, admission, custody, settlement and recovery
-are proved. Foreign harnesses retain private planning while LychD retains task semantics and
-receiving-owner authority. An executable development application must publish its own exact
-Pattern before assuming native coordination; this law creates no general SDLC or Assimilation
-coordinator. The [bootstrap procedure](../sepulcher/aspects/weaver/development-bootstrap.md)
-orders the small implementation gates. The first external CLI owner binding may use the
-operator campaign's immutable task, projection, custody and verification records under
-[ADR 14's versioned intent contract](14-workers.md#versioned-cli-intent-and-owner-binding).
-Those references preserve attribution; their parser and a fixture admission are not an owner
-record service or proof of source closure, authority, custody or available verification capacity.
-The actual producer must check that closure before usable admission. This does not manufacture a
-native Creation Request, Run or generic SDLC coordinator.
+An operator-controlled campaign retains its platform, task, worker and artifact identities,
+observed permissions and evidence gaps. A foreign harness can plan privately. LychD still owns
+task semantics and the receiving owner decides disposition. These records establish neither a
+native Run nor containment, evaluation or a native Creation Request.
+
+For a native coordinator to take over a handoff, qualify its typed contract, admission, custody,
+settlement and recovery. An executable development application must also publish its exact
+Pattern. The [bootstrap procedure](../sepulcher/aspects/weaver/development-bootstrap.md)
+orders those steps. There is no general SDLC or Assimilation coordinator.
+
+The first external CLI owner binding may reference an operator campaign's immutable task,
+projection, custody and verification records under
+[ADR 14](14-workers.md#versioned-cli-intent-and-owner-binding). A parser or fixture can show
+that the references fit. The actual owner-record producer must establish source closure,
+authority, custody and available verification capacity before admission.
 
 Recurring or spare-capacity work selects from owned, eligible tasks under current standing
 authorization. Each occurrence requires a named acceptance owner, observable benefit, exact

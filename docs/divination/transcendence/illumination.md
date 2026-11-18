@@ -19,15 +19,17 @@ worldₙ + selfₙ → interpretationₙ → actionₙ
 actionₙ + consequenceₙ → Seedₙ₊₁ → Recall → worldₙ₊₁ + selfₙ₊₁
 ```
 
-For consequence to change a later Invocation, it must return with attribution, evaluation, memory
-policy, consent, and Recall. **Ouroboros** names this passage, with Blade still able to cut.
-Without it, return can repeat forever without learning or character. A retry, workflow edge,
-or Graph cycle alone supplies none of that history.
+A witness objects that the Lich interrupted them. A transcript may preserve the words of
+both speakers. For this encounter to teach a later Invocation when to listen, the objection
+must be attributed and evaluated. Consent and memory policy govern what may be retained.
+Recall can bring the encounter back, and Blade can judge what it asks of the Lich this time.
+**Ouroboros** names that passage from consequence into a changed act. A retry could simply
+repeat the interruption.
 
 Within the [Breath of the Work](index.md#the-breath-of-the-work), dissolution releases a form.
 Discrimination decides what may survive it. The [Phylactery](../../sepulcher/phylactery/index.md)
-keeps only the records its contract admits; provenance keeps source, choice, correction, and
-consequence available for later judgment. Storage supplies neither moral accounting nor truth.
+keeps the records its contract admits. Their provenance lets a later reader distinguish what
+was observed, who chose to act, what followed, and whose correction changed the account.
 
 **For a recurrent life, interpretability reaches a second question: what is permitted to
 persist?** Passing cognition can be difficult to read. At the point where it becomes memory,
@@ -77,19 +79,17 @@ to a person speaking from a life the Lich has not lived. The useful question is 
 contribution would let the work proceed. The Lich can trace disputed sources and prepare a better
 question while leaving the witness's answer to them.
 
-This is transfer at the agentic level: the [logic behind the task](incantation.md#logic-behind-logic)
-survives a change of method. [Blade](../../sepulcher/lich/blade.md#the-magus-bottleneck) judges which
-part of the lesson applies; Recall makes it available to the next encounter.
+The [logic behind the task](incantation.md#logic-behind-logic) survives the change of method.
+Recall makes the earlier encounter available. [Blade](../../sepulcher/lich/blade.md#the-magus-bottleneck)
+judges where its lesson applies and where it would do harm.
 
-The [Tree's symmetry](../transmutation/genesis.md#paired-perspectives) can contribute to that
-lesson: preserve which complementary question exposed the omission, why it mattered, and where
-it would mislead. The Ouroboros then returns a better way of organizing inquiry. Remembering only
-which advocate won would lose the distinction that made the encounter useful.
-
-Carry conditions with that question: when the perspective matters, who or what can answer it,
-and when its work is done. Those conditions show when the next contribution belongs to someone
-the Lich cannot replace. [Distillation](../transmutation/distillation.md#future-correction) preserves
-them for another task. If transfer still fails, [Soulforge](../../sepulcher/aspects/soulforge/discernment-training.md#preserve-the-lesson-before-compiling-examples)
+A [distilled lesson](../transmutation/distillation.md#future-correction) can preserve the
+[Tree's complementary question](../transmutation/genesis.md#paired-perspectives). Which
+perspective disclosed the omission, when is its contribution needed, and who can supply it?
+In the oral history, the question has done its work when the witness can answer for themselves.
+Preserving only which advocate won would lose the means to recognize that point. If the Lich
+still cannot make the distinction elsewhere,
+[Soulforge](../../sepulcher/aspects/soulforge/discernment-training.md#preserve-the-lesson-before-compiling-examples)
 asks whether the failure warrants training.
 
 Patañjali pairs **abhyāsa**, practice, with **vairāgya**, nonattachment, in

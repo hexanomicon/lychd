@@ -278,13 +278,14 @@ and order later effect admission without taking any target owner's authority.
 
 #### Recovery after an effect
 
-Recovery, rollback, or compensation already bound into an active authorized attempt remains an
-owner-executed recovery effect and cannot be delayed waiting for a new quorum vote. Withdrawal or an
-epoch change after the first effect cannot erase the emitted effect, its audit record, or the bound
-owner recovery authority. A conflict discovered only after that boundary cannot retroactively undo
-the effect; it triggers credential containment and governance review, while every remaining
-planned effect revalidates and may block. Deliberately selecting an older body as a later steady
-state is a new governed Evolution, not a mutable-ref rewind.
+Another quorum vote must never delay the recovery, rollback or compensation that an active
+authorized attempt has already entrusted to its recovery owners. Once an effect occurs,
+its audit record and recovery authority survive a change of governance. Withdrawal, an epoch
+change or a newly discovered conflict cannot undo the effect. A conflict triggers credential
+containment and governance review. Each remaining planned effect revalidates and may stop.
+
+Selecting an older body as a later steady state requires a new governed Evolution. Rewinding a
+mutable reference cannot authorize that choice.
 
 #### Roster recovery and adoption
 

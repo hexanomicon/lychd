@@ -44,20 +44,27 @@ equivalence or compatibility across boots; the portable Spell catalogue remains 
 
 The catalogue is immutable after construction. It rejects duplicate `(key, revision)` pairs,
 requires an explicit active revision when one name has alternatives, requires explicit non-default
-route precedence, and names its default. Construction performs no package scan. The current
-source-defined manifests retain these routes:
+route precedence, and names its default. Construction performs no package scan. Bridge and
+delegation requests select their scores as follows:
 
 | Pattern revision | Admission route | Checkpoint schema |
 | --- | --- | --- |
 | `bridge_chat@1` | Unconfigured default | `bridge-chat-state-v1` |
-| `bridge_chat@2` | [Configured exact capability](index.md#choose-a-bridge-capability) | `bridge-chat-state-v2` |
+| `bridge_chat@2` | [One configured Chat capability](index.md#choose-a-bridge-capability) or [a preference between two local routes](index.md#prefer-a-ready-route-at-admission) | `bridge-chat-state-v2` |
 | `bridge_chat@3` | Configured public Archive and exact capability | `bridge-archive-state-v1` |
 | `bridge_chat@4` | [Configured Scout](../scout.md#public-page-answers), authenticated command and exact local capability | `bridge-scout-state-v1` |
+| `bridge_chat@5` | Configured semantic recall with an exact Archive generation and local Chat capability | `bridge-semantic-state-v1` |
 | `delegated_rite@1` | Exact `/delegate` command token | `delegated-rite-state-v1` |
 | `delegated_rite@2` | Configured exact runtime and `/delegate` command token | `delegated-rite-state-v2` |
 
-[The owning registry source](https://github.com/hexanomicon/lychd/blob/main/src/lychd/agents/workflows/__init__.py)
-defines the retained revisions and their activation policy.
+A new Bridge Run that carries an accepted [naming snapshot](../../../state-of-the-work.md#primus-naming)
+uses its selected revision and checkpoint schema with the suffix
+`-naming1`. The registry retains the unnamed revision too, so an older Run still resolves
+its original score. For another example, `scavenger.observe_market@2` is registered for
+exact lookup even when its selector is off. The [boot inventory test](https://github.com/hexanomicon/lychd/blob/main/tests/agents/test_router.py)
+checks that looking up this retained revision succeeds while routing new Scavenger work stays
+disabled. The [registry](https://github.com/hexanomicon/lychd/blob/main/src/lychd/agents/workflows/__init__.py)
+defines which revisions are active.
 
 ## Admission happens once
 

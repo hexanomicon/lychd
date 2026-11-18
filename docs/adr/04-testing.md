@@ -51,12 +51,12 @@ populate them. Most present selection follows directories: `unit` and `slow` are
 only a few integration tests carry `integration`. Consequently `M=unit` collects nothing today;
 select the directory instead.
 
-By default, `make test` and `make check` exclude `container`. An explicit marker expression
-replaces that exclusion. `make test-containers` admits that profile with its separate dependencies
-and an explicitly admitted Docker daemon socket through the Docker-only PostgreSQL harness. Ordinary checks receive no daemon
-socket or network; this separate PostgreSQL harness has its own declared socket/network authority. Host and external
-systems stay opt-in and need named receipts. Network and provider dependence enter a deterministic
-test only when its declared integration boundary requires them.
+By default, `make test` and `make check` exclude `container`. Supplying a marker expression
+replaces that exclusion. Ordinary checks have no daemon socket or network. The separate
+Docker-only PostgreSQL harness (`make test-containers`) explicitly admits its dependencies,
+daemon socket and network. Host or external-system claims need a named opt-in receipt. A
+deterministic integration test may depend on a network or provider only within its declared
+boundary.
 
 ### 3. The Fabricator (Polyfactory)
 

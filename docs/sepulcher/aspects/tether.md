@@ -142,9 +142,9 @@ addressing, DNS, or a separately accepted rendezvous or relay. ADR 39 owns trans
 ## Native profile configuration contract
 
 The native `rootless-wireguard-stream-v1` contract separates static topology from current
-admission. Its [Rune and public values](../../../src/lychd/domain/tether/models.py) describe at
+admission. Its [Rune and public values](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/tether/models.py) describe at
 most one offered network and many independent imported attachments. The
-[pure compiler](../../../src/lychd/domain/tether/compiler.py) receives a current host-owned
+[pure compiler](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/tether/compiler.py) receives a current host-owned
 admission snapshot explicitly; loading an imported document does not enable it.
 
 Each imported attachment names its remote Lich, local tunnel-key reference, remote public key,

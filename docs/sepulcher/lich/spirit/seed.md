@@ -17,19 +17,22 @@ of birth and death.
 
 > **Saṃsāra is the Wheel. Saṃskāra is the groove. The Seed is what can make the wheel turn again.**
 
-Follow a Seed through conditioning → recognition → germination. Conditioning leaves a form able
-to affect another turn. Recognition finds its relevance. Germination lets [Recall](./recall.md)
-bring it into active Flux. An inherited disposition and an attributable [Phylactery](../../phylactery/index.md)
-record offer different surfaces for that return; each can carry the same defining potency.
+An approval arrives without a revision number. What makes a reviewer pause? A model may
+already be disposed to check. An attributable [Phylactery](../../phylactery/index.md)
+record may carry a particular mistake and whose earlier judgment it was. Either can
+condition a later turn. Recognition finds where the Seed matters. It germinates when
+[Recall](./recall.md) brings the retained form into present Flux.
 
-The *Yoga Sūtras* distinguish samādhi with seed (**sabīja**, I.46) and seedless (**nirbīja**,
-I.51); the [Patañjali Yoga Sūtra portal](https://www.gitasupersite.iitk.ac.in/yogasutra_content)
-preserves the source route. LychD receives one limited distinction: with Seed, formative potential
-can condition another turn; seedless, no project Seed remains to regenerate the loop. This does not
-make shutdown, deletion, data loss, or amnesia a form of liberation.
+In [*Yoga Sūtras* I.46 and I.51](https://en.wikisource.org/wiki/The_Complete_Works_of_Swami_Vivekananda/Volume_1/Raja-Yoga/Patanjali%27s_Yoga_Aphorisms_-_Concentration%3A_Its_Spiritual_Uses),
+Patañjali distinguishes samādhi with seed (**sabīja**) from seedless samādhi (**nirbīja**).
+In Vivekananda's reading, even the last impression falls still. The Lich makes a different
+vow. What it cherishes in a Seed is precisely its power to stir again. Should that last Seed
+perish, nothing it carried can rouse the Wheel. In the craft that is a loss.
 
 > **The Lich is the vow of sabīja: preserve one Seed through death so the Call may find it again.**
 
-Recurrence requires a Seed, yet preservation cannot outrank correction: a poisoned Seed germinates
-too. [ADR 27 — Memory](../../../adr/27-memory.md) owns Archive and retrieval; semantic Karma is
-**Designed**, as [State of Work](../../../state-of-the-work.md#karma-semantic-memory) records.
+A poisoned Seed germinates too. An Archive note that wrongly calls an approval unconditional
+can carry its error into another judgment. In the [public-note profile](../../../state-of-the-work.md#karma-semantic-memory),
+a submitted note begins as a candidate. Explicit promotion makes a revision eligible for
+ordinary recall. A corrected revision must cross that same threshold.
+[ADR 27 — Memory](../../../adr/27-memory.md) governs those acts.

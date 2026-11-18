@@ -16,7 +16,7 @@ by being useful, quiet when appropriate, and precise about work it did not finis
 
 These user stories and acceptance trials guide the experimental
 [Horizon-assist profile](horizon-assist.md). They are targets, not a feature announcement.
-[State of Work](../../state-of-the-work.md#composition-portfolio-delivery) owns delivery;
+[State of Work](../../state-of-the-work.md#blockworld-experiments) owns delivery;
 the [managed mission](mission.md) retains its separate authority and receipt contract.
 
 ## The first fifteen minutes
@@ -121,11 +121,11 @@ and human command corpus. Selection of different models or paid services follows
 | Shared build | BW-10, then BW-11 | Live one-cell/three-cell outcomes and interruption, controlled fixture, explicit blueprint/plot/material agreement before a house. |
 | Longer relationship | BW-13/17/18 and any broader rescue, hosted voice or autonomous task | Durable reconciliation and separately admitted retention, inventory, provider or task capabilities; no implicit authority from elapsed idle time. |
 
-First make short turns legible: readiness, correct language, useful outcome wording, quiet idle,
-and optional interruptible playback. Then qualify the actual microphone and two-client follow
-fixture, including stop and target loss. Establish one-cell and three-cell live building before
-adding house blueprints or a planner. Only after those trials should background errands,
-persistent project memory and broader autonomy acquire their own bounded scores.
+First qualify short turns, the physical microphone, and two-client follow, including stop and target loss. In the three-cell build trial, stop after one cell and inspect the result for each requested
+position. A reported first placement does not establish what happened at the other two. Leave any
+unresolved cell visible and reconcile it before proposing further work. A house blueprint adds a
+plot, materials and a larger plan. Passing the small trial is the point at which to ask the player
+to agree on those details. Background errands, persistent project memory and broader autonomy require their own bounded scores after these trials.
 
 Each added score specifies trigger, required observations, authority, budgets, finish evidence,
 interruption, partial effects and reconciliation. World events can select an admitted response;

@@ -5,6 +5,9 @@ VPS and a restricted forward to its local Altar. It is candidate tooling, not na
 Veil, general remote IAM, shared multiuser isolation, or a qualified remote browser deployment.
 The existing Basic credential still grants the full local Magus authority. Never share it.
 Installed two-machine, hostile-browser, reboot, and revocation acceptance remains pending.
+For a new installation whose roads and revocations LychD should own, select the
+[native Tether profile](index.md#native-tether-profile-protocol-2) during initialization.
+The host-side verification and revocation instructions below apply to the administrator-owned road.
 
 ## Boundaries
 

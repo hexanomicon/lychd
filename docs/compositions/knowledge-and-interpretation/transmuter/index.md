@@ -87,7 +87,7 @@ supplied system-inventory snapshots. Each input requires an admitted adapter or 
 supplied artifact. A device inventory remains a dated observation. Live discovery and host control
 require separate authority.
 
-The dossier references original bytes held under [Reliquary’s custody contract](../../../adr/06-persistence.md#reliquary-custody-designed). Scout can supply admitted
+The dossier references original bytes held under [Reliquary’s custody contract](../../../adr/06-persistence.md#reliquary-custody). Scout can supply admitted
 acquisition, while [Prism](../../../adr/36-vision.md) and [Echo](../../../adr/37-audio.md) supply media
 processing. Synthesizer's [receiving-owner map](synthesizer.md#receiving-owners) distinguishes
 Memory, Persona, training, and code candidates. Each job selects the branches its purpose needs.

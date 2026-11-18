@@ -121,14 +121,18 @@ the experiment, but proves and authorizes nothing.
 
 ## The Branch Reaper
 
-Only after retention settles may Reaper act: commit terminal state; retain required inputs,
-observations, artifacts, findings, and errors; enumerate jobs, leases, processes, services, ports,
-and credentials; have workspace/execution owners tear down; reconcile external/shared residue; and
-write the Cleanup Receipt. TTL is not proof of safe deletion; hold, lease, pending promotion,
-required evidence, or unknown ownership postpones it. Failure retains its witnessed boundary;
-neither traces nor success/failure pairs become Karma or training examples automatically.
-Jujutsu cleanup verifies descendants and retained references because abandonment can rewrite
-revision relationships.
+Wait for the retention decision before cleanup. A hold, lease, pending promotion, evidence
+requirement or unknown owner postpones deletion even if the TTL has expired. Once the retention decision settles,
+Reaper proceeds in order:
+
+1. Commit terminal state and retain the required inputs, observations, artifacts, findings and errors.
+2. Enumerate jobs, leases, processes, services, ports and credentials. Their workspace and
+   execution owners perform teardown. For Jujutsu, check descendants and retained references:
+   abandonment can rewrite revision relationships.
+3. Reconcile external or shared residue and write the Cleanup Receipt.
+
+On failure, retain what was witnessed. A trace or a success/failure pair enters Karma or training
+only through its own admission.
 
 Shadow emits only a Promotion Request:
 

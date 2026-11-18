@@ -320,12 +320,15 @@ this admission/drain law.
 
 ### 5. Watchdog and Recovery
 
-No autonomous watchdog or general repair engine exists. Pre-effect/drain failure reopens; hard
-failure seeks one exact inverse; post-submission cancellation waits for settlement/restoration;
-soft failure after invoking activation contains; unknown worlds are operator-owned. Conflict topology is Available in focused
-tests; transition protocol and Nexus tickets are Partial; Host Reactor protocol has inert
-private-systemd evidence; real host/model runtimes need Operator validation; resource-aware Whim,
-tiering, swarm preemption, watchdog, and repair are Designed.
+Recovery depends on how far a transition got. Failure before effect, including during drain,
+reopens admission. A hard failure seeks one exact inverse. Cancellation after submission waits
+for settlement or restoration. Failure after invoking soft activation contains the world, and an
+unknown physical outcome stays with the operator.
+
+Focused tests cover conflict topology. The transition protocol and Nexus tickets are partial,
+and the Host Reactor's private-systemd evidence uses inert effects. Real host and model runtimes
+require operator qualification. Resource-aware Whim, tiering, swarm preemption, an autonomous
+watchdog and general repair remain designed.
 
 ## Consequences
 

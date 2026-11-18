@@ -317,5 +317,5 @@ Portable tests must cover command refusal, endpoint exclusivity, identity and bo
 cancel-before-send, stop during a waiting action, lost replies and absence of automatic replay.
 Live qualification uses a disposable world and a dedicated client. The operator verifies
 microphone capture, transcript meaning, audible playback, movement, interruption and later
-collaborative play. [State of Work](../../state-of-the-work.md#composition-portfolio-delivery)
+collaborative play. [State of Work](../../state-of-the-work.md#blockworld-experiments)
 owns delivery evidence; this contract alone does not establish a working adapter.

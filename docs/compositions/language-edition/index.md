@@ -117,7 +117,7 @@ language-metadata tracks. Preserve every non-language stream. Record the preserv
 digests, timebases, codecs, channels, and offsets, the loudness and intelligibility probes, and
 the result digest. These records let a reviewer check what survived and exactly what changed.
 
-Changed cuts, scene order, claims, picture sound, or music return to
+If a translated line fits only by shortening a pause in the picture, the editor needs a new cut. Changed cuts, scene order, claims, picture sound, or music return to
 [Broadcast](../broadcast/index.md). A constrained language replacement cannot quietly become a
 new edit. The asset bundle remains a valid handoff without the optional mux; each receiving
 owner judges the exact result for its own use.

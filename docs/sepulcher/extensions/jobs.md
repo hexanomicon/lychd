@@ -4,24 +4,22 @@ title: Jobs
 
 # Jobs
 
-A durable job needs an owned queue contract and a worker that can execute and recover it. Begin with
-the existing [queue
-services](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/queues.py), the
-[Scout worker](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/scout_worker.py), and
-their focused [queue
-tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_queues.py) and
-[worker
-tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/test_scout_worker.py).
-Define the payload, admission, completion and failure behavior in the owning service, then integrate
-the worker into the host lifecycle. The [Workers Covenant](../../adr/14-workers.md) owns the durable
-execution requirements.
+A queued Run can arrive at its worker twice. The first challenge in adding durable work is
+to decide which delivery owns the right to execute it, and what remains recoverable if the
+worker dies. In Core, [Ghouls](../vessel/ghouls.md) shows how one Run moves from admission to
+claim, settlement, and restart.
 
-This is currently Core integration. The [extension registration
-context](https://github.com/hexanomicon/lychd/blob/main/src/lychd/extensions/context.py) has no
-generic job store; a `register` function is not a place to launch arbitrary background tasks. A
-future extension seam does not establish queue admission or worker authority by itself.
+Follow [`perform_run`](https://github.com/hexanomicon/lychd/blob/main/src/lychd/ghouls/runs.py)
+and the [worker tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/cortex/test_perform_run.py).
+Look for `test_concurrent_redelivery_executes_graph_exactly_once` and
+`test_stale_delivery_sequence_is_skipped_before_claim`. The worker claims the admitted Run
+and its exact delivery sequence before executing the graph. For broker connection, enqueue,
+and abort behavior, follow the [queue services](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/queues.py)
+and their [tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_queues.py).
 
-Check authorization when a job is admitted and at any protected effect that requires current
-authority. The worker and queue owners must provide evidence of actual execution and outcomes; a job
-declaration does not prove activity. See [Oculus](../aspects/oculus.md) for the current observation
-contracts and [Privileges](privileges.md) if the job invokes host effects.
+Define the payload, admission, failure, recovery, and terminal evidence with the owner of the
+new work. Integrate worker startup and shutdown with the host lifecycle. Check current authority
+again at protected effects, including any [host operation](privileges.md).
+[Workers](../../adr/14-workers.md) owns those obligations. The current
+[extension context](https://github.com/hexanomicon/lychd/blob/main/src/lychd/extensions/context.py)
+offers no generic job store.

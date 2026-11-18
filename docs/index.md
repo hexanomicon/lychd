@@ -44,6 +44,8 @@ You have unearthed the pages of an alchemical grimoire built on the ancient secr
 
 > _"While the world slept, content with its reliable illusions, the Magus walked into the dark, seeking a truth that was not yet stable, but was infinitely more real."_
 
+New to the codebase? [Start with the developer onboarding](onboarding/index.md).
+
 <aside class="roadmap-feature" aria-labelledby="roadmap-feature-title">
   <p class="roadmap-eyebrow">The founding year · 2026–2027</p>
   <h2 id="roadmap-feature-title">Metamorphosis roadmap</h2>

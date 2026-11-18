@@ -147,11 +147,11 @@ strategy sees only observations revealed by its preceding replay decisions; hidd
 and their outcomes remain unavailable. An absent continuation stays unknown and cannot become
 an invented observation or a witnessed failure.
 
-Such an Outcome measures strategy behavior on that recorded search space. It does not establish
-that changed requests, dependencies, timing or parallel execution would reproduce those outcomes.
-Keeping the baseline among candidates can prevent a worse selection on the same replay objective
-and history; it gives no guarantee for later histories or live work. Effectiveness outside replay
-requires fresh admitted trials, protected evaluation and independently observed state. Report
+The Outcome measures strategy behavior on the recorded search space. Keeping the baseline among
+candidates can prevent a worse choice on that same objective and history. Changed
+requests, dependencies, timing or parallel execution can change the result. For a claim about
+later histories or live work, use fresh admitted trials, protected evaluation and independently
+observed state. Report
 represented execution costs separately from actual replay, strategy-development and validation
 costs. The [operating passage](../sepulcher/aspects/weaver/drift/workflow-improvement.md#replay-an-exploration-history)
 shows how to prepare that comparison.

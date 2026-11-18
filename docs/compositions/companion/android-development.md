@@ -257,21 +257,19 @@ acceptance for the build and for behavior observed on the phone.
 | Photos before cleanup | Export selected representations to verified destination custody; subsequently review exact eligible local items and a separate system trash request. | Preserve provider/cloud limits, changed-source refusal, per-item outcomes and the URI/content race. Permanent deletion is another live decision. |
 | Later reach and interaction | Repeat an already admitted journey through VPN; connect speech or further observations through their exact owners. | A new route, model or microphone supplies no additional effect authority. |
 
-The installed-lifecycle and local-player/delivery campaigns can proceed independently of live speech. The Bridge and Voice
-release still needs its own live Communion acceptance. For remote troubleshooting, use
-[the observation-to-repair passage](phone-workspace.md#grow-observation-into-troubleshooting)
-and admit each new action rather than a generic phone command executor. Stop when the next step
-requires a missing owner, authority, recovery contract or unobserved physical premise; retain the
-specific gap and the smallest probe that could settle it.
+The update and local-player trials can proceed independently of live speech. For remote
+troubleshooting, follow the [observation-to-repair passage](phone-workspace.md#grow-observation-into-troubleshooting).
+Record the specific missing owner, authority, recovery contract or device observation before
+adding an action that depends on it. Stop at that gap and record the smallest probe that could settle it. Admit each new action separately.
 
 ## Next integration
 
-The next useful work is a protected host-owned mobile API with enrolled device identity,
-object-scoped grants and exact retained handoff/result lookup. It needs the accepted
-Ward → Familiar → Companion order and a separately settled submission/presentation contract.
-Then qualify the chosen live Ktor engine on the handset, wire the exact generated contract,
-and connect Echo's bounded transcription/synthesis custody through the proposed Communion Suite.
-Only that sequence can establish the capture → reviewed words → host work → settled reply journey.
+For the **Bridge and Voice** journey, a protected host-owned mobile API must first bind the
+enrolled device, its object-scoped grants, and exact retained handoff/result lookup in the
+accepted Ward → Familiar → Companion order. Settle its submission and presentation contract.
+Then qualify the selected live Ktor engine on the handset, wire the generated contract, and
+connect Echo's bounded transcription and synthesis through the proposed Communion Suite.
+The handset trial must follow one capture through reviewed words, host work and a settled reply.
 
 Before replacing the fixture with a live connection, establish how the host reports uncertain
 admission. Current Altar Bridge can fail after admission while constructing its acknowledgement.
@@ -289,9 +287,8 @@ acknowledgement and lookup in the original account/context.
 | Remote voice journey | Echo custody and bounded capture/transcription/review/synthesis settlement, followed by handset delivery evidence. |
 | Android operation | The S20 FE lifecycle, permission, microphone, cleanup, focus and route probes listed above. |
 
-Folder-first offline music can reuse the platform/lifecycle project but requires its own library
-selection, media session and background playback behavior. Selected photos and explicit copy sync
-follow the [Phone Workspace](phone-workspace.md) construction plan. Those features do not turn client modules
-into host-owned extension execution or confer broad control of the phone.
+For the independent folder player, the Android project can supply the platform lifecycle.
+Library selection, a media session and background playback still need their own handset trial.
+[Phone Workspace](phone-workspace.md) owns the later photo and copy-sync sequence. Client modules gain neither host extension execution nor general phone control.
 
 [Companion](index.md) · [Return](return.md) · [Android Foundation](android-foundation.md)

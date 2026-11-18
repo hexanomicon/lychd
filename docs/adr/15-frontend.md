@@ -1069,12 +1069,10 @@ grammar keeps this workload in the tens to low hundreds. Orb is bounded by foldi
 volume. Neither workload justifies a dense engine, and a dense engine supplies neither Loom's drag,
 connect, reconnect, and handle grammar nor a DOM-native accessible twin.
 
-Loom's editing admission is separately gated on contract, not on renderer. The served semantic score
-carries no position, and the Scroll grammar declares no layout document, so no drag may be admitted
-before authority owns layout and mutation intent. Until then Loom is a read-only projection over a
-computed layout. XYFlow also has no keyboard path to create a connection; its connection handles are
-not focusable. Loom therefore either owns that path above the renderer or admits editing without it,
-and admitting editing without it would break the keyboard twin this Covenant requires.
+The served score has no positions, and the Scroll grammar has no layout document. Until an owner
+can validate layout and mutation intent, Loom computes a read-only layout. Editing also requires
+a keyboard path for creating connections. XYFlow's connection handles cannot receive focus, so
+Loom must supply that path before admitting the operation.
 
 ### Folding, not scale
 
@@ -1227,7 +1225,7 @@ exceptions, constrain Host to literal loopback authorities, and expose schema JS
 documentation assets. CSRF remains an unsafe-method layer, not authentication; ordinary requests
 still receive the fixed bootstrap Sigil. The foreground launcher can expose configuration the app
 cannot observe, security-header and production-browser receipts are absent, and no remote
-principal exists. The [isolated developer fixture](11-backend.md#isolated-developer-fixture-designed)
+principal exists. The [isolated developer fixture](11-backend.md#isolated-developer-fixture)
 may use its configured loopback Vite proxy under [Security's](09-security.md) bounded exception.
 General remote access, production access through a proxy, ad hoc tunnels, direct-image-public access, and
 untrusted-browser use remain unsupported. Authenticated browser acceptance of the fixture
@@ -1235,8 +1233,10 @@ remains pending.
 
 [Security's single-operator forwarding candidate](09-security.md#single-operator-forwarding-candidate)
 permits a separately qualified infrastructure experiment for one trusted owner of one VPS.
-It preserves loopback Host/Origin and application authentication, requires a browser profile
-per instance, and supplies no shared-user authority or installed/browser qualification.
+[Tether's optional same-owner service](39-vpn.md#optional-same-owner-ssh-access) has its own peer
+binding and revocation. In either case the browser uses the admitted loopback origin and the
+application still authenticates its owner. Use a dedicated profile per instance. Each deployment
+needs its own host and browser qualification.
 
 Focused checks cover Svelte/TypeScript; frontend API, cursor, remount, stream, focus-return, and
 GenUI tests; Python routes, controllers, consent, SSE, fixed root assets, and the instruments;

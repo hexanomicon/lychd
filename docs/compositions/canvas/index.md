@@ -129,7 +129,7 @@ Python. This prevents differences in number formatting from changing acceptance,
 conservative budget may be larger than the compact downloaded file.
 
 Undo and redo preserve object identities and create fresh scene revisions so an old model response
-cannot become current again accidentally. Board undo remains separate from durable project judgments.
+remains stale even when undoing a rename makes the board look exactly as it did at capture. Board undo remains separate from durable project judgments.
 The workspace retains immutable retry requests after uncertain writes and refuses stale aggregate
 versions. A provider-backed profile still needs its own admission, custody and interrupted-effect
 recovery before becoming supported.

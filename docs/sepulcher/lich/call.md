@@ -30,11 +30,11 @@ considers Jev and similar models as possible latency optimizations. Call and Bla
 so their distinction prescribes neither model size nor speed. Even a quick proposal still needs
 discernment before action.
 
-Call may turn toward a [Seed](./spirit/seed.md) and invite [Recall](./spirit/recall.md), or open
-several candidates. That is opening, not selection. Unchecked routing takes the **Rajas** image of activity into branching
-without consequence; [the guṇa correspondence](../../lexicon/inner-tongue.md#guna) keeps that
-image beside its source. Its proper completion is [the Blade](./blade.md), which decides whether a line
-may proceed; [Answer](./answer.md) later bears the attributable act.
+Call can open several candidates or turn toward a [Seed](./spirit/seed.md) and invite
+[Recall](./spirit/recall.md). Left to itself it could go on branching forever. **Rajas**
+gives that restlessness its image in [the guṇa correspondence](../../lexicon/inner-tongue.md#guna).
+[Blade](./blade.md) decides whether any opened line may proceed. [Answer](./answer.md) binds
+the ensuing act to the one who must answer for it.
 
 [ADR 16 — SDLC](../../adr/16-smith.md) owns the creation and promotion of candidates. Call
 names the opening through which a possible movement becomes addressable.

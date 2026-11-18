@@ -7,12 +7,9 @@ icon: material/circle-outline
 
 > _A world opens where the Circle closes._
 
-An admitted **Invocation** opens a **Circle** for one answerable act. Caller and Called meet
-within it with an Intent, Sigil, Context, selected memory, capability, and authority. Holding
-these together gives the act a boundary within which its consequences can be attributed.
-
-That boundary sits inside larger ones: a Bridge séance sustains a continuing relation, and a host
-gives one Lich a place to answer. The same figure thus appears at several scales.
+Look beside a reply in Bridge. Its **Circle** belongs to the turn that produced it. The Circle
+opens when the request is admitted as an **Invocation**. A continuing conversation, or séance,
+can hold several such Circles. Around them, the Summoning Circle gives one Lich a place to answer.
 
 ```text
 Summoning Circle — this Lich's enduring host boundary
@@ -22,7 +19,9 @@ Summoning Circle — this Lich's enduring host boundary
     └── Circle — another Invocation, with its own Run
 ```
 
-Admission begins the Circle. Its **Run** gives the act durable execution identity, whether or
+Caller and Called meet within the Circle with an Intent, Sigil, Context, selected memory,
+capability, and authority. Together these identify what was asked, who could act, and to whom
+the consequences belong. The **Run** gives the act durable execution identity, whether or
 not a browser draws a ring. Several people, Agents, Postures, or model powers can take part.
 Each retains attribution, separate authority, and the ability to refuse; meeting within one
 Circle creates neither a fused super-Sigil nor an identical interior.

@@ -36,7 +36,7 @@ Then open the body:
 | [Ghouls](vessel/ghouls.md) | How admitted work reaches a worker and settles. |
 | [Intercom](intercom.md) | Submit a bounded public task to an enrolled sovereign peer. |
 | [Phylactery](phylactery/index.md) | Committed state that can survive the process. |
-| [Reanimation](phylactery/reanimation.md) | What can return after death. |
+| [Reanimation](phylactery/reanimation.md) | What a new Vessel can recover when its process dies. For recovery of an earlier database, code, and configuration together, see [whole-body snapshots](../state-of-the-work.md#whole-body-snapshot-restore). |
 | [Gateway](gateway.md) | A separate machine to face hostile ingress. Home and Remote are **Designed** placements. |
 | [Tumbleweed VPS](../deployments/tumbleweed/index.md) | Repeatable mutable host preparation with Ansible and separate source/application acceptance. |
 

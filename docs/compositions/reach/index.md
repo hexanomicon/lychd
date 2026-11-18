@@ -21,7 +21,7 @@ operation limits.
 The explicit [`reach.connect.prepare@1`](connected-work/preparation.md) profile prepares these
 requests through a native serial Graph, including finite WUPHF plans. It performs no account
 authentication or delivery. The families organize contracts and discovery within Reach; they add
-no separate Composition or provider authority. [State of Work](../../state-of-the-work.md#composition-portfolio-delivery)
+no separate Composition or provider authority. [State of Work](../../state-of-the-work.md#reach-operator-profiles)
 keeps the shared evidence boundary.
 
 ## Public Discord profile

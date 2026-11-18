@@ -41,7 +41,7 @@ The first target is native Android in Kotlin/Jetpack Compose under `clients/andr
 The first development slice uses an explicit Bridge fixture and bounded local foreground audio;
 it does not establish enrolled mobile access or a native Composition round trip. The client owns
 platform integration and local UI state while Composition records, policy, effects, and finish
-judgment remain native domain truth. [State of Work](../../state-of-the-work.md#composition-portfolio-delivery)
+judgment remain native domain truth. [State of Work](../../state-of-the-work.md#companion-android-client)
 owns the delivery boundary.
 
 Configure each session explicitly with capability requirements, local routes, presentation/privacy settings, and admitted feature bindings. Extension packages may supply features without becoming an application-owned extension set. Companion then owns the passage through disclosure, draft, commit, playback, reconnect, expiry, and revocation. That independent lifecycle makes it a Composition rather than only a Familiar profile.

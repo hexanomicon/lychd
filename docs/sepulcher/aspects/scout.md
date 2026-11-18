@@ -161,7 +161,7 @@ and [adversarial acceptance cases](../../adr/30-webcrawler.md#qualification-evid
 acquired UTF-8 HTML or plain text in a network-denied child. It returns an ephemeral text
 projection with declared transformations, not browser rendering, article understanding or removal
 of source-authored instructions. Its [extraction qualification requirements](https://github.com/hexanomicon/lychd/blob/main/tests/README.md#scout-static-and-rss-extraction-adaptation)
-uses an explicit runtime profile and synthetic fixtures. Passing it grants no Fetch, custody or
+use an explicit runtime profile and synthetic fixtures. Passing it grants no Fetch, custody or
 workflow authority. Search and JavaScript rendering retain their separate admission and isolation
 gates.
 
@@ -280,12 +280,11 @@ with `weaver.scavenger`. The initial profile requires a fresh profile database; 
 budget rows refuse a page/feed switch without mutation. Omitting `weaver.scavenger` disables new
 observation admission. Removing configuration grants no migration, cleanup or accounting reset.
 
-Use the Altar's `/scavenger` application view with the authenticated same-host operator.
-Supply the complete bounded `CampaignSeed@1` through its seed form/API, including explicit empty
-arrays and explicit unknown budget/region where needed. The application owns the complete seed
-and request body; Run/Graph facts and generic history carry references, never a copied seed.
-Neither seed nor feed field enters a model, Bridge history or a model prompt. The `Watch` seed
-ceiling grants no cadence, ranking, seller contact, item fetch or purchase.
+Open `/scavenger` as the authenticated same-host operator. The
+[seed form](../../compositions/scavenger/market.md#initial-seed-encoding) requires explicit
+empty arrays and unknowns where applicable. The application keeps the complete seed under its
+own custody. Under `Watch`, Scout may observe this feed once. Neither the seed nor its field
+enters a model or Bridge history. Opening an item or contacting a seller would be a new effect.
 
 For direct API operation, the exact request is `ObserveMarketRequest` with `request_id`, `seed`
 and `initial_filter`; the filter is `{"revision":"literal-casefold@1","query":""}` for all rows.
@@ -312,30 +311,19 @@ Review the exact Core consent before contact. Use its `consent_id` in
 The review binds the fixed source, disclosures, consumer, ceilings and expiry; consent is not a
 reusable Fetch grant. Current network, CONSUME and application-adoption authority still apply.
 
-The retained whole field includes every returned title/link occurrence, in source order,
-including unmatched, duplicate and missing-title rows. Inspect source/time/coverage, omissions
-and total/visible/unmatched/duplicate/missing counts. Item links remain inert displayed data.
-The application field retains only admitted titles, links and necessary attribution; raw feed,
-channel and summary content are excluded from that retained field. A case-folded literal substring filter derives visible ordinals over the same
-field digest. An empty query shows all rows. Filtering performs no source contact and changes no field.
+After acquisition, Scavenger retains title/link occurrences in source order, including
+duplicates and missing titles. The [whole field and local views](../../compositions/scavenger/market.md#whole-field-and-local-views)
+explain how to read coverage and re-filter those same bytes without another contact.
 
-Cancel pending work explicitly through `POST /api/v1/bridge/runs/{run_id}/cancel` and inspect its
-settlement. Cancellation and deletion are separate operations. Terminal deletion submits the
-exact `request_digest` and `observation_digest` (explicit `null` when absent) to the delete route.
-It removes application seed and field payload atomically and retains a content-free tombstone
-plus necessary execution/Scout receipts. It does not erase independent contact metadata or
-backups. A deleted observation is distinct from an observed empty field; replay cannot restore it.
-
-Recovery begins with what the retained records actually establish. Unknown custody/disposition
-stays unknown and blocks terminal-only deletion. Receipt digests cannot reconstruct a lost
-transient field, and loss cannot authorize a silent refetch. When the field is confirmed committed,
-fresh authority permits reading and re-filtering it. When only the acknowledgement is ambiguous,
-reconciliation stays with that same identity.
-
-Deleting a terminal field reopens the application slot, but preserves spent budgets, unknown
-reservations, and an issued claim. Replacing it requires a visible delete, a fresh request, and
-fresh consent. This source contract promises no automatic retry, restart recovery acquisition,
-or budget reset.
+Cancel pending work through `POST /api/v1/bridge/runs/{run_id}/cancel` and inspect the result.
+Terminal deletion requires the exact `request_digest` and `observation_digest` (explicit
+`null` when absent). An uncertain acquisition keeps its slot. A confirmed deletion permits a
+fresh request with fresh consent, while spent budgets, unknown reservations, and issued claims
+survive. For an uncertain commit, missing material, or a deleted field, follow
+[Scavenger recovery](../../compositions/scavenger/market.md#retention-deletion-and-recovery).
+The receipt can identify the attempt. If contact was claimed and the transient field was lost,
+stop there. Recovering a missing acknowledgement means checking that same claim for an existing
+commit. It gives no authority to contact the source again.
 
 ## The laws of the road
 

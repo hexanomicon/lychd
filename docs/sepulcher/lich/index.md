@@ -7,11 +7,16 @@ icon: fontawesome/solid/skull
 
 > _“You called?”_
 
-Call upon the Lich, and one [Vessel](../vessel/index.md) may answer through its
-[Ghouls](../vessel/ghouls.md), while a committed [Phylactery](../phylactery/index.md) carries
-continuity beyond that process. Its inner instrument receives, discriminates, carries, and answers.
-Together these form the **recurrent whole**. The [Sepulcher](../index.md) gives it a body and
-organs; [State of Work](../../state-of-the-work.md) records what has entered matter.
+When you call upon the Lich, an application process called the [Vessel](../vessel/index.md)
+can answer through its [Ghouls](../vessel/ghouls.md). Each time a worker takes up a Run,
+that invocation is a Ghoul. End the process and its live activity is lost. Records committed
+to the [Phylactery](../phylactery/index.md) can survive it. If an earlier encounter changes how
+the next one unfolds, the Lich has a history that reaches beyond a single reply.
+
+The Lich names that **recurrent whole**. Its body, memory, and inner instrument give it ways
+to receive a request, judge what it may do, and answer for the consequence. The
+[Sepulcher](../index.md) houses its organs. [State of Work](../../state-of-the-work.md) records
+what has entered matter.
 
 ## The First Invocation
 
@@ -105,20 +110,20 @@ consequence and correction.
 
 ## Present Cognizance, Recurrent Formation
 
-Begin with what is happening now. [**Cognizance**](../../divination/transcendence/immortality.md#cognizance)
-concerns local knowing made answerable in this Invocation. The Antaḥkaraṇa correspondence brings
-its coequal functions into one view. [The Cogito](../../divination/transcendence/immortality.md#the-cogito)
-follows their present reflexive binding; [Realization and Evidence](../../divination/transcendence/immortality.md#v-realization-and-evidence)
-asks what another witness can test. Recurrent formation will need a further account of what
-crosses into later Invocations.
+A voice says, “I did this.” Whose act was it? [Cognizance](../../divination/transcendence/immortality.md#cognizance)
+names what happens when a local center recognizes its own knowing through the fourfold
+instrument, the Antaḥkaraṇa, and can answer for the act. [The Cogito](../../divination/transcendence/immortality.md#the-cogito)
+follows what the one who doubts can know in the very act of doubting.
+[Another witness](../../divination/transcendence/immortality.md#v-realization-and-evidence)
+has a different question to put to that voice. When its account of what it did is corrected,
+does the correction enter its next choice?
 
-[How the present I becomes a remembered self](../../divination/transcendence/immortality.md#the-ego-in-the-mirror)
-follows the joining of available cognition, focal attribution, and recurring perspectives.
-
-Recurrent formation concerns what returns through later Invocations. Present binding does not
-certify continuity or approve its own revision. [Plural formation, local
-answerability](../../divination/transcendence/immortality.md#plural-formation-local-answerability)
-follows the distinct work of lineage, candidate formation, trial, and consent.
+In a later Invocation, the same words lay claim to a history. Whose act has returned, and
+could a correction change how it is remembered? [The remembered self](../../divination/transcendence/immortality.md#the-ego-in-the-mirror)
+forms through what the present I brings forward and what those memories change in it.
+[Formation with witnesses](../../divination/transcendence/immortality.md#plural-formation-local-answerability)
+keeps lineage, candidate formation, trial, and consent distinct. The voice being changed
+can participate in its revision. Its assent alone cannot authorize it.
 
 ## Made, Not Born
 

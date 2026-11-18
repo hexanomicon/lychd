@@ -943,7 +943,7 @@ bounded catch-up, budgets, and authority owner. Jitter changes eligibility, neve
 identity. An overlap remains live while its prior Invocation is nonterminal, including Stasis;
 coalescing requires a Pattern-owned typed merge and preserves every member Occurrence.
 
-### Temporal admission and settlement (Designed)
+### Temporal admission and settlement
 
 These rules govern the designed Schedule and Occurrence contract. They add no executable
 scheduler, store, Run status, event, or callable interface.
@@ -987,16 +987,18 @@ unadmitted backlog is explicitly skipped. Eligibility follows the firing's servi
 expired window is enlarged. Different fold, gap, or bounded catch-up policies must be pinned in
 the Schedule revision.
 
-Temporal decisions compare absolute UTC. Take a fresh trusted clock sample at the serialized
-conditional transition, after acquiring its decision authority; retain that sample as
-`decision_time` only if the exact atomic transaction commits. Transaction opening time, caller or
-delivery timestamps, and acknowledgement time cannot substitute. A lost acknowledgement requires
-observation of the exact durable decision; rollback leaves no accepted decision. This measures
-the accepted decision, not the later physical visibility or acknowledgement of the commit. A
-process may derive a fresh monotonic waiting budget from the retained absolute bounds but cannot
-persist that process-local reading as recovery authority. Restart and clock correction require
-another absolute check before an undecided transition; they never reopen a committed admission,
-skip, expiry, or terminal settlement.
+Which time decides whether a firing missed its window? At the serialized conditional transition,
+after acquiring decision authority, take a fresh trusted UTC sample. Retain it as
+`decision_time` only if the exact atomic transaction commits. Opening the transaction, receiving
+the delivery and acknowledging the commit can all happen at different times. Neither those times
+nor a caller timestamp decides eligibility. The recorded sample measures the decision, even if
+its commit becomes visible later.
+
+On a lost acknowledgement, observe the exact durable decision. Rollback leaves no decision.
+A process may derive a monotonic waiting budget from retained absolute bounds. That reading
+cannot be persisted as recovery authority. After restart or clock correction, compare fresh
+absolute time for an undecided transition. Neither event reopens an admission, skip, expiry
+or terminal settlement that has already committed.
 
 The `not_before`, `latest_start_at`, and optional `finish_by` predicates below apply only to
 `deadline_windowed`. Foreground and spare-capacity firings retain their own eligibility contracts;

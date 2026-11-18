@@ -54,11 +54,14 @@ important question, repair every framing, and choose the test for every dispute.
 what must become transferable: recognizing what matters, why it matters here, and what would
 change the judgment.
 
-A procedure can work perfectly in isolation while carrying a responsibility that belongs
-elsewhere. A fluent explanation of its operation may conceal the missing question of why it
-exists. The decisive cut follows relationships across the whole: purpose, owner, lifetime,
-callers, and consequence. It can preserve the mechanism while changing the boundary that made
-its use misleading.
+A publication tool sends a manuscript the instant its author finishes writing. Its test
+confirms that the text arrived intact. An editor can still ask who decided this version
+was ready to leave the desk. The error is in the relation between finishing a draft and
+authorizing its release. The tool may be sound once the right caller can invoke it at the
+right time.
+
+Discernment follows a procedure beyond its own test. Its purpose, owner, lifetime, and
+callers all matter to the person who will bear the consequence.
 
 The [AGI ambition](../../divination/transcendence/incantation.md#logic-behind-logic) reaches this
 level of judgment. The Lich must learn to examine the problem it has been given, select evidence,

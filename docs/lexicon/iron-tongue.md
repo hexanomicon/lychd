@@ -175,8 +175,8 @@ shape based on family and model.
 ### [CapabilityGrant](../adr/22-dispatcher.md#the-grant-lease-doctrine) { #capabilitygrant }
 
 The Dispatcher's temporary binding of one exact warm operation to its admitted model, call,
-job, or session surface and GrantLease. The binding reaches only that admitted surface. Current
-source delivers a narrow v1 compatibility shape for a chat model and toolset.
+job, or session surface and GrantLease. The binding reaches only that admitted surface. The
+[dispatch record](../state-of-the-work.md#animator-dispatch-spine) identifies the supported grants.
 
 ### [Capacity](../sepulcher/aspects/weaver/smith.md#capacities-workers-and-attempts) { #capacity }
 
@@ -647,8 +647,9 @@ A2A.
 
 ### [Nexus](../divination/altar/nexus.md) { #nexus }
 
-The Altar instrument projecting Animator readiness, grants, leases, resource evidence, and
-Orchestrator transitions.
+The Altar instrument for inspecting Animator readiness, previewing a physical transition, and
+requesting it from the Orchestrator. The request ticket and the observed transition tell
+different parts of what happened.
 
 [Orchestrator](../adr/23-orchestrator.md)
 
@@ -663,15 +664,15 @@ admission; distinct from the Graph runtime's legacy station-attempt `occurrence_
 
 ### [Oculus](../adr/29-observability.md) { #oculus }
 
-The designed evidence Aspect for bounded observations, correlation, explicit gaps, and
-rebuildable read models.
+The evidence Aspect that relates observations to their sources and makes gaps in capture visible.
+Its read models can be rebuilt from the evidence their sources retain.
 
-[State of Work](../state-of-the-work.md)
+[State of Work](../state-of-the-work.md#native-oculus)
 
 ### [Orb](../divination/altar/orb.md) { #orb }
 
-The Altar instrument for scrying one Run’s retained evidence: what was captured, what is
-missing, and how the observations connect.
+The Altar instrument for scrying. Its field shows Runs side by side and can also show observed
+runtime calls. Opening one Run reveals the evidence retained for that attempt and any gaps.
 
 [Covenant 29](../adr/29-observability.md)
 
@@ -834,8 +835,8 @@ checks cannot be established.
 
 ### [Pulse](../adr/19-cli.md) { #pulse }
 
-The `lychd` operator CLI and its closed `init`, `bind`, `start`, `stop`, `status` (alias `st`),
-`logs`, `access`, and `del` grammar.
+The `lychd` command-line interface through which the operator configures, observes and controls
+the local body. Its closed grammar includes the host-owned `tether` group for private roads.
 
 [CLI source](https://github.com/hexanomicon/lychd/tree/main/src/lychd/cli/)
 
@@ -874,10 +875,12 @@ Core or one explicitly selected extension package performing registration throug
 Extension Context; its host-assigned `registrant_id` records provenance, while registering a
 Provider does not make the package that Provider.
 
-### [Reliquary](../state-of-the-work.md#artifact-reference-contract) { #reliquary }
+### [Reliquary](../adr/06-persistence.md#reliquary-custody) { #reliquary }
 
-A designed artifact-custody lifecycle for immutable lineage, authorized retrieval, comparison,
-and retention.
+The custodian of artifact bytes. It tracks their lineage, governs who can retrieve them for
+comparison or use, and records retention and retirement. An [ArtifactRef](#artifactref)
+identifies the content. [State of Work](../state-of-the-work.md#artifact-reference-contract)
+records the bounded local custody profile.
 
 [Covenant 36: Vision](../adr/36-vision.md#custody-before-sight)
 
@@ -1061,10 +1064,11 @@ Persona publication nor model training.
 
 ### [Tether](../sepulcher/aspects/tether.md) { #tether }
 
-The private-reachability Aspect, planned to manifest through managed WireGuard or
-external attachments.
+The Aspect that gives a Lich a private network road. Its native profile admits peers and
+attachments and records revocation. A road establishes reachability. The application still
+decides who may act.
 
-[Covenant 39](../adr/39-vpn.md)
+[Covenant 39](../adr/39-vpn.md) · [Native profile and host qualification](../state-of-the-work.md#vpn-tether)
 
 ### [The Tomb](../adr/09-security.md#6-tomb-execution-contract) { #the-tomb }
 
