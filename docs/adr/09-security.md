@@ -11,6 +11,12 @@ icon: material/shield-lock-outline
     Magus's unprivileged host account; kernel/runtime escapes, hostile host administration, and
     compromise of that account are outside its protection.
 
+The [personal desktop profile](../deployments/desktop.md) runs trusted native programs under
+one ordinary account. Stop authority applies to the current database owner. Containers on
+Linux supply independent filesystem and process isolation. Desktop loopback services and
+user-owned files assume a trusted local account and do not grant authority outside a guest.
+Future guest-to-host access is scoped in [deployment profiles](../deployments/desktop.md#virtual-machines).
+
 ## Decision: trust zones
 
 | Zone | May hold | Must not hold |
@@ -107,7 +113,8 @@ by Ansible. [State of Work](../state-of-the-work.md#vpn-tether) retains these li
 ### Local installation-stop admission
 
 The former `native-owned-lifespan@1` host-Vessel stop profile and its HTTP admission route are
-retired with native deployment. Historical signed-stop receipts remain dated observations of
+retired. The personal desktop profile authenticates graceful stops against a fresh generation
+held by the database lock owner. Historical signed-stop receipts remain dated observations of
 that removed profile; they cannot authorize a current container operation.
 
 A future container lifecycle port must authenticate exact installation intent, retain current

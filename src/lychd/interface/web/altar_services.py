@@ -59,6 +59,7 @@ if TYPE_CHECKING:
     from lychd.compositions.scavenger.services import ScavengerService
     from lychd.config.runes.registry import RuneRegistry
     from lychd.config.settings import BridgeCastingSettings, ScavengerCastingSettings
+    from lychd.config.settings.orchestration import SwitchingSettings
     from lychd.config.settings.root import Settings
     from lychd.domain.animation.extension import RegisteredPortalDefinition, RegisteredSoulstoneDefinition
     from lychd.domain.animation.services.adapters.contracts import PortalDefinition, SoulstoneRuntimeAdapter
@@ -88,6 +89,7 @@ if TYPE_CHECKING:
     from lychd.extensions.delegation import RegisteredDelegatedRuntime
     from lychd.interface.web.scout_admission import ScoutAdmissionService
     from lychd.interface.web.scout_feed_admission import ScoutFeedAdmissionService
+    from lychd.system.services.native_runtime import NativeRuntimeActuator
     from lychd.system.services.scout_workflow import ScoutWorkflowService
 
 
@@ -126,6 +128,8 @@ class AltarServices:
     scout_admission: ScoutAdmissionService | None = None
     runtime_observations: RuntimeCatalogue | None = None
 
+    native_actuator: NativeRuntimeActuator | None = None
+
     async def aclose(self) -> None:
         """Cancel tracked tasks and drain pending ledger writes before shutdown."""
         failures: list[BaseException] = []
@@ -139,6 +143,11 @@ class AltarServices:
             try:
                 await close()
             except BaseException as exc:  # noqa: BLE001 - drain every owner and preserve cancellation
+                failures.append(exc)
+        if self.native_actuator is not None:
+            try:
+                await self.native_actuator.aclose()
+            except BaseException as exc:  # noqa: BLE001 - preserve every closure failure
                 failures.append(exc)
         if len(failures) == 1:
             raise failures[0]
@@ -606,6 +615,31 @@ def _configured_semantic_answer(
     return binding
 
 
+def _switching_services(
+    registry: AnimatorRegistry,
+    switching: SwitchingSettings,
+    actuator: RuntimeActuator | None,
+    guard: SoftActivationGuard | None,
+    systemctl_bin: str | None,
+) -> tuple[RuntimeActuator, SoftActivationGuard, NativeRuntimeActuator | None]:
+    if actuator is None:
+        actuator = build_runtime_actuator(switching, registry, systemctl_bin=systemctl_bin)
+    if switching.actuator == "native-process":
+        from lychd.system.services.native_runtime import NativeRuntimeActuator, NativeSingleModelGuard
+
+        return (
+            actuator,
+            guard or NativeSingleModelGuard(),
+            actuator if isinstance(actuator, NativeRuntimeActuator) else None,
+        )
+    if guard is None:
+        from lychd.system.constants import PATH_RUNTIME_GUARD_DIR
+        from lychd.system.services.runtime_guard import FileSoftActivationGuard
+
+        guard = FileSoftActivationGuard(PATH_RUNTIME_GUARD_DIR)
+    return actuator, guard, None
+
+
 def build_altar_services(
     *,
     queues: Mapping[str, RunQueue],
@@ -662,6 +696,8 @@ def build_altar_services(
         soulstone_registrations=soulstone_registrations,
         portal_registrations=portal_registrations,
     )
+    if settings.orchestration.switching.actuator == "native-process":
+        registry.load(probe_readiness=False)
     leases = LeaseLedger()
     ledger = _build_run_ledger(profile, settings)
     bus = InProcessEventBus(ledger=ledger)
@@ -669,11 +705,9 @@ def build_altar_services(
     archive_derivation = build_archive_derivation(settings, registry, leases, default_sigil())
     archive_semantic = build_archive_semantic(settings, registry, leases, default_sigil())
     switching = settings.orchestration.switching
-    if soft_activation_guard is None:
-        from lychd.system.constants import PATH_RUNTIME_GUARD_DIR
-        from lychd.system.services.runtime_guard import FileSoftActivationGuard
-
-        soft_activation_guard = FileSoftActivationGuard(PATH_RUNTIME_GUARD_DIR)
+    runtime_actuator, soft_activation_guard, native_actuator = _switching_services(
+        registry, switching, runtime_actuator, soft_activation_guard, systemctl_bin
+    )
     worker_broker = GhoulBroker()
     orchestrator = OrchestratorManager(
         worker_broker,
@@ -681,13 +715,7 @@ def build_altar_services(
         leases=leases,
         policy=policy,
         arbiter=TransitionArbiter(),
-        actuator=runtime_actuator
-        if runtime_actuator is not None
-        else build_runtime_actuator(
-            switching,
-            registry,
-            systemctl_bin=systemctl_bin,
-        ),
+        actuator=runtime_actuator,
         switching=switching,
         soft_activation_guard=soft_activation_guard,
     )
@@ -798,6 +826,7 @@ def build_altar_services(
     )
     dictation, dictation_lexicon = _build_dictation_services(profile, settings)
     return AltarServices(
+        native_actuator=native_actuator,
         scavenger=scavenger,
         feed_admission=feed_admission,
         creation=creation,

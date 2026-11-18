@@ -70,6 +70,11 @@ owns queue claim and retry, [Graph](24-graph.md) owns graph re-admission,
 [Orchestrator](23-orchestrator.md) owns physical convergence, and [Evolution](18-evolution.md)
 owns source selection. The coordinator composes their work without absorbing their authority.
 
+A personal desktop can select a full physical backup for its dedicated PostgreSQL 18 cluster.
+[Desktop recovery](../deployments/desktop.md#storage-networking-and-recovery) binds the server identity,
+WAL and independent restore check. A fast snapshot driver needs the necessary OS authority,
+a consistent cut across every involved volume, and its own recovery evidence.
+
 ## Delivery boundary
 
 This protocol is designed. Filesystem preparation does not prove freeze, PostgreSQL capture,

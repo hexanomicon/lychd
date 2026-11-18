@@ -37,7 +37,7 @@ Admission remains limited to the capabilities the server actually offers; client
 cannot supply missing server proof. The first managed fixture below remains the proving target.
 
 A [Prism Launcher client on macOS](https://prismlauncher.org/download/macos/) is separate from
-[LychD's Linux host requirement](../../adr/08-containers.md#supported-host-policy). LychD
+[LychD's host policy](../../adr/08-containers.md#supported-host-policy). LychD
 [Prism](../../sepulcher/aspects/prism/voxel-and-block-export.md) is a different component: its
 designed block-export path supplies blueprints for separate mission admission. An existing launcher
 instance does not establish game/modpack compatibility or provide Blockworld integration;

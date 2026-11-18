@@ -6,6 +6,7 @@ import argparse
 import asyncio
 import os
 import signal
+import sys
 from collections.abc import Callable, Generator, Sequence
 from contextlib import contextmanager
 from functools import partial
@@ -20,11 +21,15 @@ from lychd.interface.server_policy import (
 )
 
 if TYPE_CHECKING:
+    from types import FrameType
+
     from litestar import Litestar
     from litestar.types import Receive, Scope, Send
 
 
-_SIGNALS = (signal.SIGINT, signal.SIGTERM)
+_SIGNALS = (
+    (signal.SIGINT, signal.SIGTERM, signal.SIGBREAK) if sys.platform == "win32" else (signal.SIGINT, signal.SIGTERM)
+)
 _CAGED_HOST = "0.0.0.0"  # noqa: S104 -- fixed internal listener behind managed loopback publication
 _CAGED_PORT = 8000
 
@@ -52,7 +57,7 @@ class _EmbeddedServer(Server):
 
 
 @contextmanager
-def _preserve_signal_handlers(loop: asyncio.AbstractEventLoop) -> Generator[None]:
+def _preserve_signal_handlers(loop: asyncio.AbstractEventLoop, request_stop: Callable[[], None]) -> Generator[None]:
     # asyncio has no public getter for an existing loop signal callback. Preserve
     # its Handle callback/arguments/context before add_signal_handler cancels it.
     # This is the sole standard-asyncio private seam, covered by restoration tests.
@@ -64,11 +69,21 @@ def _preserve_signal_handlers(loop: asyncio.AbstractEventLoop) -> Generator[None
             callback = handle._callback  # noqa: SLF001
             arguments = handle._args  # noqa: SLF001
             previous_callbacks[signum] = partial(handle.get_context().run, callback, *arguments)
+
+    def schedule_stop(_signum: int, _frame: FrameType | None) -> None:
+        loop.call_soon_threadsafe(request_stop)
+
     try:
+        for signum in _SIGNALS:
+            if sys.platform == "win32":
+                signal.signal(signum, schedule_stop)
+            else:
+                loop.add_signal_handler(signum, request_stop)
         yield
     finally:
         for signum in _SIGNALS:
-            loop.remove_signal_handler(signum)
+            if sys.platform != "win32":
+                loop.remove_signal_handler(signum)
             if (previous_callback := previous_callbacks.get(signum)) is not None:
                 loop.add_signal_handler(signum, previous_callback)
             else:
@@ -153,6 +168,9 @@ async def serve_application(app: Litestar, *, host: str, port: int) -> None:
             startup_cancelled = True
             lifecycle.cancel()
 
+    if sys.platform in {"darwin", "win32"}:
+        app.state.native_request_stop = request_stop
+
     server._retire = request_stop  # noqa: SLF001 # pyright: ignore[reportPrivateUsage] - before Granian's shutdown await
 
     async def run_lifespan() -> None:
@@ -169,30 +187,52 @@ async def serve_application(app: Litestar, *, host: str, port: int) -> None:
                 request_stop()
                 await callbacks_retired.wait()
 
-    with _preserve_signal_handlers(loop), _server_lifespan(app):
-        for signum in _SIGNALS:
-            loop.add_signal_handler(signum, request_stop)
+    with _preserve_signal_handlers(loop, request_stop), _server_lifespan(app):
         lifecycle = asyncio.create_task(run_lifespan(), name="lychd-server-lifespan")
         await _await_lifespan(lifecycle, request_stop)
 
 
 def run_production_server() -> None:
     """Construct the image application with its fixed internal listener."""
+    if sys.platform != "linux":
+        message = "The caged image listener requires Linux."
+        raise ServerRuntimePolicyError(message)
+    _run_listener(_CAGED_HOST, _CAGED_PORT)
+
+
+def run_native_server() -> None:
+    """Bind the foreground personal Vessel to its fixed loopback interface."""
+    if sys.platform not in {"darwin", "win32"}:
+        message = "The native listener requires macOS or Windows."
+        raise ServerRuntimePolicyError(message)
+    from lychd.config.settings.root import get_settings
+
+    settings = get_settings()
+    if settings.server.database.host not in {"127.0.0.1", "localhost", "::1"}:
+        message = "The native Vessel requires a loopback PostgreSQL host."
+        raise ServerRuntimePolicyError(message)
+    if settings.server.database.profile != "postgres":
+        message = "The native Vessel requires PostgreSQL."
+        raise ServerRuntimePolicyError(message)
+    _run_listener("127.0.0.1", settings.server.port)
+
+
+def _run_listener(host: str, port: int) -> None:
     validate_server_environment(os.environ)
     from lychd.app import create_app
 
     exports = {
-        "LITESTAR_HOST": _CAGED_HOST,
-        "GRANIAN_HOST": _CAGED_HOST,
-        "LITESTAR_PORT": str(_CAGED_PORT),
-        "GRANIAN_PORT": str(_CAGED_PORT),
+        "LITESTAR_HOST": host,
+        "GRANIAN_HOST": host,
+        "LITESTAR_PORT": str(port),
+        "GRANIAN_PORT": str(port),
     }
     previous = {key: os.environ.get(key) for key in exports}
     try:
         os.environ.update(exports)
         app = create_app()
         with asyncio.Runner(loop_factory=asyncio.SelectorEventLoop) as runner:
-            runner.run(serve_application(app, host=_CAGED_HOST, port=_CAGED_PORT))
+            runner.run(serve_application(app, host=host, port=port))
     finally:
         for key, value in previous.items():
             if value is None:

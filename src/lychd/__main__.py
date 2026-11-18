@@ -121,6 +121,21 @@ def _wait_for_database(timeout: float) -> None:
 def _register_local_commands() -> None:
     """Register the bootstrap-safe native command adapters on the Click root."""
     from lychd.cli.access import access
+    from lychd.cli.native import platform
+
+    cli.add_command(platform)
+    if sys.platform in {"darwin", "win32"}:
+        from lychd.cli.native import desktop, start_native, stop_native
+
+        cli.add_command(access)
+        cli.add_command(desktop)
+        cli.add_command(start_native)
+        cli.add_command(stop_native)
+        return
+
+    if sys.platform != "linux":
+        return
+
     from lychd.cli.commands import COMMANDS
     from lychd.cli.deletion import delete_installation
     from lychd.cli.operator import logs, start, status, stop
@@ -134,6 +149,10 @@ _register_local_commands()
 
 def run_cli() -> None:
     """Configure shared logging, then run the native CLI without eager ASGI assembly."""
+    if sys.platform != "linux":
+        cli()
+        return
+
     if _effectful_init_requested(sys.argv[1:]) and os.geteuid() == 0:
         error = click.ClickException(
             "LychD initialization is rootless; rerun `lychd init` as your ordinary user.",

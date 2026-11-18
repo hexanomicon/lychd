@@ -8,6 +8,7 @@ grants ownership or deletion authority.
 from __future__ import annotations
 
 import os
+import sys
 from pathlib import Path
 from typing import Final
 
@@ -24,26 +25,29 @@ CONTAINER_POSTGRES_PORT: Final[int] = 5432
 # I. THE PHYSICAL LAYER (XDG Standard Roots)
 # ==============================================================================
 
-_xdg_data = os.getenv("XDG_DATA_HOME")
-PATH_XDG_DATA_HOME: Final[Path] = Path(_xdg_data) if _xdg_data else Path.home() / ".local" / "share"
-"""Shared XDG root for the Crypt.
+PATH_XDG_DATA_HOME: Final = Path(os.environ.get("XDG_DATA_HOME") or Path.home() / ".local" / "share")
+PATH_XDG_CONFIG_HOME: Final = Path(os.environ.get("XDG_CONFIG_HOME") or Path.home() / ".config")
+PATH_XDG_CACHE_HOME: Final = Path(os.environ.get("XDG_CACHE_HOME") or Path.home() / ".cache")
 
-This shared parent is an anchor, never recursive LychD deletion authority.
-"""
 
-_xdg_config = os.getenv("XDG_CONFIG_HOME")
-PATH_XDG_CONFIG_HOME: Final[Path] = Path(_xdg_config) if _xdg_config else Path.home() / ".config"
-"""Shared XDG root for the Codex and Binding.
+def _personal_roots() -> tuple[Path, Path, Path]:
+    """Resolve the per-user configuration, persistence and cache roots for this host."""
+    home = Path.home()
+    if sys.platform == "darwin":
+        support = home / "Library" / "Application Support" / "LychD"
+        return support / "config", support / "data", home / "Library" / "Caches" / "LychD"
+    if sys.platform == "win32":
+        support = Path(os.environ.get("LOCALAPPDATA") or home / "AppData" / "Local") / "LychD"
+        return support / "config", support / "data", support / "cache"
+    return (
+        PATH_XDG_CONFIG_HOME / DEFAULT_MODULE_NAME,
+        PATH_XDG_DATA_HOME / DEFAULT_MODULE_NAME,
+        PATH_XDG_CACHE_HOME / DEFAULT_MODULE_NAME,
+    )
 
-This shared parent is an anchor, never recursive LychD deletion authority.
-"""
 
-_xdg_cache = os.getenv("XDG_CACHE_HOME")
-PATH_XDG_CACHE_HOME: Final[Path] = Path(_xdg_cache) if _xdg_cache else Path.home() / ".cache"
-"""Shared XDG root for the Forge.
-
-This shared parent is an anchor, never recursive LychD deletion authority.
-"""
+PATH_CODEX_ROOT, PATH_CRYPT_ROOT, PATH_CACHE_ROOT = _personal_roots()
+_runtime_root = Path("/run/user") / str(os.getuid()) if sys.platform.startswith("linux") else PATH_CACHE_ROOT
 
 
 # ==============================================================================
@@ -53,9 +57,6 @@ This shared parent is an anchor, never recursive LychD deletion authority.
 # provide an exhaustive list of all defined filesystem locations.
 
 # --- A. The Codex (The Mind: Configuration) ---
-
-PATH_CODEX_ROOT: Final[Path] = PATH_XDG_CONFIG_HOME / DEFAULT_MODULE_NAME  # ~/.config/lychd
-"""LychD settings and typed Runes."""
 
 PATH_LYCHD_TOML: Final[Path] = PATH_CODEX_ROOT / "lychd.toml"  # ~/.config/lychd/lychd.toml
 """Primary settings loaded before Rune documents."""
@@ -78,16 +79,13 @@ PATH_PORTALS_DIR: Final[Path] = PATH_ANIMATOR_DIR / "portals"  # ~/.config/lychd
 
 # --- B. The Crypt (The Body: Persistence) ---
 
-PATH_CRYPT_ROOT: Final[Path] = PATH_XDG_DATA_HOME / DEFAULT_MODULE_NAME  # ~/.local/share/lychd
-"""Persistent LychD data and workspaces."""
-
 PATH_TETHER_STATE_DIR: Final[Path] = PATH_CRYPT_ROOT / "tether"
 """Host-owned Tether admission, tombstones and public runtime projections."""
 
 PATH_TETHER_CONFIG_DIR: Final[Path] = PATH_TETHER_STATE_DIR / "runtime"
 """Per-role public configuration directories; never private key material."""
 
-PATH_TETHER_RUNTIME_DIR: Final[Path] = Path("/run/user") / str(os.getuid()) / "lychd-tether"
+PATH_TETHER_RUNTIME_DIR: Final[Path] = _runtime_root / "lychd-tether"
 """Boot-local sockets: recreate safely; never persist inode identity as authority."""
 
 CONTAINER_TETHER_RUNTIME_DIR: Final[Path] = Path("/run/lychd-tether")
@@ -126,9 +124,6 @@ PATH_CORE_DIR: Final[Path] = PATH_CRYPT_ROOT / "core"  # ~/.local/share/lychd/co
 
 # --- C. The Assembly (The Forge: Cache) ---
 
-PATH_CACHE_ROOT: Final[Path] = PATH_XDG_CACHE_HOME / DEFAULT_MODULE_NAME  # ~/.cache/lychd
-"""Rebuildable LychD cache."""
-
 PATH_ASSEMBLY_DIR: Final[Path] = PATH_CACHE_ROOT / "assembly"  # ~/.cache/lychd/assembly
 """Reserved disposable assembly staging."""
 
@@ -147,7 +142,7 @@ processes ``.container/.volume/.network/.kube/.image/
 directory are silently ignored, so they must live in ``PATH_SYSTEMD_USER_UNITS_DIR``.
 """
 
-PATH_SYSTEMD_USER_GENERATOR_DIR: Final[Path] = Path("/run/user") / str(os.getuid()) / "systemd" / "generator"
+PATH_SYSTEMD_USER_GENERATOR_DIR: Final[Path] = _runtime_root / "systemd" / "generator"
 """Canonical generated-unit site for the Linux user-manager deployment profile."""
 
 PATH_SYSTEMD_CONFIG_DIR: Final[Path] = PATH_XDG_CONFIG_HOME / "systemd"

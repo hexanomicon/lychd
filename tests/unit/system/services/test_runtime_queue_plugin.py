@@ -387,8 +387,13 @@ def test_production_assembly_pairs_runtime_workers_with_the_required_altar_owner
     from lychd import app as application
     from lychd.config import components
     from lychd.config.runes import registry as runes
+    from lychd.interface.vessel_owner import vessel_database_owner
 
-    settings, extensions, rune_registry, database_plugin = object(), object(), object(), object()
+    settings = SimpleNamespace(
+        server=SimpleNamespace(database=SimpleNamespace(profile="postgres")),
+        orchestration=SimpleNamespace(switching=SimpleNamespace(actuator="host-reactor")),
+    )
+    extensions, rune_registry, database_plugin = object(), object(), object()
     config = SAQConfig(
         queue_configs=[
             QueueConfig(broker_instance=object(), name=name, tasks=[], separate_process=False)
@@ -425,4 +430,4 @@ def test_production_assembly_pairs_runtime_workers_with_the_required_altar_owner
         "list[object]",
         getattr(app_config, "lifespan"),  # noqa: B009 - framework uses unspecialized context manager types
     )
-    assert registered_lifespans == [lifespan.altar_services_lifespan]
+    assert registered_lifespans == [vessel_database_owner, lifespan.altar_services_lifespan]

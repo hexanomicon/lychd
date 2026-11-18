@@ -46,6 +46,7 @@ class LlamaCppSoulstoneConfig(SoulstoneConfig):
 
     embedding_profile: Literal["qwen3-06b-q8-b9445@1"] | None = None
 
+    structured_output: Literal["json-schema"] | None = None
     startup_mode: LlamaCppMode = LlamaCppMode.AUTO
     models_dir: str | None = None
     models_preset: str | None = None
@@ -157,6 +158,9 @@ class LlamaCppSoulstoneConfig(SoulstoneConfig):
 
             require_profile_config(self)
             return self
+        if self.structured_output is not None and self.startup_mode != LlamaCppMode.SINGLE:
+            msg = "JSON Schema output requires a fixed single-model llama.cpp Rune."
+            raise ValueError(msg)
         self._validate_endpoint_port()
         if self.exec:
             conflicting = sorted(field for field in self._PASSTHROUGH_CONFLICT_FIELDS if field in self.model_fields_set)

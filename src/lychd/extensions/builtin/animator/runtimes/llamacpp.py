@@ -85,6 +85,7 @@ class LlamaCppRuntimeAdapter:
             model_infos=model_infos,
             default_model_id=model_infos[0].id if model_infos else None,
             mode=descriptor.mode,
+            schema_without_tools=stone.structured_output == "json-schema",
             router_query_model_id=descriptor.router_query_model_id,
             generation_defaults=GenerationProfile.model_validate(self._runtime_defaults(descriptor)),
         )

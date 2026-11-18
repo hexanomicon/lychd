@@ -39,7 +39,7 @@ Generated services and development machinery have hidden entrypoints, but hidden
 not public compatibility. The managed image uses the fixed process entrypoint
 defined by [Backend](11-backend.md#process-and-listener-boundary). There is no host Vessel `serve`
 entrypoint. Database commands retain their
-lazy framework delegation. The root verbs are `init`, `bind`, `start`, `stop`, `status`/`st`,
+lazy framework delegation. On Linux the root verbs include `platform`, `init`, `bind`, `start`, `stop`, `status`/`st`,
 `logs`, `access`, `tether`, and `del`; no run-operation, snapshot, restore, selector shorthand,
 recovery, promotion, or consent spelling is reserved by the grammar.
 
@@ -48,6 +48,12 @@ recovery, promotion, or consent spelling is reserved by the grammar.
 ownership, and serialize mutations under the lifecycle lock. Registration belongs to Pulse source,
 never an extension-supplied Click callback. This group grants neither generic extension execution
 nor arbitrary host commands; the future run-operation namespace remains separate.
+
+On macOS and Windows, `platform` reports the native profile and resolved paths. The
+`desktop` group owns per-user database provisioning, login registration and model selection.
+`start` runs the native Vessel in the foreground, `stop` requests retirement of the current
+database owner, and `access` retrieves the local browser login. Only host-owned commands enter
+this namespace. See the [desktop guide](../deployments/desktop.md).
 
 ### Inscribe, then bind
 
@@ -84,7 +90,8 @@ inventory belongs to `status`.
 Bind compiles the container Vessel only. The former `--native-only` and `--uncaged` options are
 usage errors before host inspection or effects. A retained native Vessel source or owned runtime
 identity blocks bind, including locked revalidation. Bind cannot silently replace, remove, adopt
-or migrate it. There is no host-native test profile; tests use the OCI verification path under
+or migrate it. Core repository tests use the OCI verification path. The personal desktop installer
+has separate OS qualification under
 [Containers](08-containers.md#core-deployment-and-verification).
 
 ### Start, stop, observe, and read

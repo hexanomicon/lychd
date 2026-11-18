@@ -7,6 +7,7 @@ marked roles receive only runtime or Phoenix authority. No unmarked role is adop
 from __future__ import annotations
 
 import asyncio
+import sys
 from typing import TYPE_CHECKING, Any, LiteralString
 
 import psycopg
@@ -202,9 +203,11 @@ def bootstrap_database(settings: Settings) -> None:
             AlembicCommands(config).upgrade("head")
         finally:
             asyncio.run(engine.dispose())
-        asyncio.run(_initialize_saq(db))
+        # psycopg asynchronous connections require a selector loop on Windows.
+        queue_loop = asyncio.SelectorEventLoop if sys.platform == "win32" else None
+        asyncio.run(_initialize_saq(db), loop_factory=queue_loop)
         _grant_runtime(db)
-        asyncio.run(_verify_runtime(db))
+        asyncio.run(_verify_runtime(db), loop_factory=queue_loop)
     except psycopg.Error:
         msg = "Database bootstrap failed; data was preserved. Verify the administrative credential and HBA policy"
         raise RuntimeError(msg) from None

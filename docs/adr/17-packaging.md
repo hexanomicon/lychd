@@ -45,6 +45,11 @@ places this artifact boundary between candidate work and governed Evolution. Con
 A2A collaboration can change how work is requested while exact source identity, verification,
 publication and activation keep the separate meanings defined here.
 
+For a secondary personal host, a source-bound desktop installation includes the Python runtime
+dependencies, compiled Altar, native PostgreSQL server tools and matching pgvector extension.
+The [desktop guide](../deployments/desktop.md) describes the current prerequisites. Store
+notarization, Authenticode signing and an OS installer each require their own release receipt.
+
 ### Candidate identity and archive audit
 
 `src/lychd/__about__.py` is Hatch's version source. Version preparation changes reviewed files;

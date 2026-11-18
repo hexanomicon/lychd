@@ -146,3 +146,59 @@ async def test_router_inference_cannot_autoload_after_losing_warmth(
     assert len(requests) == 1
     assert requests[0].url.params["autoload"] == "false"
     assert leases.active() == []
+
+
+@pytest.mark.parametrize(("schema", "with_tool"), [(True, False), (True, True), (False, False)])
+@pytest.mark.asyncio
+async def test_fixed_model_structured_output_wire(
+    monkeypatch: pytest.MonkeyPatch, *, schema: bool, with_tool: bool
+) -> None:
+    import json
+
+    from pydantic_ai import DeferredToolRequests
+
+    from lychd.agents.outputs import BridgeReply
+    from lychd.domain.animation.connectors import ModelConnector
+
+    def inspect(request: httpx2.Request) -> httpx2.Response:
+        payload = json.loads(request.content)
+        assert request.url.path == "/v1/chat/completions"
+        if schema and not with_tool:
+            assert "tools" not in payload
+            shape = payload["response_format"]
+            assert shape["type"] == "json_schema"
+            definition = shape["json_schema"]["schema"]
+            assert definition["properties"]["answer"]["type"] == "string"
+            assert definition["properties"]["fragments"]["items"]["type"] == "object"
+            assert "$defs" not in definition
+        else:
+            assert "response_format" not in payload
+            functions = {tool["function"]["name"] for tool in payload["tools"]}
+            assert "final_result" in functions
+            assert ("lookup" in functions) == with_tool
+        return httpx2.Response(400, json={"error": {"message": "checked wire format"}})
+
+    monkeypatch.setattr(
+        "lychd.domain.animation.model_factory._model_http_client",
+        lambda: httpx2.AsyncClient(transport=httpx2.MockTransport(inspect)),
+    )
+    stone = LlamaCppSoulstoneConfig(
+        name="personal",
+        startup_mode=LlamaCppMode.SINGLE,
+        model_path="/models/personal.gguf",
+        served_model_id="personal",
+        port=8081,
+        structured_output="json-schema" if schema else None,
+    )
+    runtime = LlamaCppRuntimeAdapter().build_runtime(stone)
+    assert runtime is not None
+    assert isinstance(runtime.connector, ModelConnector)
+    async with Agent(runtime.connector.get_model(), output_type=[BridgeReply, DeferredToolRequests]) as agent:
+        if with_tool:
+
+            @agent.tool_plain
+            def lookup() -> str:
+                return "test"
+
+        with override_allow_model_requests(True), pytest.raises(ModelHTTPError, match="checked wire format"):  # noqa: FBT003
+            await agent.run("test")

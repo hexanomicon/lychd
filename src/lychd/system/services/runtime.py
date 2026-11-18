@@ -33,6 +33,7 @@ if TYPE_CHECKING:
 
     from lychd.config.settings.orchestration import SwitchingSettings
     from lychd.domain.animation.protocols import CapabilityRegistry
+    from lychd.system.services.native_runtime import NativeRuntimeActuator
 
 __all__ = [
     "HostReactorRuntimeActuator",
@@ -717,8 +718,12 @@ def build_runtime_actuator(
     *,
     systemctl_bin: str | None = None,
     lock_factory: Callable[[], AbstractContextManager[object]] | None = None,
-) -> SystemdRuntimeActuator | HostReactorRuntimeActuator:
+) -> SystemdRuntimeActuator | HostReactorRuntimeActuator | NativeRuntimeActuator:
     """Select the configured trusted effect owner at the composition boundary."""
+    if settings.actuator == "native-process":
+        from lychd.system.services.native_runtime import NativeRuntimeActuator
+
+        return NativeRuntimeActuator(registry, settings)
     if settings.actuator == "systemd":
         if systemctl_bin is None:
             message = "Direct systemd actuation requires an injected attested systemctl executable."

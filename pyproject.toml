@@ -1,7 +1,7 @@
 [project]
 name = "lychd"
 dynamic = ["version"]
-description = "Systemd-native daemon for local agentic orchestration"
+description = "Local agentic orchestration for Linux, macOS and Windows"
 readme = "README.md"
 authors = [
     { name = "LychD contributors", email = "hexanomicon@proton.me" }
@@ -20,6 +20,8 @@ classifiers = [
     "Intended Audience :: System Administrators",
     "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)",
     "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: Microsoft :: Windows",
     "Environment :: No Input/Output (Daemon)",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
@@ -97,6 +99,7 @@ lint = [
     "bump-my-version"
 ]
 typing = [
+    { include-group = "desktop-browser" },
     "basedpyright>=1.40.2",
     "numpy>=2.0,<3",
 ]
@@ -114,6 +117,9 @@ dev = [
 music-probe = [
     "dawdreamer==0.9.0",
     "numpy>=2.0,<3",
+]
+desktop-browser = [
+    "playwright==1.58.0",
 ]
 
 [project.scripts]

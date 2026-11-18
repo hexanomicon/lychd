@@ -124,7 +124,7 @@ may supply asset identity, custody, and maintenance facts while their owners ret
 personal inventories, configuration, credentials, and device dossiers live outside the repository
 checkout; this guide retains only the reusable example.
 
-[Containers](../../adr/08-containers.md#supported-host-policy) governs LychD's FOSS host support.
+[Containers](../../adr/08-containers.md#supported-host-policy) governs LychD's Linux and desktop host profiles.
 A device's presence in a knowledge map does not make it a supported LychD host.
 [Packaging](../../adr/17-packaging.md) owns source/build evidence, and
 [Assimilation](../../adr/35-assimilation.md) owns the separate study and promotion of foreign craft.

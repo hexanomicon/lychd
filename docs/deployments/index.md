@@ -3,11 +3,17 @@ title: Deployments
 icon: material/server
 ---
 
-# Deployment experiments
+# Deployment profiles
 
-These guides prepare an operator-controlled Linux host and separate that work from LychD's
-application initialization, generated service body, and recovery. They do not establish a
-working application merely because a playbook finishes.
+Choose the role of this computer before installing anything.
+
+| What you want | Where to start |
+| --- | --- |
+| Host on Linux (primary) | [Summoning](../summoning.md) takes one installation through configuration, model selection, Altar and Bridge. |
+| Host on macOS or Windows (secondary) | [Personal desktop hosts](desktop.md) covers installation, local browser chat, PostgreSQL recovery and hardware qualification. |
+| Use an existing installation | Use its operator-approved [Altar access](../divination/altar/index.md). The client needs a browser and the access arrangements for that host. |
+
+## Linux host preparation
 
 - [Tumbleweed Server](tumbleweed/index.md): headless AlphaVPS, one exact source and OCI image,
   guarded CLI activation and read-only acceptance; qualify one pilot before adding hosts.

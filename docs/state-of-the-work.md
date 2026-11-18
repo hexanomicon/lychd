@@ -8,10 +8,12 @@ icon: material/list-status
 LychD is **pre-alpha**. This page answers the practical question that follows the grimoire's
 promise: what can this revision actually support, and where is the evidence?
 
-The supported runtime is local and loopback-oriented, with a single user, one control process,
-and a managed container Vessel. Host-native Core deployment and Core test deployment are retired;
-Core checks run only in the explicit OCI test image. The [evidence envelope](#current-evidence-envelope) dates the production-image and Ward
-PostgreSQL observations and identifies which source revisions they cover.
+The primary Linux runtime is local and loopback-oriented, with one user, one control process
+and a managed container Vessel. The [personal desktop guide](deployments/desktop.md) covers
+macOS and Windows. Native trials on macOS 15 Apple Silicon and Windows Server 2025 x64
+opened Bridge and retained a real model reply across restart. Core repository checks use
+the OCI test image. The [evidence envelope](#current-evidence-envelope) dates the production-image
+and Ward PostgreSQL observations and identifies which source revisions they cover.
 
 Start with an outcome, then read its whole record. State, proved subset, limit, and evidence must
 be read together. The Covenants own architectural decisions; this ledger explains what their
@@ -22,9 +24,9 @@ delivery evidence supports.
 | Scenario | Answer now | Decisive limit |
 | --- | --- | --- |
 | CLI bootstrap | **Partial:** grammar, transactional initialization/binding and guarded lifecycle control have source contracts. Native installed-hybrid observations are frozen history. | Full generated rootless deployment and managed-model lifecycle remain unqualified. See [CLI](#core-cli-rites) and [embodiment](#systemd-podman-embodiment). |
-| Local text chat | **Partial:** retained source, browser and installed-hybrid receipts record structured replies and a bounded useful task under their dated profiles. | General answer quality, wider browser acceptance and full generated installed deployment remain pending. See [vLLM](#vllm-integration), [Bridge](#bridge-surface) and [persistence](#phylactery-first-light). |
+| Local text chat | **Partial:** dated Linux, macOS and Windows browser trials retained a real local model reply across restart. See the [evidence envelope](#current-evidence-envelope). | General answer quality, wider browser acceptance and full generated installed deployment remain pending. See [vLLM](#vllm-integration), [Bridge](#bridge-surface) and [persistence](#phylactery-first-light). |
 | Browser safety | **Loopback only:** a dedicated local credential precedes the fixed Sigil; Host, Origin, CORS, CSRF, and generated bind policy are bounded locally. | Remote IAM and hostile-browser acceptance remain unsupported. |
-| PostgreSQL lifecycle | **Historical restart receipts:** source TCP, source-browser and installed-hybrid profiles retained structured history across native boots before retirement. | These frozen profiles do not qualify current OCI tests or a rebuilt Vessel; checkpoint-plus-consent recovery, crash and full generated deployment remain unqualified. |
+| PostgreSQL lifecycle | **Partial:** Linux, macOS and Windows trials recovered the same Bridge Run after restarting PostgreSQL and Vessel. Older native trials retain their dated scope. | See the [evidence envelope](#current-evidence-envelope). Checkpoint-plus-consent recovery, crash and full generated deployment remain unqualified. |
 | Can I run a Composition from the Portfolio? | The [Portfolio record](#composition-portfolio-delivery) identifies the selected Creation and Scavenger workflows. [Blockworld](#blockworld-experiments), [Reach](#reach-operator-profiles) and [Companion Android](#companion-android-client) each have a separate record of their trials. | An accepted design such as Broadcast still needs executable registration and evidence for the requested operation. |
 | Major blockers | Authenticated caller authority, privacy-safe egress, artifact custody, managed host/model lifecycle receipts, durable [Oculus](#native-oculus) traces, and resource-aware scheduling. | Remote transport, federation, executable evolution, durable recall, and vision/audio bytes remain Partial or Designed. |
 
@@ -55,6 +57,23 @@ Each state describes only its written boundary:
 Project maturity and delivery state are different. An accepted ADR does not prove implementation.
 
 ## Current evidence envelope {#current-evidence-envelope}
+
+On 18 November 2026 a [Linux browser and restart receipt](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/runtime/bridge-linux-2026-11-18.json)
+recorded the production image at `665eb336` answering through Bridge in Chrome with a real
+Qwen2.5-0.5B model. After restarting PostgreSQL, Vessel and Chrome, the same conversation,
+reply and Orb dispatch grant were present. This trial used a manually assembled rootless
+Podman pod. The generated systemd/Quadlet installation and its switching lifecycle have
+separate qualification criteria. Desktop qualification uses the
+[personal host procedure](deployments/desktop.md).
+
+At `5c443428`, a [macOS 15 Apple Silicon trial](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/runtime/bridge-macos-2026-11-18.json)
+and a [Windows Server 2025 x64 trial](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/runtime/bridge-windows-2026-11-18.json)
+installed a native Vessel with a dedicated PostgreSQL 18 cluster and a local Qwen2.5-0.5B
+model. Chrome on macOS and Edge under a standard Windows account sent a real message and
+displayed the settled reply. After restarting PostgreSQL, Vessel and the browser, each trial
+recovered the same Run, answer and model grant. Both also recovered a committed database row
+from a verified physical backup. Windows 11 workstation setup, cold login, GPU performance
+and signed OS distribution have separate qualification criteria.
 
 The 20 October 2026 container-only correction retired the former Core host-native runtime,
 including native stop, credential-source, server/TCP, and host fixtures. Core pytest, lint,
