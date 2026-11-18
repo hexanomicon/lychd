@@ -1,25 +1,44 @@
-"""Bootstrap-safe foreground entry for personal macOS and Windows hosts."""
+"""Bootstrap-safe foreground entry for the selected personal host profile."""
 
 from __future__ import annotations
 
 import asyncio
 import json
+import os
 import sys
 
 import click
+
+from lychd.system.vessel_mode import require_native_user, vessel_mode
 
 
 @click.command("platform")
 def platform() -> None:
     """Show the selected host profile and its configuration path."""
+    mode = vessel_mode()
+    if mode == "container" and sys.platform in {"darwin", "win32"}:
+        from lychd.cli.portable import GUIDE
+
+        click.echo(
+            json.dumps(
+                {
+                    "platform": sys.platform,
+                    "profile": "portable-container",
+                    "vessel_mode": mode,
+                    "project_directory": os.environ.get("LYCHD_CONTAINER_DIR"),
+                    "setup": GUIDE,
+                }
+            )
+        )
+        return
     from lychd.system.constants import PATH_CACHE_ROOT, PATH_CODEX_ROOT, PATH_CRYPT_ROOT, PATH_LYCHD_TOML
 
-    profiles = {"linux": "managed-linux", "darwin": "personal-desktop", "win32": "personal-desktop"}
-    profile = profiles.get(sys.platform, "unsupported")
+    profile = {"native": "personal-desktop", "container": "managed-linux", "unsupported": "unsupported"}[mode]
     click.echo(
         json.dumps(
             {
                 "platform": sys.platform,
+                "vessel_mode": mode,
                 "profile": profile,
                 "config": str(PATH_CODEX_ROOT),
                 "data": str(PATH_CRYPT_ROOT),
@@ -35,6 +54,7 @@ def start_native() -> None:
     """Serve the personal Vessel on IPv4 loopback until interrupted."""
     import subprocess
 
+    _check_account()
     from lychd.system.constants import PATH_POSTGRES_ROOT_DIR
     from lychd.system.desktop.credentials import load_credentials
     from lychd.system.desktop.volume_storage import authority
@@ -56,6 +76,7 @@ def start_native() -> None:
 @click.command("stop")
 def stop_native() -> None:
     """Request graceful retirement and wait for this database's native Vessel to stop."""
+    _check_account()
     from lychd.system.desktop.credentials import load_credentials
 
     load_credentials()
@@ -80,3 +101,10 @@ def desktop(ctx: click.Context, arguments: tuple[str, ...]) -> None:
     from lychd.system.desktop import desktop as commands
 
     commands.main(args=list(arguments), prog_name=ctx.command_path, standalone_mode=False)
+
+
+def _check_account() -> None:
+    try:
+        require_native_user()
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from None

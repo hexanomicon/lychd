@@ -1,0 +1,6 @@
+[extensions]
+builtins = ["animator/llamacpp"]
+
+[weaver.bridge]
+revision = "2"
+capability_key = "personal:chat:personal-model"

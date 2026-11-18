@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-import sys
 from typing import TYPE_CHECKING
 
 from sqlalchemy import event
 from sqlalchemy.engine import URL
 from sqlalchemy.ext.asyncio import create_async_engine
+
+from lychd.system.vessel_mode import vessel_mode
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncEngine
@@ -46,7 +47,7 @@ def database_saq_dsn(settings: DatabaseSettings, *, runtime: bool = False, libpq
     loopback = {"localhost": "127.0.0.1", "127.0.0.1": "127.0.0.1", "::1": "::1"}.get(settings.host)
     return URL.create(
         "postgresql",
-        query={"hostaddr": loopback} if libpq and sys.platform in {"win32", "darwin"} and loopback else {},
+        query={"hostaddr": loopback} if libpq and loopback and vessel_mode() == "native" else {},
         username=settings.runtime_user if runtime else settings.user,
         password=password.get_secret_value(),
         host=settings.host,

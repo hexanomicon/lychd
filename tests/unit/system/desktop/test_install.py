@@ -356,7 +356,7 @@ def test_desktop_libpq_pins_registered_address(monkeypatch: pytest.MonkeyPatch) 
     from lychd.config.settings.server import DatabaseSettings
     from lychd.db import factory
 
-    monkeypatch.setattr(factory, "sys", SimpleNamespace(platform="darwin"))
+    monkeypatch.setenv("LYCHD_VESSEL_MODE", "native")
     monkeypatch.setenv("PGHOSTADDR", "127.0.0.2")
     db = DatabaseSettings(host="localhost", password=SecretStr("local"), runtime_password=SecretStr("runtime"))
     for host, address in (("localhost", "127.0.0.1"), ("127.0.0.1", "127.0.0.1"), ("::1", "::1")):

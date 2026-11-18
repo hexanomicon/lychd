@@ -22,6 +22,10 @@ application support, local application data and cache roots. The resolved path a
 | Crypt | `XDG_DATA_HOME` or `~/.local/share/` | `~/.local/share/lychd/` | durable data, triggers, PostgreSQL, Lab, Core, Extensions |
 | Forge | `XDG_CACHE_HOME` or `~/.cache/` | `~/.cache/lychd/` | disposable assembly staging |
 
+On Linux the opt-in native profile uses the sibling `lychd-native/` under each XDG parent.
+Managed receipts and units keep their existing paths. Native PostgreSQL, Runes and credential
+files live under the native roots. `lychd platform` prints the selected installation's paths.
+
 The Codex contains `lychd.toml`, `.lychd-lifecycle.json`, and `runes/` including the Animator,
 Soulstone, and Portal anchors. The Crypt contains the Vessel's `runtime-guard`, `triggers/inbox` and `triggers/journal`,
 `postgres/init_db.sh`, `postgres/pg_hba_v1.conf`, `postgres/data`, `snapshots`, `lab`, `core`, and `extensions`.

@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING, ClassVar, cast
 
 import click
 
+from lychd.system.vessel_mode import vessel_mode
+
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
@@ -61,7 +63,7 @@ def _run_litestar(args: Sequence[str], *, prog_name: str) -> None:
     )
 
 
-@cli.command(
+@click.command(
     name="database",
     hidden=True,
     context_settings={"ignore_unknown_options": True, "allow_extra_args": True},
@@ -84,7 +86,7 @@ def database(database_args: tuple[str, ...], wait_seconds: float) -> None:
         _run_litestar(("database", *database_args), prog_name="lychd database")
 
 
-@cli.command(name="database-bootstrap", hidden=True)
+@click.command(name="database-bootstrap", hidden=True)
 @click.option("--wait-seconds", type=click.FloatRange(min=0.0), default=60.0, show_default=True)
 def database_bootstrap(wait_seconds: float) -> None:
     """Provision roles and schema through the dedicated migration credential."""
@@ -124,7 +126,12 @@ def _register_local_commands() -> None:
     from lychd.cli.native import platform
 
     cli.add_command(platform)
-    if sys.platform in {"darwin", "win32"}:
+    try:
+        mode = vessel_mode()
+    except ValueError:
+        # run_cli reports an invalid environment before resolving any command.
+        return
+    if mode == "native":
         from lychd.cli.native import desktop, start_native, stop_native
 
         cli.add_command(access)
@@ -133,6 +140,12 @@ def _register_local_commands() -> None:
         cli.add_command(stop_native)
         return
 
+    if mode == "container" and sys.platform in {"darwin", "win32"}:
+        from lychd.cli import portable
+
+        for command in (portable.start, portable.status, portable.logs, portable.access, portable.stop):
+            cli.add_command(command)
+        return
     if sys.platform != "linux":
         return
 
@@ -140,7 +153,7 @@ def _register_local_commands() -> None:
     from lychd.cli.deletion import delete_installation
     from lychd.cli.operator import logs, start, status, stop
 
-    for command in (*COMMANDS, start, stop, status, logs, access, delete_installation):
+    for command in (*COMMANDS, start, stop, status, logs, access, delete_installation, database, database_bootstrap):
         cli.add_command(command)
 
 
@@ -149,7 +162,13 @@ _register_local_commands()
 
 def run_cli() -> None:
     """Configure shared logging, then run the native CLI without eager ASGI assembly."""
-    if sys.platform != "linux":
+    try:
+        mode = vessel_mode()
+    except ValueError as exc:
+        error = click.ClickException(str(exc))
+        error.show()
+        raise SystemExit(error.exit_code) from None
+    if sys.platform != "linux" or mode == "native":
         cli()
         return
 

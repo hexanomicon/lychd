@@ -9,8 +9,9 @@ LychD is **pre-alpha**. This page answers the practical question that follows th
 promise: what can this revision actually support, and where is the evidence?
 
 The primary Linux runtime is local and loopback-oriented, with one user, one control process
-and a managed container Vessel. The [personal desktop guide](deployments/desktop.md) covers
-macOS and Windows. Native trials on macOS 15 Apple Silicon and Windows Server 2025 x64
+and a managed container Vessel. The [personal native guide](deployments/desktop.md) covers
+foreground operation on Linux, macOS and Windows. Linux native is an explicit selection with
+separate XDG roots and an ordinary-user runtime. Native trials on macOS 15 Apple Silicon and Windows Server 2025 x64
 opened Bridge and retained a real model reply across restart. Core repository checks use
 the OCI test image. The [evidence envelope](#current-evidence-envelope) dates the production-image
 and Ward PostgreSQL observations and identifies which source revisions they cover.
@@ -74,6 +75,13 @@ displayed the settled reply. After restarting PostgreSQL, Vessel and the browser
 recovered the same Run, answer and model grant. Both also recovered a committed database row
 from a verified physical backup. Windows 11 workstation setup, cold login, GPU performance
 and signed OS distribution have separate qualification criteria.
+
+A separate [native Linux receipt](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/runtime/bridge-native-linux-2026-11-18.json)
+records an ordinary user on openSUSE Tumbleweed running the installed wheel directly, with
+PostgreSQL 18.7, pgvector and a CPU llama.cpp engine. Chrome completed a Bridge turn, both
+exclusive model transitions succeeded, and the same reply and Run survived a restart of
+Vessel, PostgreSQL and the browser. The [native setup](deployments/desktop.md#choose-the-installation)
+uses separate XDG roots. Container isolation and accelerator performance have separate evidence.
 
 The desktop custody trial on 18 November 2026 recovered the five generated values from
 the login Keychain on macOS and CurrentUser DPAPI on Windows. The

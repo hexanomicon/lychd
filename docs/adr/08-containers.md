@@ -7,8 +7,8 @@ icon: material/cube-outline
 
 !!! abstract "Context"
     Linux is the primary host. Its managed Vessel uses rootless Podman Quadlets and systemd
-    user units. Personal macOS and Windows hosts may run the same application under a
-    trusted, ordinary desktop account. The host profile determines which effects it can own.
+    user units. Linux, macOS and Windows also support running Vessel as a native process
+    under a trusted, ordinary account. The host profile determines which effects it can own.
 
 ## Core deployment and verification
 
@@ -16,7 +16,17 @@ On Linux, bind compiles one container Vessel, PostgreSQL, migration and extensio
 The former `--native-only` and `--uncaged` options stay retired. Existing bindings require
 their original ownership evidence. Installing a desktop profile never adopts them.
 
-A desktop installation uses the same application, extension registry, PostgreSQL schema,
+Select Vessel placement before loading application settings with `LYCHD_VESSEL_MODE=auto|native|container`.
+Auto keeps the Linux managed container and the macOS/Windows personal native defaults. On Linux,
+the native profile has separate XDG roots and foreground lifecycle. Both profiles require their
+own provisioned data and credentials. Selecting a mode never migrates or stops the other.
+The [portable container profile](../deployments/container-desktop.md) uses the same production
+entrypoint in a local Linux container engine on a personal desktop. Its app, database and optional
+fixed model share a private network namespace. The host operator owns Compose lifecycle. Model
+switching through a host Reactor requires the managed Linux installation.
+[Choose a Vessel placement](../deployments/platform-differences.md#vessel)
+
+A native installation uses the same application, extension registry, PostgreSQL schema,
 queue, authenticated Altar and Bridge. Its launcher owns an explicit loopback listener.
 An installed service runs under the account that owns its configuration and credentials.
 A configured trusted native engine may use the host GPU. A container engine is a separately

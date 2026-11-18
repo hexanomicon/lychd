@@ -1,0 +1,111 @@
+name: lychd-portable
+
+x-core: &core
+  image: localhost/lychd:portable
+  pull_policy: never
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  tmpfs: [/tmp]
+
+services:
+  provision:
+    <<: *core
+    user: "0:0"
+    network_mode: none
+    command: [python, /opt/lychd/provision.py]
+    volumes:
+      - seed:/run/lychd/seed
+      - admin:/run/lychd/admin
+      - runtime:/run/lychd/runtime
+      - phoenix:/run/lychd/phoenix
+      - app:/run/lychd/app
+      - access:/run/lychd/access
+
+  database:
+    image: docker.io/pgvector/pgvector:pg18-trixie
+    user: postgres
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    depends_on:
+      provision:
+        condition: service_completed_successfully
+    command: [postgres, -c, listen_addresses=127.0.0.1, -c, password_encryption=scram-sha-256]
+    environment:
+      POSTGRES_USER: lich
+      POSTGRES_DB: lychd
+      POSTGRES_PASSWORD_FILE: /run/lychd/admin/value
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
+    volumes:
+      - admin:/run/lychd/admin:ro
+      - database:/var/lib/postgresql
+    ports:
+      - "127.0.0.1:7134:8000"
+    healthcheck:
+      test: [CMD, pg_isready, -h, "127.0.0.1", -U, lich, -d, lychd]
+      interval: 3s
+      timeout: 3s
+      retries: 40
+
+  migrate:
+    <<: *core
+    network_mode: service:database
+    depends_on:
+      database:
+        condition: service_healthy
+    command: [lychd, database-bootstrap, --wait-seconds, "60"]
+    environment:
+      SERVER__DATABASE__HOST: 127.0.0.1
+      LYCHD_DB_PASSWORD_FILE: /run/lychd/admin/value
+      LYCHD_RUNTIME_DB_PASSWORD_FILE: /run/lychd/runtime/value
+      LYCHD_PHOENIX_DB_PASSWORD_FILE: /run/lychd/phoenix/value
+    volumes:
+      - admin:/run/lychd/admin:ro
+      - runtime:/run/lychd/runtime:ro
+      - phoenix:/run/lychd/phoenix:ro
+
+  vessel:
+    <<: *core
+    stop_grace_period: 90s
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - |
+          from http.client import HTTPConnection
+          connection = HTTPConnection("127.0.0.1", 8000, timeout=2)
+          connection.request("GET", "/api/v1/altar/status")
+          raise SystemExit(connection.getresponse().status != 401)
+      interval: 3s
+      timeout: 3s
+      retries: 40
+    build:
+      context: .
+      dockerfile: Containerfile
+    network_mode: service:database
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      SERVER__DATABASE__HOST: 127.0.0.1
+      LYCHD_APP_SECRET_KEY_FILE: /run/lychd/app/value
+      LYCHD_LOCAL_ACCESS_PASSWORD_FILE: /run/lychd/access/value
+      LYCHD_RUNTIME_DB_PASSWORD_FILE: /run/lychd/runtime/value
+    volumes:
+      - app:/run/lychd/app:ro
+      - access:/run/lychd/access:ro
+      - runtime:/run/lychd/runtime:ro
+      - guard:/home/lich/.local/share/lychd/runtime-guard
+      - lab:/home/lich/.local/share/lychd/lab
+
+volumes:
+  seed: {}
+  admin: {}
+  runtime: {}
+  phoenix: {}
+  app: {}
+  access: {}
+  database: {}
+  guard: {}
+  lab: {}

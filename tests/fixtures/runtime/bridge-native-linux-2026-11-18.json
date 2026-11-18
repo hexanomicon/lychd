@@ -1,0 +1,43 @@
+{
+  "model_sha256": "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db",
+  "engine_sha256": "0b95fc2b0a65eb2d5895d519b43ca3542983f4e129932ad3489b33bb1dce78e7",
+  "request_id": "250b0bc3-1af2-4cf7-835e-c98b9f72aae1",
+  "run_id": "85eb03ab-9db1-5c6b-a2ae-25d6ffb9d091",
+  "conversation": "http://127.0.0.1:37134/bridge/85553d41-9888-45b4-ae80-25b4c654173d",
+  "prompt": "What is 12 plus 7? Reply with just the number.",
+  "retained_answer": "19",
+  "platform": "linux",
+  "nexus_swap_request_ids": [
+    "48800057-5dbb-449c-aaeb-967023675491",
+    "590d9446-da3d-466e-8988-0ee7d155a5ba"
+  ],
+  "max_tokens": 128,
+  "temperature": 0.0,
+  "date": "2026-11-18",
+  "vessel_mode": "native",
+  "host": "openSUSE Tumbleweed 20261106, x86_64, ordinary user",
+  "browser": "Google Chrome 157.0.8103.38",
+  "python": "CPython 3.15.0",
+  "postgresql": "18.7",
+  "pgvector": "0.8.7",
+  "llama_cpp_archive": "llama-b12494-bin-ubuntu-x64.tar.gz",
+  "llama_cpp_archive_sha256": "6cc888fce5d0951e543289f07a24337ef29e52165ee3fb2aa16743253c160eaf",
+  "model": "Qwen/Qwen2.5-0.5B-Instruct-GGUF, Q4_K_M",
+  "model_revision": "9217f5db79a29953eb74d5343926648285ec7e67",
+  "source_base_commit": "e9e41cbf175cc24a0e13fb214d6f101c7235b95f",
+  "candidate_wheel_sha256": "e41a4346bad0be356e22f018f9f4948ea4fa77c4bf17e0155a72b3585365706a",
+  "file_sha256": {
+    "uv.lock": "efbcb8355f25cbf6d23eb84ed088a6a20164695189e5823c1b3fd75f6a2d4f05",
+    "scripts/check_desktop_startup.py": "3838b4105e1c65d480ae9822e8fdd78c1a6ca9efbc61992cfea4b00fe176d974",
+    "scripts/check_desktop_bridge.py": "b346be8cf003ee82509254a0409d899069743889a6bd95fc1737a9f6f2ddb6ec"
+  },
+  "installation": "Installed candidate wheel, fresh XDG configuration, data and cache directories, native account-owned PostgreSQL cluster on loopback.",
+  "invocation": "LYCHD_VESSEL_MODE=native SERVER__PORT=37134 PGHOSTADDR=127.0.0.2 LYCHD_PG_BIN=\"$PG18_BIN\" python scripts/check_desktop_bridge.py --engine \"$ENGINE\" --model \"$GGUF\" --output \"$EVIDENCE\"",
+  "observed": "Installed twice, recovered interrupted password rotation, and verified a physical backup. The Altar challenged anonymous access and served authenticated Orb, Bridge and status requests. Nexus switched to alternate-model and back to personal-model. After restarting PostgreSQL and the Vessel, Bridge rendered the retained answer and Orb returned its original model dispatch grant.",
+  "screenshots": {
+    "01-bridge.png": "126d139f1d5cfba89101c46877edee3e8291ee72353dc2af28dc9b875962508d",
+    "02-answer.png": "68fef8437f817659ddbefeb5081fe41703fe03600611589a7b32806c2994b8ed",
+    "03-restarted.png": "68fef8437f817659ddbefeb5081fe41703fe03600611589a7b32806c2994b8ed",
+    "04-nexus.png": "34779db4252f63a6ebf2ebd14cb9de4c150d874cd1c59ba5a3845b888de35c27"
+  }
+}

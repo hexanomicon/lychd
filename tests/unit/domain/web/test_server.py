@@ -89,7 +89,9 @@ def _signal(signum: signal.Signals = signal.SIGTERM) -> None:
 
 
 @pytest.mark.asyncio
-async def test_one_sync_and_async_lifespan_wrap_fixed_transport(monkeypatch: pytest.MonkeyPatch) -> None:
+@pytest.mark.parametrize("mode", ["container", "native"])
+async def test_one_sync_and_async_lifespan_wrap_fixed_transport(monkeypatch: pytest.MonkeyPatch, mode: str) -> None:
+    monkeypatch.setenv("LYCHD_VESSEL_MODE", mode)
     events: list[str] = []
 
     @asynccontextmanager
@@ -117,7 +119,11 @@ async def test_one_sync_and_async_lifespan_wrap_fixed_transport(monkeypatch: pyt
         "websockets": True,
         "backlog": 1024,
     }
-    _signal()
+    if mode == "native":
+        app.state.native_request_stop()
+    else:
+        assert getattr(app.state, "native_request_stop", None) is None
+        _signal()
     await task
     assert events == ["sync-start", "app-start", "app-close", "sync-close"]
     assert transport.serve_calls == 1

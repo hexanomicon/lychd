@@ -10,6 +10,7 @@ from pydantic.fields import FieldInfo
 from pydantic_settings import BaseSettings, EnvSettingsSource, PydanticBaseSettingsSource
 
 from lychd.config.settings.server import ServerSettings
+from lychd.system.vessel_mode import vessel_mode
 
 MOUNTED_SECRETS_DIR = Path("/run/secrets")
 
@@ -25,6 +26,7 @@ class RuntimeSecretsSource(PydanticBaseSettingsSource):
             raise TypeError(msg)
         self._environment = environment.env_vars
         self._case_sensitive = environment.case_sensitive
+        self._use_mounts = vessel_mode() == "container"
 
     @override
     def get_field_value(self, field: FieldInfo, field_name: str) -> tuple[Any, str, bool]:
@@ -62,26 +64,35 @@ class RuntimeSecretsSource(PydanticBaseSettingsSource):
             if not value:
                 file_key = f"{key}_FILE" if self._case_sensitive else f"{key}_file"
                 override_path = self._environment.get(file_key)
-                path = Path(override_path) if override_path else MOUNTED_SECRETS_DIR / secret_name
-                try:
-                    value = path.read_text(encoding="utf-8").strip()
-                except FileNotFoundError:
-                    if not override_path:
-                        continue  # Host bootstrap can precede secret provisioning.
-                    msg = f"Secret file for {env_key} is unavailable: '{path}'."
-                    raise ValueError(msg) from None
-                except (OSError, UnicodeError):
-                    msg = f"Secret file for {env_key} cannot be read: '{path}'."
-                    raise ValueError(msg) from None
-                if override_path and value.startswith("lychd-desktop-vault:"):
-                    from lychd.system.desktop.credentials import resolve_vault_reference
-
-                    value = resolve_vault_reference(env_key, path, value)
-                if not value:
-                    msg = f"Secret file for {env_key} is empty: '{path}'."
-                    raise ValueError(msg)
+                value = self._read_file(env_key, override_path, secret_name)
+                if value is None:
+                    continue
             credentials.setdefault(section, {})[field] = SecretStr(value)
         return {"server": credentials}
+
+    def _read_file(self, env_key: str, override_path: str | None, secret_name: str) -> str | None:
+        """Only the container deployment uses an implicit secret mount."""
+        if not override_path and not self._use_mounts:
+            return None
+        path = Path(override_path) if override_path else MOUNTED_SECRETS_DIR / secret_name
+        try:
+            value = path.read_text(encoding="utf-8").strip()
+        except FileNotFoundError:
+            if not override_path:
+                return None  # Host bootstrap can precede secret provisioning.
+            msg = f"Secret file for {env_key} is unavailable: '{path}'."
+            raise ValueError(msg) from None
+        except (OSError, UnicodeError):
+            msg = f"Secret file for {env_key} cannot be read: '{path}'."
+            raise ValueError(msg) from None
+        if override_path and value.startswith("lychd-desktop-vault:"):
+            from lychd.system.desktop.credentials import resolve_vault_reference
+
+            value = resolve_vault_reference(env_key, path, value)
+        if not value:
+            msg = f"Secret file for {env_key} is empty: '{path}'."
+            raise ValueError(msg)
+        return value
 
     def _reject_toml_credentials(self) -> None:
         raw_server = self.settings_sources_data.get("TomlConfigSettingsSource", {}).get("server", {})

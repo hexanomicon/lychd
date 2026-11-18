@@ -21,6 +21,7 @@ from lychd.system.desktop.credentials import load_credentials, verify_credential
 from lychd.system.desktop.private import check_path, private_directory, publish_file, verify_private_directory
 from lychd.system.desktop.volume_commands import volume
 from lychd.system.desktop.volume_storage import cluster_path
+from lychd.system.vessel_mode import require_native_user
 
 if TYPE_CHECKING:
     from collections.abc import Generator
@@ -93,7 +94,7 @@ def start_cluster(port: int) -> None:
     require_cluster()
     status_code = _ctl("status", check=False)
     if status_code == _STOPPED:  # pg_ctl indicates a stopped cluster.
-        options = f"-c listen_addresses=127.0.0.1 -p {port}"
+        options = f"-c listen_addresses=127.0.0.1 -c unix_socket_directories= -p {port}"
         _ctl("-w", "-l", str(_data().parent / "native-postgres.log"), "-o", options, "start")
     elif status_code:
         msg = f"pg_ctl could not inspect the dedicated cluster (status {status_code})."
@@ -125,16 +126,33 @@ def management_lock(*, wait: bool = False) -> Generator[None]:
 
 class _DesktopCommand(click.Command):
     def invoke(self, ctx: click.Context) -> object:
+        if sys.platform == "linux":
+            if ctx.params.get("rebind_vault"):
+                msg = "Rebinding OS vault credentials requires macOS or Windows."
+                raise click.ClickException(msg)
+            if ctx.params.get("method") == "apfs-clone":
+                msg = "APFS cloning requires macOS."
+                raise click.ClickException(msg)
         if self.name not in {"session", "status"}:
             ctx.with_resource(management_lock())
         return super().invoke(ctx)
 
 
 @click.group()
-def desktop() -> None:
-    """Manage the current user's native desktop deployment."""
-    if sys.platform not in {"win32", "darwin"}:
-        msg = "The native desktop installer supports macOS and Windows."
+@click.pass_context
+def desktop(ctx: click.Context) -> None:
+    """Manage the current user's native PostgreSQL cluster and foreground Vessel."""
+    try:
+        require_native_user()
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
+    if sys.platform == "linux" and ctx.invoked_subcommand in {
+        "enable-login",
+        "disable-login",
+        "enable-vault",
+        "volume",
+    }:
+        msg = f"Desktop {ctx.invoked_subcommand} requires a macOS or Windows provider."
         raise click.ClickException(msg)
 
 
@@ -322,7 +340,8 @@ def session() -> None:
     from lychd.system.desktop.login import load_environment
 
     with management_lock(wait=True):
-        load_environment()
+        if sys.platform != "linux":
+            load_environment()
         start_cluster(desktop_settings().server.database.port)
     cli.main(args=["start"], standalone_mode=False)
 
@@ -416,8 +435,12 @@ def rotate_runtime_password(recovery_directory: Path) -> None:
 @desktop.command()
 def uninstall() -> None:
     """Remove login integration and stop the dedicated database, preserving settings and data."""
-    stop_cluster(unregister=True)
-    click.echo("Login service removed and database stopped. Settings, credentials and data were retained.")
+    if sys.platform == "linux":
+        stop_cluster()
+        click.echo("Database stopped. Settings, credentials and data were retained.")
+    else:
+        stop_cluster(unregister=True)
+        click.echo("Login service removed and database stopped. Settings, credentials and data were retained.")
 
 
 @desktop.command()

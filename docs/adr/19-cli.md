@@ -39,7 +39,7 @@ Generated services and development machinery have hidden entrypoints, but hidden
 not public compatibility. The managed image uses the fixed process entrypoint
 defined by [Backend](11-backend.md#process-and-listener-boundary). There is no host Vessel `serve`
 entrypoint. Database commands retain their
-lazy framework delegation. On Linux the root verbs include `platform`, `init`, `bind`, `start`, `stop`, `status`/`st`,
+lazy framework delegation. In the managed Linux profile the root verbs include `platform`, `init`, `bind`, `start`, `stop`, `status`/`st`,
 `logs`, `access`, `tether`, and `del`; no run-operation, snapshot, restore, selector shorthand,
 recovery, promotion, or consent spelling is reserved by the grammar.
 
@@ -49,12 +49,15 @@ ownership, and serialize mutations under the lifecycle lock. Registration belong
 never an extension-supplied Click callback. This group grants neither generic extension execution
 nor arbitrary host commands; the future run-operation namespace remains separate.
 
-On macOS and Windows, `platform` reports the native profile and resolved paths. The
-`desktop` group owns per-user database provisioning, login registration, model selection, credential custody and
-[volume registration and recovery](../deployments/volume-snapshots.md).
+Set `LYCHD_VESSEL_MODE` before invoking the CLI. On native Linux, macOS and Windows, `platform` reports
+the selected mode, profile and resolved paths. The `desktop` group owns per-user database provisioning,
+foreground sessions, physical backups and model selection. macOS and Windows additionally provide
+login registration, OS credential custody and [volume registration and recovery](../deployments/volume-snapshots.md).
 `start` runs the native Vessel in the foreground, `stop` requests retirement of the current
 database owner, and `access` retrieves the local browser login. Only host-owned commands enter
-this namespace. See the [desktop guide](../deployments/desktop.md).
+this namespace. See the [desktop guide](../deployments/desktop.md). For macOS or Windows in
+container mode, the CLI targets the selected [portable Compose project](../deployments/container-desktop.md)
+on the local Linux engine. Its status and logs reflect that project.
 
 ### Inscribe, then bind
 

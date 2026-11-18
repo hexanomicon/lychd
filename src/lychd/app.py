@@ -17,9 +17,11 @@ from lychd.interface.server_policy import (
     ServerRuntimePolicyError,
     evaluate_server_runtime_policy,
     validate_host_actuator,
+    validate_native_database,
 )
 from lychd.interface.web.openapi import StrictPydanticSchemaPlugin, build_openapi_config
 from lychd.lib.exceptions import exception_to_http_response
+from lychd.system.vessel_mode import require_native_user, vessel_mode
 
 if TYPE_CHECKING:
     from litestar.config.app import AppConfig
@@ -37,6 +39,24 @@ def provide_extensions(state: State) -> AssembledExtensions:
 def provide_runes(state: State) -> RuneRegistry:
     """Provide the process-wide validated rune registry from app state."""
     return state.runes
+
+
+def _production_settings() -> Settings:
+    """Check deployment authority before opening its secrets, extensions or database."""
+    mode = vessel_mode()
+    if mode == "native":
+        try:
+            require_native_user()
+        except ValueError as exc:
+            raise ServerRuntimePolicyError(str(exc)) from exc
+    elif mode != "container" or sys.platform != "linux":
+        msg = "The container Vessel application requires its Linux runtime."
+        raise ServerRuntimePolicyError(msg)
+    settings = get_settings()
+    validate_host_actuator(mode, settings.orchestration.switching.actuator)
+    if mode == "native":
+        validate_native_database(settings.server.database)
+    return settings
 
 
 class AppInit(InitPluginProtocol):
@@ -219,8 +239,7 @@ class AppInit(InitPluginProtocol):
         from lychd.interface.web.lifespan import altar_services_lifespan
         from lychd.system.services.queues import RuntimeQueuePlugin
 
-        settings = get_settings()
-        validate_host_actuator(sys.platform, settings.orchestration.switching.actuator)
+        settings = _production_settings()
         extensions = get_extensions()
         runes = load_rune_registry(extensions)
         app_config.plugins.extend(
@@ -241,7 +260,7 @@ def create_app() -> Litestar:
         Litestar: Fully configured web application.
 
     """
-    settings = get_settings()
+    settings = _production_settings()
     try:
         policy = evaluate_server_runtime_policy(
             environment=os.environ,

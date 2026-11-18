@@ -1,0 +1,10 @@
+name = "personal"
+startup_mode = "single"
+model_path = "/models/personal-model.gguf"
+served_model_id = "personal-model"
+port = 8080
+base_url = "http://127.0.0.1:8080/v1"
+n_gpu_layers = 0
+structured_output = "json-schema"
+cache_type_k = "f16"
+cache_type_v = "f16"

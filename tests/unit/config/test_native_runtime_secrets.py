@@ -63,6 +63,7 @@ def test_container_mount_credentials_and_snapshot_need_no_host_secret_reader(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
+    monkeypatch.setenv("LYCHD_VESSEL_MODE", "container")
     mounts = tmp_path / "mounts"
     mounts.mkdir()
     values = {
