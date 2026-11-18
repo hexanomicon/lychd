@@ -78,12 +78,27 @@ if ($LoginOnly) {
         $name = "LychD-Vessel-$identifier"
         $command = $key.GetValue($name, $null, 'DoNotExpandEnvironmentNames')
         try {
-            $key.SetValue($name, $command, 'ExpandString')
-            $PSNativeCommandUseErrorActionPreference = $false
-            $rejection = & $python -I -B -c $invoke $identifier remove 2>&1
-            if ($LASTEXITCODE -eq 0 -or "$rejection" -notmatch 'Preserved unrecognized current-user startup command' -or
-                $key.GetValueKind($name) -ne 'ExpandString' -or $key.GetValue($name, $null, 'DoNotExpandEnvironmentNames') -cne $command) {
-                throw 'The startup adapter failed to preserve a conflicting registry value.'
+            $fixture = @'
+import sys, winreg
+operation, name, kind, command = sys.argv[1:]
+value = command if kind == "REG_EXPAND_SZ" else bytes((18, 52))
+with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Run", 0,
+                    winreg.KEY_QUERY_VALUE | winreg.KEY_SET_VALUE) as key:
+    if operation == "set":
+        winreg.SetValueEx(key, name, 0, getattr(winreg, kind), value)
+    elif winreg.QueryValueEx(key, name) != (value, getattr(winreg, kind)):
+        raise RuntimeError("Conflicting value or type was changed")
+'@
+            foreach ($kind in 'REG_EXPAND_SZ','REG_NONE') {
+                & $python -I -B -c $fixture set $name $kind $command
+                $PSNativeCommandUseErrorActionPreference = $false
+                $rejection = & $python -I -B -c $invoke $identifier remove 2>&1
+                $exitCode = $LASTEXITCODE
+                $PSNativeCommandUseErrorActionPreference = $true
+                if ($exitCode -eq 0 -or "$rejection" -notmatch 'Preserved unrecognized current-user startup command') {
+                    throw "The startup adapter failed to refuse $kind."
+                }
+                & $python -I -B -c $fixture verify $name $kind $command
             }
         } finally {
             $PSNativeCommandUseErrorActionPreference = $true

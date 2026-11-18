@@ -80,6 +80,17 @@
       "source_head": "f16c964f69acbef6802dedb6ec45840901a9b2e7",
       "job": "https://github.com/hexanomicon/lychd/actions/runs/44279211097/job/134715128544",
       "observed": "The packaged interpreter registered a per-user LaunchAgent, served the local API with authentication enforced, stopped and removed its registration. The same-edition repair and persisted-row checks then completed."
+    },
+    {
+      "feature": "Dedicated NTFS VSS snapshot and PostgreSQL recovery",
+      "source_head": "2e73d95a0fe1ab2b011239a69b4abd6cad812f48",
+      "job": "https://github.com/hexanomicon/lychd/actions/runs/44281044957/job/134721517756",
+      "provider_id": "b5946137-7b9f-4925-af80-51abd60b20d5",
+      "pause_seconds": 11.720783,
+      "total_capture_seconds": 18.272633,
+      "free_bytes_before": 3118379008,
+      "free_bytes_after": 2917502976,
+      "observed": "On a disposable NTFS VHD, a separate elevated operator acquired the shadow. The standard desktop account verified and recovered it in a second PostgreSQL 18 instance. Only the committed 'captured' row was present. A different volume, a revoked grant and the earlier generation after re-registration were refused."
     }
   ]
 }

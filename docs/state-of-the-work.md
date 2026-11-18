@@ -85,6 +85,11 @@ cold APFS file clone in another PostgreSQL instance. A later write stayed on the
 The measured database pause was 1.068 seconds and capture plus hashing took 1.720 seconds for
 that fixture. [Desktop recovery](deployments/desktop.md#storage-networking-and-recovery)
 documents the separate whole-volume and disk-loss paths.
+On Windows Server 2025, a standard account recovered the committed row from a dedicated NTFS
+volume in a second PostgreSQL 18 instance. A storage operator created the VSS snapshot. The
+later source write, an unrelated volume and the revoked capture were excluded. PostgreSQL paused
+for 11.721 seconds during this trial and capture took 18.273 seconds. [Windows volume receipt](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/runtime/desktop-platform-checks-2026-11-18.json)
+
 In subsequent browser trials, Chrome on macOS and Edge under a standard Windows account
 requested two opposite exclusive transitions in Nexus. Each checked the active engine identity
 and recovered the original Bridge reply after restarting. Both used two native processes with

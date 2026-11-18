@@ -117,21 +117,22 @@ if ($env:LYCHD_LOGIN_PROVIDER -eq 'current-user-run') {
         $key=[Microsoft.Win32.Registry]::CurrentUser.CreateSubKey($path)
     }
     try {
-        if (!$remove -and @($key.GetValueNames() | Where-Object {$_ -like "$prefix*" -and $_ -ne $name}).Count) {
+        $names=$key.GetValueNames()
+        if (!$remove -and @($names | Where-Object {$_ -like "$prefix*" -and $_ -ne $name}).Count) {
             throw 'Preserved a startup value belonging to another LychD installation'
         }
         $value=$key.GetValue($name,$null,'DoNotExpandEnvironmentNames')
-        if ($null -ne $value -and ($key.GetValueKind($name) -ne 'String' -or $value -cne $command)) {
+        if ($names -contains $name -and ($key.GetValueKind($name) -ne 'String' -or $value -cne $command)) {
             throw 'Preserved unrecognized current-user startup command'
         }
         if ($remove) {
             $key.DeleteValue($name,$false)
-        } elseif ($null -eq $value) {
+        } elseif ($names -notcontains $name) {
             $key.SetValue($name,$command,'String')
         }
         $key.Flush()
         $actual=$key.GetValue($name,$null,'DoNotExpandEnvironmentNames')
-        if (($remove -and $null -ne $actual) -or (!$remove -and ($actual -cne $command -or $key.GetValueKind($name) -ne 'String'))) {
+        if (($remove -and $key.GetValueNames() -contains $name) -or (!$remove -and ($actual -cne $command -or $key.GetValueKind($name) -ne 'String'))) {
             throw 'Current-user startup registration readback failed'
         }
     } finally {$key.Dispose()}
