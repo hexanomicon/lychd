@@ -10,6 +10,7 @@ __all__ = (
     "ServerRuntimePolicy",
     "ServerRuntimePolicyError",
     "evaluate_server_runtime_policy",
+    "validate_host_actuator",
     "validate_server_environment",
 )
 
@@ -130,6 +131,17 @@ def _detected_server_arguments(
     if executable in _SERVER_CLI_NAMES or not _SERVER_CLI_NAMES.isdisjoint(original_executables):
         return tuple(argv[1:])
     return ()
+
+
+def validate_host_actuator(platform: str, actuator: str) -> None:
+    """Keep the native process supervisor outside the Linux Vessel."""
+    if platform in {"darwin", "win32"}:
+        if actuator != "native-process":
+            message = "Personal desktop hosting requires the native-process actuator."
+            raise ServerRuntimePolicyError(message)
+    elif actuator == "native-process":
+        message = "The native-process actuator is available only on macOS and Windows."
+        raise ServerRuntimePolicyError(message)
 
 
 def validate_server_environment(environment: Mapping[str, str]) -> None:

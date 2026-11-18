@@ -74,6 +74,12 @@ def _collect_run_queues(app: Litestar) -> dict[str, RunQueue]:
 
 def _soft_activation_guard_at_startup() -> SoftActivationGuard:
     """Fence unfinished runtime-native effects before any queue can connect."""
+    from lychd.config.settings.root import get_settings
+
+    if get_settings().orchestration.switching.actuator == "native-process":
+        from lychd.system.services.native_runtime import NativeSingleModelGuard
+
+        return NativeSingleModelGuard()
     from lychd.system.constants import PATH_RUNTIME_GUARD_DIR
     from lychd.system.services.runtime_guard import FileSoftActivationGuard
 
@@ -131,6 +137,8 @@ async def altar_services_lifespan(app: Litestar) -> AsyncGenerator[None]:
             operator_access=getattr(app.state, "local_operator_access", None),
         )
 
+        if settings.orchestration.switching.actuator == "native-process" and services.native_actuator is not None:
+            await services.native_actuator.verify_startup()
         await _load_initial_capabilities(services.registry)
 
         await _recover_durable_state(

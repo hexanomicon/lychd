@@ -328,6 +328,7 @@ def test_root_help_does_not_construct_asgi_app(runner: CliRunner, mocker: Mocker
         "access",
         "del",
         "tether",
+        "platform",
     }
     assert cli.commands["tether"] is tether_group
     assert {name for name, command in cli.commands.items() if command.hidden} == {

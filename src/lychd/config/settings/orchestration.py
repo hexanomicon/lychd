@@ -27,8 +27,14 @@ class SwitchingSettings(SettingsSection):
 
     policy: Literal["declared-conflicts", "evict-idle"] = "declared-conflicts"
     """Default conflict policy used when a requested runtime needs a hardware transition."""
-    actuator: Literal["systemd", "host-reactor"] = "host-reactor"
+    actuator: Literal["systemd", "host-reactor", "native-process"] = "host-reactor"
     """Transition executor: caged Host Reactor by default, direct systemd only for development."""
+    native_state_dir: Path | None = None
+    """Private installation directory for the personal native process journal."""
+    native_llama_server: Path | None = None
+    """Trusted absolute llama-server executable for locally owned single-model processes."""
+    native_model_root: Path | None = None
+    """Local directory containing the operator's native GGUF files."""
     host_reactor_dir: Path = PATH_REACTOR_INBOX_DIR
     """Owner-only Host Reactor inbox; its sibling journal is derived automatically."""
     min_priority_for_hard_swap: int = Field(default=40, ge=0, le=100)
@@ -43,6 +49,21 @@ class SwitchingSettings(SettingsSection):
     """Maximum seconds for each trusted systemctl client process to respond."""
     reactor_ack_timeout_s: float = Field(default=120.0, gt=0, allow_inf_nan=False)
     """Maximum seconds for the Host Reactor to claim an inbox transition intent."""
+
+    @model_validator(mode="after")
+    def validate_native_profile(self) -> SwitchingSettings:
+        if self.actuator == "native-process":
+            if self.native_state_dir is None or not self.native_state_dir.is_absolute():
+                msg = "native-process requires an absolute native_state_dir"
+                raise ValueError(msg)
+            if (self.native_llama_server is None) != (self.native_model_root is None):
+                msg = "native_llama_server and native_model_root must be configured together"
+                raise ValueError(msg)
+            for path in (self.native_llama_server, self.native_model_root):
+                if path is not None and not path.is_absolute():
+                    msg = "Native executable and model root paths must be absolute"
+                    raise ValueError(msg)
+        return self
 
     @staticmethod
     def _normalize_control_path(value: Path | str, *, field_name: str) -> Path:

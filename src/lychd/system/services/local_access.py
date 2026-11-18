@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import sys
 from dataclasses import dataclass
 
 from pydantic import SecretStr
@@ -24,12 +25,20 @@ class LocalAccess:
 
 def load_local_access() -> LocalAccess:
     """Read only the named local credential, without starting application services."""
-    if os.geteuid() == 0:
+    if sys.platform != "win32" and os.geteuid() == 0:
         msg = "Local access belongs to the rootless operator; rerun as your ordinary user."
         raise ValueError(msg)
+    desktop = sys.platform in {"darwin", "win32"}
+    if desktop:
+        from lychd.system.desktop.credentials import load_credentials
+
+        load_credentials()
     settings = get_settings()
     password = settings.server.web.access_password
     if password is None:
+        if desktop:
+            msg = "The desktop local access credential is unavailable."
+            raise ValueError(msg)
         podman = trusted_host_tool("podman")
         if podman is None:
             msg = "A trusted Podman executable is required to read the local access credential."

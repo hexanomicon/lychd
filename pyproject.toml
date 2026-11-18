@@ -1,7 +1,7 @@
 [project]
 name = "lychd"
 dynamic = ["version"]
-description = "Systemd-native daemon for local agentic orchestration"
+description = "Local agentic orchestration for Linux, macOS and Windows"
 readme = "README.md"
 authors = [
     { name = "LychD contributors", email = "hexanomicon@proton.me" }
@@ -20,6 +20,8 @@ classifiers = [
     "Intended Audience :: System Administrators",
     "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)",
     "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: Microsoft :: Windows",
     "Environment :: No Input/Output (Daemon)",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",

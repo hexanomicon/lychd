@@ -1,0 +1,324 @@
+"""User-owned native PostgreSQL cluster and Vessel startup for personal desktops."""
+# ruff: noqa: S603 -- fixed PostgreSQL commands, argv-only, using the operator's PostgreSQL installation.
+
+from __future__ import annotations
+
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+from contextlib import contextmanager
+from pathlib import Path
+from tempfile import NamedTemporaryFile, TemporaryDirectory
+from typing import TYPE_CHECKING
+
+import click
+
+from lychd.system.constants import PATH_LYCHD_TOML, PATH_POSTGRES_ROOT_DIR
+from lychd.system.desktop.credentials import load_credentials
+from lychd.system.desktop.private import check_path, private_directory, publish_file, verify_private_directory
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+
+    from lychd.config.settings import DatabaseSettings, Settings
+
+_DATA = PATH_POSTGRES_ROOT_DIR / "native-data"
+_MAJOR = "18"
+_STOPPED = 3
+_OWNER = "lychd-native-postgres-18-v1"
+
+
+def _program(name: str) -> str:
+    directory = os.environ.get("LYCHD_PG_BIN")
+    binary = shutil.which(name, path=directory)
+    if not binary:
+        msg = f"PostgreSQL {_MAJOR} executable {name} is unavailable. Set LYCHD_PG_BIN to its bin directory."
+        raise click.ClickException(msg)
+    return binary
+
+
+def _settings(*, install: bool = False, admin: bool = False) -> Settings:
+    from lychd.config.settings import Settings
+
+    load_credentials(administrative=admin, provision=install)
+    settings = Settings()
+    db = settings.server.database
+    if db.profile != "postgres" or db.host not in {"127.0.0.1", "localhost"}:
+        msg = "Desktop deployment requires the postgres profile and an IPv4 loopback database host."
+        raise click.ClickException(msg)
+    return settings
+
+
+def _ctl(*args: str, check: bool = True) -> int:
+    return subprocess.run([_program("pg_ctl"), "-D", str(_DATA), *args], check=check).returncode
+
+
+def _require_cluster() -> None:
+    owner = _DATA / ".lychd-desktop"
+    check_path(owner)
+    check_path(_DATA / "PG_VERSION")
+    if _DATA.is_symlink() or not owner.is_file() or owner.read_text(encoding="ascii") != _OWNER:
+        msg = f"Unrecognized desktop database directory at {_DATA}."
+        raise click.ClickException(msg)
+    version = _DATA / "PG_VERSION"
+    if not version.is_file() or version.read_text(encoding="ascii").strip() != _MAJOR:
+        msg = f"Expected a dedicated PostgreSQL {_MAJOR} cluster at {_DATA}."
+        raise click.ClickException(msg)
+
+
+def _start(port: int) -> None:
+    _require_cluster()
+    status_code = _ctl("status", check=False)
+    if status_code == _STOPPED:  # pg_ctl indicates a stopped cluster.
+        options = f"-c listen_addresses=127.0.0.1 -p {port}"
+        _ctl("-w", "-l", str(_DATA.parent / "native-postgres.log"), "-o", options, "start")
+    elif status_code:
+        msg = f"pg_ctl could not inspect the dedicated cluster (status {status_code})."
+        raise click.ClickException(msg)
+
+
+@contextmanager
+def _management_lock(*, wait: bool = False) -> Iterator[None]:
+    """Serialize management until the operating system closes this command's handle."""
+    private_directory(PATH_POSTGRES_ROOT_DIR)
+    path = PATH_POSTGRES_ROOT_DIR / ".desktop-management.lock"
+    check_path(path)
+    with path.open("a+b") as stream:
+        try:
+            if os.name == "nt":
+                import msvcrt
+
+                stream.seek(0)
+                msvcrt.locking(stream.fileno(), msvcrt.LK_LOCK if wait else msvcrt.LK_NBLCK, 1)
+            else:
+                import fcntl
+
+                fcntl.flock(stream.fileno(), fcntl.LOCK_EX if wait else fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError as exc:
+            msg = "Another desktop management operation is active."
+            raise click.ClickException(msg) from exc
+        yield
+
+
+@click.group()
+@click.pass_context
+def desktop(ctx: click.Context) -> None:
+    """Manage the current user's native desktop deployment."""
+    if sys.platform not in {"win32", "darwin"}:
+        msg = "The native desktop installer supports macOS and Windows."
+        raise click.ClickException(msg)
+    if ctx.invoked_subcommand not in {"session", "status"}:
+        ctx.with_resource(_management_lock())
+
+
+def _prepare_installation() -> Settings:
+    """Initialize native settings and the protected journal before starting any services."""
+    check_path(PATH_LYCHD_TOML)
+    check_path(_DATA)
+    private_directory(PATH_POSTGRES_ROOT_DIR)
+    PATH_LYCHD_TOML.parent.mkdir(parents=True, exist_ok=True)
+    if not PATH_LYCHD_TOML.exists():
+        native_state = json.dumps(str(PATH_POSTGRES_ROOT_DIR.parent / "native-runtimes"), ensure_ascii=False)
+        content = (
+            '[server.database]\nhost = "127.0.0.1"\nport = 55432\n'
+            f'\n[orchestration.switching]\nactuator = "native-process"\nnative_state_dir = {native_state}\n'
+        )
+        publish_file(PATH_LYCHD_TOML, content.encode("utf-8"))
+    settings = _settings(install=True, admin=True)
+    switching = settings.orchestration.switching
+    directory = switching.native_state_dir
+    if switching.actuator != "native-process" or directory is None:
+        msg = "Desktop settings must select native-process and an absolute native_state_dir."
+        raise click.ClickException(msg)
+    if directory != PATH_POSTGRES_ROOT_DIR.parent / "native-runtimes" and directory.exists():
+        # An explicit existing directory belongs to the operator. Validate it without changing its ACL.
+        verify_private_directory(directory)
+    else:
+        private_directory(directory)
+    return settings
+
+
+def _initialize_cluster(binary: str, user: str, password: str) -> None:
+    """Publish the dedicated cluster only after initdb and its ownership marker complete."""
+    with TemporaryDirectory(prefix=".native-install-", dir=PATH_POSTGRES_ROOT_DIR) as directory:
+        staged = Path(directory) / "cluster"
+        with NamedTemporaryFile(mode="w", encoding="utf-8", dir=directory, delete_on_close=False) as secret_file:
+            secret_file.write(password + "\n")
+            secret_file.close()
+            subprocess.run(
+                [
+                    binary,
+                    "-D",
+                    str(staged),
+                    "-U",
+                    user,
+                    "--auth=scram-sha-256",
+                    "--encoding=UTF8",
+                    "-c",
+                    "unix_socket_directories=",
+                    f"--pwfile={secret_file.name}",
+                ],
+                check=True,
+            )
+        (staged / ".lychd-desktop").write_text(_OWNER, encoding="ascii")
+        if _DATA.exists():
+            raise FileExistsError(_DATA)
+        staged.rename(_DATA)
+
+
+@desktop.command()
+def install() -> None:
+    """Initialize or upgrade the dedicated database using installed PostgreSQL 18 and pgvector."""
+    import psycopg
+    from psycopg import sql
+
+    from lychd.db.bootstrap import bootstrap_database
+
+    binary = _program("initdb")
+    version = subprocess.check_output([binary, "--version"], text=True)
+    if not re.match(rf"initdb \(PostgreSQL\) {_MAJOR}(?:\.|\s|$)", version):
+        msg = f"Expected PostgreSQL {_MAJOR}, found {version.strip()}"
+        raise click.ClickException(msg)
+    settings = _prepare_installation()
+    db = settings.server.database
+    if db.password is None:
+        msg = "The PostgreSQL administrative credential is unavailable."
+        raise click.ClickException(msg)
+    password = db.password.get_secret_value()
+    if not _DATA.exists():
+        _initialize_cluster(binary, db.user, password)
+    _start(db.port)
+    with psycopg.connect(
+        host="127.0.0.1", port=db.port, user=db.user, password=password, dbname="postgres", autocommit=True
+    ) as conn:
+        location = conn.execute("SHOW data_directory").fetchone()
+        if location is None or not _DATA.samefile(location[0]):
+            msg = "The configured port belongs to a different PostgreSQL cluster."
+            raise click.ClickException(msg)
+        if not conn.execute("SELECT 1 FROM pg_available_extensions WHERE name = 'vector'").fetchone():
+            msg = "Install pgvector for this PostgreSQL installation, then repeat desktop install."
+            raise click.ClickException(msg)
+        if not conn.execute("SELECT 1 FROM pg_database WHERE datname = %s", (db.database,)).fetchone():
+            conn.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(db.database)))
+    with _exclusive_cluster(db):
+        bootstrap_database(settings)
+    click.echo("Desktop database initialized and runtime database authority verified.")
+
+
+@desktop.command()
+def start() -> None:
+    """Start the dedicated PostgreSQL cluster."""
+    _start(_settings().server.database.port)
+
+
+@contextmanager
+def _exclusive_cluster(db: DatabaseSettings) -> Iterator[None]:
+    """Fence bootstrap and shutdown against an active Vessel in the verified dedicated database."""
+    import psycopg
+
+    from lychd.interface.vessel_owner import VESSEL_LOCK_CLASS, VESSEL_LOCK_KEY
+
+    if db.password is None:
+        msg = "An administrator credential is required to verify the desktop database."
+        raise click.ClickException(msg)
+    connection = psycopg.connect(
+        host="127.0.0.1",
+        port=db.port,
+        user=db.user,
+        password=db.password.get_secret_value(),
+        dbname=db.database,
+        connect_timeout=5,
+        autocommit=True,
+    )
+    try:
+        location = connection.execute("SHOW data_directory").fetchone()
+        if not location or not _DATA.samefile(location[0]):
+            msg = "Configured database endpoint does not belong to the dedicated cluster."
+            raise click.ClickException(msg)
+        held = connection.execute(
+            "SELECT pg_try_advisory_lock(%s::integer, %s::integer)", (VESSEL_LOCK_CLASS, VESSEL_LOCK_KEY)
+        ).fetchone()
+        if held != (True,):
+            msg = "The Vessel is active. Run lychd stop before modifying the desktop database."
+            raise click.ClickException(msg)
+        yield
+    finally:
+        connection.close()
+
+
+def _stop(*, unregister: bool = False) -> None:
+    from lychd.system.desktop.login import disable
+
+    _require_cluster()
+    if _ctl("status", check=False) == _STOPPED:
+        if unregister:
+            disable()
+        return
+    with _exclusive_cluster(_settings(admin=True).server.database):
+        if unregister:
+            disable()
+        _ctl("-w", "-m", "fast", "stop")
+
+
+@desktop.command()
+def stop() -> None:
+    """Stop the dedicated PostgreSQL cluster while preserving all data."""
+    _stop()
+
+
+@desktop.command()
+def status() -> None:
+    """Report the running state of the dedicated PostgreSQL cluster."""
+    _require_cluster()
+    raise click.exceptions.Exit(_ctl("status", check=False))
+
+
+@desktop.command()
+def session() -> None:
+    """Start PostgreSQL and run the Vessel in the foreground for this login."""
+    from lychd.__main__ import cli
+    from lychd.system.desktop.login import load_environment
+
+    with _management_lock(wait=True):
+        load_environment()
+        _start(_settings().server.database.port)
+    cli.main(args=["start"], standalone_mode=False)
+
+
+@desktop.command()
+def enable_login() -> None:
+    """Register the installed Python environment to start a desktop session at user login."""
+    from lychd.system.desktop.login import enable
+
+    _require_cluster()
+    enable()
+
+
+@desktop.command()
+def disable_login() -> None:
+    """Remove the current user's LychD login registration, retaining settings and data."""
+    from lychd.system.desktop.login import disable
+
+    disable()
+
+
+@desktop.command()
+@click.option("--engine", type=click.Path(exists=True, dir_okay=False, path_type=Path), required=True)
+@click.option("--model", type=click.Path(exists=True, dir_okay=False, path_type=Path), required=True)
+@click.option("--port", type=click.IntRange(1, 65535), default=8081, show_default=True)
+def configure_model(engine: Path, model: Path, port: int) -> None:
+    """Bind browser chat to an installed llama-server and a local GGUF."""
+    from lychd.system.desktop.model import configure
+
+    configure(engine, model, port)
+    click.echo("Configured personal:chat:personal-model for Bridge revision 2. Restart the Vessel to apply.")
+
+
+@desktop.command()
+def uninstall() -> None:
+    """Remove login integration and stop the dedicated database, preserving settings and data."""
+    _stop(unregister=True)
+    click.echo("Login service removed and database stopped. Settings, credentials and data were retained.")

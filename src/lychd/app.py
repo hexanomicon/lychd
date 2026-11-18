@@ -16,6 +16,7 @@ from lychd.extensions.host import AssembledExtensions
 from lychd.interface.server_policy import (
     ServerRuntimePolicyError,
     evaluate_server_runtime_policy,
+    validate_host_actuator,
 )
 from lychd.interface.web.openapi import StrictPydanticSchemaPlugin, build_openapi_config
 from lychd.lib.exceptions import exception_to_http_response
@@ -219,11 +220,16 @@ class AppInit(InitPluginProtocol):
         from lychd.system.services.queues import RuntimeQueuePlugin
 
         settings = get_settings()
+        validate_host_actuator(sys.platform, settings.orchestration.switching.actuator)
         extensions = get_extensions()
         runes = load_rune_registry(extensions)
         app_config.plugins.extend(
             [SQLAlchemyPlugin(config=build_db_config(settings)), RuntimeQueuePlugin(config=build_saq_config(settings))]
         )
+        if settings.server.database.profile == "postgres":
+            from lychd.interface.vessel_owner import vessel_database_owner
+
+            app_config.lifespan.append(vessel_database_owner)  # pyright: ignore[reportUnknownMemberType]
         app_config.lifespan.append(altar_services_lifespan)  # pyright: ignore[reportUnknownMemberType]
         return settings, extensions, runes
 
