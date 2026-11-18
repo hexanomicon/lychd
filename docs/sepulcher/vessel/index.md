@@ -46,11 +46,12 @@ failed process exit. Signals request this retirement; the user manager's outer t
 whether a stuck process must ultimately be forced.
 
 The managed Vessel image uses the fixed internal `0.0.0.0:8000` listener behind generated
-loopback-only host publication. Host-native Vessel deployment and hidden `lychd serve` are
-retired. Images must be rebuilt to acquire launcher changes; unsupported server tuning refuses.
+loopback-only host publication. Linux's former host-native binding and hidden `lychd serve`
+are retired. On macOS or Windows the personal profile starts a user-owned Vessel on
+`127.0.0.1:7134` with the public desktop CLI. [Personal hosts](../../deployments/desktop.md).
 
-Current active installation lifecycle completion is unavailable until authenticated container
-admission and exact settlement are implemented and qualified. The old signed native stops and
+Complete active Linux installation lifecycle control requires qualified container admission
+and exact settlement. The old signed native stops and
 trusted installed-hybrid receipt remain frozen historical observations of their removed profile.
 They do not qualify a rebuilt Vessel or authorize fallback control. Follow the current
 [CLI boundary](../../state-of-the-work.md#core-cli-rites) before an installation operation.

@@ -52,7 +52,9 @@ Substitute actual existing paths, including the full executable filename. The fo
 declares the `personal:chat:personal-model` capability, enables the built-in llama.cpp extension
 and selects it for Bridge. The generated Rune enables llama.cpp's JSON-schema output for
 structured replies without active function tools. Tool-enabled requests retain the separate
-tool protocol. Run this command before starting Vessel. Use a separate free port for each engine.
+tool protocol. The personal Rune also uses `f16` for both key and value caches. Lower cache
+precision saves memory and can change model answers. Recheck Bridge after tuning it. Run
+this command before starting Vessel. Use a separate free port for each engine.
 
 ```bash title="macOS"
 uv run --no-sync lychd desktop configure-model \
@@ -82,6 +84,8 @@ such as `'C:\Models\alternate.gguf'`.
 name = "alternate"
 startup_mode = "single"
 structured_output = "json-schema"
+cache_type_k = "f16"
+cache_type_v = "f16"
 model_path = '/absolute/path/to/Models/alternate.gguf'
 served_model_id = "alternate-model"
 port = 8082

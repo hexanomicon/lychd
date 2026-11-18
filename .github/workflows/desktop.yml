@@ -50,13 +50,14 @@ jobs:
         with:
           version: "0.13.0"
           python-version: "3.14.8"
-      - name: Install the selected project and check ordinary entrypoints
-        if: runner.os == 'macOS'
+      - name: Install the project and check desktop entrypoints before system dependency setup
         run: |
           uv sync --locked --no-default-groups --extra postgres-binary --group test --group desktop-browser --no-editable
           uv run --no-sync lychd --help
           uv run --no-sync lychd platform
           uv run --no-sync lychd desktop --help
+          uv run --no-sync python scripts/check_desktop_bridge.py --help
+          uv run --no-sync python -c "from lychd.app import create_app; from lychd.interface.server import run_native_server"
       - name: Check desktop routing and the database ownership protocol
         if: runner.os == 'macOS'
         run: uv run --no-sync python -m pytest -q -o addopts= tests/unit/cli/test_native_entry.py tests/unit/domain/web/test_vessel_owner.py tests/unit/system/desktop

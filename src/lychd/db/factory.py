@@ -43,11 +43,10 @@ def database_saq_dsn(settings: DatabaseSettings, *, runtime: bool = False, libpq
             else "Required database password is unavailable in Settings."
         )
         raise ValueError(msg)
+    loopback = {"localhost": "127.0.0.1", "127.0.0.1": "127.0.0.1", "::1": "::1"}.get(settings.host)
     return URL.create(
         "postgresql",
-        query={"hostaddr": "127.0.0.1"}
-        if libpq and sys.platform in {"win32", "darwin"} and settings.host in {"localhost", "127.0.0.1"}
-        else {},
+        query={"hostaddr": loopback} if libpq and sys.platform in {"win32", "darwin"} and loopback else {},
         username=settings.runtime_user if runtime else settings.user,
         password=password.get_secret_value(),
         host=settings.host,

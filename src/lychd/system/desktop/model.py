@@ -65,6 +65,8 @@ def configure(engine: Path, model: Path, port: int) -> None:
         "name": "personal",
         "startup_mode": "single",
         "structured_output": "json-schema",
+        "cache_type_k": "f16",
+        "cache_type_v": "f16",
         "model_path": str(model),
         "served_model_id": "personal-model",
         "port": port,

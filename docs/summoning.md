@@ -348,7 +348,8 @@ generated units; LychD will regenerate the files from those declarations.
 
 ### Retired host-native bindings
 
-Core binds one managed container Vessel. The former `--native-only` and `--uncaged` options
+On Linux, Core binds one managed container Vessel. For an ordinary macOS or Windows account,
+follow [Personal desktop hosts](deployments/desktop.md). The former `--native-only` and `--uncaged` options
 refuse before host inspection or effects. Existing native bindings remain preserved and block
 mutation; removal of support grants no conversion, stop or deletion authority. Reconcile such
 an installation separately under its actual ownership.

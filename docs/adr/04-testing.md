@@ -85,9 +85,10 @@ verification. The normal `make test` and `make check` selections remain unchange
 A repository test establishes its recorded conjunction. Real systemd, Podman, PostgreSQL, GPU,
 model, and browser behavior requires the corresponding maintained operator receipt; mocks do not
 inherit the authority of the systems they replace. [State of Work](../state-of-the-work.md)
-records that distinction. Host-native Core deployments and their test fixtures are retired;
-frozen native-profile receipts retain only their dated historical scope and cannot qualify the
-current test image or a rebuilt production image.
+records that distinction. The former Linux host-native Core profile and its fixtures are
+retired. Personal macOS and Windows deployments have their own installed-OS qualification.
+Exercise the public CLI, recover committed data and send a real browser turn across restart.
+The [personal host guide](../deployments/desktop.md) defines the setup and limits.
 
 Altar and GenUI probes may inspect rendered semantic contracts and preserve DOM or screenshot
 evidence. A missing prerequisite is `BLOCKED`, not a fabricated behavioral `FAIL`. Server state

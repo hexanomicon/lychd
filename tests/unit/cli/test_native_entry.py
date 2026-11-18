@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
 from pathlib import Path
 
 import click
@@ -42,3 +44,24 @@ def test_unknown_host_exposes_only_the_platform_probe(monkeypatch: pytest.Monkey
     entry._register_local_commands()  # pyright: ignore[reportPrivateUsage]
     assert set(group.commands) == {"platform"}
     assert json.loads(CliRunner().invoke(group, ["platform"]).output)["profile"] == "unsupported"
+
+
+def test_fresh_desktop_services_import_without_linux_host_control() -> None:
+    """Import the installed foreground server, database and access paths before provisioning."""
+    program = """
+import sys
+from lychd.app import create_app
+from lychd.config.logging import apply_logging
+from lychd.db.bootstrap import bootstrap_database
+from lychd.interface.server import run_native_server
+from lychd.interface.vessel_owner import stop_native_vessel
+from lychd.interface.web.lifespan import altar_services_lifespan
+from lychd.system.desktop import desktop
+from lychd.system.desktop.credentials import load_credentials
+from lychd.system.services.local_access import load_local_access
+from lychd.system.services.native_runtime import NativeRuntimeActuator
+assert 'lychd.system.operator.composition' not in sys.modules
+assert 'lychd.system.atomic_paths' not in sys.modules
+assert 'lychd.system.descriptor_settlement' not in sys.modules
+"""
+    subprocess.run([sys.executable, "-c", program], check=True)  # noqa: S603

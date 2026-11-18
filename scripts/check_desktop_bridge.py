@@ -23,7 +23,6 @@ from http import HTTPStatus
 from pathlib import Path
 from typing import TYPE_CHECKING
 from urllib.parse import urljoin
-from uuid import uuid4
 
 import tomlkit
 from check_desktop_startup import check_registered_backup, check_routes, request
@@ -75,7 +74,7 @@ def capture(page: Page, path: Path) -> None:
     page.screenshot(path=path, mask=[page.locator('input[type="password"]')])
 
 
-def completed_reply(page: Page, run_id: str) -> str:
+def completed_reply(page: Page, run_id: str, screenshot: Path) -> str:
     turn = page.locator(
         f'article.turn--agent[data-run-id="{run_id}"]:is([data-state="done"],[data-state="failed"],[data-state="cancelled"])'
     )
@@ -93,9 +92,13 @@ def completed_reply(page: Page, run_id: str) -> str:
     if state != "done":
         msg = f"Bridge Run {run_id} ended with state {state}."
         raise RuntimeError(msg)
-    text = turn.locator(".turn__body").inner_text()
+    # A live terminal event can arrive before the persisted turn replaces it in the DOM.
+    retained = turn.filter(has=page.get_by_text("Retained reply", exact=True))
+    retained.wait_for(timeout=30_000)
+    text = retained.locator(".turn__body").inner_text()
+    capture(page, screenshot)
     if not re.search(r"\b19\b|\bnineteen\b", text, re.IGNORECASE):
-        msg = "The completed model reply did not answer the arithmetic prompt."
+        msg = f"Run {run_id} retained an incorrect response to the synthetic arithmetic prompt: {text[:200]!r}."
         raise RuntimeError(msg)
     return text
 
@@ -149,8 +152,7 @@ def offer(page: Page, origin: str, prompt: str, output: Path) -> tuple[str, str,
     if not re.fullmatch(r"[A-Za-z0-9_:.~-]+", run_id):
         msg = "Invalid admitted Run identity."
         raise RuntimeError(msg)
-    answer = completed_reply(page, run_id)
-    capture(page, output / "02-answer.png")
+    answer = completed_reply(page, run_id, output / "02-answer.png")
     conversation_url = page.url
     if not conversation_url.startswith(f"{origin}/bridge/"):
         msg = "No persistent Bridge conversation URL was selected."
@@ -202,7 +204,7 @@ def main() -> None:
             "password": access.password.get_secret_value(),
             "origin": origin,
         }
-        prompt = f"Trial {uuid4().hex[:8]}. What is 12 plus 7? Reply with the number."
+        prompt = "What is 12 plus 7? Reply with just the number."
         with sync_playwright() as playwright:
             with session(), playwright.chromium.launch(channel=args.browser) as browser:
                 page = browser.new_page(http_credentials=credentials, viewport={"width": 1440, "height": 960})
@@ -212,11 +214,10 @@ def main() -> None:
                 page = browser.new_page(http_credentials=credentials, viewport={"width": 1440, "height": 960})
                 page.goto(conversation_url, wait_until="domcontentloaded")
                 page.get_by_text(prompt, exact=True).last.wait_for()
-                if completed_reply(page, run_id) != answer:
+                if completed_reply(page, run_id, args.output / "03-restarted.png") != answer:
                     msg = "Retained answer differs after restart."
                     raise RuntimeError(msg)
                 verify_dispatch(page, origin, run_id)
-                capture(page, args.output / "03-restarted.png")
         with args.model.open("rb") as model, args.engine.open("rb") as engine:
             result = {
                 "model_sha256": hashlib.file_digest(model, "sha256").hexdigest(),

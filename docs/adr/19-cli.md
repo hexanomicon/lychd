@@ -90,7 +90,8 @@ inventory belongs to `status`.
 Bind compiles the container Vessel only. The former `--native-only` and `--uncaged` options are
 usage errors before host inspection or effects. A retained native Vessel source or owned runtime
 identity blocks bind, including locked revalidation. Bind cannot silently replace, remove, adopt
-or migrate it. There is no host-native test profile; tests use the OCI verification path under
+or migrate it. Core repository tests use the OCI verification path. The personal desktop installer
+has separate OS qualification under
 [Containers](08-containers.md#core-deployment-and-verification).
 
 ### Start, stop, observe, and read

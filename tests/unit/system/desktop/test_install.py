@@ -106,6 +106,8 @@ def test_configure_model_binds_typed_chat_and_preserves_extensions(
     assert result["weaver"]["bridge"] == {"revision": "2", "capability_key": "personal:chat:personal-model"}
     assert result["orchestration"]["switching"]["native_model_root"] == str(tmp_path)
     rune = tomllib.loads((tmp_path / "runes/llamacpp/personal.toml").read_text())
+    assert rune["structured_output"] == "json-schema"
+    assert rune["cache_type_k"] == rune["cache_type_v"] == "f16"
     assert rune["model_path"] == str(weights)
     assert rune["base_url"] == "http://127.0.0.1:8081/v1"
 
@@ -294,8 +296,10 @@ def test_desktop_libpq_pins_registered_address(monkeypatch: pytest.MonkeyPatch) 
     monkeypatch.setattr(factory, "sys", SimpleNamespace(platform="darwin"))
     monkeypatch.setenv("PGHOSTADDR", "127.0.0.2")
     db = DatabaseSettings(host="localhost", password=SecretStr("local"), runtime_password=SecretStr("runtime"))
-    for runtime in (True, False):
-        assert conninfo_to_dict(factory.database_saq_dsn(db, runtime=runtime))["hostaddr"] == "127.0.0.1"
+    for host, address in (("localhost", "127.0.0.1"), ("127.0.0.1", "127.0.0.1"), ("::1", "::1")):
+        local = db.model_copy(update={"host": host})
+        for runtime in (True, False):
+            assert conninfo_to_dict(factory.database_saq_dsn(local, runtime=runtime))["hostaddr"] == address
     assert "hostaddr" not in conninfo_to_dict(factory.database_saq_dsn(db, libpq=False))
     assert "hostaddr" not in conninfo_to_dict(factory.database_saq_dsn(db.model_copy(update={"host": "private-db"})))
 

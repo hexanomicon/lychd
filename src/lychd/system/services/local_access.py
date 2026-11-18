@@ -10,8 +10,6 @@ from pydantic import SecretStr
 
 from lychd.config.settings.root import get_settings
 from lychd.config.settings.server import validate_local_access_password
-from lychd.system.host_tools import trusted_host_tool
-from lychd.system.services.secrets import PodmanSecretStore, PodmanSecretStoreError
 
 
 @dataclass(frozen=True)
@@ -39,6 +37,9 @@ def load_local_access() -> LocalAccess:
         if desktop:
             msg = "The desktop local access credential is unavailable."
             raise ValueError(msg)
+        from lychd.system.host_tools import trusted_host_tool
+        from lychd.system.services.secrets import PodmanSecretStore, PodmanSecretStoreError
+
         podman = trusted_host_tool("podman")
         if podman is None:
             msg = "A trusted Podman executable is required to read the local access credential."
