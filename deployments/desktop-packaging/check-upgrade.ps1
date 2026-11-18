@@ -17,7 +17,9 @@ $profilePaths = & $python -I -B -m lychd platform | ConvertFrom-Json
 if ($profilePaths.profile -cne 'personal-desktop' -or (Test-Path $profilePaths.config) -or (Test-Path $profilePaths.data)) {
     throw 'Upgrade qualification requires a fresh desktop profile.'
 }
-$backup = Join-Path ([IO.Path]::GetTempPath()) ("lychd-upgrade-" + [guid]::NewGuid().ToString('N'))
+# macOS exposes its temporary directory under the /var alias. Pass the physical path to both editions.
+$trialTemp = & $python -I -B -c 'from pathlib import Path; from tempfile import gettempdir; print(Path(gettempdir()).resolve(strict=True))'
+$backup = Join-Path $trialTemp ("lychd-upgrade-" + [guid]::NewGuid().ToString('N'))
 & $python -I -B -c 'import sys; from pathlib import Path; from lychd.system.desktop.private import private_directory; private_directory(Path(sys.argv[1]))' $backup
 & $python -I -B -m lychd desktop install
 try {
