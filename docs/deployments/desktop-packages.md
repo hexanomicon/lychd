@@ -129,7 +129,7 @@ relocated interpreter, provisions PostgreSQL 18 and commits a row. It repairs a 
 file, checks that first row and commits a second. It retires the deployment, removes the program
 and reinstalls the same edition. Both rows must still be present. Windows runs these operations
 in a separate standard account. The trial checks macOS LaunchAgent startup and Windows
-interactive task registration against the isolated interpreter invocation. This trial exercises same-revision recovery. To qualify two specific
+current-user Run registry enrollment and retirement against the exact isolated interpreter command. This trial exercises same-revision recovery. To qualify two specific
 editions, supply a successful earlier Desktop installers run ID and the full revision printed in
 its provenance to the workflow dispatch inputs. For a same-repository PR, put
 `[desktop-upgrade RUN_ID PREVIOUS_REVISION]` alone on a line in its description. Both native

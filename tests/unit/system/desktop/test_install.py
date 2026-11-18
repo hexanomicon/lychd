@@ -158,13 +158,14 @@ def test_windows_login_task_uses_interactive_limited_principal(
     def run(args: list[str], *, env: dict[str, str], check: bool) -> None:
         assert check
         calls.append(args)
+        assert env["LYCHD_LOGIN_PROVIDER"] == "scheduled-task"
         passed_arguments.append(env["LYCHD_LOGIN_ARGUMENTS"])
 
     monkeypatch.setattr(login, "subprocess", SimpleNamespace(run=run))
-    if legacy:
-        login.publish_file(
-            login._PROFILE, json.dumps({"interpreter": login.sys.executable, "identifier": "owner"}).encode()
-        )
+    marker = {"interpreter": login.sys.executable, "identifier": "owner"}
+    if not legacy:
+        marker["python_mode"] = "isolated"
+    login.publish_file(login._PROFILE, json.dumps(marker).encode())
     login.enable()
     script = calls[-1][-1]
     assert "-LogonType Interactive -RunLevel Limited" in script
@@ -179,6 +180,20 @@ def test_windows_login_task_uses_interactive_limited_principal(
         expected_args = "-I -B " + expected_args
     assert passed_arguments == [expected_args, expected_args]
     assert not login._PROFILE.exists()
+
+
+def test_windows_run_command_quotes_spaces_and_enforces_utf16_length() -> None:
+    registration = {"interpreter": r"C:\User Profile\Python\python.exe", "python_mode": "isolated"}
+    assert (
+        login._windows_run_command(registration)
+        == r'"C:\User Profile\Python\python.exe" -I -B -m lychd.system.desktop session'
+    )
+    suffix = '"" -I -B -m lychd.system.desktop session'
+    registration["interpreter"] = "x" * (260 - len(suffix))
+    assert len(login._windows_run_command(registration)) == 260
+    registration["interpreter"] = registration["interpreter"][:-1] + "🌐"
+    with pytest.raises(click.ClickException, match="Start `lychd desktop session`"):
+        login._windows_run_command(registration)
 
 
 def test_private_credential_path_refuses_redirected_ancestry(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

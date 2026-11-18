@@ -24,7 +24,13 @@ function Invoke-TrialVolumeRequest($Drive, $Process, $Stage, $Stdout, $Stderr) {
         $requests = @(Get-ChildItem -Force -LiteralPath $Drive -Filter '.lychd-volume-request-*')
         if ($requests.Count -eq 1) {
             $cut = [guid]($requests[0].Name.Substring('.lychd-volume-request-'.Length))
-            & "$Stage\src\lychd\system\desktop\volume_vss.ps1" -Volume $id -Cut $cut | Out-Host
+            # Exercise the same inbox Windows PowerShell used by the operator procedure.
+            $modulePath = $env:PSModulePath
+            try {
+                Remove-Item Env:PSModulePath -ErrorAction SilentlyContinue
+                & "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -NonInteractive -File "$Stage\src\lychd\system\desktop\volume_vss.ps1" -Volume $id -Cut $cut | Out-Host
+                if ($LASTEXITCODE) { throw "The native Windows PowerShell producer exited $LASTEXITCODE." }
+            } finally { $env:PSModulePath = $modulePath }
             return
         }
         if (Test-Path -LiteralPath $Stdout) {

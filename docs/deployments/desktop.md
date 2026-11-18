@@ -158,7 +158,11 @@ issues below for hardware, GPU and cold-login trials.
 
 For automatic startup use `uv run --no-sync lychd desktop enable-login` under the intended
 account once foreground startup works. macOS registers a user LaunchAgent and Windows registers
-an interactive, unelevated scheduled task. New registrations launch the installed interpreter in isolated
+a current-user `Run` registry value with the installation identifier and quoted interpreter path.
+Existing Windows scheduled tasks retain their original enrollment until disabled. Windows caps
+a Run command at 260 UTF-16 code units. If the edition path exceeds this bound, start
+`lychd desktop session` after sign-in. [Windows Run keys](https://learn.microsoft.com/en-us/windows/win32/setupapi/run-and-runonce-registry-keys).
+New registrations launch the installed interpreter in isolated
 mode, so Python ignores user-site packages and inherited Python environment settings. Existing
 registrations keep their original invocation until disabled and re-enabled. Keep the registered
 environment at its original path. Disable login with the original interpreter before moving it

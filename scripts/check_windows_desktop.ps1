@@ -1,6 +1,6 @@
 # The administrative runner installs dependencies. A separate standard account runs the personal profile.
 param([string] $TrialSid, [switch] $BridgeChat, [switch] $TetherTrial, [switch] $VolumeTrial, [switch] $VolumeProbe, [string] $VolumeDrive,
-      [string] $PackageBuild, [ValidatePattern('^[0-9a-f]{40}$')][string] $PackageRevision, [ValidatePattern('^[0-9a-f]{40}$')][string] $PreviousRevision)
+      [string] $PackageBuild, [ValidatePattern('^[0-9a-f]{40}$')][string] $PackageRevision, [ValidatePattern('^[0-9a-f]{40}$')][string] $PreviousRevision, [switch] $PackageLoginOnly)
 
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
@@ -41,7 +41,7 @@ if ($TrialSid) {
         exit 0
     }
     if ($PackageRevision) {
-        & "$root/deployments/desktop-packaging/check-install.ps1" -BuildDirectory $root -Revision $PackageRevision
+        & "$root/deployments/desktop-packaging/check-install.ps1" -BuildDirectory $root -Revision $PackageRevision -LoginOnly:$PackageLoginOnly
         exit 0
     }
     $python = "$root\.venv\Scripts\python.exe"
@@ -112,6 +112,7 @@ try {
     $argsLine = "-NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"$stage\scripts\check_windows_desktop.ps1`" -TrialSid $sid"
     if ($TetherTrial) { $argsLine += ' -TetherTrial' }
     if ($PackageRevision) { $argsLine += " -PackageRevision $PackageRevision" }
+    if ($PackageLoginOnly) { $argsLine += ' -PackageLoginOnly' }
     if ($PreviousRevision) { $argsLine += " -PreviousRevision $PreviousRevision" }
     if ($VolumeTrial) {
         . "$stage\scripts\check_volume_vhd.ps1"

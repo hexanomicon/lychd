@@ -17,6 +17,7 @@ from lychd.system.constants import PATH_POSTGRES_ROOT_DIR
 from lychd.system.desktop.private import check_path, private_directory, publish_file, verify_private_file
 
 _LABEL = "org.lychd.vessel"
+_MAX_RUN_COMMAND = 260
 _PROFILE = PATH_POSTGRES_ROOT_DIR / "desktop-login" / "registration.json"
 _KEYS = (
     "LYCHD_PG_BIN",
@@ -41,6 +42,11 @@ def read_registration() -> dict[str, str]:
     if "python_mode" in values and values["python_mode"] != "isolated":
         msg = "The login registration has an unrecognized Python invocation."
         raise click.ClickException(msg)
+    if "windows_startup" in values and (
+        values["windows_startup"] != "current-user-run" or values.get("python_mode") != "isolated"
+    ):
+        msg = "The login registration has an unrecognized Windows startup provider."
+        raise click.ClickException(msg)
     return values
 
 
@@ -59,12 +65,23 @@ def _create_registration() -> None:
         identifier=secrets.token_hex(20),
         python_mode="isolated",
     )
+    if sys.platform == "win32":
+        values["windows_startup"] = "current-user-run"
+        _windows_run_command(values)
     publish_file(_PROFILE, json.dumps(values).encode("utf-8"))
 
 
 def _arguments(registration: dict[str, str]) -> list[str]:
     module = ["-m", "lychd.system.desktop", "session"]
     return ["-I", "-B", *module] if registration.get("python_mode") == "isolated" else module
+
+
+def _windows_run_command(registration: dict[str, str]) -> str:
+    command = f'"{registration["interpreter"]}" {" ".join(_arguments(registration))}'
+    if len(command.encode("utf-16-le")) > 2 * _MAX_RUN_COMMAND:
+        msg = "The login command exceeds the Windows Run limit of 260 characters. Start `lychd desktop session` after sign-in."
+        raise click.ClickException(msg)
+    return command
 
 
 def load_environment() -> None:
@@ -88,6 +105,38 @@ $n='LychD-Vessel-'+$u.User.Value
 $d='LychD '+$env:LYCHD_LOGIN_IDENTIFIER
 $x=$env:LYCHD_LOGIN_INTERPRETER
 $argsText=$env:LYCHD_LOGIN_ARGUMENTS
+if ($env:LYCHD_LOGIN_PROVIDER -eq 'current-user-run') {
+    $prefix='LychD-Vessel-'
+    $name=$prefix+$env:LYCHD_LOGIN_IDENTIFIER
+    $command=$env:LYCHD_LOGIN_COMMAND
+    $path='Software\\Microsoft\\Windows\\CurrentVersion\\Run'
+    $remove=$env:LYCHD_LOGIN_REMOVE -eq '1'
+    $key=[Microsoft.Win32.Registry]::CurrentUser.OpenSubKey($path,$true)
+    if (!$key) {
+        if ($remove) {exit 0}
+        $key=[Microsoft.Win32.Registry]::CurrentUser.CreateSubKey($path)
+    }
+    try {
+        if (!$remove -and @($key.GetValueNames() | Where-Object {$_ -like "$prefix*" -and $_ -ne $name}).Count) {
+            throw 'Preserved a startup value belonging to another LychD installation'
+        }
+        $value=$key.GetValue($name,$null,'DoNotExpandEnvironmentNames')
+        if ($null -ne $value -and ($key.GetValueKind($name) -ne 'String' -or $value -cne $command)) {
+            throw 'Preserved unrecognized current-user startup command'
+        }
+        if ($remove) {
+            $key.DeleteValue($name,$false)
+        } elseif ($null -eq $value) {
+            $key.SetValue($name,$command,'String')
+        }
+        $key.Flush()
+        $actual=$key.GetValue($name,$null,'DoNotExpandEnvironmentNames')
+        if (($remove -and $null -ne $actual) -or (!$remove -and ($actual -cne $command -or $key.GetValueKind($name) -ne 'String'))) {
+            throw 'Current-user startup registration readback failed'
+        }
+    } finally {$key.Dispose()}
+    exit 0
+}
 function UserSid($name) {
     if ($name -match '^S-1-') {return $name}
     return ([Security.Principal.NTAccount]::new($name)).Translate([Security.Principal.SecurityIdentifier]).Value
@@ -105,7 +154,11 @@ function Check($task) {
         throw 'Preserved unrecognized scheduled task'
     }
 }
-$existing=@(Get-ScheduledTask -TaskPath '\\' | Where-Object TaskName -eq $n)
+try {$existing=@(Get-ScheduledTask -TaskPath '\\' | Where-Object TaskName -eq $n)}
+catch {
+    if ($_.FullyQualifiedErrorId -ne 'CmdletizationQuery_NotFound_TaskPath,Get-ScheduledTask') {throw}
+    $existing=@()
+}
 if ($existing.Count) {
     Check $existing[0]
     if ($env:LYCHD_LOGIN_REMOVE -eq '1') {
@@ -127,6 +180,8 @@ if ($existing.Count) {
             **{key: value for key, value in os.environ.items() if key.upper() != "PSMODULEPATH"},
             "LYCHD_LOGIN_IDENTIFIER": registration["identifier"],
             "LYCHD_LOGIN_ARGUMENTS": " ".join(_arguments(registration)),
+            "LYCHD_LOGIN_PROVIDER": registration.get("windows_startup", "scheduled-task"),
+            "LYCHD_LOGIN_COMMAND": _windows_run_command(registration) if "windows_startup" in registration else "",
             "LYCHD_LOGIN_INTERPRETER": sys.executable,
             "LYCHD_LOGIN_REMOVE": "1" if remove else "0",
         },
