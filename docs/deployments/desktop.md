@@ -171,11 +171,27 @@ qualified isolation boundary.
   separately from the PostgreSQL cluster, using encrypted storage. Before relying on the
   backup, recover the directory into a fresh owner-only location and run
   `lychd desktop verify-credential-backup "<recovered-directory>"` under the installation
-  account. The command compares all five files against the active generated set without
+  account. The command compares all five recovered values against the active generated set without
   displaying their contents. Keep externally supplied credentials and their file references
   recoverable through their own provider. When restoring a cluster, recover the matching
   credentials under the destination account before starting the Vessel or running install.
   An existing cluster requires the original credentials or explicit overrides.
+- **Opt-in OS credential custody.** After verifying that independent backup, run
+  `lychd desktop enable-vault "<recovered-directory>"` under the installation account.
+  Each generated file is atomically replaced after a successful OS readback. macOS stores
+  the value in the login Keychain. Windows stores a DPAPI CurrentUser envelope at the
+  original private path. Runtime and administrative processes retain their existing sets
+  of file references. A locked Keychain or unavailable Windows profile stops the read.
+  An interrupted migration can be rerun with the same backup. A copy of the vault references
+  alone cannot recover access under a fresh user profile.
+  [Apple Keychain items](https://developer.apple.com/documentation/security/keychain-items) ·
+  [Windows DPAPI](https://learn.microsoft.com/en-us/windows/win32/api/dpapi/nf-dpapi-cryptprotectdata)
+- **Recovery into a fresh account.** Recover the original five portable files into a private
+  directory under that account. Run `lychd desktop recover-credentials "<recovered-directory>"`
+  before installing against the restored dedicated cluster. This verifies every input before
+  filling missing credentials and stops on disagreement with an existing value. Then run
+  `desktop install`, sign in, check a known persisted conversation and re-enable the OS
+  vault with that account if desired.
 - **Update.** Obtain a verified backup before changing a populated installation. Stop Vessel,
   disable login for the update, and keep the current revision and configuration. Install the new
   revision into the intended environment and run `desktop install`, then repeat the persisted
@@ -211,7 +227,7 @@ needs other stores and current revocation history. [Snapshot contract](../adr/07
 | Supervision and isolation | Rootless Podman, systemd/Quadlet, cgroup v2 and reviewed SELinux policy where enabled. | User-owned native services and a trusted engine. A same-user process has access to that user's files. |
 | Fast filesystem capture | Btrfs storage preparation is implemented. Whole-installation restore has independent criteria. | APFS and VSS are candidates for volume-level capture. Apple's direct snapshot API needs additional entitlement and superuser authority. VSS requires appropriate backup authority. Qualify creation and recovery before selecting either. |
 | VPN and routes | Native Tether has its own [delivery record](../state-of-the-work.md#vpn-tether). | Local chat uses IPv4 loopback. Managing native host VPNs, route overlaps and live revocation requires separate platform evidence. A remote browser must use an explicitly admitted access profile. |
-| Credentials and lifecycle | Managed secrets and owned systemd resources have Linux-specific policies. | The personal profile uses private per-user files and OS access controls. Keychain/DPAPI custody, automatic multi-consumer credential rotation and system-wide unattended services need separate qualification. |
+| Credentials and lifecycle | Managed secrets and owned systemd resources have Linux-specific policies. | Private per-user files, opt-in Keychain/DPAPI custody and explicit recovery of the original generated set. System-wide unattended services have separate qualification requirements. |
 
 [Apple snapshot API](https://github.com/apple-oss-distributions/xnu/blob/main/bsd/man/man2/fs_snapshot_create.2#L86) ·
 [Windows VSS security](https://learn.microsoft.com/en-us/windows/win32/vss/security-considerations-for-requestors) ·

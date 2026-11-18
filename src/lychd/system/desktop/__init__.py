@@ -346,6 +346,32 @@ def verify_credential_backup(directory: Path) -> None:
 
 
 @desktop.command()
+@click.argument("backup", type=click.Path(exists=True, file_okay=False, path_type=Path))
+def enable_vault(backup: Path) -> None:
+    """Move generated credentials into OS custody after verifying an independent recovery copy."""
+    from lychd.system.desktop.credentials import use_os_vault
+
+    try:
+        use_os_vault(backup.absolute())
+    except (OSError, ValueError) as exc:
+        raise click.ClickException(str(exc)) from exc
+    click.echo("OS vault enabled and all five credentials read back against the independent backup.")
+
+
+@desktop.command()
+@click.argument("backup", type=click.Path(exists=True, file_okay=False, path_type=Path))
+def recover_credentials(backup: Path) -> None:
+    """Restore missing generated credentials from the operator's private recovery copy."""
+    from lychd.system.desktop.credentials import restore_credentials
+
+    try:
+        restore_credentials(backup.absolute())
+    except (OSError, ValueError) as exc:
+        raise click.ClickException(str(exc)) from exc
+    click.echo("All generated credentials verified. The dedicated database can now be checked with desktop install.")
+
+
+@desktop.command()
 def uninstall() -> None:
     """Remove login integration and stop the dedicated database, preserving settings and data."""
     _stop(unregister=True)

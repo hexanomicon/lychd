@@ -276,6 +276,12 @@ Bind preflight requires the Codex secret file to be Magus-owned with
 group and other permissions closed. Generated caged units use file form and scope mounts to the
 unit that needs them. Filesystem permissions do not isolate code within that unit.
 
+The personal desktop installer can seal each generated credential under the installation account.
+The matching explicit file reference then carries a versioned Keychain locator or DPAPI ciphertext.
+Resolution is scoped to that credential and installation path. Enrollment requires a verified
+portable recovery copy and readback before replacing each private file. An inaccessible vault
+fails the read. [Personal desktop operation](../deployments/desktop.md#login-update-and-removal)
+
 ### Retired native credential selection {#explicit-native-core-credential-source}
 
 The host-native `LYCHD_RUNTIME_SECRETS=podman-core@1` Settings source and its capture/provenance

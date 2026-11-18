@@ -167,7 +167,7 @@ def private_file(path: Path) -> None:
         path.chmod(0o600)
 
 
-def publish_file(path: Path, content: bytes) -> None:
+def publish_file(path: Path, content: bytes, *, replace: bool = False) -> None:
     """Publish complete content within the serialized desktop management operation."""
     check_path(path)
     with NamedTemporaryFile(dir=path.parent, delete=False) as stream:
@@ -177,7 +177,9 @@ def publish_file(path: Path, content: bytes) -> None:
             stream.flush()
             os.fsync(stream.fileno())
             stream.close()
-            if path.exists():
+            if replace:
+                verify_private_file(path)
+            elif path.exists():
                 raise FileExistsError(path)
             temporary.replace(path)
         finally:
