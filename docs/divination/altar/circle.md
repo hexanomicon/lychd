@@ -42,30 +42,23 @@ one local Answer remains responsible for what it binds.
 
 ## What Bridge can show
 
-The compact **Circle** beside a reply shows supplied Run status and activity, with **Look into
-the Orb** and an explicit **Cancel Run** for an eligible nonterminal projection. Expand **Circle**
-to read the full Run identity, supplied Pattern revision and delegated-job identity. **View declared
-score** opens Loom only when its supplied path matches that exact Pattern revision. These are
-navigation hints; Loom still verifies the Run's pinned manifest before offering a contextual return.
+The status beside the Bridge reply shows the supplied Run state and activity. Its **…**
+menu contains **View run in Orb**, the full Run identity, supplied Pattern revision, and
+delegated job identity where available. **Cancel Run** is available for an eligible nonterminal
+projection. **View declared score** opens the exact Pattern revision in Loom. Loom verifies
+the Run's pinned manifest before offering a contextual return.
 
 Older retained replies may lack Run status or a declared score. Circle identifies those omissions
 and offers the Run evidence link without inventing the missing metadata. A mismatched Run projection
 is reported and cannot supply status or actions for another Run. Consent remains beside its own
 request and decision controls.
 
-Circle is the conceptual pinnacle inside Bridge, not a separate Altar instrument. No composed
-Circle workspace, active-Spell map, Context/authority inspector, participant-attribution view, or
-cross-instrument focus mode is delivered.
-
 Follow [Bridge](bridge.md#follow-a-turn-to-settlement) to offer an Intent, answer consent, or
-recover an uncertain offering. Choose **Look into the Orb** beside the turn to inspect that
+recover an uncertain offering. Choose **… → View run in Orb** beside the turn to inspect that
 Run's evidence.
 
-A future focus within Bridge may gather the authorized views of one Invocation in one place.
-Loom would supply its exact score and casting state; the account would show Caller, Called, Sigil,
-Context, budgets, and consent; Nexus would supply capability and Animator observations; Orb would
-supply bounded traces. Each view must remain reconstructible from its owners. A selected node,
-animation, open stream, or model utterance alone cannot establish progress or authority.
+Circle names the encounter within one admitted Invocation. For relationships across several
+turns, **Open map in Atlas** in the conversation tools opens the [séance map](atlas.md#the-shared-memory-map).
 
 ## What can outlast the act
 

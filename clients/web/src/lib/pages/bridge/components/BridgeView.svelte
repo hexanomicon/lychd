@@ -26,13 +26,16 @@
   import { getMemoryPanel, hasMemoryPanel } from "$lib/memory/panel.svelte";
   import { getSeancesWorkspace, hasSeancesWorkspace } from "$lib/seances/workspace.svelte";
   import ConsentCard from "$lib/components/shared/ConsentCard.svelte";
-  import CircleRun from "$lib/pages/bridge/components/CircleRun.svelte";
+  import BridgeConversationFiling from "./BridgeConversationFiling.svelte";
+  import BridgeExchangeRail from "./BridgeExchangeRail.svelte";
+  import TurnRunMenu from "$lib/pages/bridge/components/TurnRunMenu.svelte";
   import DelegateMark from "$lib/components/shared/DelegateMark.svelte";
   import GenUI from "$lib/pages/bridge/components/GenUI.svelte";
   import AtlasLinks from "$lib/components/atlas/AtlasLinks.svelte";
   import AltarWelcome from "$lib/pages/bridge/components/AltarWelcome.svelte";
   import NamingCeremony from "$lib/pages/bridge/components/NamingCeremony.svelte";
-  import { atlasHref } from "$lib/atlas/navigation";
+  import { atlasHref, atlasMapHref } from "$lib/atlas/navigation";
+  import { matchSource } from "$lib/atlas/brain-map";
   import { bridgeWorkspaceKey, createBridgeWorkspace, type BridgeWorkspace } from "$lib/shell/state/bridge-workspace.svelte";
   import { delegationStatusLabel } from "$lib/delegation/presentation";
   import { bridgePinsLimit, bridgePinsStorageKey, parsePinnedConversations, togglePinnedConversation } from "$lib/navigation/pins";
@@ -98,6 +101,9 @@
   let choosing = $derived(!sessionId && (attentionOnly || bridgeParams.get("choose") === "conversation" || !!projectHint));
   let hintedProject = $state<{ id: string; title: string } | null>(null);
   let projectError = $state("");
+  const sourceHint = $derived(bridgeParams.get("source"));
+  let sourceFailure = $state("");
+  let focusedSource = "";
   let focusRun = $derived(navigationId(bridgeParams.get("run")));
   let focusConsent = $derived(bridgeParams.has("consent")
     ? navigationId(bridgeParams.get("consent")) : undefined);
@@ -192,7 +198,7 @@
   let hasUnsettledRun = $derived(selectedLiveTurns.some(
     (turn) => !["done", "failed", "cancelled"].includes(turn.runStatus)
   ));
-  let runFocusKey = $derived(selected && focusRun ? `${selected.id}:${focusRun}` : null);
+  let runFocusKey = $derived(selected && (focusRun || sourceHint) ? JSON.stringify([selected.id, focusRun, sourceHint]) : null);
   let readingFocusedRun = $derived(!!runFocusKey && releasedRunFocus !== runFocusKey);
   let selectedPendingCount = $derived(
     snapshot?.pending_consents.filter((card) => card.state === "pending_consent").length ?? 0
@@ -503,6 +509,7 @@
   $effect(() => {
     const routeSessionId = sessionId;
     choosing;
+    sourceHint; // An explicit source return requires a fresh retained read, even in the open dock.
     untrack(() => void load(routeSessionId));
   });
 
@@ -561,6 +568,33 @@
     });
   });
 
+  // Re-identify the exact retained text inside this read before resolving its current DOM position.
+  $effect(() => {
+    const hint = sourceHint, view = selected, id = sessionId;
+    if (!hint || view?.id !== id || !visible || focusRun) {
+      focusedSource = "";
+      return;
+    }
+    if (!view || loading) return;
+    const key = JSON.stringify([id, hint]);
+    if (focusedSource === key) return;
+    const turns = view.turns ?? [];
+    let cancelled = false;
+    void matchSource(turns, hint).then(async (turn) => {
+      await tick();
+      if (cancelled || destroyed || selected !== view || sessionId !== id || sourceHint !== hint) return;
+      const index = turn ? turns.indexOf(turn) : -1;
+      const target = index >= 0 ? thread?.querySelector<HTMLElement>(`[data-source-position="${index}"]`) : null;
+      if (!target) { sourceFailure = key; return; }
+      sourceFailure = "";
+      focusedSource = key;
+      stickToTail = false;
+      target.focus({ preventScroll: true });
+      target.scrollIntoView?.({ block: "center" });
+    }).catch(() => { if (!cancelled) sourceFailure = key; });
+    return () => { cancelled = true; };
+  });
+
   $effect.pre(() => {
     renderVersion;
     const target = thread;
@@ -572,6 +606,16 @@
       });
     }
   });
+
+  function jumpToExchange(position: number | null, run: string | null) {
+    const target = position !== null
+      ? thread?.querySelector<HTMLElement>(`[data-source-position="${position}"]`)
+      : Array.from(thread?.querySelectorAll<HTMLElement>("[data-run-id]") ?? []).find(node => node.dataset.runId === run);
+    if (!target) return;
+    stickToTail = false;
+    target.focus({ preventScroll: true });
+    target.scrollIntoView?.({ block: "center" });
+  }
 
   function captureThread(node: HTMLDivElement) {
     thread = node;
@@ -1066,19 +1110,15 @@
       <summary>Conversations</summary>
     <button class="rune-btn new-seance" type="button" disabled={creatingSession} aria-busy={creatingSession} onclick={createSession}>✦ &nbsp;{creatingSession ? "Opening…" : "New Séance"}</button>
     <nav aria-label="Conversations">
-    <h2 class="archive-label">Pinned</h2>
-    {#each visiblePins as id (id)}{@render conversationEntry(id)}{:else}<p class="rail-empty">No pinned conversations.</p>{/each}
-    {#if selected && !pins.includes(selected.id) && !snapshot?.sessions.some((session) => session.id === selected.id)}
-      <h2 class="archive-label">Selected conversation</h2>
-      {@render conversationEntry(selected.id)}
-    {/if}
-    <h2 class="archive-label">Recent conversations</h2>
-    <p class="archive-order">Newest created first</p>
-    {#if snapshot?.sessions.length}
-      {#each recentSessions as session (session.id)}{@render conversationEntry(session.id)}{/each}
-    {:else if !loading && !error}
-      <p class="glyph rail-empty">No séance yet — open one to speak.</p>
-    {/if}
+      <BridgeConversationFiling
+        pinned={visiblePins}
+        recent={recentSessions.map(session => session.id)}
+        selected={selected?.id ?? null}
+        selectedIsOffPage={!!selected && !snapshot?.sessions.some(session => session.id === selected.id)}
+        attention={attentionOnly}
+        ready={!!snapshot && !loading}
+        row={conversationEntry}
+      />
     {#if snapshot?.sessions_next_cursor}
       <button class="rune-btn" type="button" disabled={loading || sessionsLoading} aria-busy={sessionsLoading} onclick={loadMoreSessions}>
         {sessionsLoading ? "Loading conversations…" : "Load more conversations"}
@@ -1111,6 +1151,7 @@
         <div class="bridge-tools" role="group" aria-label="Conversation tools">
           <button class="rune-btn" type="button" onclick={openNaming}>Naming ceremony</button>
           {#if selected}
+            <a class="rune-btn" href={atlasMapHref(null, selected.id)}>Open map in Atlas</a>
             <details class="seance-details">
               <summary>Séance details{#if selectedPendingCount}<span class="chip">{selectedPendingCount} awaiting consent</span>{/if}</summary>
               <dl class="kv">
@@ -1141,6 +1182,9 @@
         <span>Project context is not sent automatically.</span>
       </nav>
     {:else if projectError}<p class="turn__fault" role="status">{projectError}</p>{/if}
+    {#if sourceHint && selected && !loading && sourceFailure === JSON.stringify([sessionId, sourceHint])}
+      <p class="turn__fault" role="status">This source turn could not be matched uniquely in the retained conversation.</p>
+    {/if}
     {#if focusConsent !== undefined && !loading && !focusedConsent}
       <p class="turn__fault" role="status">The requested consent is unavailable in this conversation at this read.</p>
     {/if}
@@ -1156,6 +1200,10 @@
       <div hidden={!namingOpen}>
         <NamingCeremony bind:this={namingCeremony} onclose={closeNaming} onask={askForName} />
       </div>
+    {/if}
+    <div class="thread-stage" class:has-exchanges={selected && ((selected.turns?.length ?? 0) > 0 || selectedLiveTurns.length > 0)}>
+    {#if selected}
+      {#key selected.id}<BridgeExchangeRail session={selected.id} turns={selected.turns ?? []} live={selectedLiveTurns} onjump={jumpToExchange} />{/key}
     {/if}
     <!-- This named overflow region needs native keyboard scrolling. -->
     <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
@@ -1202,18 +1250,19 @@
             <p>Offer a question, an idea, or a piece of work.</p>
           </div>
         {/if}
-        {#each selected.turns ?? [] as turn (turn.run_id ? JSON.stringify([selected.id, turn.role, turn.run_id]) : turn)}
+        {#each selected.turns ?? [] as turn, sourcePosition (turn.run_id ? JSON.stringify([selected.id, turn.role, turn.run_id]) : turn)}
           <article
             class:turn--user={turn.role === "user"}
             class:turn--agent={turn.role === "agent"}
             class="turn"
+            data-source-position={sourcePosition}
             data-run-id={turn.role === "agent" ? turn.run_id : undefined}
             tabindex="-1"
             data-state={turn.state === "failed" ? "failed" : "done"}
           >
             <div class="turn__meta"><span class="who">{turn.role === "agent" ? "LychD" : "You"}</span></div>
             {#if turn.role === "agent" && turn.run_id}
-              <CircleRun runId={turn.run_id} />
+              <TurnRunMenu runId={turn.run_id} />
             {/if}
             <div class="turn__body">{turn.content}</div>
             {#if turn.role === "agent" && (turn.fragments?.length ?? 0) > 0}
@@ -1228,7 +1277,7 @@
             <div class="turn__meta">
               <span class="who">LychD</span>
             </div>
-            <CircleRun runId={turn.runId} {turn} cancelling={cancellingRuns.has(turn.runId)} oncancel={() => void cancelRun(turn)} />
+            <TurnRunMenu runId={turn.runId} {turn} cancelling={cancellingRuns.has(turn.runId)} oncancel={() => void cancelRun(turn)} />
             <div class="turn__body">{turn.content || (turnIsTerminal(turn) ? "No reply text was retained for this Run." : "")}</div>
             {#if turn.runStatus === "failed" && turn.content}
               <p class="turn__fault" role="status">This Run failed. The text shown here is not a completed answer.</p>
@@ -1278,6 +1327,8 @@
           />
         {/each}
       {/if}
+    </div>
+
     </div>
 
     {#if selected && (!stickToTail || readingFocusedRun)}
@@ -1384,9 +1435,7 @@
   /* Native details keeps history reachable without making it the dock's first reading task. */
   .conversation-list > summary { min-height: 2.75rem; margin-bottom: .65rem; color: var(--color-bone); font: 600 var(--text-sm)/1.5 var(--font-body); cursor: pointer; }
   .conversation-list nav { display: flex; flex-direction: column; gap: .15rem; margin-top: 1rem; }
-  .archive-label { margin: 1.25rem .5rem .35rem; font: 600 var(--text-xs)/1.4 var(--font-body); color: var(--color-parchment); }
-  .archive-order, .rail-empty { color: var(--color-ash); font-size: var(--text-xs); line-height: 1.6; }
-  .archive-order { margin: 0 .5rem .5rem; }
+  .rail-empty { color: var(--color-ash); font-size: var(--text-xs); line-height: 1.6; }
   .conversation-row { display: grid; grid-template-columns: minmax(0, 1fr) 2.75rem; align-items: center; gap: .15rem; }
   .pin-conversation { display: grid; place-items: center; min-height: 2.75rem; border: 0; border-radius: var(--radius-glyph); color: var(--color-ash); background: transparent; cursor: pointer; }
   .pin-conversation:hover { color: var(--color-bone); background: var(--color-obsidian-2); }
@@ -1421,6 +1470,8 @@
   .bridge-tools > details[open] { flex-basis: 100%; }
   .bridge-tools summary { min-height: 2.75rem; align-content: center; cursor: pointer; color: var(--color-parchment); }
   .thread-scroll { min-height: 4rem; padding: 1.5rem max(1rem, calc((100% - 48rem) / 2)); gap: 1.75rem; scrollbar-gutter: stable; }
+  .thread-stage { position: relative; display: flex; flex: 1 1 0; min-height: 4rem; min-width: 0; }
+  .thread-stage.has-exchanges .thread-scroll { padding-inline-start: max(2.35rem, calc((100% - 48rem) / 2)); }
   .thread-scroll:focus-visible { outline: 1px solid var(--color-rune); outline-offset: -3px; }
   .turn { max-width: 100%; overflow-wrap: anywhere; }
   .turn--user { max-width: min(42rem, 92%); }

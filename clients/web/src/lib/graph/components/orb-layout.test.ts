@@ -34,13 +34,12 @@ describe("Orb static spatial presentation", () => {
     expect(expanded).toEqual(before);
   });
 
-  it("places explicit Animator identities on a rail while Run islands remain asymmetric", () => {
+  it("places Animator selections within the recorded Run territory", () => {
     const input = graph([node("run-a", "run-a", "run"), node("run-b", "run-b", "run"), node("run-c", "run-c", "run"),
-      node("animator:one", "animators", "animator"), node("animator:two", "animators", "animator")]);
+      node("selection", "run-a", "animator")]);
     const positions = layoutOrbProjection(input, createOrbLayoutMemory());
-    expect(positions.get("animator:one")!.x).toBe(positions.get("animator:two")!.x);
-    expect(positions.get("animator:one")!.y).not.toBe(positions.get("animator:two")!.y);
-    expect(positions.get("animator:one")!.x).toBeLessThan(positions.get("run-a")!.x);
+    const selection = positions.get("selection")!, run = positions.get("run-a")!;
+    expect(Math.hypot(selection.x - run.x, selection.y - run.y)).toBeLessThan(400);
     expect(positions.get("run-a")!.y).not.toBe(positions.get("run-b")!.y);
     expect(positions.get("run-b")!.x).not.toBe(positions.get("run-c")!.x);
   });

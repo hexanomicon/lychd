@@ -22,11 +22,23 @@
   } from "$lib/api/models";
   import DelegateMark from "$lib/components/shared/DelegateMark.svelte";
   import NexusMap from "./NexusMap.svelte";
+  import NexusOperations from "./NexusOperations.svelte";
+  import { findOperation, operationGroups, type Operation } from "../state/operations";
   import NexusProperties from "./NexusProperties.svelte";
   import PageHeader from "$lib/components/shared/PageHeader.svelte";
   import { createNexusMap } from "$lib/pages/nexus/state/map";
 
   type Preview = { target: string; plan: TransitionPlan };
+
+  let area = $derived(findOperation(page.url.searchParams.has("transition") ? "board" : (page.url.searchParams.get("area") ?? "installation")));
+  let navExpanded = $state(false);
+
+  function openArea(next: Operation) {
+    const path = next.id === "installation" ? "/nexus" : `/nexus?area=${next.id}` as const;
+    area = next;
+    navExpanded = false;
+    void goto(resolve(path), { reset: false });
+  }
 
   let snapshot = $state.raw<NexusSnapshot | null>(null);
   let preview = $state.raw<Preview | null>(null);
@@ -450,21 +462,50 @@
   </article>
 {/snippet}
 
-<div class="instrument-deck instrument-deck--nexus">
-  <section class="nexus-main" aria-label="Capability observations">
-    <PageHeader title="Nexus" kicker="Capability observations" description="Inspect an object. Preview what a change would affect." />
+<div class="nexus-workspace">
+  <header class="nexus-title">
+    <PageHeader title="Nexus" />
     <div class="snapshot-bar">
-      <div>
-        {#if snapshot}<time datetime={snapshot.snapshot_at}>Snapshot {new Date(snapshot.snapshot_at).toLocaleString()}</time>
-        {:else}<span>Snapshot unavailable</span>{/if}
-        <span class="snapshot-caption">Cached observations · refreshes every 5 seconds</span>
-      </div>
+      {#if snapshot}<time datetime={snapshot.snapshot_at}>Snapshot {new Date(snapshot.snapshot_at).toLocaleTimeString()}</time>
+      {:else}<span>Snapshot unavailable</span>{/if}
       <button class="refresh-observations" type="button" disabled={refreshing} onclick={() => void refresh(false)}>{refreshing ? "Refreshing…" : "Refresh"}</button>
     </div>
+  </header>
+  <nav class="operations-nav" aria-label="Nexus operations">
+    <button type="button" class="operations-toggle" aria-expanded={navExpanded} aria-controls="operation-groups" onclick={() => { navExpanded = !navExpanded; }}>Operations · {area.title} <span aria-hidden="true">{navExpanded ? "▴" : "▾"}</span></button>
+    <div id="operation-groups" class:expanded={navExpanded}>
+      {#each operationGroups as group (group.label)}
+        <div class="operation-group">
+          <h2>{group.label}</h2>
+          {#each group.areas as item (item.id)}
+            <button type="button" aria-current={area.id === item.id ? "page" : undefined} onclick={() => openArea(item)}>
+              <span class="operation-mark" aria-hidden="true">{item.mark}</span>{item.title}
+            </button>
+          {/each}
+        </div>
+      {/each}
+    </div>
+  </nav>
+  <div class="operation-page">
+    <h2 class="operation-title">{area.title}</h2>
     {#if snapshot?.containment_reason}<div class="containment" role="alert">Runtime admission is contained: {snapshot.containment_reason}</div>{/if}
     {#if snapshot && snapshotStale}<div class="containment" role="alert">The Nexus board is stale. Lifecycle mutations are unavailable until a fresh snapshot loads.</div>{/if}
+    {#if area.id !== "board" && area.id !== "transitions" && !snapshot && !loading && error}<div class="turn__fault" role="alert">{error}</div>{/if}
+    {#if area.id !== "board" && area.id !== "transitions" && swapAttempts.size}
+      <p class="containment" role="status">A transition request is {busy ? "submitting" : "awaiting reconciliation"}. <button type="button" onclick={() => openArea(findOperation("board"))}>View request outcomes</button></p>
+    {/if}
+    {#if area.id === "colleagues" && snapshot}
+      <p>This Vessel does not project paired colleague availability. A person's willingness to receive work requires a separate, current presence report.</p>
+      <a href="https://hexanomicon.dev/sepulcher/intercom/#prepare-the-two-identities">Prepare an Intercom peer enrollment →</a>
+    {/if}
+    {#if snapshot}
+      <NexusOperations {area} {snapshot} />
+    {/if}
+    <div class="instrument-deck instrument-deck--nexus" hidden={area.id !== "board" && area.id !== "transitions"}>
+      <section class="nexus-main" aria-label="Capability observations">
     {#if loading}<p class="nexus-empty" role="status">Reading capability observations…</p>
     {:else if snapshot}
+      <div hidden={area.id !== "board"}>
       <div class="nexus-viewbar"><span class="section-label">{mapModel?.objects.length ?? 0} observed objects</span>
         <div role="group" aria-label="Nexus view"><button type="button" aria-pressed={viewMode === "map"} onclick={() => changeView("map")}>Map</button><button type="button" aria-pressed={viewMode === "list"} onclick={() => changeView("list")}>List</button></div>
       </div>
@@ -517,6 +558,7 @@
         {:else}<p class="inspector-copy">No delegated runtime extension is selected for this Vessel.</p>{/if}
       </details>
       </div>
+      </div>
       <section class="transition-ledger panel" aria-labelledby="transition-ledger-title">
         <div class="panel-head"><div><h2 id="transition-ledger-title" class="rune-head">Latest transition observations</h2><p class="section-caption">Up to 24 retained requests · process-local · not complete history</p></div></div>
         {#if snapshot.transitions.length}
@@ -534,7 +576,7 @@
       </section>
     {:else}<p class="nexus-empty">The capability board could not be read. Refresh to try again.</p>{/if}
   </section>
-  <aside class="nexus-side" class:nexus-side--selected={selectedObjectId !== null || previewTarget !== null} aria-label="Preview and transition outcomes">
+  <aside hidden={!selectedObjectId && !previewTarget && !ticket && !swapAttempts.size && !selectedTransition && !transitionNote && !error} class="nexus-side" class:nexus-side--selected={selectedObjectId !== null || previewTarget !== null} aria-label="Preview and transition outcomes">
     <section class="panel nexus-object-inspector" aria-labelledby="nexus-object-title" tabindex="-1" {@attach captureObjectInspector}>
       <div class="panel-head"><h2 id="nexus-object-title" class="rune-head">Selected object</h2>
         {#if selectedObjectId}<button class="sheet-dismiss" type="button" onclick={closeObject}>Close object</button>{/if}
@@ -615,10 +657,38 @@
       {:else}<p class="inspector-copy">{transitionNote || "Select a retained request to inspect correlation."}</p>{/if}
     </section>
   </aside>
+    </div>
+    {#if !snapshot && area.id !== "board" && area.id !== "transitions"}
+      <p class="nexus-empty" role="status">{loading ? "Reading the Nexus snapshot…" : "Snapshot unavailable. Refresh to try again."}</p>
+    {/if}
+  </div>
 </div>
 
 <style>
-  .instrument-deck--nexus { display: flex; flex-direction: row; align-items: start; gap: 2rem; padding: 1rem clamp(1rem, 2vw, 2rem); }
+  .nexus-workspace { width: 100%; align-content: start; display: grid; grid-template-columns: 12.5rem minmax(0, 1fr); gap: 1.1rem 1.4rem; min-width: 0; padding: 1rem clamp(.85rem, 2.4vw, 2rem) 2rem; }
+  .nexus-title { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 1rem; border-bottom: 1px solid var(--color-engraving); padding-bottom: .65rem; }
+  .nexus-title :global(.page-header) { border: 0; padding: 0; }
+  .nexus-title .snapshot-bar { gap: .65rem; color: var(--color-ash); font-size: var(--text-xs); }
+  .operations-nav { min-width: 0; padding-right: .75rem; border-right: 1px solid var(--color-engraving); }
+  .operation-group { margin-bottom: 1.15rem; }
+  .operation-group h2 { margin: 0 .45rem .3rem; color: var(--color-ash); font: 600 var(--text-xs)/1.5 var(--font-body); }
+  .operation-group button, .operations-toggle { display: flex; align-items: center; gap: .55rem; width: 100%; min-height: 2.1rem; padding: .34rem .5rem; border: 1px solid transparent; border-radius: var(--radius-glyph); text-align: left; background: transparent; color: var(--color-parchment); font: inherit; font-size: var(--text-sm); cursor: pointer; }
+  .operation-group button:hover { background: var(--color-obsidian-2); }
+  .operation-group button[aria-current="page"] { color: var(--color-bone); background: color-mix(in srgb, var(--color-rune) 12%, var(--color-obsidian)); border-color: color-mix(in srgb, var(--color-rune) 35%, var(--color-engraving)); font-weight: 600; }
+  .operation-mark { display: inline-grid; place-items: center; width: 1.1rem; color: var(--color-rune); }
+  .operations-toggle { display: none; }
+  .operation-page { min-width: 0; }
+  .operation-title { margin: 0 0 1rem; color: var(--color-bone); font: 600 clamp(1.15rem, 2vw, 1.5rem)/1.3 var(--font-body); }
+  .instrument-deck--nexus[hidden], .nexus-side[hidden] { display: none; }
+  @container work-area (max-width: 45rem) {
+    .nexus-workspace { grid-template-columns: minmax(0, 1fr); gap: .75rem; }
+    .operations-nav { border-right: 0; padding: 0; }
+    .operations-toggle { display: flex; justify-content: space-between; border-color: var(--color-control-border); }
+    #operation-groups { display: none; } #operation-groups.expanded { display: grid; grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr)); gap: .5rem; padding: .75rem 0; }
+    .operation-group { margin: 0; }
+  }
+
+  .instrument-deck--nexus { display: flex; flex-direction: row; align-items: start; gap: 2rem; padding: 0; }
   .nexus-main { flex: 1 1 0; min-width: 0; gap: .75rem; }
   .nexus-viewbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .5rem; }
   .nexus-viewbar .section-label { margin: 0; }
@@ -645,7 +715,6 @@
   .panel-head h2 { line-height: 1.35; }
   .sheet-dismiss { display: inline-block; flex-shrink: 0; min-height: 2.25rem; }
   .snapshot-bar { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 1rem 0; border-block: 1px solid var(--color-engraving); color: var(--color-bone); font-size: var(--text-sm); }
-  .snapshot-caption { display: block; color: var(--color-parchment); margin-top: 0.25rem; }
   .refresh-observations { border: 1px solid var(--color-engraving); border-radius: var(--radius-rune); padding: 0.6rem 0.8rem; background: transparent; color: var(--color-rune); min-height: 2.5rem; }
   .refresh-observations:disabled { color: var(--color-ash); cursor: wait; }
   .board-introduction { padding-top: 0.25rem; }
@@ -732,7 +801,7 @@
     .nexus-plan[data-open="true"], .transition-inspector[data-open="true"] { position: static; max-height: none; overflow: visible; box-shadow: none; }
   }
   @container work-area (max-width: 35rem) {
-    .instrument-deck--nexus { padding: 1rem; }
+    .instrument-deck--nexus { padding: 0; }
     .cap { grid-template-columns: minmax(0, 1fr) auto; }
     .cap .key { grid-column: 1 / -1; }
     .cap .chip { grid-column: 1; grid-row: 2; }
@@ -742,7 +811,6 @@
     .transition-ledger code, .transition-ledger time { grid-column: 1; }
   }
   .snapshot-bar { padding:.35rem 0; border:0; background:transparent; }
-  .snapshot-bar > div { display:flex; align-items:baseline; flex-wrap:wrap; gap:.25rem 1rem; }
   .containment { padding:.65rem .8rem; font-size:var(--text-xs); line-height:1.5; }
   @media (max-width: 480px) {
     .snapshot-bar { align-items: flex-start; gap: 0.5rem; }

@@ -229,7 +229,7 @@ describe("shell contextual navigation", () => {
     const view = render(AltarShell, { children });
     const instruments = screen.getByRole("navigation", { name: "Instruments" });
     expect(Array.from(instruments.children, entry => (entry.querySelector("summary") ?? entry).textContent?.replace(/⌄\s*$/, "").trim()))
-      .toEqual(["Bridge", "Atlas", "Loom", "Nexus", "Orb", "Applications"]);
+      .toEqual(["Bridge", "Atlas", "Loom", "Orb", "Nexus"]);
     expect(within(instruments).getByRole("link", { name: label }).getAttribute("aria-current")).toBe(current);
     expect(instruments.querySelectorAll("[aria-current]")).toHaveLength(1);
     view.unmount();
@@ -281,27 +281,24 @@ it("closes the About disclosure on Escape and restores focus to its trigger", as
   view.unmount();
 });
 
-it("opens Applications by hover, pins a click, and keeps menu traversal and Escape reachable", async () => {
+it("opens the catalogue by label and the quick list by chevron or context menu", async () => {
   vi.mocked(getAltarStatus).mockResolvedValue(status(0));
-  const view = render(AltarShell, { children });
-  const trigger = screen.getByText("Applications");
-  const disclosure = trigger.closest("details")!;
-  await fireEvent.pointerEnter(disclosure);
-  expect(disclosure.open).toBe(true);
+  const view=render(AltarShell,{children});
+  const label=screen.getByRole("link",{name:"Applications"});
+  expect(label.getAttribute("href")).toBe("/applications");
+  const trigger=screen.getByRole("button",{name:"Quick applications list"});
+  await fireEvent.pointerEnter(label);
+  expect(screen.queryByRole("navigation",{name:"Quick applications list"})).toBeNull();
   await fireEvent.click(trigger);
-  expect(disclosure.open).toBe(true);
-  const scavenger = screen.getByRole("link", { name: "Scavenger market" });
-  scavenger.focus();
-  await fireEvent.pointerLeave(disclosure);
-  expect(disclosure.open).toBe(true);
-  expect(scavenger.getAttribute("href")).toBe("/scavenger");
-  expect(within(screen.getByRole("navigation", { name: "Applications" })).queryByRole("link", { name: "Canvas" })).toBeNull();
-  await fireEvent.keyDown(window, { key: "Escape" });
-  expect(disclosure.open).toBe(false);
-  expect(document.activeElement).toBe(trigger.closest("summary"));
+  const quick=screen.getByRole("navigation",{name:"Quick applications list"});
+  expect(within(quick).getByRole("link",{name:"Canvas"}).getAttribute("href")).toBe("/canvas");
+  expect(within(quick).queryByRole("link",{name:"Atelier"})).toBeNull();
+  await fireEvent.keyDown(window,{key:"Escape"});
+  expect(document.activeElement).toBe(trigger);
+  await fireEvent.contextMenu(label);
+  expect(screen.getByRole("navigation",{name:"Quick applications list"})).toBeTruthy();
   view.unmount();
 });
-
 
 it("places the persistent Bridge chevron at the workbench edge and removes the masthead toggle", async () => {
   vi.mocked(getAltarStatus).mockResolvedValue(status(0));

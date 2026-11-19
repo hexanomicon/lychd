@@ -13,6 +13,49 @@ changes no lifecycle state.
 Complete [Altar’s startup and local-access steps](index.md#bring-one-intent), then open
 `http://127.0.0.1:7134/nexus` within the same-host browser boundary.
 
+![Nexus displaying its operations directory, routing defaults and local change proposal.](../../assets/altar-design/nexus-built.webp)
+
+![Users and Principals showing the authenticated operator and the installed account boundary.](../../assets/altar-design/nexus-access-built.webp)
+
+This early layout opens on **Installation**. Choose **Orchestration** to inspect the effective queues and priorities. The broader [operations design study](nexus-design.md) uses fictional people and access records.
+
+## Choose an operation
+
+Use the directory on the left to select an area. **Capability board** opens the ownership map,
+list, transition preview and recent observations. **Installation** and **Orchestration** read the
+effective configuration captured when this Vessel started. **Animator fallback** shows the Bridge
+casting and lets you order a candidate list for review. **Animator inventory** groups the served
+capabilities by owner, Coven membership, capability family or connector. Select a model row to see
+its exact capability key, Animator, runtime, registration and declared groups. An icon choice
+changes the glyph for that Animator in the current inventory view.
+
+In **Orchestration**, read the source, queue and priority together. A Bridge default of 70 on the
+runs queue says how an intent is admitted. It does not establish the current queue order.
+**Installation** accepts proposed worker limits. Each exported file includes its operation and
+the values you entered. The running startup generation remains authoritative.
+
+In **Animator fallback**, enter the exact key or choose one of the observed managed capabilities.
+Add candidates in preferred order, then move a row up or down. Review JSON to see the complete
+sequence. Bridge revision 2 currently supports exactly two eligible local Chat declarations with
+tool support. At admission, the highest-weight eligible route wins and the Run retains its exact
+key. A rank in this worksheet cannot trigger an automatic retry or switch a running model.
+[Bridge admission preference](../../sepulcher/aspects/weaver/index.md#prefer-a-ready-route-at-admission).
+
+**Affect routing** prepares a design for a signal producer, receiver and local weighting.
+**Exploration** prepares the question, evidence criterion, probe ceiling and stopping rule for a
+proposed investigation. In **Affect routing**, choose a producer, receiver and influence, then
+**Add signal route**. Re-select that pair to update its weight. The
+[Ecstatic Harmonizer](../transcendence/illumination.md#ananda) proposes a positive baseline.
+Its weight cannot establish a successful outcome. **Exploration** records the evidence that
+would change a decision and stops on saturation or a finite probe ceiling. Edits stay in this page until exported or the page closes. Their JSON
+files are review documents. The Vessel has no endpoint that applies these designs.
+
+**Advertised skills** describes the public Agent Card boundary. **Peer enrollment** describes the
+operator-managed Intercom task binding. Neither has a discoverable directory on this Vessel.
+**Colleagues** identifies the absence of a current paired-presence projection. **Users and Principals** and **Access policy** show
+the authenticated local subject and Sigil. A policy review can describe a proposed group, role and
+time-limited elevation for an exact action and object. Applying that authority belongs to Ward.
+
 ## Read the observation before planning
 
 Choose **Map** to explore supplied capability ownership, or **List** for the equivalent grouped
@@ -132,7 +175,7 @@ Keep the original request identity while reconciling the physical outcome. A con
 unresolved result needs operator recovery; another transition request cannot clear that uncertainty.
 Reconcile a unit/probe mismatch before retrying.
 
-The current surface is an ownership map and grouped list, selected properties, preview, request
+The capability board offers an ownership map and grouped list, selected properties, preview, request
 ticket, and latest-observation inspector. Narrow screens place details in the reading flow.
 It shows no queue order, leases,
 GPU/VRAM/topology/thermal pressure, durable history, configuration editing, provider accounts,

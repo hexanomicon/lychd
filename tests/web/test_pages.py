@@ -24,6 +24,9 @@ if TYPE_CHECKING:
         "/orb",
         "/scavenger",
         "/canvas",
+        "/applications",
+        "/atelier",
+        "/atlas/map?session=selected",
         "/scavenger?observation=00000000-0000-4000-8000-000000000001",
     ],
 )

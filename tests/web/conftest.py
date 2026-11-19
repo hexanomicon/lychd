@@ -228,6 +228,12 @@ class FakeRegistry(AnimatorRegistry):
         """Return no soulstone rune so coven labels fall back to the animator name."""
         return
 
+    def get_connector_name(self, animator_name: str) -> str:  # noqa: ARG002
+        return "FixtureConnector"
+
+    def get_capability(self, key: str) -> None:  # noqa: ARG002
+        return
+
     def ensure_loaded(self) -> None:
         """No-op warm."""
 

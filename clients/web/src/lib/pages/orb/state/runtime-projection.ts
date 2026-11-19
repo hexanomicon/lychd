@@ -53,7 +53,7 @@ export function projectRuntime(snapshot: OrbRuntimeSnapshot | null, received: Re
     const attention = activities.some(event => received.has(activityKey(event))) ? "received" as const : undefined;
     const observedResult = activities.toReversed().find(event => event.kind === "transport_result");
     const startedOnly = transport && !observedResult;
-    nodes.push({ id, label: last.operation, kind: transport ? "call attempt" : "operation", state: startedOnly ? "outcome unknown" : transport ? observedResult!.phase : last.phase,
+    nodes.push({ id, label: last.operation, kind: last.registrant_id === "builtin:reach" ? "Reach operation" : transport ? "call attempt" : "operation", state: startedOnly ? "outcome unknown" : transport ? observedResult!.phase : last.phase,
       detail: `${last.source} → ${last.target} · ${last.attempt_id ?? last.operation_id} · ${last.source_id}`,
       group: runtimeKey(last.source_id, last.source_generation, "components", "group"), count: activities.length, attention, accent: "frost" });
     selections.set(id, { activities });
@@ -104,4 +104,22 @@ export function receivedRuntimeEvents(previous: OrbRuntimeSnapshot | null, next:
       (after.coverage.last_seq ?? 0) >= (before.coverage.last_seq ?? 0) &&
       event.seq > Math.max(before.coverage.last_seq ?? 0, highWater.get(runtimeKey(event.source_id, event.source_generation, "sequence", "cursor")) ?? 0);
   }).map(activityKey));
+}
+
+/** The latest runtime window can attach only to a matching live Run. */
+export function attachRuntime(field: GraphProjection, runtime: ReturnType<typeof projectRuntime>, live: boolean): GraphProjection {
+  const runs = new Map(field.nodes.filter(node => node.kind === "run").map(node => [node.group, node.id]));
+  const edges = [...field.edges, ...runtime.projection.edges];
+  const nodes = runtime.projection.nodes.map(node => {
+    const selection = runtime.selections.get(node.id);
+    if (!live || !selection || !("activities" in selection)) return node;
+    const runIds = new Set(selection.activities.flatMap(item => item.run_id ? [item.run_id] : []));
+    if (runIds.size !== 1) return node;
+    const [runId] = runIds;
+    const source = runs.get(runId);
+    if (!source) return node;
+    edges.push({ id: `${node.id}:run`, source, target: node.id, label: "Observed Run correlation", relation: "contains" });
+    return { ...node, group: runId };
+  });
+  return { identity: field.identity, nodes: [...field.nodes, ...nodes], edges };
 }

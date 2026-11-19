@@ -4,7 +4,7 @@
   import { page } from "$app/state";
   import { resolvePath as resolve } from "$lib/navigation/paths";
   import { navigationId, orbReturnHref, loomOriginHref } from "$lib/navigation/instruments";
-  import { getContext, onDestroy, tick, untrack } from "svelte";
+  import { getContext, onDestroy, tick, untrack, type Snippet } from "svelte";
   import { workCommandKey, type CommandTarget, type CommandResult, type WorkCommandRegistry } from "$lib/shell/state/work-commands";
   import { parseLoomCommand } from "$lib/pages/loom/state/loom-commands";
   import { MediaQuery } from "svelte/reactivity";
@@ -18,9 +18,13 @@
     OrbRunSnapshot
   } from "$lib/api/models";
   import GraphCanvas from "$lib/graph/components/GraphCanvas.svelte";
+  import GraphMapRail from "$lib/graph/components/GraphMapRail.svelte";
+  import PaneGrip from "$lib/components/layout/PaneGrip.svelte";
   import DelegateMark from "$lib/components/shared/DelegateMark.svelte";
   import PageHeader from "$lib/components/shared/PageHeader.svelte";
+  import BlueprintStudio from "../studio/BlueprintStudio.svelte";
   import LoomEvaluation from "./LoomEvaluation.svelte";
+  import LoomAffect from "./LoomAffect.svelte";
   import { createEvaluationWorkspace, getEvaluationWorkspace, hasEvaluationWorkspace, setEvaluationWorkspace } from "$lib/pages/loom/state/evaluation/workspace.svelte";
 
   let {
@@ -30,10 +34,13 @@
     patternId?: string;
     revision?: string;
   } = $props();
+  let designing = $derived(page.url.searchParams.get("studio") === "sdlc");
   const workCommands = getContext<WorkCommandRegistry | undefined>(workCommandKey);
   const evaluationWorkspace = hasEvaluationWorkspace() ? getEvaluationWorkspace() : createEvaluationWorkspace();
   if (!hasEvaluationWorkspace()) setEvaluationWorkspace(evaluationWorkspace);
-  let activeView = $state<"score" | "evaluation">("score");
+  const views = ["score", "evaluation", "affect"] as const;
+  type ViewName = typeof views[number];
+  let activeView = $state<ViewName>("score");
   let unregisterCommands: (() => void) | undefined;
   let focusId = $state<string | null>(null);
   let focusRevision = $state(0);
@@ -43,6 +50,11 @@
   let loading = $state(true);
   let error = $state("");
   const compact = new MediaQuery("(max-width: 48rem)");
+  let mapOpen = $derived(!compact.current);
+  let mapWidth = $state(172);
+  let inspectorOpen = $state(true);
+  let inspectorLeft = $state(false);
+  let inspectorWidth = $state(270);
   let outlineMode = $state<"auto" | "open" | "closed">("auto");
   let outlineOpen = $derived(outlineMode === "auto" ? compact.current : outlineMode === "open");
   let stationOpener: { key: string; element: HTMLElement } | null = null;
@@ -87,7 +99,7 @@
     workCommands?.refresh();
   }
 
-  function selectView(next: "score" | "evaluation") {
+  function selectView(next: ViewName) {
     activeView = next;
     focusRevision++;
     workCommands?.refresh();
@@ -96,7 +108,10 @@
   function tabKey(event: KeyboardEvent) {
     if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
     event.preventDefault();
-    const next = event.key === "Home" ? "score" : event.key === "End" ? "evaluation" : activeView === "score" ? "evaluation" : "score";
+    const index = views.indexOf(activeView);
+    const next = event.key === "Home" ? views[0] : event.key === "End" ? views[views.length - 1] :
+      views[(index + (event.key === "ArrowRight" ? 1 : views.length - 1)) % views.length];
+    if (!next) return;
     selectView(next);
     document.getElementById(`${uid}-${next}-tab`)?.focus();
   }
@@ -117,6 +132,7 @@
 
   async function inspectStation(key: string, opener?: HTMLElement, command?: "inspect" | "focus") {
     if (!nodesByKey.has(key)) return false;
+    inspectorOpen = true;
     const version = loadVersion;
     selectedKey = key;
     stationOpener = opener ? { key, element: opener } : null;
@@ -285,7 +301,7 @@
 <svelte:head><title>{view ? `${view.title} · ${view.pattern_id}@${view.revision} — Loom` : "Loom — LychD"}</title></svelte:head>
 <div class="instrument-deck instrument-deck--loom loom-workspace">
   <PageHeader title="Loom" kicker="Pattern topology">
-    {#snippet actions()}<details class="loom-catalogue">
+    {#snippet actions()}<a class="design-link" href={designing ? resolve("/loom") : resolve("/loom") + "?studio=sdlc"}>{designing ? "Registered Patterns" : "Design workflow"}</a><details class="loom-catalogue">
       <summary>Pattern library <span>{catalogue.length}</span></summary>
       <nav aria-label="Pattern revisions">
         {#each catalogue as pattern (pattern.detail_path)}
@@ -304,6 +320,7 @@
     </details>{/snippet}
   </PageHeader>
 
+  {#if designing}<BlueprintStudio />{:else}
   <section class="loom-reading" aria-label="Registered Pattern" aria-busy={loading}>
     {#if loading}
       <div class="loom-read-state" role="status">
@@ -340,12 +357,15 @@
       <div class="loom-views" role="tablist" aria-label="Loom views">
         <button type="button" role="tab" id={`${uid}-score-tab`} aria-selected={activeView === "score"} aria-controls={`${uid}-score-panel`} tabindex={activeView === "score" ? 0 : -1} onclick={() => selectView("score")} onkeydown={tabKey}>Score</button>
         <button type="button" role="tab" id={`${uid}-evaluation-tab`} aria-selected={activeView === "evaluation"} aria-controls={`${uid}-evaluation-panel`} tabindex={activeView === "evaluation" ? 0 : -1} onclick={() => selectView("evaluation")} onkeydown={tabKey}>Evaluation</button>
+        <button type="button" role="tab" id={`${uid}-affect-tab`} aria-selected={activeView === "affect"} aria-controls={`${uid}-affect-panel`} tabindex={activeView === "affect" ? 0 : -1} onclick={() => selectView("affect")} onkeydown={tabKey}>Affect</button>
       </div>
       {#if activeView === "evaluation"}
         <div role="tabpanel" id={`${uid}-evaluation-panel`} aria-labelledby={`${uid}-evaluation-tab`}><LoomEvaluation score={view} linkedRunId={sourceRun?.run.run_id ?? null} /></div>
+      {:else if activeView === "affect"}
+        <div role="tabpanel" id={`${uid}-affect-panel`} aria-labelledby={`${uid}-affect-tab`}><LoomAffect score={view} stationKey={selectedKey} /></div>
       {:else}
       <div role="tabpanel" id={`${uid}-score-panel`} aria-labelledby={`${uid}-score-tab`}>
-      <div class="loom-score-layout">
+      <div class={["loom-score-layout", { "inspector-left": inspectorLeft, "inspector-folded": !inspectorOpen }]} style:--inspector-width={`${inspectorWidth}px`}>
         <div class="loom-graph-column">
           <section class="loom-canvas-panel" aria-labelledby={`${uid}-graph-title`}>
             <header class="loom-section-head">
@@ -358,9 +378,23 @@
               <button type="button" aria-pressed={canvasLevel === "stations"} onclick={() => setCanvasLevel("stations")}>Stations</button>
               <span class="loom-level-hint">{canvasLevel === "pattern" ? "Zoom in to reveal stations" : "Zoom out to fold the Pattern"}</span>
             </div>
-            <div class="loom-flow-mount">
+            <div class="loom-flow-mount" style:--graph-map-width={mapOpen ? `min(${mapWidth}px,38%)` : "2.15rem"}>
               {#if canvasGraph.nodes.length}
-                <GraphCanvas {focusId} {focusRevision} projection={canvasGraph} selectedId={canvasSelectedId} onselect={selectCanvasNode} onzoom={zoomLevel} label={`${view.title} Pattern graph`} --graph-height="clamp(22rem, 48dvh, 40rem)" />
+                <GraphCanvas {focusId} {focusRevision} projection={canvasGraph} selectedId={canvasSelectedId} onselect={selectCanvasNode} onzoom={zoomLevel} label={`${view.title} Pattern graph`} --graph-height="clamp(22rem, 48dvh, 40rem)" navigatorRight={inspectorLeft}>
+                  {#snippet navigator(minimap: Snippet)}
+                    <GraphMapRail bind:open={mapOpen} bind:width={mapWidth} {minimap} name="Loom Map" right={inspectorLeft}>
+                      <details class="map-stations" open><summary>Declared stations</summary>
+                        {#each graph?.nodes ?? [] as node (node.id)}
+                          <button type="button" aria-label={`Locate ${node.label} on canvas`} aria-pressed={selectedKey === node.id}
+                            onclick={event => {
+                              setCanvasLevel("stations"); focusId = node.id; focusRevision++;
+                              void inspectStation(node.id, event.currentTarget);
+                            }}>{node.label}<small>{node.kind}</small></button>
+                        {/each}
+                      </details>
+                    </GraphMapRail>
+                  {/snippet}
+                </GraphCanvas>
               {:else}
                 <p class="loom-empty-graph">No stations declared in this Pattern revision.</p>
               {/if}
@@ -425,9 +459,18 @@
         </div>
 
         <div class="loom-detail-column">
+          <div class="inspector-seam">
+            <button type="button" aria-label={inspectorOpen ? "Collapse station inspector" : "Expand station inspector"}
+              aria-expanded={inspectorOpen} aria-controls={`${uid}-inspector`} title={inspectorOpen ? "Collapse station inspector" : "Expand station inspector"}
+              onclick={() => inspectorOpen = !inspectorOpen}>{inspectorOpen !== inspectorLeft ? "›" : "‹"}</button>
+          </div>
+          {#if inspectorOpen}
+          <PaneGrip bind:width={inspectorWidth} name="Station inspector width" side={inspectorLeft ? "left" : "right"} min={208} max={480} />
           <aside id={`${uid}-inspector`} class="loom-inspector" aria-label="Selected station">
             {#if selectedNode}
               <span class="loom-eyebrow">Selected station</span>
+              <button class="swap-panels" type="button" title="Swap Map and station inspector" aria-label="Swap Map and station inspector"
+                onclick={() => inspectorLeft = !inspectorLeft}>⇄</button>
               <h3 id={`${uid}-station-title`} tabindex="-1">{selectedNode.label}</h3>
               <div class="loom-inspector-identity">
                 <code>{selectedNode.id}</code><span class="loom-kind">{selectedNode.kind}</span>
@@ -468,6 +511,7 @@
                 </ul>
               </section>
               <p class="loom-inspector-note">Permissions describe what this Pattern allows. Observed movement belongs to a Run in Orb.</p>
+              <button class="loom-back" type="button" onclick={() => { selectView("affect"); document.getElementById(`${uid}-affect-tab`)?.focus(); }}>Inspect affect coverage &amp; Crucible example</button>
               <button class="loom-back" type="button" onclick={returnToStation}>← Back to selected station</button>
             {:else}
               <h3>No station selected</h3>
@@ -489,6 +533,7 @@
               <dt>Source</dt><dd><a href={`/api/v1/loom/source/patterns/${encodeURIComponent(view.pattern_id)}/${encodeURIComponent(view.revision)}${inspectionQuery(view.binding)}`}>Mermaid source →</a></dd>
             </dl>
           </details>
+          {/if}
         </div>
       </div>
       </div>
@@ -501,9 +546,11 @@
       </div>
     {/if}
   </section>
+  {/if}
 </div>
 
 <style>
+  .design-link { display:inline-flex; align-items:center; padding:.55rem .8rem; color:var(--color-rune); border:1px solid var(--color-control-border); border-radius:5px; font-size:13px; }
 .loom-workspace { display:block; min-width:0; }
   .loom-views { display:flex; gap:.5rem; border-bottom:1px solid var(--color-engraving); margin-bottom:1.5rem; }
   .loom-views button { padding:.6rem 1rem; background:transparent; color:var(--color-ash); border:0; border-bottom:2px solid transparent; }
@@ -541,7 +588,20 @@
   .loom-entry-row p { color:var(--color-ash); }
   .loom-entry-row code { margin-left:.45rem; color:var(--color-bone); }
   .loom-context-error { margin-top:.85rem; color:var(--color-parchment); border-left:2px solid var(--color-heat); padding-left:.8rem; font-size:13px; line-height:1.6; }
-  .loom-score-layout { display:grid; grid-template-columns:minmax(0,1fr) 20rem; align-items:start; gap:1.75rem; }
+  .loom-score-layout { display:grid; grid-template-columns:minmax(0,1fr) min(var(--inspector-width),36%); align-items:start; gap:1rem; }
+  .loom-score-layout.inspector-left { grid-template-columns:min(var(--inspector-width),36%) minmax(0,1fr); }
+  .inspector-left .loom-detail-column { grid-column:1; grid-row:1; }
+  .inspector-left .loom-graph-column { grid-column:2; grid-row:1; }
+  .loom-score-layout.inspector-folded { grid-template-columns:minmax(0,1fr) 1.5rem; gap:.5rem; }
+  .loom-score-layout.inspector-folded.inspector-left { grid-template-columns:1.5rem minmax(0,1fr); }
+  .map-stations summary { padding:.35rem 0; color:var(--color-ash); font-size:12px; cursor:pointer; }
+  .map-stations button { display:flex; width:100%; gap:.3rem; align-items:baseline; justify-content:space-between; text-align:left; font-size:12px; color:var(--color-parchment); background:transparent; border:1px solid transparent; padding:.4rem; }
+  .map-stations button[aria-pressed="true"] { color:var(--color-rune); border-color:var(--color-control-border); }
+  .map-stations small { color:var(--color-ash); font-size:10px; }
+  .inspector-seam { position:absolute; z-index:6; top:8rem; inset-inline-start:-1rem; }
+  .inspector-seam button,.swap-panels { border:1px solid var(--color-control-border); border-radius:4px; padding:.35rem; background:var(--color-obsidian); color:var(--color-bone); }
+  .inspector-left .inspector-seam { inset-inline:auto -1rem; }
+  .swap-panels { float:inline-end; }
   .loom-graph-column,.loom-detail-column { display:grid; gap:1.25rem; }
   .loom-canvas-panel,.loom-outline,.loom-inspector,.loom-source { min-width:0; border:0; border-radius:0; background:transparent; }
   .loom-canvas-panel { overflow:hidden; background:#000; }
@@ -577,7 +637,7 @@
   .loom-successors ul { display:flex; flex-wrap:wrap; gap:.4rem 1rem; list-style:none; padding:0; }
   .loom-successors li { display:flex; flex-wrap:wrap; align-items:baseline; gap:.4rem; }
   .loom-loop { display:inline-block; color:var(--color-ash); font-size:11px; border:1px solid var(--color-engraving); border-radius:3px; padding:.1rem .35rem; }
-  .loom-detail-column { padding-inline-start:1.4rem; border-inline-start:1px solid var(--color-engraving); }
+  .loom-detail-column { position:relative; min-height:16rem; padding-inline-start:1rem; border-inline-start:1px solid var(--color-engraving); }
   .loom-inspector { padding:0; }
   .loom-inspector h3 { margin:.6rem 0 .8rem; color:var(--color-bone); font:600 1.2rem/1.3 var(--font-body); letter-spacing:-.025em; scroll-margin-top:1rem; }
   .loom-inspector-identity { display:flex; align-items:center; flex-wrap:wrap; gap:.5rem; margin-bottom:1.25rem; font-size:12px; }
@@ -605,8 +665,13 @@
   .loom-read-state .loom-button { margin-top:1.25rem; }
   .loom-empty-score { padding:1.25rem 0; color:var(--color-parchment); }
   @container work-area (max-width:42rem) { .loom-identity { grid-template-columns:minmax(0,1fr); gap:.65rem; } .loom-identity :is(.loom-title-row,.loom-exact-identity,.loom-description,.loom-entry-row) { grid-column:1; grid-row:auto; justify-content:flex-start; } }
-  @media(max-width:65rem) { .loom-score-layout { grid-template-columns:minmax(0,1fr); } .loom-detail-column { grid-template-columns:minmax(0,1.5fr) minmax(0,1fr); align-items:start; padding-inline-start:0; border-inline-start:0; border-top:1px solid var(--color-engraving); padding-top:1rem; } }
+
   @media(max-width:48rem) { .loom-catalogue nav { right:auto; left:0; } .loom-graph-column { display:flex; flex-direction:column; } .loom-outline { order:-1; } .loom-detail-column { grid-template-columns:minmax(0,1fr); } .loom-outline > summary span { float:none; display:block; margin:.35rem 0 0; } .loom-station { padding-inline:.65rem; } .loom-station-tags { max-width:30%; } .loom-level-hint { flex-basis:100%; margin-left:0; } }
-  @container work-area (max-width:65rem) { .loom-score-layout { grid-template-columns:minmax(0,1fr); } .loom-detail-column { grid-template-columns:minmax(0,1.5fr) minmax(0,1fr); align-items:start; padding-inline-start:0; border-inline-start:0; border-top:1px solid var(--color-engraving); padding-top:1rem; } }
+  @container work-area (max-width:42rem) {
+    .loom-score-layout,.loom-score-layout.inspector-left,.loom-score-layout.inspector-folded { grid-template-columns:minmax(0,1fr); }
+    .loom-score-layout :is(.loom-detail-column,.loom-graph-column) { grid-column:1; grid-row:auto; }
+    .loom-detail-column { min-height:2rem; padding:1rem 0 0; border:0; border-top:1px solid var(--color-engraving); }
+    .inspector-seam,.inspector-left .inspector-seam { top:.1rem; inset-inline:.1rem auto; }
+  }
   @container work-area (max-width:48rem) { .loom-catalogue nav { right:auto; left:0; width:min(25rem,calc(100cqw - 2rem)); } .loom-graph-column { display:flex; flex-direction:column; } .loom-outline { order:-1; } .loom-detail-column { grid-template-columns:minmax(0,1fr); } .loom-outline > summary span { float:none; display:block; margin:.35rem 0 0; } .loom-station { padding-inline:.65rem; } .loom-station-tags { max-width:30%; } .loom-level-hint { flex-basis:100%; margin-left:0; } }
 </style>

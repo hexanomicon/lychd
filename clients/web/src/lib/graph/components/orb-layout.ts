@@ -79,7 +79,7 @@ export function layoutOrbProjection(projection: GraphProjection, memory: OrbLayo
     groups.set(group, members);
   }
   for (const [group, members] of groups) {
-    const anchor = group === "animators" ? { x: -350, y: -420 } : islandAnchor(group, memory);
+    const anchor = islandAnchor(group, memory);
     const occupied = members.flatMap(node => memory.positions.has(node.id) ? [memory.positions.get(node.id)!] : []);
     // Stable semantic sorting only assigns slots to new identities. Existing identities never move.
     for (const node of members.toSorted((a, b) => Number(b.kind === "run") - Number(a.kind === "run") || a.id.localeCompare(b.id))) {
@@ -87,8 +87,7 @@ export function layoutOrbProjection(projection: GraphProjection, memory: OrbLayo
       if (!point) {
         const slot = memory.slots.get(group) ?? 0;
         memory.slots.set(group, slot + 1);
-        if (group === "animators") point = { x: anchor.x, y: anchor.y + slot * 128 };
-        else if (node.kind === "run") point = { ...anchor };
+        if (node.kind === "run") point = { ...anchor };
         else {
           const knownMembers = (node.members ?? []).flatMap(id => memory.positions.has(id) ? [memory.positions.get(id)!] : []);
           if (knownMembers.length) point = {

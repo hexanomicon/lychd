@@ -95,6 +95,34 @@ afterEach(() => {
 });
 
 describe("Orb evidence focus", () => {
+  it("binds a local emotion and repair finding to a recorded event, respects rewind, and clears it when leaving the Run", async () => {
+    const event = { ...snapshot.evidence[0]!, seq: 2, event_id: "event-b", summary: "Second observation", occurrence_id: "attempt-b" };
+    vi.mocked(getOrbRun).mockResolvedValue({ ...snapshot, ledger_head_seq: 2, page_end_seq: 2, evidence: [...snapshot.evidence, event] });
+    const view = render(OrbView, { runId: "run-a" });
+    const details = (await screen.findByText("Affect at the cursor", { exact: false })).closest("details")!;
+    await fireEvent.click(details.querySelector("summary")!);
+    const panel = within(details);
+    await fireEvent.click(await panel.findByRole("button", { name: "Appraise this record" }));
+    await fireEvent.change(panel.getByLabelText("Your response"), { target: { value: "Concern" } });
+    await fireEvent.change(panel.getByLabelText("Evidence gain"), { target: { value: "Conflicting evidence" } });
+    await fireEvent.change(panel.getByLabelText("Finding for the evidence ledger"), { target: { value: "Suspected mistake" } });
+    await fireEvent.change(panel.getByLabelText("Suggested follow-up"), { target: { value: "Request owner review" } });
+    await fireEvent.input(panel.getByLabelText("Why this follow-up?"), { target: { value: "Compare the missing receipt with attempt B." } });
+    await fireEvent.click(panel.getByRole("button", { name: "Save local appraisal" }));
+    expect(panel.getByText("Compare the missing receipt with attempt B.")).toBeTruthy();
+    expect(panel.getByRole("button", { name: "Inspect #2" })).toBeTruthy();
+    expect(panel.getByText("attempt-b")).toBeTruthy();
+    await fireEvent.click(screen.getByRole("button", { name: "Previous record" }));
+    expect(panel.queryByText("Compare the missing receipt with attempt B.")).toBeNull();
+    expect(panel.queryByRole("button", { name: "Inspect #2" })).toBeNull();
+    await fireEvent.click(screen.getByRole("button", { name: "Next record" }));
+    expect(panel.getByText("Compare the missing receipt with attempt B.")).toBeTruthy();
+    vi.mocked(getOrbRun).mockResolvedValue({ ...snapshot, run: { ...snapshot.run, run_id: "run-b" } });
+    await view.rerender({ runId: "run-b" });
+    await screen.findByText("run-b");
+    expect(screen.queryByText("Compare the missing receipt with attempt B.")).toBeNull();
+    view.unmount();
+  });
   it("links only a selected consent record to its exact Bridge request and origin event", async () => {
     page.url.search = "?event=event-consent";
     const record = { ...snapshot.evidence[0]!, event_id: "event-consent", kind: "consent", consent_id: "consent-old", summary: "Consent wait recorded." };

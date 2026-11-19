@@ -6,7 +6,7 @@ import { createNexusMap } from "$lib/pages/nexus/state/map";
 import NexusMap from "./NexusMap.svelte";
 
 function row(capability_key: string): NexusCovenRow {
-  return { animator_name: "animator-a", capability_key, checked_at: null, dedicated: false, family: "chat", health: "ready", is_active: true,
+  return { animator_name: "animator-a", capability_key, checked_at: null, groups: [], dedicated: false, family: "chat", health: "ready", is_active: true,
     model_id: "model-a", persistent_resident: false, reason: null, runtime: "local", state: "active", warm: true };
 }
 

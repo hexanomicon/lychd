@@ -70,6 +70,9 @@ class NexusCovenRow:
     dedicated: bool
     persistent_resident: bool
     registrant_id: str | None = None
+    groups: tuple[str, ...] = ()
+    supports_tools: bool | None = None
+    connector: str | None = None
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -160,8 +163,15 @@ def build_nexus_board(orchestrator: OrchestratorManager, registry: AnimatorRegis
     portals: list[NexusCovenRow] = []
 
     for status in orchestrator.list_capability_statuses():
+        portal = status["source_kind"] == "portal"
+        stone = None if portal else registry.get_soulstone_rune(str(status["animator_name"]))
+        key = str(status["capability_key"])
+        spec = registry.get_capability(key)
         row = NexusCovenRow(
-            capability_key=str(status["capability_key"]),
+            groups=stone.groups if stone else (),
+            supports_tools=spec.supports_tools if spec else None,
+            connector=registry.get_connector_name(str(status["animator_name"])),
+            capability_key=key,
             animator_name=str(status["animator_name"]),
             family=str(status["family"]),
             runtime=str(status["runtime"]),
@@ -176,21 +186,13 @@ def build_nexus_board(orchestrator: OrchestratorManager, registry: AnimatorRegis
             dedicated=bool(status["dedicated"]),
             persistent_resident=bool(status["persistent_resident"]),
         )
-        if status["source_kind"] == "portal":
+        if portal:
             portals.append(row)
             continue
-        grouped.setdefault(_coven_name(registry, row.animator_name), []).append(row)
+        grouped.setdefault(row.groups[0] if row.groups else row.animator_name, []).append(row)
 
     covens = tuple((name, tuple(rows)) for name, rows in sorted(grouped.items(), key=lambda item: item[0]))
     return NexusBoard(covens=covens, portals=tuple(portals))
-
-
-def _coven_name(registry: AnimatorRegistry, animator_name: str) -> str:
-    """Resolve an animator's coven label (its first group), falling back to its name."""
-    soulstone = registry.get_soulstone_rune(animator_name)
-    if soulstone is not None and soulstone.groups:
-        return soulstone.groups[0]
-    return animator_name
 
 
 def build_loom_view(workflow: Workflow, *, highlight: Any | None = None) -> LoomView:

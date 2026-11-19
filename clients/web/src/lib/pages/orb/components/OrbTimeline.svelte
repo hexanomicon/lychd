@@ -1,13 +1,15 @@
 <script lang="ts">
+  import { stationDurations, durationLabel } from "../state/orb-evidence";
   import { tick, untrack } from "svelte";
   import { FIELD_HISTORY_WINDOWS, fieldFrameAt, type FieldFrame } from "$lib/pages/orb/state/field-history";
 
   let {
-    frames, cursorId, onseeking, onlive, onpause, windowSeconds = 90, onwindowchange,
+    frames, cursorId, pinnedFrame, onseeking, onlive, onpause, windowSeconds = 90, onwindowchange,
     controlRevision = 0, connectionLabel = "Transport status unavailable"
   }: {
     frames: readonly FieldFrame[];
     cursorId: number | null;
+    pinnedFrame?: FieldFrame | null;
     onseeking: (id: number) => void;
     onlive: () => void;
     onpause?: () => void;
@@ -20,6 +22,8 @@
   let externalControlRevision = $derived(controlRevision);
   interface PlaybackSession { readonly expectedId: number; cancelled: boolean; readonly pending?: boolean }
   let playback = $state.raw<PlaybackSession | null>(null);
+  let lanesOpen = $state(true);
+  const uid = $props.id();
   interface DragBounds { readonly min: number; readonly max: number; cancelled: boolean }
   let dragBounds = $state.raw<DragBounds | null>(null);
   let dragValue = $state<number | null>(null);
@@ -132,6 +136,9 @@
 <section class="orb-timeline" aria-label="Tab observation history">
   <div class="timeline-heading">
     <div class="title"><strong>Tab history</strong><span>observed updates · cleared on reload</span></div>
+    <button type="button" aria-controls={`${uid}-lanes`} aria-expanded={lanesOpen} onclick={() => lanesOpen = !lanesOpen}>
+      {lanesOpen ? "Fold timeline lanes" : "Show timeline lanes"}
+    </button>
     <div class="transport"><span>Current transport:</span> {connectionLabel}</div>
     <details class="coverage-help"><summary>Coverage</summary><p>Captures contain served projections received in this browser tab. Marks show changed Run metadata, evidence or declared scores at local receipt time. They do not establish producer order, execution duration or a complete trace. Pausing freezes the field while incoming updates continue. Retention is bounded to 300 captures and the selected window from the latest capture; widening it cannot restore discarded captures.</p></details>
   </div>
@@ -153,7 +160,7 @@
     <span>{latest ? clock(latest.observedAt) : "—"}</span>
     <span class="available">{frames.length} capture{frames.length === 1 ? "" : "s"} · {duration(span)} available</span>
   </div>
-  <div class="run-tracks" aria-label="Observed Run updates">
+  <div class="run-tracks" id={`${uid}-lanes`} hidden={!lanesOpen} aria-label="Observed Run updates">
     {#each rows as row (row.id)}
       <div class="run-track">
         <span class="run-label" title={`${row.name} · ${row.id}`}>{row.name} <code>{shortId(row.id)}</code></span>
@@ -162,12 +169,18 @@
             <button type="button" class={["mark", { selected: cursorId === frame.id }]} style:left={`${position(frame.observedAt)}%`} aria-label={`${row.name} · ${shortId(row.id)} · capture ${frame.id} · observed ${clock(frame.observedAt)}`} title={`Capture ${frame.id} · observed ${clock(frame.observedAt)}`} onclick={() => seek(frame.id)}></button>
           {/each}
         </div>
+        <div class="step-durations">{#each stationDurations((selected ?? pinnedFrame)?.lenses.get(row.id)?.snapshot.evidence ?? []) as [station, elapsed] (station)}
+          <small title="Total recorded duration of completed attempts">{station} · {durationLabel(elapsed)}</small>
+        {/each}</div>
       </div>
     {/each}
   </div>
 </section>
 
 <style>
+  .step-durations { grid-column:2; display:flex; flex-wrap:wrap; gap:.7rem; color:var(--color-ash); }
+  .step-durations:empty { display:none; }
+  .run-tracks[hidden] { display:none; }
 .orb-timeline { position:relative; flex:none; min-width:0; padding:.8rem 1rem .6rem; border-block-start:1px solid var(--color-engraving); background:var(--color-obsidian); color:var(--color-parchment); font:12px/1.5 var(--font-body); }
   .timeline-heading,.timeline-controls,.seek-line { display:flex; align-items:center; gap:.75rem; min-width:0; }
   .timeline-heading { margin-block-end:.6rem; }

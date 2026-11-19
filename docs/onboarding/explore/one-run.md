@@ -19,7 +19,7 @@ Bridge request.
 
 1. In **Bridge**, expand the **Circle** beside the synthetic reply labelled **Retained reply**.
    It gives you the Run ID for this turn. The Run status reads **Not retained in this reply**.
-2. Choose **Look into the Orb**. Match the Run ID, read the status and look at the evidence
+2. Open the reply’s **…** menu and choose **View run in Orb**. Match the Run ID, read the status and look at the evidence
    attached to it. In the test, find the assertions on `status` and `summary`. What does
    the sample itself tell you was executed?
 3. Follow **Exact Pattern** into **Loom**. Match the workflow name and revision to the ones

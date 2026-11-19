@@ -18,6 +18,12 @@ class _FakeOrchestrator:
 
 
 class _FakeRegistry:
+    def get_connector_name(self, animator_name: str) -> str:  # noqa: ARG002
+        return "FixtureConnector"
+
+    def get_capability(self, key: str) -> None:  # noqa: ARG002
+        return
+
     def get_soulstone_rune(self, name: str) -> None:
         _ = name
 

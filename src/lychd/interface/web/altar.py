@@ -59,7 +59,18 @@ class AltarController(Controller):
         return Response(content=_ALTAR_MARK, media_type="image/svg+xml")
 
     @get(
-        ["/atlas", "/bridge", "/seances", "/nexus", "/loom", "/orb", "/scavenger", "/canvas"],
+        [
+            "/atlas",
+            "/bridge",
+            "/seances",
+            "/nexus",
+            "/loom",
+            "/orb",
+            "/scavenger",
+            "/canvas",
+            "/applications",
+            "/atelier",
+        ],
         name="altar:instrument",
         guards=[requires_scopes("altar:read")],
         include_in_schema=False,

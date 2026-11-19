@@ -15,6 +15,18 @@ function history(): readonly FieldFrame[] {
 afterEach(() => { cleanup(); vi.useRealTimers(); });
 
 describe("Orb tab timeline", () => {
+  it("folds only the lanes while retaining the cursor and transport controls", async () => {
+    const onseeking = vi.fn();
+    const view = render(OrbTimeline, { frames: history(), cursorId: 2, onseeking, onlive: vi.fn() });
+    await fireEvent.click(screen.getByRole("button", { name: "Fold timeline lanes" }));
+    expect(screen.queryByRole("group", { name: /observed updates/ })).toBeNull();
+    expect(screen.getByRole("slider", { name: "Seek tab observation time" }).getAttribute("aria-valuetext")).toContain("Capture 2");
+    expect(screen.getByRole("button", { name: "Next capture" })).toBeTruthy();
+    await fireEvent.click(screen.getByRole("button", { name: "Show timeline lanes" }));
+    expect(screen.getByRole("group", { name: /observed updates/ })).toBeTruthy();
+    expect(onseeking).not.toHaveBeenCalled();
+    view.unmount();
+  });
   it("labels actual tab coverage, transport and repeated workflow identities", () => {
     const frames = history();
     const duplicate = fixtureRun("run-b").run;

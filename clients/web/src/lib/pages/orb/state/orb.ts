@@ -106,7 +106,6 @@ export function projectOrbField(
   const nodes: GraphNode[] = [];
   const edges: GraphProjection["edges"][number][] = [];
   const selections = new Map<string, OrbFieldSelection>();
-  const animators = new Map<string, { count: number; runs: Set<string>; attention: boolean }>();
   for (const summary of runs) {
     const lens = lenses.get(summary.run_id);
     const run = lens?.snapshot.run ?? summary;
@@ -122,15 +121,13 @@ export function projectOrbField(
     selections.set(header, { runId: run.run_id });
     for (const record of lens?.snapshot.evidence ?? []) {
       if (record.kind !== "dispatch" || !record.animator_name) continue;
-      const name = record.animator_name, id = `animator:${encodeURIComponent(name)}`;
+      const id = prefix(`selection:${record.event_id}`);
       const source = level === "runs" ? header : prefix(orbEvidenceNodeId(record, lens!.pattern));
-      const observation = animators.get(name) ?? { count: 0, runs: new Set<string>(), attention: false };
-      observation.count++; observation.runs.add(run.run_id);
-      observation.attention ||= lens!.snapshot.evidence.at(-1)?.event_id === record.event_id;
-      animators.set(name, observation);
-      if (!selections.has(id)) selections.set(id, { runId: run.run_id, eventId: record.event_id });
-      const edgeId = `${source}:animator:${encodeURIComponent(name)}`;
-      if (!edges.some((edge) => edge.id === edgeId)) edges.push({ id: edgeId, source, target: id, label: "Recorded Animator selection", relation: "selection" });
+      nodes.push({ id, label: record.animator_name, kind: "animator", group: run.run_id,
+        accent: animatorAccent(record.animator_name), detail: [record.capability_family, record.model_id,
+          "Recorded selection · call activity and availability are not supplied"].filter(Boolean).join(" · ") });
+      selections.set(id, { runId: run.run_id, eventId: record.event_id });
+      edges.push({ id: `${id}:selection`, source, target: id, label: "Recorded Animator selection", relation: "selection" });
     }
     if (!lens || !graph || level === "runs") continue;
     for (const node of graph.nodes) {
@@ -143,6 +140,11 @@ export function projectOrbField(
     for (const edge of graph.edges) edges.push({ ...edge, id: prefix(edge.id), source: prefix(edge.source), target: prefix(edge.target) });
     const entry = graph.nodes.find((node) => node.entry) ?? graph.nodes[0];
     if (entry) edges.push({ id: `${header}:membership`, source: header, target: prefix(entry.id), label: "Run lens", relation: "contains" });
+    for (const node of graph.nodes) {
+      if (node !== entry && !graph.edges.some(edge => edge.source === node.id || edge.target === node.id)) {
+        edges.push({ id: `${prefix(node.id)}:run`, source: header, target: prefix(node.id), label: "Run membership", relation: "contains" });
+      }
+    }
     if (level === "stations") continue;
     const occurrences = new Map<string, Evidence[]>();
     for (const record of lens.snapshot.evidence) {
@@ -168,10 +170,5 @@ export function projectOrbField(
     }
 
   }
-  for (const [name, observation] of animators) nodes.push({
-    id: `animator:${encodeURIComponent(name)}`, label: name, kind: "animator", group: "animators",
-    count: observation.count, accent: animatorAccent(name), attention: observation.attention ? "latest" : undefined,
-    detail: `${observation.count} loaded grant${observation.count === 1 ? "" : "s"} across ${observation.runs.size} Run${observation.runs.size === 1 ? "" : "s"} · recorded selection; call activity and availability are not supplied`
-  });
   return { projection: { identity: "orb-field", nodes, edges }, selections };
 }

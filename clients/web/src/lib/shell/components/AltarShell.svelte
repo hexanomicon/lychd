@@ -1,17 +1,18 @@
 <script lang="ts">
   import { page } from "$app/state";
   import { afterNavigate, beforeNavigate, goto } from "$app/navigation";
-  import { asset } from "$app/paths";
   import { resolvePath as resolve } from "$lib/navigation/paths";
   import { onMount, setContext, tick, untrack, type Snippet } from "svelte";
   import MemoryPanel from "./MemoryPanel.svelte";
-  import AppearancePreferences from "./AppearancePreferences.svelte";
+  import AltarRail from "./AltarRail.svelte";
+  import AltarBrand from "./AltarBrand.svelte";
+  import { createApplicationPins, setApplicationPins } from "$lib/navigation/application-pins.svelte";
+  import { studioSession } from "$lib/pages/loom/studio/session";
   import { createEvaluationWorkspace, setEvaluationWorkspace } from "$lib/pages/loom/state/evaluation/workspace.svelte";
   import { createMemoryPanel, setMemoryPanel } from "$lib/memory/panel.svelte";
   import { notesFocusSelection } from "$lib/pages/bridge/state/archive/notes";
   import BridgeDock from "$lib/pages/bridge/components/BridgeDock.svelte";
   import BridgeView from "$lib/pages/bridge/components/BridgeView.svelte";
-  import AltarIcon from "./AltarIcon.svelte";
   import { altarNavigationContext, selectedBridgeHref, type AltarNavigation } from "$lib/navigation/instruments";
 
   import { createSeancesWorkspace, setSeancesWorkspace } from "$lib/seances/workspace.svelte";
@@ -21,9 +22,12 @@
   import { getAltarStatus } from "$lib/api/client";
 
   let { children, offline = false }: { children: Snippet; offline?: boolean } = $props();
+  const applicationPins=setApplicationPins(createApplicationPins());
+  onMount(()=>{applicationPins.load();});
   let connected = $state(false);
   const available = $derived(!offline || connected);
   let dockOpen = $state(true);
+  let dockTool = $state("bridge");
   let narrow = $state(false);
   const bridgeFocused = $derived(
     !!selectedBridgeHref(page.url.pathname, resolve("/bridge")) ||
@@ -49,7 +53,7 @@
   }
   untrack(readMemoryLocation);
   function readBridgeVisibility() {
-    return available && !memory.isOpen && (dockOpen || bridgeFocused) &&
+    return available && !memory.isOpen && ((dockOpen && dockTool === "bridge") || bridgeFocused) &&
       (typeof document === "undefined" || document.visibilityState !== "hidden");
   }
   let workHref = $state(untrack(() => bridgeFocused ? "/orb" : `${page.url.pathname}${page.url.search}`));
@@ -57,20 +61,8 @@
     const path = page.url.pathname;
     if (path.startsWith("/bridge")) return page.url.searchParams.has("notes") ? "Public notes" :
       page.url.searchParams.has("investigation") ? "Public source investigation" : "Conversation workspace";
-    return ({ seances: "Séances", atlas: "Atlas", orb: "Orb", loom: "Loom", nexus: "Nexus", canvas: "Canvas", scavenger: "Scavenger market" } as Record<string, string>)[path.split("/")[1] ?? ""] ?? "Altar";
+    return ({ seances: "Séances", atlas: "Atlas", orb: "Orb", loom: "Loom", nexus: "Nexus", canvas: "Canvas", atelier: "Atelier", applications: "Applications", scavenger: "Scavenger market" } as Record<string, string>)[path.split("/")[1] ?? ""] ?? "Altar";
   });
-  let mastheadHeight = $state(56);
-  function measureMasthead(element: HTMLElement) {
-    const measure = () => { mastheadHeight = Math.ceil(element.getBoundingClientRect().height) || 56; };
-    measure();
-    if (typeof ResizeObserver === "undefined") {
-      window.addEventListener("resize", measure);
-      return () => window.removeEventListener("resize", measure);
-    }
-    const observer = new ResizeObserver(measure);
-    observer.observe(element);
-    return () => observer.disconnect();
-  }
   const initialPath = untrack(() => selectedBridgeHref(page.url.pathname, resolve("/bridge")));
   let bridgeSession = $state<string | undefined>(initialPath ? decodeURIComponent(initialPath.slice("/bridge/".length)) : undefined);
   let bridgeSearch = $state(untrack(() => {
@@ -89,10 +81,11 @@
     navigation.bridgePath = `/bridge/${encodeURIComponent(id)}`;
     bridgeSession = id;
     bridgeSearch = "";
+    dockTool = "bridge";
     dockOpen = true;
   }));
   function guardMaterialUnload(event: BeforeUnloadEvent) {
-    if (!seances.needsUnloadWarning && !evaluationWorkspace.needsUnloadWarning) return;
+    if (!seances.needsUnloadWarning && !evaluationWorkspace.needsUnloadWarning && !studioSession.dirty) return;
     event.preventDefault();
     event.returnValue = "";
   }
@@ -184,62 +177,15 @@
   let attentionFault = "";
   let mounted = false;
 
-  function manageAboutDisclosure(node: HTMLDetailsElement) {
-    let pinned = false;
-    const application = node.classList.contains("application-menu");
-    function dismissOutside(event: MouseEvent) {
-      if (node.open && !event.composedPath().includes(node)) { node.open = false; pinned = false; }
-    }
-
-    function dismissOnEscape(event: KeyboardEvent) {
-      if (event.key !== "Escape" || event.defaultPrevented || !node.open) return;
-      node.open = false;
-      pinned = false;
-      node.querySelector("summary")?.focus();
-      event.preventDefault();
-    }
-
-    function openOnHover() { if (application) node.open = true; }
-    function closeAfterLeave() { if (application && !pinned && !node.contains(document.activeElement)) node.open = false; }
-    function openOnFocus(event: FocusEvent) {
-      if (application && !(event.relatedTarget instanceof Node && node.contains(event.relatedTarget))) node.open = true;
-    }
-    function closeAfterFocus(event: FocusEvent) {
-      if (application && !(event.relatedTarget instanceof Node && node.contains(event.relatedTarget))) { node.open = false; pinned = false; }
-    }
-    function clickDisclosure(event: MouseEvent) {
-      if (!application || !(event.target instanceof Element) || !event.target.closest("summary")) return;
-      event.preventDefault();
-      pinned = !pinned;
-      node.open = pinned;
-    }
-    node.addEventListener("pointerenter", openOnHover);
-    node.addEventListener("pointerleave", closeAfterLeave);
-    node.addEventListener("focusin", openOnFocus);
-    node.addEventListener("focusout", closeAfterFocus);
-    node.addEventListener("click", clickDisclosure);
-    window.addEventListener("click", dismissOutside);
-    window.addEventListener("keydown", dismissOnEscape);
-    return () => {
-      node.removeEventListener("click", clickDisclosure);
-      node.removeEventListener("pointerenter", openOnHover);
-      node.removeEventListener("pointerleave", closeAfterLeave);
-      node.removeEventListener("focusin", openOnFocus);
-      node.removeEventListener("focusout", closeAfterFocus);
-      window.removeEventListener("click", dismissOutside);
-      window.removeEventListener("keydown", dismissOnEscape);
-    };
-  }
-
   const instruments = [
     { slug: "bridge", label: "Bridge", related: "/seances" },
     { slug: "atlas", label: "Atlas", related: "/canvas" },
     { slug: "loom", label: "Loom" },
-    { slug: "nexus", label: "Nexus" },
-    { slug: "orb", label: "Orb" }
+    { slug: "orb", label: "Orb" },
+    { slug: "nexus", label: "Nexus" }
   ] as const;
 
-  function instrumentCurrent(instrument: typeof instruments[number], href: string) {
+  function instrumentCurrent(instrument: typeof instruments[number], href: string): "page" | "location" | undefined {
     const pathname = page.url.pathname;
     if (pathname === href || pathname === `${href}/`) return "page";
     const roots = [resolve(`/${instrument.slug}`)];
@@ -341,61 +287,21 @@
 <svelte:document onvisibilitychange={attentionVisibilityChanged} />
 
 <a inert={memory.isOpen} class="skip-link" href="#altar-main">Skip to instrument</a>
-<header class="topbar" inert={bridgeModal || memory.isOpen} {@attach measureMasthead}>
-  <details class="altar-about" {@attach manageAboutDisclosure}>
-    <summary class="brand" aria-label="About Altar" title="Altar">
-      <img class="mark" src={asset("altar-mark.svg")} width="44" height="44" alt="" />
-    </summary>
-    <div class="altar-about__panel">
-      <h2>About the Altar</h2>
-      <p class="altar-product">LychD · The Altar</p>
-      <p class="altar-about__version" title={__LYCHD_ALTAR_VERSION__}>
-        Altar {__LYCHD_ALTAR_VERSION__.slice(0, 12)}
-      </p>
-      <div class="altar-about__links">
-        <a href={__LYCHD_SOURCE_URL__} rel="noreferrer">{__LYCHD_SOURCE_LABEL__}</a>
-      </div>
-    </div>
-  </details>
-
-  <nav class="instruments" aria-label="Instruments">
-    {#each instruments as instrument (instrument.slug)}
-      {@const href = resolve(instrument.slug === "bridge" ? navigation.bridgePath : `/${instrument.slug}`)}
-      <a {href} aria-current={instrumentCurrent(instrument, href)}>
-        <AltarIcon name={instrument.slug} /><span>{instrument.label}</span>
-      </a>
-    {/each}
-    <details class="application-menu" {@attach manageAboutDisclosure}>
-      <summary><AltarIcon name="applications" /><span>Applications</span><span aria-hidden="true">⌄</span></summary>
-      <nav aria-label="Applications">
-        <a href={resolve("/scavenger")} aria-current={page.url.pathname === resolve("/scavenger") ? "page" : undefined}><AltarIcon name="scavenger" />Scavenger market</a>
-      </nav>
-    </details>
-  </nav>
-
-  <div class="appearance-control"><AppearancePreferences /></div>
-  <div class="spacer"></div>
-  {#if available}
-  <a
-    class="sigil"
-    data-state={pending === null ? "unknown" : pending > 0 ? "lit" : "dormant"}
-    href={resolve("/bridge?attention=pending")}
-  >
-    ⬡ {pending === null ? "Consent status unknown" : pending > 0 ? `${pending} awaiting` : "Consent clear"}
-  </a>
-  {:else}<span class="offline-status">Offline · consent unavailable</span>{/if}
-  <span class="sigil-identity" title="Fixed local authority context; not authentication">
-    Local Sigil · <b>Magus</b>
-  </span>
-</header>
-
-<div class="altar-workbench" style:height={`calc(100dvh - ${mastheadHeight}px)`}>
+<div class="altar-frame">
+<AltarRail instruments={instruments.map(item => {
+  const href=resolve(item.slug==="bridge" ? navigation.bridgePath : `/${item.slug}`);
+  return {...item,href,current:instrumentCurrent(item,href)};
+})} pathname={page.url.pathname} {available} {pending} suspended={bridgeModal || memory.isOpen}>
+  {#snippet brand()}<AltarBrand />{/snippet}
+</AltarRail>
+<div class="altar-workbench">
   <main id={bridgeFocused ? undefined : "altar-main"} tabindex="-1" hidden={bridgeFocused} inert={bridgeModal || memory.isOpen}>
     {@render children()}
   </main>
-  <BridgeDock suspended={memory.isOpen} bind:open={dockOpen} bind:narrow focused={bridgeFocused} focusHref={resolve(resolvedBridgeSession ? seanceHref(resolvedBridgeSession) : "/seances")} focusLabel={resolvedBridgeSession ? "Open Séance" : "Browse séances"} browseHref={resolve("/seances")} {workHref} {available} {viewing} onconnect={connect} onexpand={toggleBridge} onsuspend={suspendBridgeVoice}>
-    {#if available}<BridgeView bind:this={bridgeView} visible={!memory.isOpen && (dockOpen || bridgeFocused)} isVisible={readBridgeVisibility} embedded={!bridgeFocused} sessionId={bridgeSession} search={bridgeSearch} onNavigate={selectConversation} onSessionResolved={(id) => { resolvedBridgeSession = id; }} />{/if}
+  <BridgeDock bind:tool={dockTool} suspended={memory.isOpen} bind:open={dockOpen} bind:narrow focused={bridgeFocused} focusHref={resolve(resolvedBridgeSession ? seanceHref(resolvedBridgeSession) : "/seances")} focusLabel={resolvedBridgeSession ? "Open Séance" : "Browse séances"} browseHref={resolve("/seances")} {workHref} {available} {viewing} onconnect={connect} onexpand={toggleBridge} onsuspend={suspendBridgeVoice}>
+    {#if available}<BridgeView bind:this={bridgeView} visible={!memory.isOpen && ((dockOpen && dockTool === "bridge") || bridgeFocused)} isVisible={readBridgeVisibility} embedded={!bridgeFocused} sessionId={bridgeSession} search={bridgeSearch} onNavigate={selectConversation} onSessionResolved={(id) => { resolvedBridgeSession = id; }} />{/if}
   </BridgeDock>
+</div>
 </div>
 
 <MemoryPanel state={memory} work={seances} liveSession={resolvedBridgeSession} />
@@ -410,47 +316,8 @@
 </div>
 
 <style>
-  .topbar { height: auto; min-height: 4rem; padding: .5rem 1.25rem; gap: .75rem; flex: 0 0 auto; flex-wrap: wrap; background: var(--color-obsidian); border: 0; border-bottom: 1px solid var(--color-engraving); border-image: none; box-shadow: none; backdrop-filter: none; position: relative; z-index: 40; }
-  .brand { justify-content: center; width: 3rem; min-height: 3rem; padding: .125rem; }
-  .brand:hover { background: var(--color-tertiary); }
-  .altar-product { margin-top: .35rem; color: var(--color-parchment); font-size: var(--text-sm); }
-  nav.instruments { height: auto; align-self: center; flex-wrap: wrap; gap: .25rem; margin-left: .5rem; overflow: visible; }
-  nav.instruments > a { gap: .6rem; padding: .65rem .85rem; letter-spacing: 0; text-transform: none; color: var(--color-ash); min-height: 2.75rem; border: 1px solid transparent; border-radius: var(--radius-rune); }
-  nav.instruments > a :global(svg), .application-menu :global(svg) { color: currentColor; flex: 0 0 auto; }
-  nav.instruments > a:hover { color: var(--color-bone); background: var(--color-obsidian-2); }
-  nav.instruments > a[aria-current] { color: var(--color-accent); text-shadow: none; border-color: color-mix(in srgb,var(--color-accent) 25%,var(--color-engraving)); background: color-mix(in srgb,var(--color-accent) 10%,var(--color-obsidian)); }
-  .topbar .spacer { flex: 1 1 0; }
-  .appearance-control { align-self: center; flex: 0 0 auto; }
-  .sigil { border-radius: var(--radius-rune); padding: .55rem .7rem; box-shadow: none; animation: none; border-color: transparent; }
-  .sigil-identity { display: none; }
-  .offline-status { color: var(--color-ash); font-size: var(--text-xs); }
-  .application-menu { position: relative; flex-shrink: 0; align-self: center; }
-  .application-menu > summary { display: flex; align-items: center; gap: .5rem; list-style: none; min-height: 2.75rem; padding: .5rem .65rem; border-radius:var(--radius-rune); color: var(--color-ash); cursor: pointer; font-size: var(--text-xs); }
-  .application-menu > summary:hover { color:var(--color-bone); background:var(--color-obsidian-2); }
-  .application-menu > summary::-webkit-details-marker { display: none; }
-  .application-menu nav { position: absolute; inset-block-start: 100%; inset-inline-start: -.5rem; z-index: 50; min-width: 14rem; padding: .35rem; background: var(--color-tertiary); border: 1px solid var(--color-tertiary-edge); border-radius: var(--radius-glyph); }
-  .application-menu a { display: flex; align-items: center; gap: .75rem; min-height: 2.75rem; padding: .65rem; font-size: var(--text-sm); letter-spacing: 0; text-transform: none; text-decoration: none; color: var(--color-bone); }
-  .application-menu a:hover, .application-menu a[aria-current="page"] { background: color-mix(in srgb, var(--color-rune) 10%, var(--color-tertiary)); }
-  .altar-workbench { position: relative; display: flex; flex: 0 0 auto; min-width: 0; min-height: 0; overflow: hidden; background: var(--color-void); }
-  #altar-main { flex: 1 1 0; min-width: 0; min-height: 0; overflow: auto; background: var(--color-void); container-type: inline-size; container-name: work-area; }
-  #altar-main::before, #altar-main::after { display: none; }
-  main[hidden] { display: none; }
-  :focus-visible { outline: 2px solid var(--color-rune); outline-offset: 3px; }
-  @media (max-width: 75rem) { .topbar { gap: .65rem; padding-inline: .75rem; } nav.instruments > a { padding-inline: .5rem; gap: .4rem; } .offline-status { display: none; } }
-  @media (max-width: 56rem) {
-    .topbar { display: flex; flex-wrap: wrap; gap: .25rem .5rem; padding: .25rem .5rem .5rem; }
-    .altar-about { order: 0; }
-    .appearance-control { order: 2; }
-    .sigil { order: 3; margin: 0; max-width: 9rem; font-size: var(--text-xs); line-height: 1.3; white-space: normal; }
-    .topbar .spacer { display: none; }
-    nav.instruments { order: 4; flex: 1 0 100%; margin: 0; justify-content: center; }
-    nav.instruments > a, .application-menu { flex: 1; }
-    nav.instruments > a, .application-menu > summary { justify-content: center; }
-    .application-menu nav { inset-inline-start: auto; inset-inline-end: 0; }
-  }
-  @media (max-width: 36rem) {
-    nav.instruments { gap: 0; }
-    nav.instruments > a, .application-menu > summary { flex-direction: column; gap: .2rem; padding: .4rem .2rem; font-size: var(--text-xs); }
-    .application-menu > summary > span[aria-hidden] { display: none; }
-  }
+  .altar-frame{display:flex;height:100dvh;min-height:0;min-width:0;background:var(--color-void)}
+  .altar-workbench{position:relative;display:flex;flex:1;min-width:0;min-height:0;overflow:hidden;background:var(--color-void)}
+  #altar-main{flex:1 1 0;min-width:0;min-height:0;overflow:auto;background:var(--color-void);container-type:inline-size;container-name:work-area}
+  #altar-main::before,#altar-main::after{display:none}main[hidden]{display:none}
 </style>

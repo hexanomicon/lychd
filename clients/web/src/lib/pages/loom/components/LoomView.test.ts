@@ -124,6 +124,29 @@ it("offers keyboard-operable Score and Evaluation tabs without automatically rea
   view.unmount();
 });
 
+it("exposes revision coverage separately from a reversible affect and Crucible example", async () => {
+  vi.mocked(getLoomPatternRevision).mockResolvedValue({ ...projection,
+    nodes: [{ key: "start", label: "Start", kind: "step" }, { key: "finish", label: "Finish", kind: "terminal" }],
+    edges: [{ key: "next", source: "start", target: "finish", relation: "permits" }]
+  });
+  const view = render(LoomView, { patternId: "bridge_chat", revision: "1" });
+  await fireEvent.click(await screen.findByRole("button", { name: "Inspect affect coverage & Crucible example" }));
+  expect(screen.getByRole("tab", { name: "Affect" }).getAttribute("aria-selected")).toBe("true");
+  expect(screen.getByLabelText("Station definition")).toBeTruthy();
+  const node = screen.getByLabelText("Inspect a worked node");
+  await fireEvent.change(node, { target: { value: "reconcile" } });
+  expect(screen.getByRole("heading", { name: "Reconciler" })).toBeTruthy();
+  await fireEvent.change(node, { target: { value: "edit" } });
+  expect(screen.getByLabelText("Illustrative file diff").textContent).toContain("confirmed_failed");
+  expect(screen.getByText("Read the receipt once using the new key.", { exact: false })).toBeTruthy();
+  await fireEvent.change(screen.getByLabelText("Lookup permission"), { target: { value: "needs_review" } });
+  expect(screen.getByText("Ask whether the store owner", { exact: false })).toBeTruthy();
+  await fireEvent.change(screen.getByLabelText("Remaining allowance"), { target: { value: "spent" } });
+  expect(screen.getByText("The parent allowance is spent.", { exact: false })).toBeTruthy();
+  expect(getOrbRun).not.toHaveBeenCalled();
+  view.unmount();
+});
+
 it("explains when a deep-linked Pattern revision is unavailable", async () => {
   vi.mocked(getLoomPatternRevision).mockRejectedValue(
     new Error("No such Pattern revision is woven.")

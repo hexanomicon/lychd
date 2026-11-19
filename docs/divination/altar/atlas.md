@@ -24,6 +24,8 @@ remain the designed direction.
 software, firmware, and services: prefer more openness, retain exact evidence and unknowns, and
 distinguish understanding from the ability to modify, replace, or recover a component.
 
+![The compiled Atlas séance map, its left navigator, source relationships and object detail.](../../assets/altar-design/atlas-built.webp)
+
 ## Put an undertaking on the map
 
 Open **Atlas** in the [Altar](index.md#bring-one-intent) masthead. **Open Canvas →** enters the board
@@ -157,13 +159,39 @@ additional delivered controls.
 
 ## The shared memory map
 
-In the future design, Atlas opens on retained knowledge and its sources. Recall could show a
+Open **Knowledge map** from Atlas, or **Open séance map** from the conversation tools in
+Bridge. Choose a Project or séance from the loaded catalogue. A Project maps its concerns,
+decisions, assessments and individual activity references. Follow a séance reference into
+that conversation to inspect its retained turns. Directly opening a séance reads that conversation
+alone. Opening the two scopes together requires a saved Project reference to the séance.
+
+Drag the field to pan, scroll or use the zoom buttons to change scale, and drag the viewport
+in the left minimap to move across the field. Select any object to inspect its source, typed
+relationships, and available destinations. **Focus** centers the selected object. **Fit graph**
+returns to the whole slice. The **List** view exposes the same objects and relationships by
+keyboard. Use the scope links to return to the Project or the catalogue.
+
+A source turn shows its retained wording, role, observation time and any supplied Run. **Return
+to turn** asks Bridge to match the exact quotation in a fresh read. The link carries a digest
+of the source fields, with the séance identity in its path. Bridge reports when it cannot find
+a single match. Working material appears beside its matching source only while that selection
+is available in this tab. For a linked Run, **Inspect Recall** reads its Archive receipt on
+request and shows any public-source revisions the receipt selected. Receipt provenance and
+document-local quotations retain their different origins and lifetimes.
+
+The wider design opens Atlas on retained knowledge and its sources. Recall could show a
 retained decision and its nearby relationships, including an earlier decision it superseded.
 A Project is one slice of that map. A finding can appear in several slices through the same source
 reference. A map of requirements, use cases, exact ADR revisions, and acceptance evidence could
 show where a claim came from, what addresses it, and which judgments remain open. A
-[séance map](seances.md#map-a-seance) uses the same identities inside Bridge, within that séance's
-scope and access.
+[séance map](seances.md#map-a-seance) opens here with the originating conversation selected.
+Its source citations return to exact turns in Bridge. Widening the scope in Atlas preserves
+the same identities and access boundaries.
+
+[![Early Atlas séance-map design. The selected Shell 2 relationship sits beside the source question and its Return to turn link.](../../assets/altar-design/atlas-source-turn.webp){ loading="lazy" }](../../assets/altar-design/atlas-source-turn.webp)
+
+In this sketch, **Return to turn** opens the Bridge question “Where’s the second shell?”
+so you can read the exchange that the map cites.
 
 Canvas is the authoring surface inside Atlas. A reader can sketch an idea before asserting a
 relationship. A typed relation needs a deliberate, attributable action and exact source references.
@@ -171,8 +199,8 @@ A reader could review a finding from a séance, retain it with its source, then 
 later Recall result to a conversation. [Archive](../../adr/27-memory.md#recall) governs admission,
 correction, and Recall. [Context](../../adr/21-context.md#explicit-archive-projection) governs what
 enters an Invocation. [Memory](memory.md#recall-and-inspect-evidence) shows how to inspect
-Recall evidence today. Today's Atlas provides project records and board access. The shared map
-and generalized memory curation remain future work.
+Recall evidence today. Cross-project ontology authoring, private-source discovery, and
+generalized memory curation remain future work.
 
 ## Concerns before a Project
 

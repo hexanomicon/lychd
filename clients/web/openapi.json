@@ -4316,6 +4316,105 @@
         "title": "NexusBoard",
         "type": "object"
       },
+      "NexusConfiguration": {
+        "additionalProperties": false,
+        "properties": {
+          "actuator": {
+            "type": "string"
+          },
+          "background_concurrency": {
+            "type": "integer"
+          },
+          "bridge_capability_key": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "bridge_preference": {
+            "items": {
+              "$ref": "#/components/schemas/NexusPreferenceRoute"
+            },
+            "type": "array"
+          },
+          "bridge_revision": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "builtin_extensions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "crypt_extensions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "database_profile": {
+            "type": "string"
+          },
+          "drain_timeout_s": {
+            "type": "number"
+          },
+          "hard_swap_priority": {
+            "type": "integer"
+          },
+          "interactive_concurrency": {
+            "type": "integer"
+          },
+          "planning_timeout_s": {
+            "type": "number"
+          },
+          "routing": {
+            "items": {
+              "$ref": "#/components/schemas/NexusQueueRule"
+            },
+            "type": "array"
+          },
+          "server_port": {
+            "type": "integer"
+          },
+          "switching_policy": {
+            "type": "string"
+          },
+          "warmup_timeout_s": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "actuator",
+          "background_concurrency",
+          "bridge_capability_key",
+          "bridge_preference",
+          "bridge_revision",
+          "builtin_extensions",
+          "crypt_extensions",
+          "database_profile",
+          "drain_timeout_s",
+          "hard_swap_priority",
+          "interactive_concurrency",
+          "planning_timeout_s",
+          "routing",
+          "server_port",
+          "switching_policy",
+          "warmup_timeout_s"
+        ],
+        "title": "NexusConfiguration",
+        "type": "object"
+      },
       "NexusCovenRow": {
         "properties": {
           "animator_name": {
@@ -4335,11 +4434,28 @@
               }
             ]
           },
+          "connector": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "dedicated": {
             "type": "boolean"
           },
           "family": {
             "type": "string"
+          },
+          "groups": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
           },
           "health": {
             "type": "string"
@@ -4387,6 +4503,16 @@
             ],
             "type": "string"
           },
+          "supports_tools": {
+            "oneOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "warm": {
             "type": "boolean"
           }
@@ -4409,11 +4535,83 @@
         "title": "NexusCovenRow",
         "type": "object"
       },
+      "NexusOperator": {
+        "additionalProperties": false,
+        "properties": {
+          "scopes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "sigil": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "scopes",
+          "sigil",
+          "subject"
+        ],
+        "title": "NexusOperator",
+        "type": "object"
+      },
+      "NexusPreferenceRoute": {
+        "additionalProperties": false,
+        "properties": {
+          "capability_key": {
+            "type": "string"
+          },
+          "weight": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "capability_key",
+          "weight"
+        ],
+        "title": "NexusPreferenceRoute",
+        "type": "object"
+      },
+      "NexusQueueRule": {
+        "additionalProperties": false,
+        "properties": {
+          "priority": {
+            "type": "integer"
+          },
+          "queue": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "priority",
+          "queue",
+          "source"
+        ],
+        "title": "NexusQueueRule",
+        "type": "object"
+      },
       "NexusSnapshot": {
         "additionalProperties": false,
         "properties": {
           "board": {
             "$ref": "#/components/schemas/NexusBoard"
+          },
+          "configuration": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/NexusConfiguration"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "containment_reason": {
             "oneOf": [
@@ -4430,6 +4628,16 @@
               "$ref": "#/components/schemas/DelegatedRuntimeObservation"
             },
             "type": "array"
+          },
+          "operator": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/NexusOperator"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "snapshot_at": {
             "format": "date-time",
@@ -13315,7 +13523,15 @@
               }
             },
             "description": "Request fulfilled, document follows",
-            "headers": {}
+            "headers": {
+              "cache-control": {
+                "deprecated": false,
+                "required": false,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
           }
         },
         "summary": "Snapshot"

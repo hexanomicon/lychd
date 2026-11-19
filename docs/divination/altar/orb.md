@@ -9,11 +9,108 @@ A result raises two questions: which Run produced it, and how much of that Run c
 examined? The **Orb** opens its ordered structural evidence and keeps gaps visible as you read.
 This act of looking through the evidence is **scrying**.
 
-Open `/orb` for the parallel Run field, or choose **Look into the Orb** at a Bridge result to
+Open `/orb` for the parallel Run field, or choose **… → View run in Orb** at a Bridge result to
 inspect `/orb/{run_id}`. The shell’s **Orb** tab opens the parallel field; exact Run and event
 links preserve the account being reviewed.
 
+![The compiled Orb with a cursor-scoped Map, minimap, selected event and recording timeline.](../../assets/altar-design/orb-built.webp)
+
+![An appraisal anchored to the visible record and its file evidence.](../../assets/altar-design/orb-affect-built.webp)
+
+## Proposed design
+
+This is a rough, interactive design for Orb. The views below show one simulated
+capture. The layout and controls will be refined as the design is tested with larger Runs.
+[Open the interactive Orb mockup](../../assets/altar-design/orb-field.html).
+
+### Find a step in the Map
+
+At **00:54**, **Update docs** is waiting for permission to publish while **Investigate flaky CI**
+continues. The left **Map** lists the work observed by that moment, grouped under the Run
+and event it belongs to. The bottom timeline places both Runs on the same clock.
+
+[![Orb at 00:54 with the minimap beneath the Map rows on the left, both Run graphs in the center, and their task and wait bars on the timeline below.](../../assets/altar-design/orb-field.webp)](../../assets/altar-design/orb-field.webp)
+
+A step with a recorded start and finish shows **how long it took**. **Docs writer** took
+27 s, including an OpenAI call and a GitHub request that overlapped. A parent’s duration
+covers its own interval. Adding its children would count some of that time twice.
+An open step shows elapsed time through the cursor. **Review edit** shows **19s wait**.
+**CI investigator** shows **39s+** while its attempt is open. A single observation has a
+**time on the capture clock**. The **@00:32** beside `docs/retry.md` marks the edit.
+Its duration is unknown.
+
+Open **Docs writer → docs/** with the chevrons, then select **retry.md**. The row and file
+node highlight together, the timeline marks the edit, and the right panel identifies the
+operation and path. The cursor stays at **00:54** while you look. Select the row’s time
+to seek to the edit, or a step’s duration to seek to its recorded start.
+
+[![The retry.md row and its file node selected together. The detail panel identifies the edit and the timeline keeps the cursor at 00:54.](../../assets/altar-design/orb-map-selection.webp){ loading="lazy" }](../../assets/altar-design/orb-map-selection.webp)
+
+On the graph, hover or focus an **Intent** to read the original request. Follow **What do
+you want?** through its router to the assigned agent. A small inference mark reveals its
+model. A larger Reach mark names its operation. Hover either GitHub call to highlight
+the shared connection. The writer read an issue and the investigator read a job log.
+File activity appears under its gold folder with a read, edit or delete label. The `ci.log`
+search result stays beside the agent that found it.
+
+### Rewind a checkpoint
+
+Scrub the timeline to **00:10**, or use the arrow keys. **Confirm access** has been waiting
+3 s for permission to read the CI logs. Its router and investigator appear only after
+approval. The Map keeps the surviving branches in order as you scrub. Pausing holds the
+Map and graph at the cursor while the timeline can continue receiving samples. During
+playback a signal briefly lights the incoming connection as its record is reached.
+
+[![At 00:10 the CI branch reaches Confirm access. Its investigator has yet to appear, and the timeline shows the early wait.](../../assets/altar-design/orb-map-history.webp){ loading="lazy" }](../../assets/altar-design/orb-map-history.webp)
+
+**Go live** returns to the newest sample. In the installed Altar, Bridge checks whether a
+consent request is still pending and whether you can act on it. Orb’s separate **Runtime**
+inspector covers background calls and observations received after a Run ends.
+[Follow an exact consent request](#follow-a-relation-only-where-it-was-recorded) or
+[read the installed field’s Tab history](#pause-and-revisit-the-observed-field).
+
+<span id="navigate-with-the-map-hidden"></span>
+
+### Navigate with the minimap
+
+Zoom into a branch and look at the minimap at the foot of the left **Map**. The outer Run
+landmarks stay in place while the frame shrinks to show how much of the graph you can see.
+Select another location on the minimap to move the canvas at the same capture time. Hiding
+the Map hides its minimap too. Zoom out to fold each Run into a named bubble, select a
+bubble to open it, or choose **Fit both Runs** to recover the overview.
+
+[![A zoomed Orb branch, with the minimap at the bottom of the open Map showing which part of the two-Run field is in view.](../../assets/altar-design/orb-minimap.webp){ loading="lazy" }](../../assets/altar-design/orb-minimap.webp)
+
+### Make room for the selected evidence
+
+With a historical event selected, fold the details panel using the control on its left edge,
+where the panel meets the canvas. The control to reopen the details sits at the right edge
+of the expanded canvas. Select **Timeline** to fold the task lanes and give the graph more
+height. The compact bar keeps the clock, playback controls and **Go live**. Expand it at
+**00:32** and the same `retry.md` edit is still selected. During playback the clock keeps
+advancing even with the lanes folded.
+
+[![At 00:32 the retry.md edit is selected in the graph and left Map. Below the Map rows the minimap outlines the viewport. The right details panel is closed and the timeline is folded to its playback bar.](../../assets/altar-design/orb-collapsed-panels.webp){ loading="lazy" }](../../assets/altar-design/orb-collapsed-panels.webp)
+
+The design calls for Loom and Orb to reuse the Altar panels, expandable Map rows, selection
+highlight, canvas focus and minimap viewport. Each instrument supplies the identities and
+relationships those controls display. Loom can open a branch declared in a workflow revision
+even when a Run never took it. Orb can open a recorded attempt once the cursor reaches it.
+Both interactive design samples already use the same code to map the camera onto the
+minimap and draw its stars and connections. The remaining shared controls are design targets.
+[Walk the Loom blueprint](loom.md#reading-direction) or read the
+[frontend folding contract](../../adr/15-frontend.md#folding-not-scale).
+
 ## Read the parallel field
+
+The installed **Map** lists Runs from the displayed capture. Expand a Run’s loaded subjects
+and station attempts to reach an actual record. Selecting it opens its evidence alongside
+the graph and keeps the capture clock in place. The **Runtime · latest window** branch uses
+the current runtime observation window even while the Run field is paused. The stars in the
+minimap mark projected nodes and the viewport follows the camera. Drag either panel’s divider
+or use its arrow keys to resize. The Map and evidence panel each have an edge control to
+collapse or reopen them. **Swap Map and evidence panels** places them on opposite sides
+without changing the selected record or moving the Bridge dock.
 
 The shared field also shows the admitted runtime body: components, declared connections and
 actual observed call attempts. **Runtime** opens its inspector with **Sources & coverage**,
@@ -57,12 +154,23 @@ latest field and follows that Run's projection; manual camera interaction pauses
 **Open exact Run and history** enters the selected account below. Closing the inspector returns
 to its opener without discarding the selected Run.
 
-Shared Animator marks and their links come only from retained dispatch selections. Their count
-means loaded grants, and their halo identifies a latest loaded record. Neither means continuous
-model work or present availability. Unknown station types are not renamed as Agents or tools;
+Each retained dispatch selection has a small Animator mark inside its Run, connected to
+its recorded dispatch subject. Hover or focus the mark to read the served model and
+capability family. Larger Reach operation marks show the observed operation. A supplied
+Run identity connects a runtime operation to its visible live Run. Background operations
+stay with their observation source. On rewind the runtime list continues to show its latest
+window independently.
+
+The Map and timeline show the total recorded time for completed attempts at each station
+in the selected capture. Each duration pairs one entry with a later settlement or failure
+for the same station and occurrence. Incomplete or ambiguous pairs contribute no time.
+Unknown station types are not renamed as Agents or tools;
 file trees and other resources require identities from their own source.
 
 ## Pause and revisit the observed field
+
+**Fold timeline lanes** hides the per-Run tracks and keeps the clock, playback controls and
+seek bar available. Reopen **Show timeline lanes** to restore the rows at the current cursor.
 
 The bottom **Tab history** keeps up to 300 changed projections received in this open tab, within
 the chosen 30-second, 90-second, five-minute or one-hour window. It starts when the field is read.
@@ -117,6 +225,31 @@ has drained. This tells you the available account has caught up, without promisi
 The live window holds the latest 100 received records. Older retained evidence remains separately
 pageable. Token text, prompts, output bodies, and private errors are absent. Refreshing or opening
 a transport connection leaves Run status unchanged.
+
+## Appraise a record at the cursor {#appraise-a-record}
+
+Open an exact Run and expand **Affect at the cursor** below the field's playback controls.
+The source is the cursor event, or the event you select within that window, with its Run, sequence, event ID, time, capture
+class and station attempt when supplied. Step backward to inspect an earlier record.
+An empty interval or missing attempt gives you no basis for attributing it to a different
+station. A station completion alone says nothing about its pleasure, uncertainty or motivation.
+The current event contract supplies no historical affect report or signal-to-route decision.
+
+Choose **Appraise this record** to hold that position and review its value yourself. Name
+your response (for example, concern), select what the observation contributed, suggest a bounded probe, stop or owner review, and explain
+which decision the evidence could change. Save the appraisal in this Run view. Stepping away
+and back restores it on its exact record. The source and your later, self-attributed judgment
+have separate timestamps. Leaving the Run view clears these local appraisals. Nothing is
+sent to Nexus, to an agent or to a peer. To study how a declared policy could use evidence
+before execution, open [Loom's worked policy](loom.md#affect-policy).
+
+Your chosen emotion appears on the matching graph node with its sequence. From a selected
+event still within the cursor, **Inspect affect &amp; evidence ledger** opens the same review.
+**Mistakes &amp; evidence ledger** lists your suspected mistakes and repair observations
+with their supporting events through that moment. **Inspect #** returns to the source without
+moving playback. A later note disappears when you rewind before its source. The ledger holds
+up to 24 reviews in the open Run view. [The shell's local file history](workspace-design.md#local-files)
+records the changes you make in its Files tool.
 
 ## Locate the event
 

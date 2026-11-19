@@ -209,6 +209,16 @@ async function offer(text: string) {
   });
 }
 
+async function openRunActions(runId = "run-a") {
+  const menu = await screen.findByRole("button", { name: `Run actions for ${runId}` });
+  if (menu.getAttribute("aria-expanded") !== "true") await fireEvent.click(menu);
+}
+
+async function cancelVisibleRun() {
+  await openRunActions();
+  await fireEvent.click(screen.getByRole("button", { name: "Cancel run run-a" }));
+}
+
 function latestRunListener() {
   const call = listenMock.mock.calls.at(-1);
   if (!call) throw new Error("The run stream was not attached.");
@@ -375,7 +385,7 @@ describe("Bridge route and stream ownership", () => {
     expect(screen.getByText(/Wait for this Run to settle/).textContent).toContain("not queued");
     await fireEvent.keyDown(composer, { key: "Enter" });
     expect(sendMock).not.toHaveBeenCalled();
-    await fireEvent.click(screen.getByRole("button", { name: "Cancel run run-a" }));
+    await cancelVisibleRun();
     await waitFor(() => expect((screen.getByRole("button", { name: "Offer" }) as HTMLButtonElement).disabled).toBe(false));
     expect((composer as HTMLTextAreaElement).value).toBe("my later draft");
     expect(sendMock).not.toHaveBeenCalled();
@@ -636,7 +646,8 @@ describe("Bridge route and stream ownership", () => {
       .mockResolvedValueOnce(snapshot("session-a", [projection()]))
       .mockResolvedValue(snapshot("session-a", [cancelledProjection()]));
     const view = render(BridgeView, { sessionId: "session-a" });
-    const stop = await screen.findByRole("button", { name: "Cancel run run-a" });
+    await openRunActions();
+    const stop = screen.getByRole("button", { name: "Cancel run run-a" });
 
     await fireEvent.click(stop);
 
@@ -661,7 +672,7 @@ describe("Bridge route and stream ownership", () => {
     const view = render(BridgeView, { sessionId: "session-a" });
     expect(await screen.findByRole("button", { name: "Consecrate" })).toBeTruthy();
 
-    await fireEvent.click(screen.getByRole("button", { name: "Cancel run run-a" }));
+    await cancelVisibleRun();
 
     await waitFor(() => expect(getSnapshotMock).toHaveBeenCalledTimes(2));
     expect(screen.queryByRole("button", { name: "Consecrate" })).toBeNull();
@@ -680,7 +691,7 @@ describe("Bridge route and stream ownership", () => {
     const view = render(BridgeView);
     expect(await screen.findByRole("button", { name: "Consecrate" })).toBeTruthy();
 
-    await fireEvent.click(screen.getByRole("button", { name: "Cancel run run-a" }));
+    await cancelVisibleRun();
 
     await waitFor(() => expect(getSnapshotMock).toHaveBeenCalledTimes(2));
     expect(screen.queryByRole("button", { name: "Consecrate" })).toBeNull();
@@ -695,7 +706,7 @@ describe("Bridge route and stream ownership", () => {
     const message = (await screen.findByLabelText("Message")) as HTMLTextAreaElement;
     await fireEvent.input(message, { target: { value: "Keep this unsent thought" } });
 
-    await fireEvent.click(screen.getByRole("button", { name: "Cancel run run-a" }));
+    await cancelVisibleRun();
 
     await waitFor(() => expect(getSnapshotMock).toHaveBeenCalledTimes(2));
     expect(message.value).toBe("Keep this unsent thought");
@@ -712,7 +723,7 @@ describe("Bridge route and stream ownership", () => {
     const view = render(BridgeView, { sessionId: "session-a" });
     expect(await screen.findByRole("button", { name: "Consecrate" })).toBeTruthy();
 
-    await fireEvent.click(screen.getByRole("button", { name: "Cancel run run-a" }));
+    await cancelVisibleRun();
 
     await waitFor(() => expect(getSnapshotMock).toHaveBeenCalledTimes(2));
     expect(screen.queryByRole("button", { name: "Consecrate" })).toBeNull();
@@ -759,7 +770,7 @@ describe("Bridge route and stream ownership", () => {
     getRunSnapshotMock.mockResolvedValue(cancelledProjection());
     const view = render(BridgeView, { sessionId: "session-a" });
 
-    await fireEvent.click(await screen.findByRole("button", { name: "Cancel run run-a" }));
+    await cancelVisibleRun();
 
     expect(getRunSnapshotMock).toHaveBeenCalledWith("run-a");
     expect(await screen.findAllByText("cancelled")).toHaveLength(1);
@@ -1033,7 +1044,8 @@ describe("Bridge route and stream ownership", () => {
     getSnapshotMock.mockResolvedValueOnce(snapshot("session-a", [{ ...projection(), content }]))
       .mockReturnValueOnce(retained.promise);
     const view = render(BridgeView, { sessionId: "session-a" });
-    expect(await screen.findByRole("button", { name: "Cancel run run-a" })).toBeTruthy();
+    await openRunActions();
+    expect(screen.getByRole("button", { name: "Cancel run run-a" })).toBeTruthy();
     expect(screen.queryByText(failedStreamNotice)).toBeNull();
 
     vi.useFakeTimers();
@@ -1051,7 +1063,8 @@ describe("Bridge route and stream ownership", () => {
     } else {
       expect(screen.queryByText(failedStreamNotice)).toBeNull();
     }
-    expect(screen.getByRole("link", { name: "Look into the Orb" }).getAttribute("href")).toBe("/orb/run-a");
+    await openRunActions();
+    expect(screen.getByRole("link", { name: "View run in Orb" }).getAttribute("href")).toBe("/orb/run-a");
     expect(screen.queryByText("The turn has settled.")).toBeNull();
     expect(screen.queryByRole("button", { name: "Cancel run run-a" })).toBeNull();
     expect(listenMock).toHaveBeenCalledOnce();
@@ -1067,7 +1080,8 @@ describe("Bridge route and stream ownership", () => {
     expect(rows[0]?.querySelector(".turn__body")?.textContent).toBe(failureReply);
     expect(rows[0]?.getAttribute("data-state")).toBe("failed");
     expect(screen.queryByText(failedStreamNotice)).toBeNull();
-    expect(screen.getByRole("link", { name: "Look into the Orb" }).getAttribute("href")).toBe("/orb/run-a");
+    await openRunActions();
+    expect(screen.getByRole("link", { name: "View run in Orb" }).getAttribute("href")).toBe("/orb/run-a");
     expect(screen.queryByRole("button", { name: "Cancel run run-a" })).toBeNull();
     expect(listenMock).toHaveBeenCalledOnce();
     view.unmount();
@@ -2098,6 +2112,81 @@ describe("optional naming ceremony in Bridge", () => {
     expect(sendMock).toHaveBeenCalledOnce();
     expect(screen.queryByText(/Request sent to Bridge/)).toBeNull();
     expect(acceptNaming).not.toHaveBeenCalled();
+    view.unmount();
+  });
+});
+
+describe("Bridge exchange navigation and personal filing", () => {
+  it("previews a correlated exchange in place, bookmarks its Run, and jumps to its question", async () => {
+    const read = snapshot("session-a", [projection()]);
+    read.session!.turns = [
+      accepted("run-first", "First question").turn,
+      accepted("run-a", "Later question").turn,
+      { ...accepted("run-first", "First answer").turn, role: "agent" }
+    ];
+    getSnapshotMock.mockResolvedValue(read);
+    const view = render(BridgeView, { sessionId: "session-a" });
+    const composer = await screen.findByRole("textbox", { name: "Message" });
+    await fireEvent.input(composer, { target: { value: "leave my draft here" } });
+    const rail = within(screen.getByRole("navigation", { name: "Conversation exchanges" }));
+    const first = rail.getByRole("button", { name: "Jump to exchange 1" });
+    const second = rail.getByRole("button", { name: "Jump to exchange 2" });
+    await fireEvent.pointerEnter(first);
+    expect(rail.getByText("First question")).toBeTruthy();
+    expect(rail.getByText("First answer")).toBeTruthy();
+    expect(rail.queryByText("authoritative partial")).toBeNull();
+    await fireEvent.click(rail.getByRole("button", { name: "Bookmark exchange" }));
+    expect(localStorage.getItem("lychd.bridge-exchange-bookmarks.v1")).toBe('[["session-a","run-first"]]');
+    first.focus();
+    await fireEvent.keyDown(first, { key: "ArrowDown" });
+    expect(document.activeElement).toBe(second);
+    expect(rail.getByText("Later question")).toBeTruthy();
+    expect(rail.getByText("authoritative partial")).toBeTruthy();
+    await fireEvent.click(first);
+    expect(document.activeElement).toBe(view.container.querySelector('[data-source-position="0"]'));
+    expect((composer as HTMLTextAreaElement).value).toBe("leave my draft here");
+    expect(sendMock).not.toHaveBeenCalled();
+    await fireEvent.click(screen.getByLabelText("Conversation tools", { selector: "summary" }));
+    expect(screen.getByRole("link", { name: "Open map in Atlas" }).getAttribute("href")).toBe("/atlas/map?session=session-a");
+    view.unmount();
+  });
+
+  it("files the selected séance into named nested groups and restores it from Archive across remount", async () => {
+    const view = render(BridgeView, { sessionId: "session-b" });
+    const composer = await screen.findByLabelText("Message");
+    await fireEvent.input(composer, { target: { value: "private unsent text" } });
+    await fireEvent.click(screen.getByText("Organize selected séance"));
+    await fireEvent.click(screen.getByRole("button", { name: "Set group" }));
+    await fireEvent.input(screen.getByLabelText("Group path"), { target: { value: "Studio / Research" } });
+    await fireEvent.click(screen.getByRole("button", { name: "Save group" }));
+    expect(screen.getByText("Research").closest("details")?.parentElement?.closest("details")?.querySelector("summary")?.textContent).toBe("Studio");
+    await fireEvent.click(screen.getByRole("button", { name: "Move to Archive" }));
+    expect(screen.getByRole("button", { name: /^Archive$/ }).getAttribute("aria-pressed")).toBe("true");
+    expect((composer as HTMLTextAreaElement).value).toBe("private unsent text");
+    expect(localStorage.getItem("lychd.bridge-conversation-filing.v1")).toBe('[{"id":"session-b","archive":true,"groups":["Studio","Research"]}]');
+    view.unmount();
+
+    const next = render(BridgeView, { sessionId: "session-b" });
+    await screen.findByLabelText("Message");
+    const nav = within(screen.getByRole("navigation", { name: "Conversations" }));
+    expect(nav.queryByRole("link", { name: /Séance B/ })).toBeNull();
+    await fireEvent.click(nav.getByRole("button", { name: "Archive" }));
+    expect(nav.getByRole("link", { name: /Séance B/ })).toBeTruthy();
+    await fireEvent.click(screen.getByText("Organize selected séance"));
+    await fireEvent.click(screen.getByRole("button", { name: "Move to Active" }));
+    expect(nav.getByRole("button", { name: "Active" }).getAttribute("aria-pressed")).toBe("true");
+    expect(sendMock).not.toHaveBeenCalled();
+    next.unmount();
+  });
+
+  it("keeps pending consents discoverable even when the operator filed the conversation in Archive", async () => {
+    localStorage.setItem("lychd.bridge-conversation-filing.v1", '[{"id":"session-b","archive":true,"groups":["Studio"]}]');
+    const read = snapshot("session-a");
+    read.sessions[1]!.pending_count = 2;
+    getSnapshotMock.mockResolvedValue(read);
+    const view = render(BridgeView, { search: "?attention=pending" });
+    const link = await screen.findByRole("link", { name: /Séance B.*2 awaiting consent/ });
+    expect(link.getAttribute("href")).toBe("/bridge/session-b");
     view.unmount();
   });
 });

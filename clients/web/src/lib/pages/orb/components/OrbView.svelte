@@ -15,6 +15,8 @@
   import BridgePreferenceSummary from "$lib/pages/orb/components/BridgePreferenceSummary.svelte";
   import GraphCanvas from "$lib/graph/components/GraphCanvas.svelte";
   import AnimatorRail from "$lib/pages/orb/components/AnimatorRail.svelte";
+  import OrbAffect from "./OrbAffect.svelte";
+  import { appraisalSource, markAppraisal, type LocalAppraisal } from "../state/affect";
   import PageHeader from "$lib/components/shared/PageHeader.svelte";
   import { projectOrb, orbEvidenceNodeId, mergeOrbEvidence, mergeOrbGaps } from "$lib/pages/orb/state/orb";
   import { matchesOrbPattern } from "$lib/graph/model";
@@ -55,6 +57,9 @@
   let following = $state(true);
   let playbackCursor = $state<number | null>(null);
   let playbackSnapshot = $state.raw<OrbRunSnapshot | null>(null);
+  let appraisals = $state.raw<LocalAppraisal[]>([]);
+  let affectOpen = $state(false);
+  let reviewSelected = $state(true);
   let focusId = $state<string | null>(null);
   let focusRevision = $state(0);
   let graphSelection = $state<string | null>(null);
@@ -75,7 +80,7 @@
   });
   let pattern = $derived(snapshot?.workflow && matchesOrbPattern(snapshot, snapshot.workflow) ? snapshot.workflow : null);
   let playbackSource = $derived(playbackSnapshot ?? snapshot);
-  let graph = $derived(playbackSource ? projectOrb(playbackSource, pattern, playbackCursor) : null);
+  let baseGraph = $derived(playbackSource ? projectOrb(playbackSource, pattern, playbackCursor) : null);
   let playbackIndex = $derived(playbackSource ? playbackSource.evidence.findLastIndex((record) => playbackCursor === null || record.seq <= playbackCursor) : -1);
   let playbackRecord = $derived(playbackIndex >= 0 ? playbackSource?.evidence[playbackIndex] : undefined);
   let evidenceHeading: HTMLElement | undefined;
@@ -87,6 +92,20 @@
   let requestedJobId = $derived(page.url.searchParams.get("job"));
   let selectedEventId = $derived(requestedEventId);
   let selected = $derived(snapshot?.evidence.find((event) => event.event_id === selectedEventId) ?? null);
+  let windowRecords = $derived(playbackSource?.evidence.filter(item => playbackCursor === null || item.seq <= playbackCursor) ?? []);
+  let selectedAtCursor = $derived(selectedEventId ? windowRecords.find(item => item.event_id === selectedEventId) : undefined);
+  let appraisalRecord = $derived(reviewSelected && selectedAtCursor ? selectedAtCursor : playbackRecord);
+  let ledger = $derived.by(() => {
+    if (!playbackSource || !appraisals.length) return [];
+    const bySource = new Map(appraisals.map(note => [note.source, note]));
+    const run = playbackSource.run.run_id;
+    return windowRecords.flatMap(item => bySource.get(appraisalSource(run, item)) ?? []);
+  });
+  let graph = $derived.by(() => {
+    const note = ledger.find(item => item.eventId === appraisalRecord?.event_id);
+    return baseGraph && appraisalRecord && note
+      ? markAppraisal(baseGraph, orbEvidenceNodeId(appraisalRecord, pattern), note) : baseGraph;
+  });
   let selectedConsentHref = $derived(snapshot && selected?.kind === "consent" && selected.consent_id
     ? bridgeConsentHref(snapshot.run.bridge_path, snapshot.run.run_id, selected.consent_id, selected.event_id)
     : null);
@@ -147,6 +166,7 @@
       activeRunId = undefined;
       history = null;
       playbackSnapshot = null; playbackCursor = null;
+      appraisals = []; affectOpen = false;
       loading = false;
       loadingMore = false;
       loadMoreError = "";
@@ -201,6 +221,7 @@
     if (!preserveReadError) error = "";
     loadMoreError = "";
     if (identityChanged) {
+      appraisals = []; affectOpen = false; reviewSelected = true;
       history = null;
       playbackCursor = null;
       playbackSnapshot = null;
@@ -300,6 +321,7 @@
 
   async function selectEvidence(evidence: Evidence, opener?: HTMLElement) {
     if (!runId) return;
+    reviewSelected = true;
     selectionReturnFocus = opener;
     following = false;
     pinnedEvidence = evidence;
@@ -384,6 +406,7 @@
   }
 
   function seek(seq: number | null) {
+    reviewSelected = false;
     if (seq !== null && playbackSnapshot === null) playbackSnapshot = snapshot;
     if (seq === null) playbackSnapshot = null;
     playbackCursor = seq;
@@ -395,6 +418,16 @@
   function stepPlayback(delta: number) {
     const record = playbackSource?.evidence[playbackIndex + delta];
     if (record) seek(record.seq);
+  }
+  async function openAppraisal() {
+    reviewSelected = true;
+    affectOpen = true;
+    await tick();
+    document.querySelector<HTMLElement>("#orb-affect > summary")?.focus();
+  }
+  function inspectAppraisal(id: string) {
+    const event = windowRecords.find(item => item.event_id === id);
+    if (event) void selectEvidence(event);
   }
 </script>
 
@@ -491,6 +524,16 @@
           <p class="graph-boundary">Glow marks the latest supplied record or playback cursor, not continuous work. The cursor filters loaded graph observations; Run status above remains current. Record spacing is sequence, not elapsed time. Subworkflow structure requires supplied identities.</p>
           {#if liveDropped}<p class="feed-note">The live window keeps the latest 100 records; {liveDropped} earlier live records left that window. Load retained evidence to inspect older records.</p>{/if}
         </section>
+
+        {#key snapshot.run.run_id}
+          <OrbAffect runId={snapshot.run.run_id} record={appraisalRecord} notes={appraisals} {ledger}
+            onchange={value => appraisals = value} bind:open={affectOpen} oninspect={inspectAppraisal}
+            onhold={() => {
+              if (playbackCursor === null && playbackRecord) {
+                playbackSnapshot = snapshot; playbackCursor = playbackRecord.seq; following = false;
+              }
+            }} />
+        {/key}
 
         <section class="coverage-limits" aria-labelledby="limits-title">
           <h2 id="limits-title">Evidence limits</h2>
@@ -652,6 +695,9 @@
             <p class="inspector-copy">The selected record is outside the current subject or attempt filter.</p>
           {/if}
           <p class="selected-evidence-summary">{selected.summary}</p>
+          {#if selectedAtCursor}
+            <button type="button" class="sheet-dismiss" onclick={openAppraisal}>Inspect affect &amp; evidence ledger</button>
+          {/if}
           <dl class="kv">
             <dt>event</dt><dd class="glyph">{selected.event_id}</dd>
             <dt>sequence</dt><dd>#{selected.seq}</dd>

@@ -11,6 +11,7 @@
   let glyph = $derived.by(() => {
     switch (data.semantic.kind) {
       case "run": return "◉";
+      case "Reach operation": return "↗";
       case "tool": return "⌘";
       case "dispatch": return "↗";
       case "delegate": return "↗";
@@ -37,12 +38,13 @@
 <button type="button" class={["orb-node orb-drag-handle nopan", { chosen: selected, folded, dragging }]}
   data-kind={data.semantic.kind} data-state={data.semantic.state} data-attention={data.semantic.attention}
   style:--node-accent={`var(--color-${data.semantic.accent ?? "rune"})`}
-  aria-label={`${folded ? "Expand" : "Inspect"} ${data.semantic.label} · ${data.semantic.kind}${data.semantic.attention ? ` · ${data.semantic.attention === "cursor" ? "At playback cursor" : data.semantic.attention === "received" ? "New observation" : "Latest record"}` : ""}`}
+  aria-label={`${folded ? "Expand" : "Inspect"} ${data.semantic.label} · ${data.semantic.kind}${data.semantic.attention ? ` · ${data.semantic.attention === "cursor" ? "At playback cursor" : data.semantic.attention === "received" ? "New observation" : "Latest record"}` : ""}${data.semantic.annotation ? ` · ${data.semantic.annotation}` : ""}`}
   aria-pressed={selected} aria-describedby={preview && !dragging ? previewId : undefined}
   onpointerenter={showPreview} onpointerleave={hidePreview} onfocus={showPreview} onblur={hidePreview} onkeydown={dismiss}
   onclick={(event) => data.select(data.semantic.id, event.currentTarget, event.detail !== 0)}>
   <span class="orb-mark" aria-hidden="true"><span>{#if data.semantic.icon}<img src={data.semantic.icon} alt="" width="24" height="24" />{:else}{glyph}{/if}</span>{#if folded}<i>+</i>{/if}</span>
   <span class="orb-name">{data.semantic.label}</span>
+  {#if data.semantic.annotation}<span class="orb-caption local-annotation">{data.semantic.annotation}</span>{/if}
   {#if data.semantic.attention}<span class="orb-caption attention">{data.semantic.attention === "cursor" ? "Playback cursor" : data.semantic.attention === "received" ? "New observation" : "Latest record"}</span>
   {:else if folded}<span class="orb-caption">{data.semantic.kind === "run" ? "Run" : data.semantic.kind}{#if data.semantic.count != null} · {data.semantic.count} loaded{/if}</span>
   {:else}<span class="orb-caption">{data.semantic.kind}{#if data.semantic.entry} · entry{/if}</span>{/if}
@@ -68,6 +70,7 @@
   .orb-mark > span { position:relative; z-index:1; }
   .orb-name { max-width:128px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font:12px/1.25 var(--font-body); visibility:var(--orb-name-visibility,visible); }
   .orb-caption { max-width:128px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--color-ash); font:9px/1.2 var(--font-body); letter-spacing:.045em; visibility:var(--orb-caption-visibility,visible); }
+  .orb-caption.local-annotation { visibility:visible; color:var(--color-rune); }
   .orb-node[data-kind="run"] .orb-name,.orb-node[data-kind="animator"] .orb-name,
   .orb-node:hover .orb-name,.orb-node:focus-visible .orb-name,.orb-node[data-attention] .orb-name { visibility:visible; }
   .orb-node[data-kind="run"] .orb-caption,.orb-node[data-kind="animator"] .orb-caption,.orb-caption.attention { visibility:visible; }
@@ -80,6 +83,8 @@
   .orb-node[data-kind="dispatch"] .orb-mark { border-radius:11px 3px 11px 3px; border-color:var(--color-control-border); background:color-mix(in srgb,var(--color-tertiary) 70%,var(--color-obsidian)); }
   .orb-node[data-kind="gate"] .orb-mark,.orb-node[data-kind="animator"] .orb-mark { width:32px; height:32px; margin:4px; border-radius:7px; transform:rotate(45deg); border-color:var(--color-control-border); }
   .orb-node[data-kind="gate"] .orb-mark > span,.orb-node[data-kind="animator"] .orb-mark > span { transform:rotate(-45deg); }
+  .orb-node[data-kind="animator"] .orb-mark { width:24px; height:24px; margin:8px; }
+  .orb-node[data-kind="Reach operation"] .orb-mark { width:46px; height:38px; margin:1px 0; border-radius:8px; color:var(--color-frost); }
   .orb-node[data-kind="gap"] .orb-mark,.orb-node[data-kind="unknown"] .orb-mark { border-style:dashed; background:transparent; }
   .orb-node[data-kind="event"] .orb-mark { width:28px; height:28px; margin:6px; border-radius:4px; }
   .orb-node[data-kind="occurrence"] .orb-mark { width:32px; height:32px; margin:4px; border-style:dotted; }

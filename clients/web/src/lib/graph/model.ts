@@ -7,6 +7,8 @@ export interface GraphNode {
   readonly id: string;
   readonly label: string;
   readonly detail: string;
+  /** A separately attributed presentation mark, such as an operator's local appraisal. */
+  readonly annotation?: string;
   readonly kind: string;
   readonly entry?: boolean;
   readonly state?: string;

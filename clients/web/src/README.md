@@ -39,6 +39,13 @@ equivalence. Code used by one instrument lives in that instrument's `lib/pages/<
 Focused component tests live beside their components; navigation has its own
 [identity tests](lib/navigation/instruments.test.ts).
 
+Use the instrument name for a page folder, such as `orb`, `loom` or `atlas`. A Run can be
+presented in Bridge and Orb and linked from Loom. Keep its domain name on its data and
+operations. A folder called `runsOrb` would incorrectly make one instrument the owner of
+that shared concept. Existing URLs remain stable. [Applications](lib/pages/applications/)
+owns the catalogue, [Atelier](lib/pages/atelier/) owns the short-video editor and the
+[shell](lib/shell/) owns the rail, session-preserving dock and browser-local file revisions.
+
 [API contracts](lib/api/models.ts) alias [generated transport types](lib/api/openapi.d.ts).
 Their Python owners are [Altar controllers](../../../src/lychd/interface/web/) and
 [web-domain contracts](../../../src/lychd/domain/web/). Regeneration, checks, and builds follow

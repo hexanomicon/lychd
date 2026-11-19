@@ -8,6 +8,7 @@
   import { createOrbLayoutMemory, layoutOrbProjection, orbTerritories, ORB_NODE_WIDTH, ORB_NODE_HEIGHT } from "./orb-layout";
   import OrbNode from "./OrbNode.svelte";
   import OrbTerritories from "./OrbTerritories.svelte";
+  import AtlasNode from "./AtlasNode.svelte";
   import FlowNode from "./FlowNode.svelte";
   import FlowEdge from "./FlowEdge.svelte";
 
@@ -16,10 +17,10 @@
     onselect?: (id: string, opener?: HTMLElement) => void; label: string;
     focusId: string | null; focusRevision: number;
     onzoom?: (zoom: number) => void; onviewportinteraction?: () => void;
-    presentation?: "diagram" | "orb"; hideMinimap?: boolean;
+    presentation?: "diagram" | "orb" | "atlas"; hideMinimap?: boolean;
     cameraCommand?: GraphCameraCommand | null;
   } = $props();
-  const nodeTypes = { semantic: FlowNode, orb: OrbNode };
+  const nodeTypes = { semantic: FlowNode, orb: OrbNode, atlas: AtlasNode };
   const edgeTypes = { semantic: FlowEdge };
   const viewport = useSvelteFlow<RenderNode>();
   let nodes = $state.raw<RenderNode[]>([]);
@@ -130,8 +131,8 @@
           y:(Math.min(...members.map(p => p.y)) + Math.max(...members.map(p => p.y))) / 2
         };
         positions.set(semantic.id, position);
-        return { id:semantic.id, type:mode === "orb" ? "orb" : "semantic", position,
-          width:mode === "orb" ? ORB_NODE_WIDTH : NODE_WIDTH, height:mode === "orb" ? ORB_NODE_HEIGHT : NODE_HEIGHT,
+        return { id:semantic.id, type:mode === "diagram" ? "semantic" : mode, position:mode === "atlas" ? {x:position.x * .8, y:position.y * .67} : position,
+          width:mode === "orb" ? ORB_NODE_WIDTH : mode === "atlas" ? 172 : NODE_WIDTH, height:mode === "orb" ? ORB_NODE_HEIGHT : mode === "atlas" ? 94 : NODE_HEIGHT,
           data:{ semantic:{ ...semantic }, select }, selected:semantic.id === chosen,
           draggable:mode === "orb", dragHandle:mode === "orb" ? ".orb-drag-handle" : undefined, connectable:false, deletable:false, selectable:false, focusable:false };
       });
