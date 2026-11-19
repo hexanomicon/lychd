@@ -14,10 +14,10 @@
 
 :root {
   /* ── substrate ─────────────────────────────────────────── */
-  --color-void:       #000000;  /* page base */
-  --color-obsidian:   #0d0f12;  /* panel base */
-  --color-obsidian-2: #171a1f;  /* raised / hover */
-  --color-engraving:  #24272e;  /* neutral borders and separators */
+  --color-void:       #15121a;  /* page base */
+  --color-obsidian:   #1b171f;  /* panel base */
+  --color-obsidian-2: #29222f;  /* raised / hover */
+  --color-engraving:  #3a3240;  /* neutral borders and separators */
 
   /* ── chromatic hierarchy ────────────────────────────────── */
   --color-primary:        #9edbe8;  /* icy blue: manipulation, focus, readiness */

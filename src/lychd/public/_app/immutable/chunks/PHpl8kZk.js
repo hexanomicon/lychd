@@ -1,0 +1,1 @@
+var e={"illustrated-story":`Illustrated story`,"animated-lesson":`Animated lesson`,"captioned-excerpt":`Captioned excerpt`};export{e as t};

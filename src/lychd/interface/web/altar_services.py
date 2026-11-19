@@ -42,6 +42,7 @@ from lychd.domain.orchestration.arbiter import TransitionArbiter
 from lychd.domain.orchestration.broker import GhoulBroker
 from lychd.domain.orchestration.manager import OrchestratorManager
 from lychd.domain.orchestration.policies import resolve_switch_policy
+from lychd.domain.web.contracts import NexusConfiguration, NexusPreferenceRoute, NexusQueueRule
 from lychd.domain.web.fragments import build_fragment_registry
 from lychd.domain.web.projection import EventProjector
 from lychd.domain.web.tickets import TicketStore
@@ -129,6 +130,7 @@ class AltarServices:
     runtime_observations: RuntimeCatalogue | None = None
 
     native_actuator: NativeRuntimeActuator | None = None
+    nexus_configuration: NexusConfiguration | None = None
 
     async def aclose(self) -> None:
         """Cancel tracked tasks and drain pending ledger writes before shutdown."""
@@ -154,6 +156,36 @@ class AltarServices:
         if failures:
             message = "Altar service closure failed."
             raise BaseExceptionGroup(message, failures)
+
+
+def nexus_configuration(settings: Settings, *, database_profile: str) -> NexusConfiguration:
+    """Capture only operation settings suitable for the authenticated control board."""
+    switching = settings.orchestration.switching
+    bridge = settings.weaver.bridge
+    return NexusConfiguration(
+        database_profile=database_profile,
+        server_port=settings.server.port,
+        builtin_extensions=list(settings.extensions.builtins),
+        crypt_extensions=list(settings.extensions.crypt),
+        interactive_concurrency=settings.server.jobs.interactive_concurrency,
+        background_concurrency=settings.server.jobs.background_concurrency,
+        routing=[
+            NexusQueueRule(source=source, queue=rule.queue, priority=rule.priority)
+            for source, rule in sorted(settings.orchestration.routing.items())
+        ],
+        actuator=switching.actuator,
+        switching_policy=switching.policy,
+        hard_swap_priority=switching.min_priority_for_hard_swap,
+        planning_timeout_s=switching.planning_timeout_s,
+        drain_timeout_s=switching.drain_timeout_s,
+        warmup_timeout_s=switching.warmup_timeout_s,
+        bridge_revision=bridge.revision if bridge else None,
+        bridge_capability_key=bridge.capability_key if bridge else None,
+        bridge_preference=[
+            NexusPreferenceRoute(capability_key=route.capability_key, weight=route.weight)
+            for route in (bridge.preference.routes if bridge and bridge.preference else ())
+        ],
+    )
 
 
 def _validate_routed_queues(routing: Mapping[str, RouteRule], queues: Mapping[str, RunQueue]) -> None:
@@ -826,6 +858,7 @@ def build_altar_services(
     )
     dictation, dictation_lexicon = _build_dictation_services(profile, settings)
     return AltarServices(
+        nexus_configuration=nexus_configuration(settings, database_profile=profile),
         native_actuator=native_actuator,
         scavenger=scavenger,
         feed_admission=feed_admission,

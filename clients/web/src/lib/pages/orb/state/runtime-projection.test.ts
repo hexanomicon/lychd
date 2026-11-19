@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { runtimeEvent, runtimeSnapshot } from "$lib/pages/orb/state/__fixtures__/runtime";
-import { activityKey, advanceRuntimeHighWater, projectRuntime, receivedRuntimeEvents, RUNTIME_NODE_LIMIT, RUNTIME_SOURCE_HISTORY_LIMIT } from "./runtime-projection";
+import { activityKey, attachRuntime, advanceRuntimeHighWater, projectRuntime, receivedRuntimeEvents, RUNTIME_NODE_LIMIT, RUNTIME_SOURCE_HISTORY_LIMIT } from "./runtime-projection";
 import { runtimeIcon } from "./icons";
 
 describe("runtime projection", () => {
@@ -12,6 +12,16 @@ describe("runtime projection", () => {
     expect(graph.projection.nodes.find(node => node.kind === "call attempt")?.state).toBe("outcome unknown");
     expect(graph.projection.edges.map(edge => edge.relation)).toEqual(["declared", "activity", "activity"]);
     expect(snapshot.activities[0]!.run_id).toBeNull();
+  });
+  it("connects Reach to an explicitly named live Run and keeps history independent", () => {
+    const field = { identity: "field", nodes: [{ id: "run:r", group: "r", label: "Review", kind: "run", detail: "" }], edges: [] };
+    const observed = projectRuntime(runtimeSnapshot([runtimeEvent(1, { run_id: "r", registrant_id: "builtin:reach" })]));
+    const live = attachRuntime(field, observed, true);
+    const reach = live.nodes.find(node => node.kind === "Reach operation")!;
+    expect(reach.group).toBe("r");
+    expect(live.edges).toContainEqual(expect.objectContaining({ source: "run:r", target: reach.id, relation: "contains" }));
+    expect(attachRuntime(field, observed, false).edges.some(edge => edge.source === "run:r")).toBe(false);
+    expect(attachRuntime(field, projectRuntime(runtimeSnapshot()), true).edges.some(edge => edge.source === "run:r")).toBe(false);
   });
   it("preserves two attempts from one station and separate transport and effect results", () => {
     const events = [runtimeEvent(), runtimeEvent(2, { kind: "transport_result", phase: "succeeded", http_status: 200 }),

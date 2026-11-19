@@ -3,7 +3,7 @@ import type { NexusCovenRow, NexusSnapshot, TransitionPlan } from "$lib/api/mode
 import { createNexusMap } from "./map";
 
 function row(capability_key: string, animator_name = "animator-a"): NexusCovenRow {
-  return { capability_key, animator_name, checked_at: null, dedicated: false, family: "chat", health: "unknown", is_active: false,
+  return { capability_key, animator_name, checked_at: null, groups: [], dedicated: false, family: "chat", health: "unknown", is_active: false,
     model_id: "model-a", persistent_resident: false, reason: null, runtime: "local", state: "cold", warm: false };
 }
 

@@ -41,6 +41,12 @@ The scene appears only at the empty Bridge entrance and carries no evidence
 or operational meaning. Its source bytes are bundled locally by Vite;
 Altar does not depend on a Mechanimous checkout or a remote image service.
 
+Atelier observatory study
+The program monitor in clients/web/src/lib/pages/atelier/observatory-study.webp
+uses a crop of the illustrative observatory scene in the Altar design study
+docs/assets/altar-design/atelier-cut.webp. The sample plate is part of the
+example brief. Video selected by an operator is read locally at runtime.
+
 Discord icon from Simple Icons 16.1.0, distributed under CC0 1.0 Universal.
 Source: https://github.com/simple-icons/simple-icons/blob/16.1.0/icons/discord.svg
 License: https://github.com/simple-icons/simple-icons/blob/16.1.0/LICENSE.md

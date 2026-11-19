@@ -3,11 +3,15 @@
 from __future__ import annotations
 
 import asyncio
+import json
 from contextlib import suppress
 from typing import TYPE_CHECKING, Any, cast
 
 import httpx
 import pytest
+
+from lychd.config.settings.root import SettingsSnapshot
+from lychd.interface.web.altar_services import nexus_configuration
 
 if TYPE_CHECKING:
     from types import SimpleNamespace
@@ -43,6 +47,48 @@ def test_board_lists_covens(altar_client: TestClient[Litestar]) -> None:
     assert runtimes[0]["registrant_id"] == "builtin:delegation"
     assert "provider_id" not in runtimes[0]
     assert runtimes[0]["runnable"] is True
+
+
+def test_board_projects_only_allowlisted_startup_settings_and_authenticated_sigil(
+    altar_client: TestClient[Litestar], fake_services: SimpleNamespace
+) -> None:
+    settings = SettingsSnapshot(
+        payload=json.dumps(
+            {
+                "server": {
+                    "port": 7123,
+                    "database": {"host": "private-database.invalid"},
+                    "jobs": {"interactive_concurrency": 7},
+                },
+                "orchestration": {"routing": {"bridge": {"queue": "rites", "priority": 62}}},
+                "weaver": {
+                    "bridge": {
+                        "revision": "2",
+                        "preference": {
+                            "schema_version": 1,
+                            "routes": [
+                                {"capability_key": "a:chat:model", "weight": 1},
+                                {"capability_key": "b:chat:model", "weight": 8},
+                            ],
+                        },
+                    },
+                },
+            },
+        )
+    ).materialize()
+    fake_services.nexus_configuration = nexus_configuration(settings, database_profile="memory")
+    response = altar_client.get("/api/v1/nexus")
+    assert response.status_code == 200
+    body = response.json()
+    config = body["configuration"]
+    assert (config["server_port"], config["interactive_concurrency"], config["database_profile"]) == (7123, 7, "memory")
+    assert {"source": "bridge", "queue": "rites", "priority": 62} in config["routing"]
+    assert config["bridge_preference"][1] == {"capability_key": "b:chat:model", "weight": 8}
+    assert "private-database.invalid" not in response.text
+    assert "password" not in response.text
+    assert body["operator"] == {"subject": "local-operator", "sigil": "magus", "scopes": ["*"]}
+    assert body["board"]["covens"][0][1][0]["connector"] == "FixtureConnector"
+    assert altar_client.get("/api/v1/nexus", headers={"authorization": "Basic invalid"}).status_code == 401
 
 
 def test_plan_is_json(altar_client: TestClient[Litestar]) -> None:

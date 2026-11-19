@@ -142,6 +142,10 @@ class PatternNode:
     kind: PatternNodeKind = "step"
     implementation: type[Any] | None = field(default=None, repr=False, compare=False)
 
+    # Optional public result description from the installed implementation. It is
+    # independent of persisted routing topology and contains no result values.
+    public_result_type: type[BaseModel | str] | None = field(default=None, repr=False, compare=False)
+
     def __post_init__(self) -> None:
         """Require a known station kind, stable identity, and its declared implementation."""
         _validate_pattern_node_fields(self.key, self.label, self.kind)

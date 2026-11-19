@@ -1,0 +1,1634 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Nexus · Altar</title><link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1MTIiIGhlaWdodD0iNTEyIiB2aWV3Qm94PSIzIDcgNTggNTgiIGZpbGw9Im5vbmUiPgogIDx0aXRsZT5BbHRhciDigJQgZGFyayB3YWxudXQsIHB1cnBsZSBjbG90aCBhbmQgc21hbGwgZnJvbnQtbW91bnRlZCBjYW5kbGVzPC90aXRsZT4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0id29vZCIgeDE9IjMyIiB5MT0iMjAiIHgyPSIzMiIgeTI9IjMzIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHN0b3Agc3RvcC1jb2xvcj0iIzgwNTgzQiIvPjxzdG9wIG9mZnNldD0iLjQ1IiBzdG9wLWNvbG9yPSIjNjU0MzJFIi8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjNDkzMDI0Ii8+PC9saW5lYXJHcmFkaWVudD4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0ibGVnIiB4MT0iMTMiIHkxPSIzMSIgeDI9IjI0IiB5Mj0iNTciIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIj48c3RvcCBzdG9wLWNvbG9yPSIjNzY1MTM4Ii8+PHN0b3Agb2Zmc2V0PSIuNTIiIHN0b3AtY29sb3I9IiM1NjM4MjkiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiM0OTMwMjQiLz48L2xpbmVhckdyYWRpZW50PgogICAgPGxpbmVhckdyYWRpZW50IGlkPSJjbG90aCIgeDE9IjIwIiB5MT0iMjAiIHgyPSI0NSIgeTI9IjQwIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHN0b3Agc3RvcC1jb2xvcj0iIzc1NDU4RSIvPjxzdG9wIG9mZnNldD0iLjM1IiBzdG9wLWNvbG9yPSIjNUIzMzczIi8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjNDgyMzYwIi8+PC9saW5lYXJHcmFkaWVudD4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iY2FuZGxlIiB4MT0iMTAiIHkxPSIyOSIgeDI9IjE0IiB5Mj0iMjkiIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIj48c3RvcCBzdG9wLWNvbG9yPSIjQ0RCOTk0Ii8+PHN0b3Agb2Zmc2V0PSIuNDIiIHN0b3AtY29sb3I9IiNGNkVBRDAiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiNERkNCQTUiLz48L2xpbmVhckdyYWRpZW50PgogICAgPHBhdGggaWQ9ImxlZnQtbGVnIiBkPSJNMTIgMjloMTJ2NWgtMnYxNWwyIDR2NUgxMXYtNGwzLTRWMzVoLTJaIi8+CiAgICA8ZyBpZD0iZnJvbnQtY2FuZGxlIj4KICAgICAgPHJlY3QgeD0iMTYiIHk9IjMyLjIiIHdpZHRoPSIzIiBoZWlnaHQ9IjUiIHJ4PSIuOCIgZmlsbD0iIzg5NjYzNyIvPgogICAgICA8cGF0aCBkPSJNMTcgMzUuMmMwIDMuMS01IDMuNy01LS42IiBzdHJva2U9IiNCNDhCNTAiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CiAgICAgIDxwYXRoIGQ9Ik04LjUgMzIuNWg3bC0xIDIuOGgtNVoiIGZpbGw9IiNCNDhCNTAiLz4KICAgICAgPHBhdGggZD0iTTEwIDI3LjVoNHY1LjJoLTRaIiBmaWxsPSJ1cmwoI2NhbmRsZSkiLz4KICAgICAgPHBhdGggZD0iTTEyIDI1Ljd2Mi4xIiBzdHJva2U9IiM2NTQ1MkQiIHN0cm9rZS13aWR0aD0iLjkiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgogICAgICA8cGF0aCBkPSJNMTIgMjAuN2MtLjUgMS42LTIuMSAyLjUtMS44IDRhMS44NSAxLjg1IDAgMCAwIDMuNiAwYy4zLTEuNC0xLjMtMi42LTEuOC00WiIgZmlsbD0iI0Y0QzE2RiIvPgogICAgICA8cGF0aCBkPSJNOC43IDMyLjVoNi42IiBzdHJva2U9IiNENEI0N0QiIHN0cm9rZS13aWR0aD0iMS4xIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KICAgIDwvZz4KICA8L2RlZnM+CiAgPHVzZSBocmVmPSIjbGVmdC1sZWciIGZpbGw9InVybCgjbGVnKSIvPgogIDx1c2UgaHJlZj0iI2xlZnQtbGVnIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSg2NCAwKSBzY2FsZSgtMSAxKSIgZmlsbD0idXJsKCNsZWcpIi8+CiAgPHBhdGggZD0iTTE1LjcgMzZ2MTMuNU00OC4zIDM2djEzLjUiIHN0cm9rZT0iIzhGNjY0NyIgc3Ryb2tlLXdpZHRoPSIxLjUiLz4KICA8cGF0aCBkPSJNMTIuNSA1NC43aDkuNU00MiA1NC43aDkuNSIgc3Ryb2tlPSIjNzk1NDNCIiBzdHJva2Utd2lkdGg9IjEuNCIvPgogIDxwYXRoIGQ9Ik0xMCAyNGg0NHY4SDEwWiIgZmlsbD0iIzQ5MzAyNCIvPgogIDxwYXRoIGQ9Ik0xMSAzMC43aDQyIiBzdHJva2U9IiM4MDU4M0IiIHN0cm9rZS13aWR0aD0iMS40Ii8+CiAgPHBhdGggZD0ibTUgMjAgNS02aDQ0bDUgNi00IDRIOVoiIGZpbGw9IiM3NjUwMzkiLz4KICA8cGF0aCBkPSJNNSAyMGg1NHY1SDVaIiBmaWxsPSJ1cmwoI3dvb2QpIi8+CiAgPHBhdGggZD0iTTYgMjAuNmg1MiIgc3Ryb2tlPSIjOUI3MjRFIiBzdHJva2Utd2lkdGg9IjEuMyIvPgogIDxwYXRoIGQ9Ik0xNiAxNGgzMmw0IDZIMTJaIiBmaWxsPSIjNjg0MTdGIi8+CiAgPHBhdGggZD0iTTE4IDIwaDI4bC0yIDE5Yy00IDIuNy04IDIuNy0xMiAuNS00IDIuMi04IDIuMi0xMi0uNVoiIGZpbGw9InVybCgjY2xvdGgpIi8+CiAgPHBhdGggZD0iTTE5IDIwaDZsLTEuMiAxOC43LTMuOC0uNFoiIGZpbGw9IiM4MDUxOTYiLz4KICA8cGF0aCBkPSJNNDAgMjBoNWwtMS43IDE4LjYtNC4xIDEuMloiIGZpbGw9IiMzRTIwNTQiLz4KICA8cGF0aCBkPSJNMjAuMiAzOC40YzMuOSAyLjcgNy45IDIuNyAxMS44LjUgMy45IDIuMiA3LjkgMi4yIDExLjgtLjUiIHN0cm9rZT0iI0I5QTA3MyIgc3Ryb2tlLXdpZHRoPSIxLjE1Ii8+CiAgPHVzZSBocmVmPSIjZnJvbnQtY2FuZGxlIi8+CiAgPHVzZSBocmVmPSIjZnJvbnQtY2FuZGxlIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSg2NCAwKSBzY2FsZSgtMSAxKSIvPgo8L3N2Zz4K"><style>html,body{margin:0;background:#17141b}body>#altar-nexus{height:100svh;min-height:515px}</style></head><body><style>#altar-nexus {
+  --rail:146px;--head:59px;--directory:169px;--pane:292px;--line:#38323f;--faint-line:#2c2632;
+  --ink:#f1edf4;--soft:#bbb2c4;--muted:#a69bad;--violet:#cfb0e6;
+  --sans:Inter,"Segoe UI","Helvetica Neue",Arial,sans-serif;--serif:"Bitstream Charter","DejaVu Serif",Georgia,serif;--mono:"SFMono-Regular",Consolas,"Liberation Mono",monospace;
+  width:100%;height:clamp(714px,77vw,845px);min-width:0;display:flex;isolation:isolate;position:relative;overflow:hidden;
+  color-scheme:dark;background:#17141b;color:var(--ink);font:14px/1.45 var(--sans);text-align:left;box-sizing:border-box;
+}
+#altar-nexus *,#altar-nexus ::before,#altar-nexus ::after{box-sizing:border-box;}
+#altar-nexus [hidden]{display:none!important;}
+#altar-nexus :is(h1,h2,h3,h4,p,dl,dd,dt){margin:0;}
+#altar-nexus button,#altar-nexus input {font-family:inherit;color:inherit;}
+#altar-nexus button {cursor:pointer;}
+#altar-nexus :is(button,a,input,[tabindex]):focus-visible {outline:2px solid #d9b2ef;outline-offset:2px;}
+#altar-nexus svg {flex:none;}
+#altar-nexus .nx-rail {flex:0 0 var(--rail);width:var(--rail);display:flex;flex-direction:column;overflow:auto;scrollbar-width:thin;border-right:1px solid var(--line);background:#19161d;z-index:3;}
+#altar-nexus.rail-folded {--rail:50px;}
+#altar-nexus .altar-brand strong {font:600 21px/1 var(--serif);}
+#altar-nexus .nx-work {position:relative;display:flex;min-width:0;flex:1;min-height:0;}
+#altar-nexus .nx-directory {position:relative;flex:0 0 var(--directory);width:var(--directory);background:#1c1821;border-right:1px solid var(--line);min-width:0;z-index:4;display:flex;flex-direction:column;}
+#altar-nexus .nx-directory-head {padding:14px 10px 12px 16px;display:flex;align-items:center;justify-content:space-between;min-height:59px;}
+#altar-nexus .nx-directory-head h2 {font:500 20px/1.2 var(--serif);letter-spacing:-.4px;}
+#altar-nexus .nx-section-links {padding:11px 8px;overflow:auto;scrollbar-width:thin;}
+#altar-nexus .nx-section-links h3 {font-size:10.5px;text-transform:uppercase;letter-spacing:.085em;color:#aa9bb7;font-weight:600;margin:25px 0 7px 8px;}
+#altar-nexus .nx-section-links button {border:0;color:#d8cfdf;display:flex;align-items:center;gap:9px;background:transparent;border-radius:6px;padding:8px 9px;width:100%;text-align:left;font-size:13px;margin-bottom:2px;}
+#altar-nexus .nx-section-links button[aria-current=page] {color:#ead6f6;background:#3a2e43;box-shadow:inset 2px 0 #b58acd;}
+#altar-nexus .nx-section-links button:not([aria-current]):hover {background:#2a2430;}
+#altar-nexus .nx-main {flex:1;min-width:0;overflow:auto;scrollbar-width:thin;container-type:inline-size;background:#16131a;}
+#altar-nexus .nx-meta {height:59px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--faint-line);padding:0 clamp(16px,3.5cqw,38px);color:var(--soft);}
+#altar-nexus .nx-environment {font:12px/1.3 var(--mono);display:flex;align-items:center;gap:8px;}
+#altar-nexus .nx-environment::before {content:"";width:7px;height:7px;border-radius:2px;background:#a991b5;box-shadow:0 0 0 3px #302936;}
+#altar-nexus .nx-sample {font:11px/1.3 var(--mono);color:#ab9db5;border-left:1px solid #4b4151;padding-left:10px;}
+#altar-nexus .nx-open-tools {margin-left:auto;}
+#altar-nexus .nx-icon {display:inline-grid;place-items:center;width:31px;height:31px;border:0;border-radius:5px;background:transparent;color:var(--soft);}
+#altar-nexus .nx-icon:hover {background:#312936;color:var(--ink);}
+#altar-nexus .nx-icon[aria-pressed=true] {background:#483451;color:#edcef7;}
+#altar-nexus .nx-content {max-width:1180px;margin:0 auto;padding:clamp(20px,3.5cqw,38px) clamp(16px,3.5cqw,38px) 32px;}
+#altar-nexus .nx-heading {margin-bottom:23px;}
+#altar-nexus .nx-heading h1 {font:500 clamp(29px,5.3cqw,42px)/1.12 var(--serif);letter-spacing:-.034em;color:#f4edf6;}
+#altar-nexus .nx-heading p {font-size:13px;line-height:1.5;margin-top:7px;color:#bfb5c6;max-width:72ch;}
+#altar-nexus .nx-snapshot {display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 15px;background:#211c27;border:1px solid #3d3246;border-radius:7px;color:#d6cadf;margin-bottom:23px;}
+#altar-nexus .nx-snapshot strong {font-weight:550;display:flex;align-items:center;gap:10px;font-size:13px;}
+#altar-nexus .nx-snapshot time {font:12px var(--mono);color:#c1afce;}
+#altar-nexus .nx-group+.nx-group {margin-top:23px;}
+#altar-nexus .nx-group-title {display:flex;align-items:center;gap:12px;margin-bottom:4px;}
+#altar-nexus .nx-group-title h2 {font:500 19px/1.2 var(--serif);letter-spacing:-.3px;}
+#altar-nexus .nx-group-title::after {content:"";flex:1;height:1px;background:var(--line);}
+#altar-nexus .nx-destination {display:flex;align-items:center;gap:13px;min-height:62px;width:100%;border:0;border-bottom:1px solid var(--faint-line);background:transparent;padding:8px 2px;text-align:left;}
+#altar-nexus .nx-destination:hover {background:#211b27;}
+#altar-nexus .nx-mark {width:33px;height:33px;border-radius:7px;display:grid;place-items:center;flex:none;color:#cbb2db;background:#302633;}
+#altar-nexus .nx-group[data-family=operations] .nx-mark {color:#a7c9cc;background:#233035;}
+#altar-nexus .nx-dest-text {display:grid;gap:3px;min-width:0;flex:1;}
+#altar-nexus .nx-dest-text strong {font:550 14px/1.24 var(--sans);}
+#altar-nexus .nx-dest-text small {font:12px/1.35 var(--sans);color:#b5aabb;}
+#altar-nexus .nx-dest-info {font:11px/1.3 var(--mono);color:#b5a8be;text-align:right;}
+#altar-nexus .nx-tail {display:grid;place-items:center;color:#91859b;}
+#altar-nexus .nx-filterbar {display:flex;align-items:center;gap:10px;justify-content:space-between;flex-wrap:wrap;margin:0 0 17px;}
+#altar-nexus .nx-search {display:flex;align-items:center;gap:8px;border:1px solid #443a4a;border-radius:6px;background:#201b25;color:#ac9fb6;padding:6px 9px;width:min(100%,270px);}
+#altar-nexus .nx-search-mark {display:grid;place-items:center;}
+#altar-nexus .nx-search input {background:transparent;border:0;min-width:0;flex:1;width:100%;font:13px var(--sans);}
+#altar-nexus .nx-search input::placeholder {color:#afa3b8;}
+#altar-nexus .nx-tabs {display:flex;align-items:center;gap:2px;}
+#altar-nexus .nx-tabs button {border:0;background:transparent;border-radius:5px;padding:6px 11px;font-size:12px;color:var(--soft);}
+#altar-nexus .nx-tabs button[aria-pressed=true] {background:#3b2e45;color:#ebd8f7;}
+#altar-nexus .nx-filter-chip {margin:0 0 13px;background:#2b2233;color:#ddc5eb;border:1px solid #4b3a58;padding:4px 8px;border-radius:5px;font:11.5px var(--sans);}
+#altar-nexus .nx-results table {width:100%;border-collapse:collapse;table-layout:fixed;text-align:left;}
+#altar-nexus .nx-results th {color:#b8a9c4;font:500 11px/1.3 var(--mono);padding:8px 8px 9px;border-bottom:1px solid #4a3e51;}
+#altar-nexus .nx-results th:first-child {width:48%;}
+#altar-nexus .nx-results th:last-child {width:24%;}
+#altar-nexus .nx-results td {border-bottom:1px solid var(--faint-line);padding:12px 8px;font-size:12px;color:#c9bfce;overflow-wrap:anywhere;}
+#altar-nexus .nx-results tr[data-id] {cursor:pointer;}
+#altar-nexus .nx-results tr[data-id]:hover {background:#231d28;}
+#altar-nexus .nx-results tr[data-selected=true] {background:#2e2436;box-shadow:inset 2px 0 #ba90d1;}
+#altar-nexus .nx-object {border:0;display:flex;align-items:center;gap:9px;width:100%;min-width:0;text-align:left;background:transparent;padding:0;}
+#altar-nexus .nx-object .nx-mark {width:28px;height:28px;border-radius:6px;}
+#altar-nexus .nx-object span:last-child {display:grid;min-width:0;gap:4px;}
+#altar-nexus .nx-object b {font:550 13px/1.23 var(--sans);color:#f0e8f3;overflow-wrap:anywhere;}
+#altar-nexus .nx-object small {font:11px/1.35 var(--mono);color:#afa1ba;overflow-wrap:anywhere;}
+#altar-nexus .nx-state {display:inline-flex;align-items:center;gap:6px;font:12px/1.35 var(--sans);}
+#altar-nexus .nx-state::before {content:"";width:6px;height:6px;flex:none;border-radius:50%;background:currentColor;}
+#altar-nexus .nx-state:is([data-tone=success],[data-tone=good]) {color:#99caae;}
+#altar-nexus .nx-state:is([data-tone=warning],[data-tone=warn]) {color:#dcb782;}
+#altar-nexus .nx-state:is([data-tone=info],[data-tone=accent]) {color:#bca8d8;}
+#altar-nexus .nx-state:is([data-tone=neutral],[data-tone=muted]) {color:#bdafc7;}
+#altar-nexus .nx-state:is([data-tone=danger],[data-tone=error]) {color:#e5a2ad;}
+#altar-nexus .nx-empty {padding:21px 6px;border-top:1px solid var(--line);color:var(--soft);}
+#altar-nexus .nx-dock {position:relative;z-index:5;width:var(--pane);flex:0 0 var(--pane);min-width:0;min-height:0;display:flex;flex-direction:column;background:#1d1821;border-left:1px solid var(--line);}
+#altar-nexus .nx-dock-toolbar {height:59px;align-items:center;flex:none;display:flex;gap:4px;padding:8px 13px;border-bottom:1px solid var(--line);}
+#altar-nexus .nx-dock-toolbar button:last-child {margin-left:auto;}
+#altar-nexus .nx-detail {flex:1;min-height:0;overflow:auto;scrollbar-width:thin;padding:25px 17px 28px;}
+#altar-nexus .nx-detail .nx-kicker {font:500 10.6px/1.4 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:#beabc9;}
+#altar-nexus .nx-detail h2 {font:500 25px/1.18 var(--serif);overflow-wrap:anywhere;letter-spacing:-.055em;margin:7px 0 9px;}
+#altar-nexus .nx-detail .nx-summary {font:13px/1.6 var(--sans);color:#c9bfd0;overflow-wrap:anywhere;}
+#altar-nexus .nx-detail .nx-state {margin-top:10px;}
+#altar-nexus .nx-detail-group {border-top:1px solid var(--line);margin-top:19px;padding-top:15px;}
+#altar-nexus .nx-detail-group h3 {font:500 11px/1.5 var(--mono);text-transform:uppercase;letter-spacing:.075em;color:#bca9c8;margin-bottom:8px;}
+#altar-nexus .nx-detail dl {display:grid;grid-template-columns:minmax(62px,.72fr) minmax(0,1.28fr);font:12px/1.45 var(--sans);row-gap:8px;column-gap:12px;align-items:baseline;}
+#altar-nexus .nx-detail dt {color:#b9acbf;}
+#altar-nexus .nx-detail dd {color:#ede4f2;text-align:right;overflow-wrap:anywhere;font-size:12px;}
+#altar-nexus .nx-actions {display:flex;flex-wrap:wrap;gap:7px;margin-top:19px;}
+#altar-nexus .nx-act {padding:7px 11px;background:#382b40;color:#ead3f8;border:1px solid #55435f;border-radius:6px;font:550 12px/1.4 var(--sans);}
+#altar-nexus .nx-act:hover {background:#46334e;}
+#altar-nexus .nx-act + .nx-act {background:#26212c;border-color:#433949;color:#ccc0d4;}
+#altar-nexus .nx-detail-link {background:transparent;border:0;width:100%;padding:7px 0;display:flex;gap:8px;align-items:center;text-align:left;}
+#altar-nexus .nx-detail-link>span {flex:1;display:grid;gap:3px;}
+#altar-nexus .nx-detail-link strong {font:550 13px/1.3 var(--sans);}
+#altar-nexus .nx-detail-link small {font:11px/1.4 var(--mono);color:#bcadc5;}
+#altar-nexus .nx-detail-link:hover strong {text-decoration:underline;}
+#altar-nexus .nx-dir-grip,#altar-nexus .nx-dock-grip {position:absolute;top:0;bottom:0;width:8px;z-index:7;touch-action:none;cursor:col-resize;}
+#altar-nexus .nx-dir-grip {right:-4px;}
+#altar-nexus .nx-dock-grip {left:-4px;}
+#altar-nexus :is(.nx-dir-grip,.nx-dock-grip):hover {background:#b297c745;}
+#altar-nexus .nx-ann {position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);}
+#altar-nexus .nx-sessions {margin:13px 0 0;display:grid;gap:7px;}
+#altar-nexus .nx-question {border-left:2px solid #ad88bf;background:#2a222f;padding:9px 11px;border-radius:0 5px 5px 0;}
+#altar-nexus .nx-detail textarea {width:100%;padding:9px;color:#ede6f3;background:#19151d;border:1px solid #493c52;border-radius:6px;min-height:74px;font:13px/1.4 var(--sans);resize:vertical;}
+#altar-nexus .nx-detail details summary {font-size:13px;color:#dccee6;cursor:pointer;margin:10px 0;}
+#altar-nexus .nx-file {white-space:pre-wrap;overflow-wrap:anywhere;color:#d9cfde;font:12px/1.6 var(--mono);}
+#altar-nexus .nx-meta [data-show-directory] {background:#2a2331;}
+#altar-nexus .apps-pop .app-links {display:grid;}
+#altar-nexus .app-search input {min-width:0;color:var(--ink);background:#211c27;border:1px solid #584662;border-radius:5px;padding:7px;}
+@container(max-width:470px){
+ #altar-nexus .nx-snapshot {align-items:flex-start;flex-wrap:wrap;gap:4px 15px;}
+ #altar-nexus .nx-results th:first-child {width:46%;}
+ #altar-nexus .nx-results th:last-child {width:23%;}
+ #altar-nexus .nx-results td,#altar-nexus .nx-results th {padding-left:5px;padding-right:5px;}
+ #altar-nexus .nx-object .nx-mark {display:none;}
+ #altar-nexus .nx-heading p {font-size:12px;}
+ #altar-nexus .nx-destination {gap:8px;min-height:60px;}
+ #altar-nexus .nx-dest-info {display:none;}
+}
+@media(max-width:1200px){#altar-nexus{--directory:154px;--pane:264px;--rail:136px;}}
+@media(max-width:890px){#altar-nexus .nx-directory {position:absolute;top:0;bottom:0;left:0;width:min(var(--directory),90%);box-shadow:8px 0 30px #0b081455;}}
+@media(max-width:690px){
+ #altar-nexus .nx-dock {position:absolute;inset:0 0 0 auto;max-width:100%;width:min(100%,var(--pane));box-shadow:-10px 0 18px #0a071450;}
+ #altar-nexus .nx-dock-grip {display:none;}
+ #altar-nexus .nx-meta,#altar-nexus .nx-directory-head,#altar-nexus .nx-dock-toolbar {height:49px;min-height:49px;}
+}
+@media(max-width:470px){
+ #altar-nexus {--rail:124px;--pane:355px;height:720px;}
+ #altar-nexus.rail-folded {--rail:41px;}
+ #altar-nexus .nx-dock {width:100%;}
+ #altar-nexus .nx-content {padding:18px 10px 26px;}
+ #altar-nexus .nx-meta {gap:7px;padding:0 8px;}
+ #altar-nexus .nx-environment,#altar-nexus .nx-sample {font-size:10.5px;}
+ #altar-nexus .nx-rail .altar-brand img {width:26px;height:26px;}
+ #altar-nexus .nx-section-links button {min-height:38px;}
+}
+.altar-brand {display:flex;align-items:center;gap:10px;flex:none;height:var(--head);padding:0 13px;}
+.altar-brand img {width:30px;height:30px;object-fit:contain;flex:none;}
+.altar-brand strong{font:600 22px/1 Georgia,serif;letter-spacing:-.3px;}
+.instrument-list,.pinned {display:grid;gap:3px;padding:12px 8px;}
+.instrument,.app-split button,.operator button,.apps-pop button,.palette-title button {font:inherit;color:inherit;border:0;background:none;}
+.instrument {display:flex;align-items:center;gap:11px;min-height:34px;font-size:13px;text-decoration:none;border-radius:6px;padding:5px 10px;white-space:nowrap;color:#dedbe5;}
+.instrument svg,.app-split svg,.operator svg,.template svg {flex:none;}
+.instrument:hover,.instrument:focus-visible,.app-split button:hover {background:#302a39;color:#f5effa;}
+.instrument.current {background:#3c314b;color:#f2e5ff;box-shadow:inset 2px 0 0 #b69acb;}
+.pinned {margin:0 8px;padding:13px 0 11px;border-top:1px solid #38323f;border-bottom:1px solid #38323f;}
+.pinned h2 {padding:0 10px 5px;font-size:12px;line-height:1.25;font-weight:620;color:#bbb4c8;}
+.app-split {margin:11px 8px;display:flex;align-items:stretch;border-radius:6px;overflow:hidden;}
+.app-split button {display:flex;align-items:center;gap:8px;padding:7px;min-height:32px;min-width:0;font-size:12px;}
+.app-split button:first-child {flex:1;}
+.app-split button:last-child {justify-content:center;max-width:25px;padding:4px;color:#b3a9bf;}
+.operator {display:flex;align-items:center;gap:7px;margin-top:auto;padding:13px 11px;min-height:53px;color:#beb9c7;font-size:12px;}
+.operator>svg {border:1px solid #544b61;border-radius:50%;padding:3px;box-sizing:content-box;background:#2d2736;color:#d1c4df;}
+.operator button {margin-left:auto;color:#c2bacf;display:grid;place-items:center;width:28px;height:28px;padding:0;border-radius:5px;}
+.operator button:hover,.palette-title button:hover {background:#2f2b37;}
+.rail-folded .instrument span,.rail-folded .app-split span,.rail-folded .operator>span,.rail-folded .altar-brand strong,.rail-folded .pinned h2,.rail-folded .operator>svg {display:none;}
+.rail-folded .altar-brand {padding:0;justify-content:center;}
+.rail-folded .instrument-list {padding:10px 5px;}
+.rail-folded .pinned {margin:0 5px;}
+.rail-folded .instrument {justify-content:center;padding:5px 0;}
+.rail-folded .operator {justify-content:center;padding:10px 0;}
+.rail-folded .operator button {margin:0;}
+.rail-folded .app-split {margin:10px 1px;}
+.rail-folded .app-split button:first-child {padding:4px;justify-content:center;}
+.rail-folded .app-split button:last-child {width:15px;padding:0;}
+.apps-pop {z-index:50;position:absolute;left:calc(var(--rail) + 4px);top:min(350px,36%);width:min(225px,calc(100% - var(--rail) - 8px));max-height:60%;overflow:auto;padding:9px;background:#211d29;border:1px solid #514659;border-radius:9px;box-shadow:0 12px 36px #0007;}
+.apps-pop header,.palette-title,.app-links a,.all-apps,.palette-search,.app-search {display:flex;align-items:center;gap:8px;}
+.apps-pop header {justify-content:space-between;padding:4px 5px;}
+.apps-pop header h2{font-size:14px;}
+.apps-pop header button {font-size:18px;}
+.apps-pop[data-mode=dashboard] {top:75px;width:min(390px,calc(100% - var(--rail) - 8px));}
+.app-links{display:grid;}
+.app-links a {padding:8px 5px;font-size:13px;color:#e6dbef;text-decoration:none;border-radius:4px;}
+.app-links a:hover {background:#352e3c;}
+.all-apps{padding:8px 5px;width:100%;border-top:1px solid #443b4c!important;font-size:12px!important;justify-content:space-between;}
+#altar-nexus .apps-pop[data-mode=dashboard] {
+  inset:0 0 0 var(--rail);width:auto;max-height:none;padding:0;border:0;border-radius:0;
+  background:#17141b;box-shadow:none;scrollbar-width:thin;
+}
+#altar-nexus .app-dashboard-inner {max-width:1030px;margin:0 auto;padding:36px clamp(16px,4vw,64px);}
+#altar-nexus .apps-pop[data-mode=dashboard] header {padding:0 0 18px;}
+#altar-nexus .apps-pop[data-mode=dashboard] h2 {font:500 32px/1.18 var(--serif);letter-spacing:-.7px;}
+#altar-nexus .apps-pop[data-mode=dashboard] header button {display:grid;place-items:center;width:33px;height:33px;border:1px solid var(--line);border-radius:6px;}
+#altar-nexus .app-filters {display:flex;align-items:center;flex-wrap:wrap;gap:10px 16px;margin:4px 0 20px;}
+#altar-nexus .app-filters .app-search {display:flex;align-items:center;gap:8px;flex:1 1 200px;min-width:0;max-width:370px;border:1px solid var(--line);border-radius:6px;background:#211c27;padding:0 9px;color:var(--soft);}
+#altar-nexus .app-filters .app-search input {border:0;min-width:0;width:100%;padding:8px 0;background:transparent;color:var(--ink);}
+#altar-nexus .app-area {display:flex;align-items:center;gap:7px;font-size:12px;color:var(--soft);}
+#altar-nexus .app-area select {max-width:100%;font:inherit;color:var(--ink);padding:7px;border:1px solid var(--line);background:#211c27;border-radius:6px;}
+#altar-nexus .app-grid {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,204px),1fr));gap:12px;}
+#altar-nexus .app-tile {min-height:156px;display:flex;flex-direction:column;align-items:flex-start;padding:16px;border:1px solid #403645;border-radius:8px;background:#1d1922;}
+#altar-nexus .app-tile-top {width:100%;display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:9px;}
+#altar-nexus .app-mark {color:#c8aadd;}
+#altar-nexus .pin-app {display:grid;place-items:center;width:26px;height:26px;padding:0;border:1px solid #44394b;border-radius:5px;color:#c8bdce;}
+#altar-nexus .pin-app[aria-pressed=true] {background:#3a2f43;color:#dec6ec;}
+#altar-nexus .app-tile h3 {font:500 19px/1.3 var(--serif);color:var(--ink);}
+#altar-nexus .app-tile p,#altar-nexus .app-empty {font:13px/1.5 var(--sans);color:var(--soft);}
+#altar-nexus .app-tile a {display:inline-flex;gap:4px;align-items:center;margin-top:auto;padding-top:12px;font-size:12px;color:#d7b5e9;text-decoration:none;}
+#altar-nexus .app-tile a:hover {text-decoration:underline;}
+#altar-nexus .app-split button[aria-expanded=true] {background:#40324a;color:#f2e5fb;}
+@media(max-width:550px){#altar-nexus .app-dashboard-inner {padding:17px 12px;}#altar-nexus .app-tile {min-height:129px;}#altar-nexus .app-area {max-width:100%;}}
+/*$vite$:1*/</style>
+<div id="altar-nexus">
+  <nav class="nx-rail" aria-label="Altar navigation"></nav>
+  <div class="nx-work">
+    <aside class="nx-directory" aria-label="Nexus sections">
+      <header class="nx-directory-head"><h2>Nexus</h2><button class="nx-icon" data-hide-directory aria-label="Hide Nexus sections" title="Hide sections"></button></header>
+      <div class="nx-section-links"></div>
+      <div class="nx-dir-grip" role="separator" tabindex="0" aria-label="Section directory width" aria-orientation="vertical"></div>
+    </aside>
+    <main class="nx-main" aria-label="Nexus board">
+      <div class="nx-meta"><button class="nx-icon" data-show-directory aria-label="Show Nexus sections" title="Show sections" hidden></button>
+        <span class="nx-environment">Local vessel</span><span class="nx-sample">Sample snapshot</span>
+        <button class="nx-icon nx-open-tools" data-show-dock aria-label="Open side panel" title="Open side panel"></button></div>
+      <div class="nx-content">
+        <header class="nx-heading"><h1 tabindex="-1"></h1><p></p></header>
+        <div class="nx-home"></div>
+        <div class="nx-list" hidden>
+          <div class="nx-filterbar"><label class="nx-search"><span class="nx-search-mark"></span><input type="search" autocomplete="off" aria-label="Search this section"></label><div class="nx-tabs" aria-label="IAM views"></div></div>
+          <div class="nx-active-filter"></div>
+          <div class="nx-results"></div>
+        </div>
+      </div>
+    </main>
+    <aside class="nx-dock" aria-label="Nexus side panel" hidden>
+      <div class="nx-dock-grip" role="separator" tabindex="0" aria-label="Side panel width" aria-orientation="vertical"></div>
+      <div class="nx-dock-toolbar" aria-label="Side panel tools"></div>
+      <div class="nx-detail"></div>
+    </aside>
+  </div>
+  <div class="nx-ann" aria-live="polite"></div>
+</div>
+
+<script>(function() {
+
+// glyphs.mjs
+	var symbols = {
+		"shield-check": "<path d=\"m12 3 8 3v6c0 5-4.5 8-8 10-3.5-2-8-5-8-10V6z\"/><path d=\"m8 12 3 3 5-6\"/>",
+		"user-round": "<circle cx=\"12\" cy=\"7.5\" r=\"3.5\"/><path d=\"M5 20v-2a7 7 0 0 1 14 0v2\"/>",
+		bridge: "<path d=\"M21 12a6 6 0 0 1-6 6H8l-5 3V7a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3z\"/>",
+		layers: "<path d=\"m12 3 9 5-9 5-9-5z M3 12l9 5 9-5 M3 16l9 5 9-5\"/>",
+		loom: "<rect x=\"2.5\" y=\"9\" width=\"5\" height=\"6\" rx=\"1.3\"/><rect x=\"16.5\" y=\"2.5\" width=\"5\" height=\"6\" rx=\"1.3\"/><rect x=\"16.5\" y=\"15.5\" width=\"5\" height=\"6\" rx=\"1.3\"/><path d=\"M7.5 12h3.3c2 0 2-1.8 2-3.2v-1c0-1.6 1.2-2.3 3.7-2.3 M10.8 12c2 0 2 1.8 2 3.2v1c0 1.6 1.2 2.3 3.7 2.3\"/>",
+		orb: "<circle cx=\"12\" cy=\"12\" r=\"8\"/><circle cx=\"12\" cy=\"12\" r=\"4.5\"/>",
+		nexus: "<circle cx=\"12\" cy=\"4\" r=\"2.5\"/><circle cx=\"5\" cy=\"18\" r=\"2.5\"/><circle cx=\"19\" cy=\"18\" r=\"2.5\"/><path d=\"m11 6-5 10m7-10 5 10M8 18h8\"/>",
+		apps: "<rect x=\"3\" y=\"3\" width=\"7\" height=\"7\" rx=\"1.3\"/><rect x=\"14\" y=\"3\" width=\"7\" height=\"7\" rx=\"1.3\"/><rect x=\"3\" y=\"14\" width=\"7\" height=\"7\" rx=\"1.3\"/><rect x=\"14\" y=\"14\" width=\"7\" height=\"7\" rx=\"1.3\"/>",
+		bag: "<path d=\"M3 8h18v12H3z M8 8V5h8v3 M3 12h18\"/>",
+		pen: "<path d=\"m4 20 5-12 8-5 4 4-5 8-12 5Zm1-1 8-8\"/><circle cx=\"14\" cy=\"10\" r=\"1.4\"/>",
+		gear: "<circle cx=\"12\" cy=\"12\" r=\"6\"/><circle cx=\"12\" cy=\"12\" r=\"2\"/><path d=\"M12 2v3m0 14v3M2 12h3m14 0h3M5 5l2 2m10 10 2 2M5 19l2-2M17 7l2-2\"/>",
+		paper: "<path d=\"M5 3h9l5 5v13H5z M14 3v6h5 M8 13h8 M8 16h6\"/>",
+		agent: "<rect x=\"3\" y=\"7\" width=\"18\" height=\"13\" rx=\"4\"/><path d=\"M12 3v4M8 16h8\"/><circle cx=\"8.5\" cy=\"11.7\" r=\".65\"/><circle cx=\"15.5\" cy=\"11.7\" r=\".65\"/>",
+		cube: "<path d=\"m12 2.8 8 4.6v9.2l-8 4.6-8-4.6V7.4z M4 7.4l8 4.6 8-4.6 M12 12v9.2\"/>",
+		route: "<path d=\"M12 20v-4c0-5-6-3-6-8V4m0 0L3 7m3-3 3 3m3 9c0-5 6-3 6-8V4m0 0-3 3m3-3 3 3\"/>",
+		phase: "<rect x=\"3\" y=\"4\" width=\"18\" height=\"16\" rx=\"4\"/><path d=\"m8 10 4 3 4-3\"/>",
+		group: "<rect x=\"3\" y=\"4\" width=\"12\" height=\"12\" rx=\"2\"/><path d=\"M8 19h11V9\"/>",
+		hand: "<path d=\"M7 13V8a1.5 1.5 0 0 1 3 0v4-7a1.5 1.5 0 0 1 3 0v7-6a1.5 1.5 0 0 1 3 0v7-4a1.5 1.5 0 0 1 3 0v6c0 4-2 6-6 6-3 0-5-1-6-3l-3-5c-.7-1.4 1.1-2.5 2.1-1.5z\"/>",
+		pointer: "<path d=\"M5 3l15 10-7 1.3L9.3 21z\"/>",
+		fit: "<path d=\"M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5\"/>",
+		minus: "<path d=\"M5 12h14\"/>",
+		plus: "<path d=\"M5 12h14m-7-7v14\"/>",
+		down: "<path d=\"m6 9 6 6 6-6\"/>",
+		right: "<path d=\"m9 6 6 6-6 6\"/>",
+		left: "<path d=\"m15 6-6 6 6 6\"/>",
+		search: "<circle cx=\"10\" cy=\"10\" r=\"6.5\"/><path d=\"m15 15 5 5\"/>",
+		sliders: "<path d=\"M3 7h6m4 0h8M3 17h11m4 0h3\"/><circle cx=\"11\" cy=\"7\" r=\"2\"/><circle cx=\"16\" cy=\"17\" r=\"2\"/>",
+		terminal: "<rect x=\"2.6\" y=\"4\" width=\"18.8\" height=\"16\" rx=\"2.6\"/><path d=\"m6 9 3 3-3 3m5 0h5\"/>",
+		web: "<circle cx=\"12\" cy=\"12\" r=\"9\"/><ellipse cx=\"12\" cy=\"12\" rx=\"4\" ry=\"9\"/><path d=\"M3 12h18\"/>",
+		extend: "<path d=\"M4 16h3.5c2.5 0 3.5-1.2 3.5-4V8c0-2 1-3 3-3h3m0 0-3-2m3 2-3 2M13 17h8m-4-4v8\"/>",
+		inspect: "<path d=\"M3 5h18v14H3z M15 5v14\"/>",
+		keyboard: "<rect x=\"2\" y=\"6\" width=\"20\" height=\"13\" rx=\"2\"/><path d=\"M5 10h1m2 0h1m2 0h1m2 0h1m2 0h1M7 15h10\"/>",
+		data: "<ellipse cx=\"12\" cy=\"5\" rx=\"8\" ry=\"3\"/><path d=\"M4 5v14c0 4 16 4 16 0V5M4 12c0 4 16 4 16 0\"/>",
+		check: "<path d=\"m5 12 4 4L19 6\"/>",
+		link: "<path d=\"M9 8 6 11a4 4 0 0 0 6 6l3-3m0 2 3-3a4 4 0 0 0-6-6L9 10m0 5 6-6\"/>",
+		text: "<path d=\"M4 6h16M4 12h12M4 18h9\"/>",
+		and: "<path d=\"M5 5h3c3 0 5 4 5 7s2 7 5 7h1M5 19h3c3 0 5-4 5-7s2-7 5-7h1\"/>",
+		folder: "<path d=\"M3 6h6l2 2h10v11H3z\"/>",
+		book: "<path d=\"M4 4h7c2 0 2 2 2 2s0-2 2-2h5v15h-5c-1 0-2 .7-2 1-1-.7-2-1-3-1H4z\"/>"
+	};
+	function svg(name, size = 18) {
+		return "<svg aria-hidden=\"true\" width=\"" + size + "\" height=\"" + size + "\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.55\" stroke-linecap=\"round\" stroke-linejoin=\"round\">" + (symbols[name] || "") + "</svg>";
+	}
+
+// chrome.mjs
+	var icon = (name, size = 17) => svg(name, size);
+	var manual = "https://hexanomicon.dev/";
+	var tools = [
+		[
+			"Bridge",
+			"bridge",
+			"divination/altar/bridge/"
+		],
+		[
+			"Atlas",
+			"layers",
+			"divination/altar/atlas/"
+		],
+		[
+			"Loom",
+			"loom",
+			"divination/altar/loom/"
+		],
+		[
+			"Orb",
+			"orb",
+			"divination/altar/orb/"
+		],
+		[
+			"Nexus",
+			"nexus",
+			""
+		]
+	];
+	var apps = [
+		[
+			"Scavenger",
+			"bag",
+			"compositions/scavenger/market/"
+		],
+		[
+			"Atelier",
+			"pen",
+			"compositions/atelier/"
+		],
+		[
+			"Canvas",
+			"layers",
+			"compositions/canvas/"
+		],
+		[
+			"Broadcast",
+			"orb",
+			"compositions/broadcast/"
+		],
+		[
+			"Riffmaw",
+			"gear",
+			"compositions/riffmaw/"
+		],
+		[
+			"Language Edition",
+			"book",
+			"compositions/language-edition/"
+		]
+	];
+	var creative = "Creative Works";
+	var catalogue = {
+		Scavenger: [
+			"Stewardship &amp; Acquisition",
+			"Find and compare market listings.",
+			"Open market"
+		],
+		Atelier: [
+			creative,
+			"Develop images and finish video masters.",
+			"View design"
+		],
+		Canvas: [
+			creative,
+			"Draw, revise and share a board.",
+			"Open Canvas"
+		],
+		Broadcast: [
+			creative,
+			"Prepare a publication for its outlet.",
+			"View design"
+		],
+		Riffmaw: [
+			creative,
+			"Compose music, arrange cues and prepare a mix.",
+			"View design"
+		],
+		"Language Edition": [
+			creative,
+			"Align dialogue and captions to a source.",
+			"View design"
+		]
+	};
+	function destination(url) {
+		const here = location.pathname.endsWith("/assets/altar-design/nexus-board.html");
+		if (here && url === "divination/altar/loom/") return "./loom-canvas.html";
+		if (here && url === "divination/altar/orb/") return "./orb-field.html";
+		if (here && location.protocol !== "file:") return "../../" + url;
+		return manual + url;
+	}
+	var link = (name, mark, url, cls = "") => "<a class=\"" + cls + "\" href=\"" + destination(url) + "\" target=\"_blank\" rel=\"noopener\" title=\"" + name + "\" aria-label=\"" + name + "\">" + icon(mark) + "<span>" + name + "</span></a>";
+	var row = ([name, mark, url]) => url ? link(name, mark, url, "instrument") : "<button class=\"instrument current\" aria-current=\"page\" title=\"Nexus overview\" aria-label=\"Nexus overview\" data-action=\"full\">" + icon(mark) + "<span>Nexus</span></button>";
+	function mountChrome(app) {
+		const rail = app.querySelector(".nx-rail");
+		rail.setAttribute("aria-label", "Altar navigation");
+		rail.innerHTML = "<div class=\"altar-brand\"><img src=\"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1MTIiIGhlaWdodD0iNTEyIiB2aWV3Qm94PSIzIDcgNTggNTgiIGZpbGw9Im5vbmUiPgogIDx0aXRsZT5BbHRhciDigJQgZGFyayB3YWxudXQsIHB1cnBsZSBjbG90aCBhbmQgc21hbGwgZnJvbnQtbW91bnRlZCBjYW5kbGVzPC90aXRsZT4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0id29vZCIgeDE9IjMyIiB5MT0iMjAiIHgyPSIzMiIgeTI9IjMzIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHN0b3Agc3RvcC1jb2xvcj0iIzgwNTgzQiIvPjxzdG9wIG9mZnNldD0iLjQ1IiBzdG9wLWNvbG9yPSIjNjU0MzJFIi8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjNDkzMDI0Ii8+PC9saW5lYXJHcmFkaWVudD4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0ibGVnIiB4MT0iMTMiIHkxPSIzMSIgeDI9IjI0IiB5Mj0iNTciIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIj48c3RvcCBzdG9wLWNvbG9yPSIjNzY1MTM4Ii8+PHN0b3Agb2Zmc2V0PSIuNTIiIHN0b3AtY29sb3I9IiM1NjM4MjkiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiM0OTMwMjQiLz48L2xpbmVhckdyYWRpZW50PgogICAgPGxpbmVhckdyYWRpZW50IGlkPSJjbG90aCIgeDE9IjIwIiB5MT0iMjAiIHgyPSI0NSIgeTI9IjQwIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHN0b3Agc3RvcC1jb2xvcj0iIzc1NDU4RSIvPjxzdG9wIG9mZnNldD0iLjM1IiBzdG9wLWNvbG9yPSIjNUIzMzczIi8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjNDgyMzYwIi8+PC9saW5lYXJHcmFkaWVudD4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iY2FuZGxlIiB4MT0iMTAiIHkxPSIyOSIgeDI9IjE0IiB5Mj0iMjkiIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIj48c3RvcCBzdG9wLWNvbG9yPSIjQ0RCOTk0Ii8+PHN0b3Agb2Zmc2V0PSIuNDIiIHN0b3AtY29sb3I9IiNGNkVBRDAiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiNERkNCQTUiLz48L2xpbmVhckdyYWRpZW50PgogICAgPHBhdGggaWQ9ImxlZnQtbGVnIiBkPSJNMTIgMjloMTJ2NWgtMnYxNWwyIDR2NUgxMXYtNGwzLTRWMzVoLTJaIi8+CiAgICA8ZyBpZD0iZnJvbnQtY2FuZGxlIj4KICAgICAgPHJlY3QgeD0iMTYiIHk9IjMyLjIiIHdpZHRoPSIzIiBoZWlnaHQ9IjUiIHJ4PSIuOCIgZmlsbD0iIzg5NjYzNyIvPgogICAgICA8cGF0aCBkPSJNMTcgMzUuMmMwIDMuMS01IDMuNy01LS42IiBzdHJva2U9IiNCNDhCNTAiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CiAgICAgIDxwYXRoIGQ9Ik04LjUgMzIuNWg3bC0xIDIuOGgtNVoiIGZpbGw9IiNCNDhCNTAiLz4KICAgICAgPHBhdGggZD0iTTEwIDI3LjVoNHY1LjJoLTRaIiBmaWxsPSJ1cmwoI2NhbmRsZSkiLz4KICAgICAgPHBhdGggZD0iTTEyIDI1Ljd2Mi4xIiBzdHJva2U9IiM2NTQ1MkQiIHN0cm9rZS13aWR0aD0iLjkiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgogICAgICA8cGF0aCBkPSJNMTIgMjAuN2MtLjUgMS42LTIuMSAyLjUtMS44IDRhMS44NSAxLjg1IDAgMCAwIDMuNiAwYy4zLTEuNC0xLjMtMi42LTEuOC00WiIgZmlsbD0iI0Y0QzE2RiIvPgogICAgICA8cGF0aCBkPSJNOC43IDMyLjVoNi42IiBzdHJva2U9IiNENEI0N0QiIHN0cm9rZS13aWR0aD0iMS4xIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KICAgIDwvZz4KICA8L2RlZnM+CiAgPHVzZSBocmVmPSIjbGVmdC1sZWciIGZpbGw9InVybCgjbGVnKSIvPgogIDx1c2UgaHJlZj0iI2xlZnQtbGVnIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSg2NCAwKSBzY2FsZSgtMSAxKSIgZmlsbD0idXJsKCNsZWcpIi8+CiAgPHBhdGggZD0iTTE1LjcgMzZ2MTMuNU00OC4zIDM2djEzLjUiIHN0cm9rZT0iIzhGNjY0NyIgc3Ryb2tlLXdpZHRoPSIxLjUiLz4KICA8cGF0aCBkPSJNMTIuNSA1NC43aDkuNU00MiA1NC43aDkuNSIgc3Ryb2tlPSIjNzk1NDNCIiBzdHJva2Utd2lkdGg9IjEuNCIvPgogIDxwYXRoIGQ9Ik0xMCAyNGg0NHY4SDEwWiIgZmlsbD0iIzQ5MzAyNCIvPgogIDxwYXRoIGQ9Ik0xMSAzMC43aDQyIiBzdHJva2U9IiM4MDU4M0IiIHN0cm9rZS13aWR0aD0iMS40Ii8+CiAgPHBhdGggZD0ibTUgMjAgNS02aDQ0bDUgNi00IDRIOVoiIGZpbGw9IiM3NjUwMzkiLz4KICA8cGF0aCBkPSJNNSAyMGg1NHY1SDVaIiBmaWxsPSJ1cmwoI3dvb2QpIi8+CiAgPHBhdGggZD0iTTYgMjAuNmg1MiIgc3Ryb2tlPSIjOUI3MjRFIiBzdHJva2Utd2lkdGg9IjEuMyIvPgogIDxwYXRoIGQ9Ik0xNiAxNGgzMmw0IDZIMTJaIiBmaWxsPSIjNjg0MTdGIi8+CiAgPHBhdGggZD0iTTE4IDIwaDI4bC0yIDE5Yy00IDIuNy04IDIuNy0xMiAuNS00IDIuMi04IDIuMi0xMi0uNVoiIGZpbGw9InVybCgjY2xvdGgpIi8+CiAgPHBhdGggZD0iTTE5IDIwaDZsLTEuMiAxOC43LTMuOC0uNFoiIGZpbGw9IiM4MDUxOTYiLz4KICA8cGF0aCBkPSJNNDAgMjBoNWwtMS43IDE4LjYtNC4xIDEuMloiIGZpbGw9IiMzRTIwNTQiLz4KICA8cGF0aCBkPSJNMjAuMiAzOC40YzMuOSAyLjcgNy45IDIuNyAxMS44LjUgMy45IDIuMiA3LjkgMi4yIDExLjgtLjUiIHN0cm9rZT0iI0I5QTA3MyIgc3Ryb2tlLXdpZHRoPSIxLjE1Ii8+CiAgPHVzZSBocmVmPSIjZnJvbnQtY2FuZGxlIi8+CiAgPHVzZSBocmVmPSIjZnJvbnQtY2FuZGxlIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSg2NCAwKSBzY2FsZSgtMSAxKSIvPgo8L3N2Zz4K\" alt=\"\"><strong>Altar</strong></div><div class=\"instrument-list\">" + tools.map(row).join("") + "</div><section class=\"pinned\"><h2>Pinned apps</h2>" + apps.slice(0, 2).map(row).join("") + "</section><div class=\"app-split\"><button data-apps=\"dashboard\" title=\"Applications\" aria-label=\"Applications\">" + icon("apps") + "<span>Applications</span></button><button data-apps=\"quick\" title=\"Quick applications list\" aria-label=\"Quick applications list\" aria-expanded=\"false\">" + icon("right", 13) + "</button></div><div class=\"operator\">" + icon("agent", 18) + "<span>magus</span><button aria-label=\"Collapse Altar navigation\" title=\"Collapse Altar navigation\" data-toggle-rail>" + icon("inspect", 17) + "</button></div>";
+		const overlay = document.createElement("section");
+		overlay.className = "apps-pop";
+		overlay.hidden = true;
+		overlay.setAttribute("role", "dialog");
+		app.append(overlay);
+		let returnButton;
+		const quickButton = rail.querySelector("[data-apps=\"quick\"]"), dashboardButton = rail.querySelector("[data-apps=\"dashboard\"]");
+		const workspace = app.querySelector(".nx-work");
+		const pins = /* @__PURE__ */ new Set(["Scavenger", "Atelier"]);
+		function updatePins() {
+			rail.querySelector(".pinned").innerHTML = "<h2>Pinned apps</h2>" + apps.filter(([name]) => pins.has(name)).map(row).join("");
+		}
+		function dismiss(restore = false) {
+			if (overlay.hidden) return;
+			workspace.inert = false;
+			overlay.hidden = true;
+			quickButton.setAttribute("aria-expanded", "false");
+			dashboardButton.setAttribute("aria-expanded", "false");
+			if (restore) returnButton?.focus();
+		}
+		function pinLabel(name) {
+			return (pins.has(name) ? "Unpin " : "Pin ") + name;
+		}
+		function pinIcon(name) {
+			return icon(pins.has(name) ? "check" : "plus", 14);
+		}
+		function appCard([name, mark, url]) {
+			const [area, description, action] = catalogue[name];
+			return "<article class=\"app-tile\" data-name=\"" + name + "\" data-area=\"" + area + "\"><div class=\"app-tile-top\"><span class=\"app-mark\">" + icon(mark, 23) + "</span><button type=\"button\" class=\"pin-app\" data-pin=\"" + name + "\" aria-pressed=\"" + pins.has(name) + "\" aria-label=\"" + pinLabel(name) + "\" title=\"" + pinLabel(name) + "\">" + pinIcon(name) + "</button></div><h3>" + name + "</h3><p>" + description + "</p><a href=\"" + destination(url) + "\" target=\"_blank\" rel=\"noopener\" aria-label=\"" + action + " · " + name + "\">" + action + " " + icon("right", 12) + "</a></article>";
+		}
+		function applyFilters() {
+			const term = overlay.querySelector("[type=search]").value.trim().toLowerCase();
+			const area = overlay.querySelector("select").value;
+			const cards = overlay.querySelectorAll(".app-tile");
+			for (const card of cards) card.hidden = !(card.dataset.name.toLowerCase().includes(term) && (!area || card.dataset.area === area));
+			overlay.querySelector(".app-empty").hidden = [...cards].some((card) => !card.hidden);
+		}
+		function display(mode, owner) {
+			if (!overlay.hidden && overlay.dataset.mode === mode) {
+				dismiss(true);
+				return;
+			}
+			if (owner && !overlay.contains(owner)) returnButton = owner;
+			const full = mode === "dashboard";
+			overlay.hidden = false;
+			overlay.dataset.mode = mode;
+			overlay.setAttribute("aria-label", full ? "Applications dashboard" : "Quick applications list");
+			workspace.inert = full;
+			dashboardButton.setAttribute("aria-expanded", String(full));
+			quickButton.setAttribute("aria-expanded", String(!full));
+			const header = "<header><h2>Applications</h2><button type=\"button\" title=\"Close\" aria-label=\"Close applications\">×</button></header>";
+			if (full) {
+				const areas = [...new Set(Object.values(catalogue).map(([area]) => area))].sort();
+				overlay.innerHTML = "<div class=\"app-dashboard-inner\">" + header + "<div class=\"app-filters\"><label class=\"app-search\">" + icon("search", 16) + "<input type=\"search\" placeholder=\"Find an application\" aria-label=\"Find an application\"></label><label class=\"app-area\"><span>Area</span><select aria-label=\"Area\"><option value=\"\">All areas</option>" + areas.map((area) => "<option>" + area + "</option>").join("") + "</select></label></div><div class=\"app-grid\">" + apps.map(appCard).join("") + "</div><p class=\"app-empty\" role=\"status\" hidden>No matching applications.</p></div>";
+				overlay.querySelector("input").focus();
+			} else {
+				const shortcuts = apps.filter(([name]) => !pins.has(name));
+				overlay.innerHTML = header + "<div class=\"app-links\">" + shortcuts.map((x) => link(...x)).join("") + "</div><button class=\"all-apps\" data-dashboard>All applications " + icon("right", 13) + "</button>";
+				(overlay.querySelector("a") ?? overlay.querySelector("[data-dashboard]")).focus();
+			}
+		}
+		const small = matchMedia("(max-width:1199px)");
+		const setRail = (fold) => {
+			app.classList.toggle("rail-folded", fold);
+			const toggle = rail.querySelector("[data-toggle-rail]");
+			const text = (fold ? "Expand" : "Collapse") + " Altar navigation";
+			toggle.title = text;
+			toggle.setAttribute("aria-label", text);
+			toggle.setAttribute("aria-expanded", String(!fold));
+		};
+		setRail(small.matches);
+		small.addEventListener("change", (e) => setRail(e.matches));
+		rail.addEventListener("click", (e) => {
+			const action = e.target.closest("[data-apps]");
+			if (action) {
+				display(action.dataset.apps, action);
+				return;
+			}
+			if (e.target.closest("[data-toggle-rail]")) {
+				setRail(!app.classList.contains("rail-folded"));
+				dismiss();
+			}
+		});
+		rail.querySelector(".app-split").addEventListener("contextmenu", (e) => {
+			e.preventDefault();
+			display("quick", quickButton);
+		});
+		overlay.addEventListener("click", (e) => {
+			if (e.target.closest("header button")) {
+				dismiss(true);
+				return;
+			}
+			if (e.target.closest("[data-dashboard]")) {
+				display("dashboard");
+				return;
+			}
+			const btn = e.target.closest("[data-pin]");
+			if (btn) {
+				const name = btn.dataset.pin;
+				if (pins.has(name)) pins.delete(name);
+				else pins.add(name);
+				btn.innerHTML = pinIcon(name);
+				btn.title = pinLabel(name);
+				btn.setAttribute("aria-label", btn.title);
+				btn.setAttribute("aria-pressed", String(pins.has(name)));
+				updatePins();
+			}
+		});
+		overlay.addEventListener("input", (e) => {
+			if (e.target.matches("input[type=search]")) applyFilters();
+		});
+		overlay.addEventListener("change", (e) => {
+			if (e.target.matches("select")) applyFilters();
+		});
+		app.addEventListener("pointerdown", (e) => {
+			if (!overlay.hidden && !overlay.contains(e.target) && !rail.querySelector(".app-split").contains(e.target)) dismiss();
+		});
+		document.addEventListener("keydown", (e) => {
+			if (e.key === "Escape" && !overlay.hidden) dismiss(true);
+		});
+	}
+
+// operations.mjs
+	var capture = "19 Nov 2026 · 09:42 UTC";
+	var qwen = "qwen-coder";
+	var llama = "llama";
+	var latestRequest = "NX-218";
+	var objects = {
+		[qwen]: {
+			title: "Qwen2.5-Coder 14B",
+			owner: "local-qwen",
+			kind: "Managed capability",
+			key: "local-qwen:chat:qwen2.5-coder-14b",
+			runtime: "llama.cpp",
+			status: "Awaited",
+			tone: "info",
+			phase: "activatable",
+			warm: "No",
+			health: "Ready to activate",
+			checked: "09:41:59 UTC",
+			description: "The coding model can be activated on this vessel.",
+			plan: "HARD_SWAP"
+		},
+		[llama]: {
+			title: "Llama 3.2 3B",
+			owner: "local-llama",
+			kind: "Managed capability",
+			key: "local-llama:chat:llama-3.2-3b",
+			runtime: "llama.cpp",
+			status: "Active",
+			tone: "success",
+			phase: "warm",
+			warm: "Yes",
+			health: "Healthy",
+			checked: "09:41:58 UTC",
+			description: "The local chat model was warm at its last check.",
+			plan: "NO_OP"
+		},
+		"project-portal": {
+			title: "Project Portal",
+			owner: "project-portal",
+			kind: "Remote Portal",
+			key: "project-portal:chat:project-assistant",
+			runtime: "Remote provider",
+			status: "Unknown",
+			tone: "neutral",
+			phase: "unknown",
+			warm: "Unknown",
+			health: "Unknown",
+			checked: "Unknown",
+			description: "The vessel lists this remote capability. Its snapshot contains no freshness or readiness observation."
+		},
+		"review-worker": {
+			title: "Review worker",
+			owner: "review-worker",
+			kind: "Delegated runtime pool",
+			status: "Observed",
+			tone: "neutral",
+			checked: "09:41:51 UTC",
+			description: "A delegated review pool advertises a bounded execution profile.",
+			runtime: "Local subprocess",
+			profile: "review-readonly"
+		}
+	};
+	var records = {
+		"NX-217": {
+			target: llama,
+			source: "Operator",
+			requested: "09:41:44 UTC",
+			ticket: "Settled",
+			ticketAt: "09:41:56 UTC",
+			phase: "Verifying",
+			observed: "09:41:54 UTC",
+			action: "HARD_SWAP",
+			physical: "physical-34",
+			ticketId: "ticket-217",
+			description: "The ticket settled after the last recorded physical check. That check was still verifying the target."
+		},
+		"NX-216": {
+			target: qwen,
+			source: "Run",
+			requested: "09:31:14 UTC",
+			ticket: "Unavailable",
+			phase: "Completed",
+			observed: "09:31:27 UTC",
+			action: "HARD_SWAP",
+			physical: "physical-33",
+			occurrence: "occ-planning-04",
+			description: "The retained physical observation records completion. Its process-local ticket has expired."
+		},
+		[latestRequest]: {
+			target: qwen,
+			source: "Operator",
+			requested: "09:42:00 UTC",
+			ticket: "Warming",
+			ticketAt: "09:42:00 UTC",
+			phase: "Requested",
+			observed: "09:42:00 UTC",
+			ticketId: "ticket-218",
+			description: "The sample accepted this request. The first observation records its request identity and target."
+		}
+	};
+	function receiptRow(id) {
+		const item = records[id];
+		return {
+			id,
+			title: id,
+			sub: objects[item.target].title,
+			mark: "route",
+			cells: [{
+				text: item.phase,
+				tone: item.phase === "Completed" ? "success" : "info"
+			}, item.observed]
+		};
+	}
+	function operations(section, state) {
+		if (section === "capabilities") return {
+			description: "Inspect the runtime, readiness and check time behind each capability.",
+			columns: ["Observation", "Checked"],
+			rows: Object.entries(objects).map(([id, obj]) => ({
+				id,
+				title: obj.title,
+				sub: obj.kind === "Managed capability" ? obj.owner + " · " + obj.runtime : obj.kind,
+				mark: obj.kind === "Remote Portal" ? "web" : obj.kind === "Delegated runtime pool" ? "terminal" : "cube",
+				cells: [{
+					text: obj.status,
+					tone: obj.tone
+				}, obj.checked]
+			}))
+		};
+		if (section === "transitions") {
+			const ids = ["NX-217", "NX-216"];
+			if (state.ops?.submitted) ids.unshift(latestRequest);
+			return {
+				description: "Inspect the request, its process-local ticket and the latest physical observation.",
+				columns: ["Physical phase", "Observed"],
+				rows: ids.map(receiptRow)
+			};
+		}
+		return null;
+	}
+	function previewDetail(id, obj) {
+		const noChange = obj.plan === "NO_OP";
+		return {
+			eyebrow: "Non-binding preview",
+			title: obj.title,
+			description: noChange ? "The target is already warm." : "The sample plan would release the current Animator and launch the coding model’s Animator.",
+			status: {
+				text: obj.plan,
+				tone: noChange ? "neutral" : "warning"
+			},
+			groups: [{
+				title: "Plan",
+				fields: [
+					["Target", obj.key],
+					["Evict", noChange ? "None" : "local-llama"],
+					["Launch", noChange ? "None" : "local-qwen"],
+					["Policy cost", noChange ? "0 evictions" : "1 eviction"]
+				]
+			}, {
+				title: "Basis",
+				fields: [["Snapshot", capture], ["Admission", "Open"]]
+			}],
+			actions: noChange ? [{
+				id: "op-close-preview",
+				label: "Close preview"
+			}] : [{
+				id: "op-request-" + id,
+				label: "Request sample transition"
+			}, {
+				id: "op-close-preview",
+				label: "Close preview"
+			}]
+		};
+	}
+	function objectDetail(id, obj, state) {
+		const common = {
+			title: obj.title,
+			eyebrow: obj.kind,
+			description: obj.description,
+			status: {
+				text: obj.status,
+				tone: obj.tone
+			}
+		};
+		if (state.ops?.preview === id && obj.plan) return previewDetail(id, obj);
+		if (obj.kind === "Delegated runtime pool") return {
+			...common,
+			groups: [{
+				title: "Pool observation",
+				fields: [
+					["Transport", obj.runtime],
+					["Coffin profile", obj.profile],
+					["Checked", obj.checked]
+				]
+			}, {
+				title: "Capacity",
+				fields: [["Posture", "Unverified"], ["Owner", obj.owner]]
+			}],
+			actions: []
+		};
+		const actions = [];
+		if (obj.plan) {
+			actions.push({
+				id: "op-preview-" + id,
+				label: "Preview transition"
+			});
+			if (id === qwen && state.ops?.submitted) actions.push({
+				id: "op-view-request",
+				label: "View sample request"
+			});
+		}
+		return {
+			...common,
+			groups: [{
+				title: "Observation",
+				fields: [
+					["Raw phase", obj.phase],
+					["Warm", obj.warm],
+					["Health", obj.health],
+					["Checked", obj.checked]
+				]
+			}, {
+				title: "Ownership",
+				fields: [
+					["Animator", obj.owner],
+					["Runtime", obj.runtime],
+					["Capability key", obj.key]
+				]
+			}],
+			actions
+		};
+	}
+	function receiptDetail(id, record) {
+		const obj = objects[record.target];
+		const request = [
+			["Request ID", id],
+			["Target", obj.key],
+			["Source", record.source],
+			["Submitted", record.requested]
+		];
+		if (record.occurrence) request.push(["Run occurrence", record.occurrence]);
+		const ticket = [["State", record.ticket]];
+		if (record.ticketId) ticket.push(["Ticket ID", record.ticketId], ["Recorded", record.ticketAt]);
+		const physical = [["Phase", record.phase], ["Observed", record.observed]];
+		if (record.action) physical.push(["Chosen action", record.action]);
+		if (record.physical) physical.push(["Transition ID", record.physical]);
+		return {
+			eyebrow: "Transition request",
+			title: id,
+			description: record.description,
+			status: {
+				text: record.phase,
+				tone: record.phase === "Completed" ? "success" : "info"
+			},
+			groups: [
+				{
+					title: "Request",
+					fields: request
+				},
+				{
+					title: "Process-local ticket",
+					fields: ticket
+				},
+				{
+					title: "Physical observation",
+					fields: physical
+				}
+			],
+			actions: [{
+				id: "op-target-" + record.target,
+				label: "Inspect target capability"
+			}]
+		};
+	}
+	function operationDetail(section, id, state) {
+		if (section === "capabilities" && Object.hasOwn(objects, id)) return objectDetail(id, objects[id], state);
+		if (section === "transitions" && Object.hasOwn(records, id) && (id !== latestRequest || state.ops?.submitted)) return receiptDetail(id, records[id]);
+		return null;
+	}
+	function applyOperation(action, state) {
+		if (!action.startsWith("op-")) return false;
+		const ops = state.ops ??= {};
+		if (action === "op-close-preview") {
+			ops.preview = null;
+			return true;
+		}
+		if (action.startsWith("op-target-")) {
+			const id = action.slice(10);
+			const active = records[state.selected];
+			if (state.section !== "transitions" || !active || active.target !== id) return false;
+			if (state.selected === latestRequest && !ops.submitted) return false;
+			ops.preview = null;
+			state.section = "capabilities";
+			state.selected = id;
+			return true;
+		}
+		const id = state.selected;
+		if (state.section !== "capabilities" || !Object.hasOwn(objects, id)) return false;
+		if (action === "op-preview-" + id && objects[id].plan) {
+			ops.preview = id;
+			return true;
+		}
+		if (id !== qwen) return false;
+		if (action === "op-request-" + qwen && ops.preview === qwen) ops.submitted = true;
+		else if (!(action === "op-view-request" && ops.submitted)) return false;
+		ops.preview = null;
+		state.section = "transitions";
+		state.selected = latestRequest;
+		return true;
+	}
+
+// people.mjs
+	var observedAt = Date.parse("2026-11-19T09:42:00Z");
+	var pairs = [
+		{
+			id: "pair-lin",
+			name: "Lin",
+			instance: "North studio",
+			choice: "Ready",
+			reported: "09:41:52",
+			expires: "09:42:22"
+		},
+		{
+			id: "pair-ada",
+			name: "Ada",
+			instance: "East studio",
+			choice: "Busy",
+			reported: "09:40:58",
+			expires: "09:41:28"
+		},
+		{
+			id: "pair-mira",
+			name: "Mira",
+			instance: "Field desk",
+			choice: "Busy",
+			reported: "09:41:49",
+			expires: "09:42:19"
+		}
+	];
+	var users = [
+		{
+			id: "user-ada",
+			name: "Ada",
+			principal: "principal:ada",
+			role: "role-observer",
+			view: "Orb"
+		},
+		{
+			id: "user-ivo",
+			name: "Ivo",
+			principal: "principal:ivo",
+			role: "role-operator",
+			view: "Nexus"
+		},
+		{
+			id: "user-noor",
+			name: "Noor",
+			principal: "principal:noor",
+			role: "role-collaborator",
+			view: "Bridge"
+		}
+	];
+	var roles = [
+		{
+			id: "role-observer",
+			name: "Observer",
+			purpose: "Read named operational observations.",
+			policy: "Read readiness observations"
+		},
+		{
+			id: "role-operator",
+			name: "Operator",
+			purpose: "Request lifecycle changes for named capabilities.",
+			policy: "Request a scoped transition"
+		},
+		{
+			id: "role-collaborator",
+			name: "Collaborator",
+			purpose: "Share availability with a configured audience.",
+			policy: "Share local availability"
+		}
+	];
+	var grants = [
+		{
+			id: "grant-ada-read",
+			title: "Read Nexus observations",
+			principal: "principal:ada",
+			role: "role-observer",
+			action: "Read readiness snapshot",
+			scope: "altar:read",
+			object: "nexus/snapshots/local",
+			audience: "Nexus",
+			expires: "10:30",
+			generation: 12
+		},
+		{
+			id: "grant-ivo-transition",
+			title: "Request a transition",
+			principal: "principal:ivo",
+			role: "role-operator",
+			action: "Request lifecycle transition",
+			scope: "orchestrator:transition",
+			object: "nexus/capabilities/local-text",
+			audience: "Nexus",
+			expires: "10:00",
+			generation: 12
+		},
+		{
+			id: "grant-noor-presence",
+			title: "Share availability",
+			principal: "principal:noor",
+			role: null,
+			action: "Share availability",
+			scope: "nexus:share-presence",
+			object: "nexus/presence/pair-lin",
+			audience: "Configured pair · Lin",
+			expires: "09:30",
+			generation: 11
+		}
+	];
+	var tabs$1 = [{
+		id: "grants",
+		label: "Grants"
+	}, {
+		id: "roles",
+		label: "Roles"
+	}];
+	var at = (time) => Date.parse("2026-11-19T" + time + "Z");
+	var utc = (time) => time + " UTC";
+	var captureTime = "19 Nov 2026 · 09:42 UTC";
+	var byId = (records, id) => records.find((record) => record.id === id);
+	var accountFor = (principal) => users.find((user) => user.principal === principal);
+	var action = (id, label) => ({
+		id,
+		label
+	});
+	var group$1 = (title, fields) => ({
+		title,
+		fields
+	});
+	var pill = (text, tone) => ({
+		text,
+		tone
+	});
+	function availability(pair) {
+		if (at(pair.expires) <= observedAt) return pill("Availability unknown", "muted");
+		return pill(pair.choice, pair.choice === "Ready" ? "good" : "warn");
+	}
+	function grantState(grant) {
+		return at(grant.expires + ":00") <= observedAt ? pill("Expired", "muted") : pill("Within lifetime", "good");
+	}
+	function iamRecords(state) {
+		const filters = state.people ?? {};
+		const user = accountFor(filters.principal);
+		const role = byId(roles, filters.role);
+		const inRoles = state.tab === "roles";
+		return {
+			visible: inRoles ? roles.filter((item) => !filters.principal || user?.role === item.id) : grants.filter((item) => (!filters.principal || filters.principal === item.principal) && (!filters.role || filters.role === item.role)),
+			inRoles,
+			filter: [filters.principal && (user?.principal ?? filters.principal), !inRoles && filters.role && (role?.name ?? filters.role)].filter(Boolean).join(" · ") || null
+		};
+	}
+	function people(section, state) {
+		if (section === "users") return {
+			description: "Human accounts enrolled on this instance.",
+			columns: ["Assigned role", "Working view"],
+			rows: users.map((user) => ({
+				id: user.id,
+				title: user.name,
+				sub: user.principal,
+				mark: "user-round",
+				cells: [byId(roles, user.role).name, user.view]
+			}))
+		};
+		if (section === "colleagues") return {
+			description: "Availability reported by paired operators.",
+			columns: ["Availability", "Report time · UTC"],
+			rows: pairs.map((pair) => ({
+				id: pair.id,
+				title: pair.name,
+				sub: pair.instance,
+				mark: "link",
+				cells: [availability(pair), pair.reported]
+			}))
+		};
+		if (section !== "iam") return null;
+		const { inRoles, visible, filter } = iamRecords(state);
+		const rows = inRoles ? visible.map((role) => ({
+			id: role.id,
+			title: role.name,
+			sub: role.policy,
+			mark: "group",
+			cells: [users.filter((user) => user.role === role.id).map((user) => user.name).join(", "), "12"]
+		})) : visible.map((grant) => ({
+			id: grant.id,
+			title: grant.title,
+			sub: grant.object,
+			mark: "paper",
+			cells: [accountFor(grant.principal).name, grantState(grant)]
+		}));
+		return {
+			description: inRoles ? "Named policy bundles and their local assignments." : "Recorded decisions scoped to a Principal, an action, and an object.",
+			columns: inRoles ? ["Assigned accounts", "Policy generation"] : ["Principal", "At capture"],
+			rows,
+			tabs: tabs$1,
+			filter,
+			empty: inRoles ? "No assigned roles in this selection." : "No matching grants in this capture."
+		};
+	}
+	function pairDetail(pair) {
+		const state = availability(pair);
+		return {
+			eyebrow: "Paired colleague",
+			title: pair.name,
+			description: {
+				"Ready": "Lin welcomes a work request from this paired instance.",
+				"Busy": "Mira has asked this paired operator to hold off on new requests.",
+				"Availability unknown": "The last authenticated report expired before the capture. The peer’s present choice is unknown."
+			}[state.text],
+			status: state,
+			groups: [group$1("Pair", [
+				["Instance", pair.instance],
+				["Pair ID", pair.id],
+				["Audience", "Paired operators"]
+			]), group$1("Last authenticated report", [
+				["Reported choice", pair.choice],
+				["Issued", utc(pair.reported)],
+				["Lease expiry", utc(pair.expires)],
+				["Observed", captureTime]
+			])],
+			actions: []
+		};
+	}
+	function userDetail(user) {
+		return {
+			eyebrow: "Local user",
+			title: user.name,
+			description: "Human account enrolled on this instance.",
+			groups: [group$1("Account binding", [["Account ID", user.id], ["Principal", user.principal]]), group$1("Working profile", [["Assigned role", byId(roles, user.role).name], ["Working view", user.view]])],
+			actions: [action("people-view-access", "View access")]
+		};
+	}
+	function personDetail(section, id, state) {
+		if (section === "colleagues") {
+			const pair = byId(pairs, id);
+			return pair ? pairDetail(pair) : null;
+		}
+		if (section === "users") {
+			const user = byId(users, id);
+			return user ? userDetail(user) : null;
+		}
+		if (section !== "iam") return null;
+		const { inRoles, visible } = iamRecords(state);
+		const item = byId(visible, id);
+		if (!item) return null;
+		const origin = byId(users, state.people?.returnUser);
+		const back = origin ? [action("people-back-user", "Back to " + origin.name)] : [];
+		if (inRoles) return {
+			eyebrow: "Policy role",
+			title: item.name,
+			description: item.purpose,
+			groups: [group$1("Bundle", [["Role ID", item.id], ["Policy generation", "12"]]), group$1("Local assignments", users.filter((user) => user.role === item.id).map((user) => [user.name, user.principal]))],
+			actions: [action("people-role-grants", "View grants for role"), ...back]
+		};
+		return {
+			eyebrow: "Authority grant",
+			title: item.title,
+			description: "Decision recorded for " + accountFor(item.principal).name + ".",
+			status: grantState(item),
+			groups: [group$1("Authority", [
+				["Principal", item.principal],
+				["Action", item.action],
+				["Scope", item.scope],
+				["Object", item.object],
+				["Audience", item.audience]
+			]), group$1("Decision", [
+				["Assignment", item.role ? byId(roles, item.role).name + " role" : "Direct assignment"],
+				["Expires", "19 Nov · " + utc(item.expires)],
+				["Policy generation", String(item.generation)],
+				["Delegation", "None"],
+				["Grant ID", item.id]
+			])],
+			actions: back.length ? back : [action("people-open-user", "View user")]
+		};
+	}
+	function applyPeople(command, state) {
+		if (!command.startsWith("people-")) return false;
+		const filters = state.people ??= {};
+		if (command === "people-view-access" && state.section === "users") {
+			const user = byId(users, state.selected);
+			if (!user) return false;
+			state.people = {
+				principal: user.principal,
+				returnUser: user.id,
+				returnQuery: state.query ?? ""
+			};
+			state.section = "iam";
+			state.tab = "grants";
+			state.query = "";
+			state.selected = iamRecords(state).visible[0]?.id ?? null;
+			return true;
+		}
+		if (command === "people-clear-filter" && state.section === "iam") {
+			delete filters.principal;
+			delete filters.role;
+			state.selected = null;
+			state.query = "";
+			return true;
+		}
+		if (command === "people-role-grants" && state.section === "iam" && state.tab === "roles") {
+			const role = byId(iamRecords(state).visible, state.selected);
+			if (!role) return false;
+			filters.role = role.id;
+			state.tab = "grants";
+			state.query = "";
+			state.selected = iamRecords(state).visible[0]?.id ?? null;
+			return true;
+		}
+		if ((command === "people-back-user" || command === "people-open-user") && state.section === "iam") {
+			const grant = byId(grants, state.selected);
+			const user = command === "people-back-user" ? byId(users, filters.returnUser) : accountFor(grant?.principal);
+			if (!user) return false;
+			state.section = "users";
+			state.tab = "grants";
+			state.selected = user.id;
+			state.query = command === "people-back-user" ? filters.returnQuery ?? "" : "";
+			state.people = {};
+			return true;
+		}
+		return false;
+	}
+
+// main.mjs
+	var app = document.getElementById("altar-nexus");
+	var el = (s) => app.querySelector(s);
+	var e = (s) => String(s ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll("\"", "&quot;");
+	var sections = {
+		overview: [
+			"Overview",
+			"apps",
+			""
+		],
+		capabilities: [
+			"Capabilities",
+			"cube",
+			"Model readiness and runtime observations."
+		],
+		transitions: [
+			"Transitions",
+			"route",
+			"Request tickets and physical observations."
+		],
+		colleagues: [
+			"Colleagues",
+			"nexus",
+			"Availability from paired operators."
+		],
+		users: [
+			"Users",
+			"user-round",
+			"Local accounts and their assigned roles."
+		],
+		iam: [
+			"IAM",
+			"shield-check",
+			"Principals, roles and scoped grants."
+		]
+	};
+	var families = [["Operations", ["capabilities", "transitions"]], ["People and access", [
+		"colleagues",
+		"users",
+		"iam"
+	]]];
+	var tabs = [
+		[
+			"bridge",
+			"bridge",
+			"Walking Bridge"
+		],
+		[
+			"record",
+			"inspect",
+			"Selected record"
+		],
+		[
+			"files",
+			"folder",
+			"Files"
+		],
+		[
+			"terminal",
+			"terminal",
+			"Terminal"
+		],
+		[
+			"web",
+			"web",
+			"Web"
+		]
+	];
+	var smallDirectory = () => app.clientWidth <= 890;
+	var narrowDetail = () => app.clientWidth <= 690;
+	var state = {
+		section: "overview",
+		selected: null,
+		query: "",
+		tab: "grants",
+		ops: {},
+		people: {},
+		tool: "record",
+		dock: app.clientWidth >= 1280,
+		directory: !smallDirectory(),
+		widths: {},
+		lastRows: {},
+		currentFile: "snapshot.txt",
+		session: "Model handover"
+	};
+	var drafts = /* @__PURE__ */ new Map();
+	var model = (s = state.section) => operations(s, state) || people(s, state);
+	var detail = () => operationDetail(state.section, state.selected, state) || personDetail(state.section, state.selected, state);
+	var name = (s) => sections[s]?.[0] || "Overview";
+	var announce = (s) => el(".nx-ann").textContent = s;
+	var saved = null;
+	function save() {
+		const data = {
+			version: 1,
+			section: state.section,
+			selected: state.selected,
+			tab: state.tab,
+			query: state.query,
+			tool: state.tool,
+			dock: state.dock,
+			directory: state.directory,
+			ops: state.ops,
+			people: state.people,
+			widths: state.widths,
+			lastRows: state.lastRows
+		};
+		saved = JSON.stringify(data);
+		window.openai?.setWidgetState?.({
+			privateContent: data,
+			modelContent: {
+				section: state.section,
+				record: state.selected
+			}
+		})?.catch(() => {});
+	}
+	function chosenSection(section) {
+		if (!Object.hasOwn(sections, section)) return;
+		if (state.section !== section) state.lastRows[state.section] = {
+			selected: state.selected,
+			query: state.query
+		};
+		const previous = state.lastRows[section] || {};
+		state.section = section;
+		state.selected = previous.selected ?? null;
+		state.query = previous.query ?? "";
+		state.ops.preview = null;
+		if (section === "iam" && state.selected && !model().rows.some((row) => row.id === state.selected)) state.selected = null;
+		if (smallDirectory()) state.directory = false;
+		if (narrowDetail()) state.dock = false;
+		render();
+		el(".nx-heading h1").focus({ preventScroll: true });
+		announce(name(section));
+		save();
+	}
+	function selectRow(id) {
+		const row = model()?.rows.find((x) => x.id === id);
+		if (!row) return;
+		if (state.selected !== id) state.ops.preview = null;
+		state.selected = row.id;
+		state.dock = true;
+		state.tool = "record";
+		if (smallDirectory()) state.directory = false;
+		render();
+		el(".nx-detail h2")?.focus({ preventScroll: true });
+		announce(row.title);
+		save();
+	}
+	function go(section, id) {
+		state.section = section;
+		state.query = "";
+		state.selected = null;
+		selectRow(id);
+	}
+	function backToRow() {
+		([...app.querySelectorAll("[data-record]")].find((x) => x.dataset.record === state.selected) || el(".nx-open-tools")).focus({ preventScroll: true });
+	}
+	function stat(cell) {
+		return typeof cell === "object" && cell !== null ? "<span class=\"nx-state\" data-tone=\"" + e(cell.tone) + "\">" + e(cell.text) + "</span>" : e(cell);
+	}
+	function group(title, fields) {
+		return "<section class=\"nx-detail-group\"><h3>" + e(title) + "</h3><dl>" + fields.map(([k, v]) => "<dt>" + e(k) + "</dt><dd>" + e(v) + "</dd>").join("") + "</dl></section>";
+	}
+	function detailHeading(k, t, d = "") {
+		return "<div class=\"nx-kicker\">" + e(k) + "</div><h2 tabindex=\"-1\">" + e(t) + "</h2>" + (d ? "<p class=\"nx-summary\">" + e(d) + "</p>" : "");
+	}
+	function shortLink(section, id, title, sub) {
+		return "<button class=\"nx-detail-link\" data-visit=\"" + section + "\" data-target=\"" + e(id) + "\">" + svg(sections[section][1], 17) + "<span><strong>" + e(title) + "</strong><small>" + e(sub) + "</small></span>" + svg("right", 13) + "</button>";
+	}
+	var sectionButton = (id) => "<button data-section=\"" + id + "\"" + (state.section === id ? " aria-current=\"page\"" : "") + ">" + svg(sections[id][1], 16) + e(name(id)) + "</button>";
+	function homeView() {
+		const summaries = {
+			capabilities: model("capabilities").rows.length + " entries",
+			transitions: model("transitions").rows.length + " requests",
+			colleagues: model("colleagues").rows.length + " pairs",
+			users: model("users").rows.length + " accounts",
+			iam: "Roles & grants"
+		};
+		const groups = families.map(([g, ids]) => "<section class=\"nx-group\" data-family=\"" + g.toLowerCase() + "\"><div class=\"nx-group-title\"><h2>" + e(g) + "</h2></div>" + ids.map((id) => "<button class=\"nx-destination\" data-section=\"" + id + "\"><span class=\"nx-mark\">" + svg(sections[id][1], 18) + "</span><span class=\"nx-dest-text\"><strong>" + e(name(id)) + "</strong><small>" + e(sections[id][2]) + "</small></span><span class=\"nx-dest-info\">" + e(summaries[id]) + "</span><span class=\"nx-tail\">" + svg("right", 13) + "</span></button>").join("") + "</section>").join("");
+		return "<div class=\"nx-snapshot\"><strong>" + svg("data", 15) + "Snapshot captured</strong><time datetime=\"2026-11-19T09:42:00Z\">19 Nov 2026 · 09:42 UTC</time></div>" + groups;
+	}
+	function filterRows() {
+		const v = model();
+		if (!v) return;
+		const q = state.query.trim().toLowerCase();
+		const rows = v.rows.filter((r) => [
+			r.title,
+			r.sub,
+			r.id,
+			...r.cells.map((c) => typeof c === "object" ? c.text : c)
+		].join(" ").toLowerCase().includes(q));
+		const th = [{
+			capabilities: "Capability",
+			transitions: "Request",
+			colleagues: "Paired operator",
+			users: "Account",
+			iam: state.tab === "roles" ? "Role" : "Grant"
+		}[state.section], ...v.columns].map((h) => "<th scope=\"col\">" + e(h) + "</th>").join("");
+		const body = rows.map((r) => "<tr data-id=\"" + e(r.id) + "\" data-selected=\"" + (state.selected === r.id) + "\"><td><button class=\"nx-object\" data-record=\"" + e(r.id) + "\" aria-pressed=\"" + (state.selected === r.id) + "\"><span class=\"nx-mark\">" + svg(r.mark, 15) + "</span><span><b>" + e(r.title) + "</b><small>" + e(r.sub) + "</small></span></button></td>" + r.cells.map((c) => "<td>" + stat(c) + "</td>").join("") + "</tr>").join("");
+		const results = el(".nx-results");
+		results.innerHTML = "<table aria-label=\"" + e(name(state.section)) + "\"><thead><tr>" + th + "</tr></thead><tbody>" + body + "</tbody></table>";
+		if (!rows.length) {
+			const empty = document.createElement("p");
+			empty.className = "nx-empty";
+			empty.setAttribute("role", "status");
+			empty.textContent = q ? "No matches for “" + state.query + "”." : v.empty || "No records in this snapshot.";
+			results.append(empty);
+		}
+	}
+	var sessionMessages = {
+		"Model handover": ["Can this vessel load the coding model?", "Open Qwen2.5-Coder 14B in Capabilities and preview the Animator change."],
+		"Access review": ["Which observation can Ada read?", "Open Ada in Users and follow View access to her grant."]
+	};
+	const files = {
+		"snapshot.txt": "Local vessel\n19 Nov 2026, 09:42 UTC\n\nReadiness and request observations from the example capture.",
+		"review.md": "# Access review\n\nInspect the local Principal, scope, object and policy generation."
+	};
+	function toolView() {
+		if (state.tool === "bridge") {
+			const s = sessionMessages[state.session];
+			return detailHeading("Séance", state.session) + "<details class=\"nx-sessions\"><summary>Recent séances</summary>" + Object.keys(sessionMessages).filter((k) => k !== state.session).map((k) => "<button class=\"nx-act\" data-seance=\"" + e(k) + "\">" + e(k) + "</button>").join("") + "</details><section class=\"nx-detail-group\"><h3>Conversation</h3><p class=\"nx-summary nx-question\">" + e(s[0]) + "</p><p class=\"nx-summary\" style=\"margin-top:10px\">" + e(s[1]) + "</p></section><section class=\"nx-detail-group\"><h3>Draft</h3><textarea aria-label=\"Séance draft\" placeholder=\"Message Bridge…\"></textarea></section>";
+		}
+		if (state.tool === "files") {
+			return detailHeading("Files", state.currentFile) + "<details open><summary>File tree</summary>" + Object.keys(files).map((f) => "<button class=\"nx-detail-link\" data-file=\"" + f + "\">" + svg("paper", 14) + f + "</button>").join("") + "</details><section class=\"nx-detail-group\"><pre class=\"nx-file\">" + e(files[state.currentFile]) + "</pre></section>";
+		}
+		if (state.tool === "terminal" || state.tool === "web") return detailHeading("Local vessel", state.tool === "terminal" ? "Terminal" : "Web", state.tool === "terminal" ? "No terminal session is open in this example." : "No browser tab is open in this example.");
+		if (state.section === "overview") {
+			const last = model("transitions").rows[0];
+			return detailHeading("Instance snapshot", "At this snapshot") + group("Runtime", [["Admission", "Open"], ["Checked", "09:42 UTC"]]) + "<section class=\"nx-detail-group\"><h3>Latest request</h3>" + shortLink("transitions", last.id, last.id + " · " + last.cells[0].text, last.sub) + "</section><section class=\"nx-detail-group\"><h3>Paired operators</h3>" + model("colleagues").rows.map((r) => shortLink("colleagues", r.id, r.title, r.cells[0].text)).join("") + "</section>";
+		}
+		const v = detail();
+		if (!v) return detailHeading(name(state.section), "Select a record", "Choose a row to inspect its identity and observations.");
+		return detailHeading(v.eyebrow, v.title, v.description) + (v.status ? stat(v.status) : "") + (v.groups || []).map((g) => group(g.title, g.fields)).join("") + (v.actions?.length ? "<div class=\"nx-actions\">" + v.actions.map((a) => "<button class=\"nx-act\" data-action-id=\"" + e(a.id) + "\">" + e(a.label) + "</button>").join("") + "</div>" : "");
+	}
+	function render() {
+		el(".nx-directory").hidden = !state.directory;
+		el("[data-show-directory]").hidden = state.directory;
+		el("[data-show-directory]").setAttribute("aria-expanded", String(state.directory));
+		el(".nx-section-links").innerHTML = sectionButton("overview") + families.map(([g, ids]) => "<h3>" + e(g) + "</h3>" + ids.map(sectionButton).join("")).join("");
+		const home = state.section === "overview";
+		el(".nx-home").hidden = !home;
+		el(".nx-list").hidden = home;
+		el(".nx-heading h1").textContent = home ? "Instance overview" : name(state.section);
+		el(".nx-heading p").textContent = home ? "Readiness, requests and access on this vessel." : model().description;
+		if (home) el(".nx-home").innerHTML = homeView();
+		else {
+			const v = model(), input = el(".nx-search input");
+			input.value = state.query;
+			input.placeholder = "Search " + (state.section === "iam" ? state.tab : name(state.section).toLowerCase()) + "…";
+			input.setAttribute("aria-label", input.placeholder.slice(0, -1));
+			el(".nx-tabs").innerHTML = (v.tabs || []).map((t) => "<button data-view=\"" + t.id + "\" aria-pressed=\"" + (state.tab === t.id) + "\">" + e(t.label) + "</button>").join("");
+			el(".nx-active-filter").innerHTML = v.filter ? "<button class=\"nx-filter-chip\" data-action-id=\"people-clear-filter\" aria-label=\"Clear filter " + e(v.filter) + "\">" + e(v.filter) + " ×</button>" : "";
+			filterRows();
+		}
+		el(".nx-dock").hidden = !state.dock;
+		el(".nx-open-tools").hidden = state.dock;
+		el(".nx-open-tools").setAttribute("aria-expanded", String(state.dock));
+		for (const b of app.querySelectorAll("[data-tool]")) b.setAttribute("aria-pressed", String(b.dataset.tool === state.tool));
+		const panel = el(".nx-detail");
+		panel.innerHTML = toolView();
+		const draft = panel.querySelector("textarea");
+		if (draft) draft.value = drafts.get(state.session) || "";
+	}
+	mountChrome(app);
+	el("[data-hide-directory]").innerHTML = svg("left", 15);
+	el("[data-show-directory]").innerHTML = svg("layers", 16);
+	el(".nx-open-tools").innerHTML = svg("inspect", 17);
+	el(".nx-search-mark").innerHTML = svg("search", 15);
+	el(".nx-dock-toolbar").innerHTML = tabs.map(([id, mark, label]) => "<button class=\"nx-icon\" data-tool=\"" + id + "\" aria-label=\"" + label + "\" title=\"" + label + "\">" + svg(mark, 17) + "</button>").join("") + "<button class=\"nx-icon\" data-hide-dock aria-label=\"Hide side panel\" title=\"Hide side panel\">" + svg("right", 16) + "</button>";
+	function runAction(action) {
+		const previous = state.section;
+		if (!applyOperation(action, state) && !applyPeople(action, state)) return;
+		if (previous !== state.section && !action.startsWith("people-")) state.query = "";
+		if (action === "people-clear-filter" && narrowDetail()) state.dock = false;
+		else if (state.selected) {
+			state.tool = "record";
+			state.dock = true;
+		}
+		render();
+		if (state.selected && state.dock) el(".nx-detail h2").focus({ preventScroll: true });
+		else el(".nx-heading h1").focus({ preventScroll: true });
+		announce(detail()?.title || name(state.section));
+		save();
+	}
+	function hideDock() {
+		state.dock = false;
+		render();
+		backToRow();
+		save();
+	}
+	app.addEventListener("click", (ev) => {
+		const b = ev.target.closest("button");
+		if (b?.dataset.section) {
+			chosenSection(b.dataset.section);
+			return;
+		}
+		if (b?.dataset.action === "full") {
+			chosenSection("overview");
+			return;
+		}
+		if (b?.dataset.visit) {
+			go(b.dataset.visit, b.dataset.target);
+			return;
+		}
+		if (b?.dataset.actionId) {
+			runAction(b.dataset.actionId);
+			return;
+		}
+		if (b?.dataset.view) {
+			state.tab = b.dataset.view;
+			state.selected = null;
+			state.query = "";
+			state.tool = "record";
+			render();
+			el("[data-view=\"" + state.tab + "\"]").focus();
+			save();
+			return;
+		}
+		const row = ev.target.closest("tr[data-id]");
+		if (row) {
+			selectRow(row.dataset.id);
+			return;
+		}
+		if (!b) return;
+		if (b.hasAttribute("data-hide-dock")) {
+			hideDock();
+			return;
+		}
+		if (b.hasAttribute("data-show-dock")) {
+			state.dock = true;
+			if (smallDirectory()) state.directory = false;
+			render();
+			el("[data-tool=\"" + state.tool + "\"]").focus();
+			save();
+			return;
+		}
+		if (b.hasAttribute("data-show-directory") || b.hasAttribute("data-hide-directory")) {
+			state.directory = b.hasAttribute("data-show-directory");
+			if (state.directory && smallDirectory()) state.dock = false;
+			render();
+			(state.directory ? el(".nx-section-links [aria-current]") : el("[data-show-directory]")).focus();
+			save();
+			return;
+		}
+		if (b.dataset.tool) {
+			state.tool = b.dataset.tool;
+			render();
+			b.focus();
+			save();
+			return;
+		}
+		const session = Object.keys(sessionMessages).find((key) => key === b.dataset.seance);
+		if (session) {
+			state.session = session;
+			render();
+			el(".nx-detail h2").focus();
+			return;
+		}
+		const file = Object.keys(files).find((key) => key === b.dataset.file);
+		if (file) {
+			state.currentFile = file;
+			render();
+			el(".nx-detail h2").focus();
+			return;
+		}
+	});
+	app.addEventListener("input", (ev) => {
+		if (ev.target.matches(".nx-search input")) {
+			state.query = ev.target.value;
+			filterRows();
+			save();
+		}
+		if (ev.target.matches(".nx-detail textarea")) drafts.set(state.session, ev.target.value);
+	});
+	app.addEventListener("keydown", (ev) => {
+		if (ev.key !== "Escape" || !el(".apps-pop").hidden) return;
+		if (state.directory && smallDirectory() && el(".nx-directory").contains(ev.target)) {
+			state.directory = false;
+			render();
+			el("[data-show-directory]").focus();
+			save();
+		} else if (state.dock) hideDock();
+	});
+	function split(selector, pane, property, dir, min, max) {
+		const handle = el(selector), target = el(pane);
+		let drag = null;
+		function apply(value) {
+			const room = app.clientWidth - el(".nx-rail").offsetWidth;
+			const hi = Math.min(max, Math.max(min, Math.floor(room * (smallDirectory() ? .88 : .4))));
+			const n = Math.round(Math.max(min, Math.min(hi, value)));
+			app.style.setProperty(property, n + "px");
+			handle.setAttribute("aria-valuemin", min);
+			handle.setAttribute("aria-valuemax", hi);
+			handle.setAttribute("aria-valuenow", n);
+			return n;
+		}
+		const base = property === "--pane" ? app.clientWidth <= 1200 ? 264 : 292 : app.clientWidth <= 1200 ? 154 : 169;
+		function sync() {
+			apply(Number.isFinite(state.widths[property]) ? state.widths[property] : base);
+		}
+		handle.onpointerdown = (ev) => {
+			drag = {
+				x: ev.clientX,
+				width: target.offsetWidth
+			};
+			handle.setPointerCapture(ev.pointerId);
+			ev.preventDefault();
+		};
+		handle.onpointermove = (ev) => {
+			if (drag) state.widths[property] = apply(drag.width + dir * (ev.clientX - drag.x));
+		};
+		handle.onpointerup = handle.onpointercancel = () => {
+			if (drag) save();
+			drag = null;
+		};
+		handle.onkeydown = (ev) => {
+			if (ev.key !== "ArrowLeft" && ev.key !== "ArrowRight") return;
+			ev.preventDefault();
+			state.widths[property] = apply(target.offsetWidth + dir * (ev.key === "ArrowLeft" ? -16 : 16));
+			save();
+		};
+		sync();
+		return sync;
+	}
+	var resizeDir = split(".nx-dir-grip", ".nx-directory", "--directory", 1, 136, 340);
+	var resizeDock = split(".nx-dock-grip", ".nx-dock", "--pane", -1, 238, 500);
+	var wasSmall = smallDirectory();
+	new ResizeObserver(() => {
+		const narrow = smallDirectory();
+		if (wasSmall !== narrow) {
+			state.directory = !narrow;
+			if (narrow) state.dock = false;
+			wasSmall = narrow;
+			render();
+		}
+		resizeDir();
+		resizeDock();
+	}).observe(app);
+	function restore(snapshot) {
+		const s = snapshot?.privateContent;
+		if (!s || s.version !== 1 || JSON.stringify(s) === saved || !Object.hasOwn(sections, s.section)) return;
+		state.section = s.section;
+		state.selected = typeof s.selected === "string" ? s.selected : null;
+		state.tab = s.tab === "roles" ? "roles" : "grants";
+		state.query = String(s.query || "").slice(0, 200);
+		state.tool = tabs.some(([id]) => id === s.tool) ? s.tool : "record";
+		state.ops = {
+			submitted: s.ops?.submitted === true,
+			preview: typeof s.ops?.preview === "string" ? s.ops.preview : null
+		};
+		state.people = {};
+		for (const k of [
+			"principal",
+			"role",
+			"returnUser",
+			"returnQuery"
+		]) if (typeof s.people?.[k] === "string") state.people[k] = s.people[k].slice(0, 200);
+		state.widths = s.widths && typeof s.widths === "object" ? s.widths : {};
+		state.lastRows = {};
+		for (const k of Object.keys(sections)) {
+			const v = s.lastRows?.[k];
+			if (v) state.lastRows[k] = {
+				selected: typeof v.selected === "string" ? v.selected : null,
+				query: String(v.query || "").slice(0, 200)
+			};
+		}
+		state.directory = Boolean(s.directory);
+		state.dock = Boolean(s.dock);
+		if (smallDirectory() && state.dock) state.directory = false;
+		if (!detail()) state.selected = null;
+		resizeDir();
+		resizeDock();
+		render();
+	}
+	render();
+	restore(window.openai?.widgetState);
+	window.addEventListener("openai:set_globals", (ev) => {
+		if (ev.detail?.globals?.widgetState) restore(ev.detail.globals.widgetState);
+	});
+})();
+</script>
+</body></html>

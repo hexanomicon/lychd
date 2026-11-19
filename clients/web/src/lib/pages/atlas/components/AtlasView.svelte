@@ -1,7 +1,7 @@
 <script lang="ts">
   import { beforeNavigate, goto } from "$app/navigation";
   import { tick, untrack } from "svelte";
-  import { atlasHref, parseAtlasLink, type AtlasLinkIntent } from "$lib/atlas/navigation";
+  import { atlasHref, atlasMapHref, parseAtlasLink, type AtlasLinkIntent } from "$lib/atlas/navigation";
   import PageHeader from "$lib/components/shared/PageHeader.svelte";
 
   import {
@@ -588,6 +588,7 @@
     titleFocusable
   >
     {#snippet actions()}
+      {#if !linkIntent}<a class="canvas-action" href={atlasMapHref(projectId)}>Knowledge map</a>{/if}
       <button type="button" disabled={loading || saving || uncertain} onclick={() => refresh()}>
         {loading && (catalogue || view) ? "Refreshing…" : "Refresh"}
       </button>

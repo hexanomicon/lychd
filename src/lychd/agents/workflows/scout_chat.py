@@ -313,7 +313,12 @@ BRIDGE_CHAT_SCOUT = Workflow(
             PatternNode(
                 key="acquire_and_answer_page", label="Acquire and answer page", implementation=AcquireAndAnswerPage
             ),
-            PatternNode(key="settle_page_answer", label="Settle page answer", implementation=SettlePageAnswer),
+            PatternNode(
+                key="settle_page_answer",
+                label="Settle page answer",
+                implementation=SettlePageAnswer,
+                public_result_type=BridgeReply,
+            ),
             PatternNode(key="end", label="End", kind="terminal"),
         ),
         edges=(

@@ -1,0 +1,1 @@
+import{Dt as e}from"./DPqeBEOQ.js";var t=Symbol(`Altar navigation content`),n=()=>e(t);export{t as n,n as t};

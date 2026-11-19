@@ -1,0 +1,1 @@
+import{$ as e,At as t,Ct as n,i as r,kt as i}from"../chunks/DPqeBEOQ.js";import{t as a}from"../chunks/E1wnxnDj.js";import"../chunks/B2wbfRdz.js";import"../chunks/B_cN4qRb.js";import{t as o}from"../chunks/BSJv0j82.js";function s(s,c){t(c,!1),r();{let t=n(()=>a.url.searchParams.get(`new`)===`1`);o(s,{get newRequested(){return e(t)}})}i()}export{s as component};

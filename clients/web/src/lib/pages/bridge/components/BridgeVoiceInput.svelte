@@ -7,6 +7,7 @@
   import { createDictationCoordinator, newDictationAttemptId, type DictationCapture, type DictationDraft, type DictationOptions } from "$lib/pages/bridge/state/voice/dictation";
 
   interface Props {
+    compact?: boolean;
     snapshot: DictationDraft;
     target: CommandTarget | null;
     onadopt: DictationOptions["adopt"];
@@ -15,7 +16,7 @@
     isTargetCurrent?: (target: CommandTarget) => boolean;
     feedback?: Snippet<[{ attemptId: string | null; originalText: string; finalText: string; language: string; savedRevision: number; active: boolean; applySuggestion: (text: string) => boolean }]>;
   }
-  let { snapshot, target, onadopt, onsubmit, readSnapshot, isTargetCurrent, feedback }: Props = $props();
+  let { compact = false, snapshot, target, onadopt, onsubmit, readSnapshot, isTargetCurrent, feedback }: Props = $props();
   const id = $props.id();
   let discovery = $state.raw<DictationDiscovery | null>(null);
   let discoveryMessage = $state("Checking voice availability…");
@@ -314,7 +315,7 @@
   }
 }} />
 
-<section class="voice-input" aria-label="Voice input">
+<section class="voice-input" class:compact class:expanded={compact && (optionsOpen || recording || processing || recovering || !!error || view.deadline !== null || !!view.reason || !!correctionMessage)} aria-label="Voice input">
   <div class="voice-toolbar">
     <div class="voice-row">
       <button type="button" class="mic" aria-label="Record voice" aria-describedby={`${id}-status`}
@@ -329,7 +330,7 @@
       {#if recording || processing}<button type="button" onclick={() => cancelCapture()}>{processing ? "Cancel transcription" : "Cancel recording"}</button>{/if}
     </div>
     <details class="voice-settings" bind:open={optionsOpen} ontoggle={(event) => { if (event.currentTarget.open) feedbackMounted = true; }}>
-      <summary>Voice options</summary>
+      <summary title="Voice options"><span class="options-label">Voice options</span></summary>
       <div class="voice-options" role="region" aria-label="Voice options controls">
         <label for={`${id}-language`}>Language</label>
         <select id={`${id}-language`} bind:value={language} disabled={recording || processing || !discovery?.languages?.length}>
@@ -350,7 +351,7 @@
       </div>
     </details>
   </div>
-  <div class="voice-status-row">
+  <div class="voice-status-row" hidden={compact && !optionsOpen && !recording && !processing && !recovering}>
     <p class="voice-status" id={`${id}-status`} role="status">{status}</p>
     {#if !available && !discovering}<button type="button" onclick={() => void discover()}>Check voice again</button>{/if}
   </div>
@@ -400,4 +401,13 @@
   .countdown { margin-top: .5rem; padding-left: .65rem; border-left: 2px solid var(--color-rune); }
   .countdown p { margin: 0; color: var(--color-bone); }
   button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible, summary:focus-visible, .voice-options:focus-visible { outline: 2px solid var(--color-rune); outline-offset: 2px; }
+  .voice-status-row[hidden] { display:none; }
+  .compact .voice-toolbar { min-height:0; flex-wrap:nowrap; align-items:center; gap:0; }
+  .compact .mic { min-width:1.7rem; min-height:1.95rem; padding:.25rem; }
+  .compact .voice-settings > summary { list-style:none; min-height:1.9rem; padding:.25rem; font-size:0; }
+  .compact .voice-settings > summary::-webkit-details-marker { display:none; }
+  .compact .voice-settings > summary::after { content:"⌄"; font-size:.8rem; }
+  .compact.expanded .voice-toolbar { flex-wrap:wrap; }
+  .compact.expanded .voice-settings[open] { flex-basis:100%; }
+  .compact.expanded .voice-settings[open] > summary { font-size:.78rem; }
 </style>

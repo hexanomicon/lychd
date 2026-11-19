@@ -2338,6 +2338,7 @@ export interface components {
             key: string;
             kind: string;
             label: string;
+            output_schema?: string | null;
         };
         /** LoomSummary */
         LoomSummary: {
@@ -2480,13 +2481,35 @@ export interface components {
             ][];
             portals: components["schemas"]["NexusCovenRow"][];
         };
+        /** NexusConfiguration */
+        NexusConfiguration: {
+            actuator: string;
+            background_concurrency: number;
+            bridge_capability_key: string | null;
+            bridge_preference: components["schemas"]["NexusPreferenceRoute"][];
+            bridge_revision: string | null;
+            builtin_extensions: string[];
+            crypt_extensions: string[];
+            database_profile: string;
+            drain_timeout_s: number;
+            hard_swap_priority: number;
+            interactive_concurrency: number;
+            planning_timeout_s: number;
+            routing: components["schemas"]["NexusQueueRule"][];
+            server_port: number;
+            switching_policy: string;
+            warmup_timeout_s: number;
+        };
         /** NexusCovenRow */
         NexusCovenRow: {
             animator_name: string;
             capability_key: string;
             checked_at: string | null;
+            connector?: string | null;
             dedicated: boolean;
             family: string;
+            /** @default [] */
+            groups: string[];
             health: string;
             is_active: boolean;
             model_id: string;
@@ -2496,13 +2519,33 @@ export interface components {
             runtime: string;
             /** @enum {string} */
             state: "active" | "warm" | "awaited" | "warming" | "cold" | "fault";
+            supports_tools?: boolean | null;
             warm: boolean;
+        };
+        /** NexusOperator */
+        NexusOperator: {
+            scopes: string[];
+            sigil: string;
+            subject: string;
+        };
+        /** NexusPreferenceRoute */
+        NexusPreferenceRoute: {
+            capability_key: string;
+            weight: number;
+        };
+        /** NexusQueueRule */
+        NexusQueueRule: {
+            priority: number;
+            queue: string;
+            source: string;
         };
         /** NexusSnapshot */
         NexusSnapshot: {
             board: components["schemas"]["NexusBoard"];
+            configuration?: components["schemas"]["NexusConfiguration"] | null;
             containment_reason: string | null;
             delegated_runtimes: components["schemas"]["DelegatedRuntimeObservation"][];
+            operator?: components["schemas"]["NexusOperator"] | null;
             /** Format: date-time */
             snapshot_at: string;
             transitions: components["schemas"]["TransitionRecordView"][];
@@ -6735,6 +6778,7 @@ export interface operations {
             /** @description Request fulfilled, document follows */
             200: {
                 headers: {
+                    "cache-control"?: string;
                     [name: string]: unknown;
                 };
                 content: {

@@ -1328,12 +1328,21 @@ and [storage/focus tests](https://github.com/hexanomicon/lychd/blob/main/clients
 
 **State:** Partial
 
-**Proved now:** The masthead orders Bridge, Atlas, Loom, Nexus, Orb, and Applications. Bridge opens
-the full conversation workspace at the last explicitly selected session in the open browser
-document. **Browse séances** opens the catalogue from that workspace. The dock's **Open Séance**
-opens the exact server-supplied session. An unresolved default offers the catalogue. Atlas
-retains **Open Canvas →** and **New canvas**. The masthead marks Bridge on Séances routes and
-Atlas on Canvas routes. Existing direct URLs remain available, and the root opens Orb.
+**Proved now:** The collapsible rail opens Bridge, Atlas, Loom, Orb, Nexus and Applications.
+The Applications label opens the searchable catalogue, and its chevron opens an in-place list.
+Browser-local pins control which applications have a rail shortcut. **Atelier** exchanges a
+validated short-video brief, previews a script's timing and plays operator-selected local video.
+A full Bridge turn offers its exact Run through **View run in Orb**. Its left exchange marks
+preview and locate turns. The session can open its source map in Atlas.
+
+The graph instruments share their renderer and camera minimap. Loom exposes declared station
+permissions, a bounded inquiry example and opposed Crucible reports. Its browser-local workflow
+studio opens, edits and exports typed draft graphs with conditional links and agent prompts. Orb projects captured
+attempts at the selected cursor and keeps an operator's appraisal attached to its original
+record. Atlas relates projects, séances, source turns and retained material with explicit
+provenance. Nexus projects effective startup and orchestration settings and the current
+operator. Access, fallback and affect proposals can be exported for review. No runtime
+applies these proposals or emits the worked example's affect signals.
 
 The shell keeps one conversation mounted across navigation, retaining exact-session drafts,
 unresolved offerings, and live subscriptions. Full-route Bridge fills the work area with one
@@ -1378,8 +1387,7 @@ without destroying the conversation. Source-development Canvas opens that shell 
 makes no protected Bridge/status requests until an explicit connection. Production
 authentication remains intact.
 
-**Boundary — Not yet:** The shared Atlas ontology, provenance-bearing séance map, and generalized
-memory curation remain design work. The dock supplies no new model context or attachment
+**Boundary — Not yet:** General ontology authoring, automatic relationship discovery and cross-session memory consolidation remain design work. The séance map displays explicit source relationships and retained material. The dock supplies no new model context or attachment
 admission, global conversation merge, cross-instance history, durable browser draft storage or
 execution authority. Séances supplies no automatic analysis, durable working-material store,
 private conversation-to-Archive intake, or Persona authoring. Viewing a page is not transmitting
@@ -1607,8 +1615,8 @@ they do not qualify production deployment or live effects.
 **Evidence**
 
 - **Source:** [Bridge controller](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/web/bridge.py), [Bridge client](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/pages/bridge/components/BridgeView.svelte), [Altar shell](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/shell/components/AltarShell.svelte), and [Context assembly](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/cortex/context.py), with [native review resolution](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/web/consent_reviews.py) and [binding migration](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/migrations/versions/0010_native_consent_binding.py).
-- **Source:** [Circle Run disclosure](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/pages/bridge/components/CircleRun.svelte)
-- **Verification:** [Circle identity/action tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/pages/bridge/components/CircleRun.test.ts)
+- **Source:** [Turn status and Run menu](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/pages/bridge/components/TurnRunMenu.svelte)
+- **Verification:** [Turn identity and Run menu tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/pages/bridge/components/TurnRunMenu.test.ts)
 - **Verification:** [Configured composer projection tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_bridge_composer.py)
 - **Verification:** [Bridge tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_bridge.py), [archive tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_bridge_archive.py), [stream admission tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_bridge_stream_budget.py), [PostgreSQL archive receipts](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_db_consent_pg.py), and [client recovery tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/pages/bridge/components/BridgeView.test.ts), [initial read recovery tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/shared/InstrumentReadRecovery.test.ts), [shell navigation tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/pages/bridge/components/BridgeShellNavigation.test.ts), [client review tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/shared/ConsentCard.test.ts), and [decision transport tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/api/client.test.ts), plus [complete-history tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/cortex/test_context.py), [native binding tests](https://github.com/hexanomicon/lychd/blob/main/tests/codex/test_native_consent.py), and [reviewer and decision tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_native_consent_review.py).
 - **Law:** [Frontend](./adr/15-frontend.md), [Context](./adr/21-context.md), and [native Consent review](./adr/25-hitl.md#required-review-for-native-actions)
@@ -2742,7 +2750,7 @@ supplied occurrence, and loaded records. Exact pinned workflow graphs show decla
 separately from retained evidence. Catalogue queries select bounded metadata without loading
 prompts, manifests, or event histories.
 
-The parallel field uses compact typed marks and stable, irregular Run territories inside the
+The parallel field places each Run in a named lane on the dotted Orb canvas inside the
 shared Svelte Flow adapter. Marks can be rearranged locally without a durable layout or domain
 mutation; viewport scaling keeps their labels readable. Search, exact state/waiting filters,
 the semantic Run list and a collapsible evidence inspector preserve access without canvas gestures.

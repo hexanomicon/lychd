@@ -30,3 +30,9 @@ identifies Altar; its appearance never indicates consent or runtime state.
 The scene appears only at the empty Bridge entrance and carries no evidence
 or operational meaning. Its source bytes are bundled locally by Vite;
 Altar does not depend on a Mechanimous checkout or a remote image service.
+
+Atelier observatory study
+The program monitor in clients/web/src/lib/pages/atelier/observatory-study.webp
+uses a crop of the illustrative observatory scene in the Altar design study
+docs/assets/altar-design/atelier-cut.webp. The sample plate is part of the
+example brief. Video selected by an operator is read locally at runtime.

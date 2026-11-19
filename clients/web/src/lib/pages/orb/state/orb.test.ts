@@ -1,25 +1,45 @@
 import { describe, expect, it } from "vitest";
 import { fixtureRun, pattern } from "$lib/pages/orb/state/__fixtures__/snapshot";
+import { stationDurations } from "./orb-evidence";
 import { matchesOrbPattern } from "$lib/graph/model";
 import { mergeOrbEvidence, mergeOrbGaps, orbEvidenceNodeId, projectOrb, projectOrbField } from "./orb";
 
 describe("Orb semantic graph", () => {
-  it("shares only explicitly recorded Animator selections across Run groups", () => {
+  it("shows the bound workflow title while preserving the same Run identity as its unopened lane", () => {
+    const snapshot = fixtureRun();
+    const unopened = projectOrbField([snapshot.run], new Map(), "runs").projection.nodes[0]!;
+    const lenses = new Map([[snapshot.run.run_id, { snapshot, pattern }]]);
+    const opened = projectOrbField([snapshot.run], lenses, "stations").projection.nodes[0]!;
+    expect(unopened.label).toBe(snapshot.run.workflow_name);
+    expect(opened.label).toBe(pattern.title);
+    expect(opened.id).toBe(unopened.id);
+    expect(opened.detail).toContain(snapshot.run.run_id);
+  });
+  it("keeps each recorded Animator selection within its own Run", () => {
     const a = fixtureRun(), b = fixtureRun("run-b");
-    a.evidence = [{ ...a.evidence[0]!, kind: "dispatch", animator_name: "local-reasoner", subject_key: "chat" }];
-    b.evidence = [{ ...b.evidence[0]!, kind: "dispatch", animator_name: "local-reasoner", subject_key: "chat" }];
+    a.evidence = [{ ...a.evidence[0]!, kind: "dispatch", model_id: "served-model", animator_name: "local-reasoner", subject_key: "chat" }];
+    b.evidence = [{ ...b.evidence[0]!, kind: "dispatch", model_id: "served-model", animator_name: "local-reasoner", subject_key: "chat" }];
     const lenses = new Map([[a.run.run_id, { snapshot: a, pattern }], [b.run.run_id, { snapshot: b, pattern }]]);
     for (const level of ["runs", "stations", "occurrences", "records"] as const) {
       const graph = projectOrbField([a.run, b.run], lenses, level).projection;
       const sources = graph.nodes.filter((node) => node.kind === "animator");
-      expect(sources).toHaveLength(1);
-      expect(sources[0]).toMatchObject({ id: "animator:local-reasoner", count: 2, group: "animators" });
-      expect(sources[0]!.detail).toContain("call activity and availability are not supplied");
-      const selections = graph.edges.filter((edge) => edge.relation === "selection");
+      expect(sources.map(node => node.group)).toEqual(["run-a", "run-b"]);
+      expect(sources.every(node => node.detail.includes("served-model"))).toBe(true);
+      const selections = graph.edges.filter(edge => edge.relation === "selection");
       expect(selections).toHaveLength(2);
-      expect(selections.every((edge) => graph.nodes.some((node) => node.id === edge.source) && edge.target === sources[0]!.id)).toBe(true);
+      for (const target of sources) expect(selections.some(edge => edge.target === target.id &&
+        graph.nodes.some(node => node.id === edge.source && node.group === target.group))).toBe(true);
       expect(graph.nodes.some((node) => node.kind === "file" || node.kind === "agent")).toBe(false);
     }
+  });
+  it("totals completed attempts from producer times and excludes ambiguous or incomplete observations", () => {
+    const start = fixtureRun().evidence[0]!;
+    const finish = { ...start, event_id: "finish", seq: 1, phase: "settled", occurred_at: "2026-09-22T00:00:03Z" };
+    expect([...stationDurations([start])]).toEqual([]);
+    expect([...stationDurations([finish, start])]).toEqual([["inspect", 3000]]);
+    expect([...stationDurations([start, finish, { ...start, subject_key: "another" }])]).toEqual([]);
+    expect([...stationDurations([start, finish, { ...start, occurrence_id: "retry" },
+      { ...finish, occurrence_id: "retry", phase: "failed" }])]).toEqual([["inspect", 6000]]);
   });
   it("keeps suffix coverage when later stream metadata has no older-page flag", () => {
     const snapshot = fixtureRun();

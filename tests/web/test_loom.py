@@ -233,3 +233,16 @@ def test_semantic_revision_exposes_its_own_score_without_changing_the_default(
         "end",
     }
     assert "(bridge_chat@5)" in body["mermaid_source"]
+
+
+def test_registered_result_contract_is_readable_without_output_values(altar_client: TestClient[Litestar]) -> None:
+    """The installed settlement node exposes the shape, while historical topology stays stable."""
+    response = altar_client.get("/api/v1/loom/bridge_chat/1")
+    assert response.status_code == 200
+    nodes = {node["key"]: node for node in response.json()["nodes"]}
+    schema = json.loads(nodes["project_reply"]["output_schema"])
+    assert schema["required"] == ["answer"]
+    assert schema["properties"]["answer"]["type"] == "string"
+    assert schema["properties"]["fragments"]["type"] == "array"
+    assert nodes["weave_context"].get("output_schema") is None
+    assert "output_schema" not in BRIDGE_CHAT.manifest.snapshot()["nodes"][0]

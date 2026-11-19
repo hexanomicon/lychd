@@ -359,7 +359,12 @@ BRIDGE_CHAT_SEMANTIC = Workflow(
                 key="recall_semantic_notes", label="Recall semantic sources", implementation=RecallSemanticNotes
             ),
             PatternNode(key="answer_semantic_notes", label="Answer from sources", implementation=AnswerSemanticNotes),
-            PatternNode(key="settle_semantic_answer", label="Settle answer", implementation=SettleSemanticAnswer),
+            PatternNode(
+                key="settle_semantic_answer",
+                label="Settle answer",
+                implementation=SettleSemanticAnswer,
+                public_result_type=BridgeReply,
+            ),
             PatternNode(key="end", label="End", kind="terminal"),
         ),
         edges=(

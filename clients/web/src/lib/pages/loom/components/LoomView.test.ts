@@ -124,6 +124,29 @@ it("offers keyboard-operable Score and Evaluation tabs without automatically rea
   view.unmount();
 });
 
+it("exposes revision coverage separately from a reversible affect and Crucible example", async () => {
+  vi.mocked(getLoomPatternRevision).mockResolvedValue({ ...projection,
+    nodes: [{ key: "start", label: "Start", kind: "step" }, { key: "finish", label: "Finish", kind: "terminal" }],
+    edges: [{ key: "next", source: "start", target: "finish", relation: "permits" }]
+  });
+  const view = render(LoomView, { patternId: "bridge_chat", revision: "1" });
+  await fireEvent.click(await screen.findByRole("button", { name: "Inspect affect coverage & Crucible example" }));
+  expect(screen.getByRole("tab", { name: "Affect" }).getAttribute("aria-selected")).toBe("true");
+  expect(screen.getByLabelText("Station definition")).toBeTruthy();
+  const node = screen.getByLabelText("Inspect a worked node");
+  await fireEvent.change(node, { target: { value: "reconcile" } });
+  expect(screen.getByRole("heading", { name: "Reconciler" })).toBeTruthy();
+  await fireEvent.change(node, { target: { value: "edit" } });
+  expect(screen.getByLabelText("Illustrative file diff").textContent).toContain("confirmed_failed");
+  expect(screen.getByText("Read the receipt once using the new key.", { exact: false })).toBeTruthy();
+  await fireEvent.change(screen.getByLabelText("Lookup permission"), { target: { value: "needs_review" } });
+  expect(screen.getByText("Ask whether the store owner", { exact: false })).toBeTruthy();
+  await fireEvent.change(screen.getByLabelText("Remaining allowance"), { target: { value: "spent" } });
+  expect(screen.getByText("The parent allowance is spent.", { exact: false })).toBeTruthy();
+  expect(getOrbRun).not.toHaveBeenCalled();
+  view.unmount();
+});
+
 it("explains when a deep-linked Pattern revision is unavailable", async () => {
   vi.mocked(getLoomPatternRevision).mockRejectedValue(
     new Error("No such Pattern revision is woven.")
@@ -454,4 +477,24 @@ it("rejects source-generation substitution without displaying the returned graph
   expect((await screen.findByRole("alert")).textContent).toContain("does not match the exact requested identity");
   expect(screen.queryByRole("heading", { name: projection.title })).toBeNull();
   view.unmount();
+});
+
+
+it("keeps the draft editor open when the registry has a default revision", async () => {
+  page.url.search = "?studio=sdlc";
+  const rendered = render(LoomView);
+  await screen.findByRole("heading", { name: "Software development lifecycle" });
+  expect(getLoomCatalogue).not.toHaveBeenCalled();
+  expect(goto).not.toHaveBeenCalled();
+  rendered.unmount();
+});
+
+it("keeps the selected Atelier composition open and links to its matching recipe", async () => {
+  page.url.search = "?composition=animated-lesson";
+  const rendered = render(LoomView);
+  await screen.findByRole("heading", { name: "Animated lesson" });
+  expect(screen.getByRole("link", { name: /Open in Atelier/ }).getAttribute("href")).toBe("/atelier?recipe=animated-lesson");
+  expect(getLoomPatternRevision).not.toHaveBeenCalled();
+  expect(goto).not.toHaveBeenCalled();
+  rendered.unmount();
 });

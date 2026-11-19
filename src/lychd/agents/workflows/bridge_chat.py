@@ -483,7 +483,9 @@ BRIDGE_CHAT = Workflow(
             PatternNode(key="weave_context", label="Weave context", implementation=WeaveContext),
             PatternNode(key="converse", label="Converse", implementation=Converse),
             PatternNode(key="await_consent", label="Await consent", kind="gate", implementation=AwaitConsent),
-            PatternNode(key="project_reply", label="Project reply", implementation=ProjectReply),
+            PatternNode(
+                key="project_reply", label="Project reply", implementation=ProjectReply, public_result_type=BridgeReply
+            ),
             PatternNode(key="end", label="End", kind="terminal"),
         ),
         edges=(
