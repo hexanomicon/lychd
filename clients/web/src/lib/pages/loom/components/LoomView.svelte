@@ -300,8 +300,9 @@
 
 <svelte:head><title>{view ? `${view.title} · ${view.pattern_id}@${view.revision} — Loom` : "Loom — LychD"}</title></svelte:head>
 <div class="instrument-deck instrument-deck--loom loom-workspace">
+  {#if designing}<BlueprintStudio />{:else}
   <PageHeader title="Loom" kicker="Pattern topology">
-    {#snippet actions()}<a class="design-link" href={designing ? resolve("/loom") : resolve("/loom") + "?studio=sdlc"}>{designing ? "Registered Patterns" : "Design workflow"}</a><details class="loom-catalogue">
+    {#snippet actions()}<a class="design-link" href={resolve("/loom") + "?studio=sdlc"}>Design workflow</a><details class="loom-catalogue">
       <summary>Pattern library <span>{catalogue.length}</span></summary>
       <nav aria-label="Pattern revisions">
         {#each catalogue as pattern (pattern.detail_path)}
@@ -320,7 +321,6 @@
     </details>{/snippet}
   </PageHeader>
 
-  {#if designing}<BlueprintStudio />{:else}
   <section class="loom-reading" aria-label="Registered Pattern" aria-busy={loading}>
     {#if loading}
       <div class="loom-read-state" role="status">

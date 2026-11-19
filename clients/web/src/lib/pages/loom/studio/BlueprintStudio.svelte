@@ -1,5 +1,10 @@
 <script lang="ts">
-  import { onDestroy } from "svelte";
+  import { onDestroy, type Snippet } from "svelte";
+  import { MediaQuery } from "svelte/reactivity";
+  import GraphMapRail from "$lib/graph/components/GraphMapRail.svelte";
+  import PaneGrip from "$lib/components/layout/PaneGrip.svelte";
+  import AltarIcon from "$lib/shell/components/AltarIcon.svelte";
+  import { resolvePath } from "$lib/navigation/paths";
   import { studioSession } from "./session";
   import GraphCanvas from "$lib/graph/components/GraphCanvas.svelte";
   import {
@@ -35,6 +40,16 @@
   let graph = $derived(project(draft, node.parent));
   let owner = $derived(draft.nodes.find((n) => n.id === node.parent));
   let members = $derived(draft.nodes.filter((n) => n.parent === selected));
+  const compact = new MediaQuery("(max-width: 48rem)");
+  let mapOpen = $derived(!compact.current);
+  let mapWidth = $state(190);
+  let inspectorOpen = $state(true);
+  let inspectorWidth = $state(290);
+  let expanded = $state.raw<string[]>([]);
+  const icons: Record<Kind,string> = {agent:"nexus",object:"node",router:"connect",subflow:"loom",ledger:"language"};
+  function toggle(id: string) {
+    expanded = expanded.includes(id) ? expanded.filter(key => key !== id) : [...expanded, id];
+  }
   let focusRevision = $state(0);
   let newKind = $state<Kind>("agent");
   let message = $state("");
@@ -47,6 +62,14 @@
     }
   });
   function inspect(id: string) {
+    const parents: string[] = [];
+    let parent = draft.nodes.find(n => n.id === id)?.parent;
+    while (parent) {
+      parents.push(parent);
+      parent = draft.nodes.find(n => n.id === parent)?.parent;
+    }
+    expanded = [...new Set([...expanded, ...parents])];
+    inspectorOpen = true;
     selected = id;
     focusRevision++;
   }
@@ -109,20 +132,38 @@
   }
 </script>
 
+{#snippet tree(parent: string)}
+  <ul class="branches">
+    {#each draft.nodes.filter(n => n.parent === parent) as item (item.id)}
+      <li>
+        <div class="branch">
+          {#if draft.nodes.some(n => n.parent === item.id)}
+            <button class="fold" aria-label={(expanded.includes(item.id) ? "Collapse " : "Expand ") + item.name} aria-expanded={expanded.includes(item.id)} onclick={() => toggle(item.id)}>{expanded.includes(item.id) ? "▾" : "▸"}</button>
+          {/if}
+          <button class="target" aria-current={selected === item.id ? "true" : undefined} onclick={() => inspect(item.id)}>
+            <AltarIcon name={icons[item.kind]} size={14} />{item.name}
+          </button>
+        </div>
+        {#if expanded.includes(item.id)}{@render tree(item.id)}{/if}
+      </li>
+    {/each}
+  </ul>
+{/snippet}
 <svelte:window onbeforeunload={warnOnReload} />
 <section class="studio" aria-label="Workflow blueprint editor">
   <header>
     <div>
-      <small>LOCAL BLUEPRINT</small>
+      <small>LOOM · LOCAL BLUEPRINT</small>
       <h2>Software development lifecycle</h2>
     </div>
     <div class="actions">
+      <a href={resolvePath("/loom")}>Registered Patterns</a>
       <label class="file"
         >Open JSON<input type="file" accept="application/json,.json" onchange={restore} /></label
       ><button class="primary" disabled={!!error} onclick={download}>Export draft ↓</button>
     </div>
   </header>
-  <div class="workspace">
+  <div class="workspace" style:--inspector-width={inspectorOpen ? inspectorWidth + "px" : "2.3rem"}>
     <div class="diagram">
       <nav aria-label="Flow level">
         <strong>{owner?.name ?? "Workflow overview"}</strong>
@@ -136,8 +177,15 @@
         {focusRevision}
         onselect={inspect}
         label="Workflow blueprint graph"
-        --graph-height="clamp(330px,50vh,640px)"
-      />
+        --graph-height="clamp(380px,65vh,900px)"
+        --graph-map-width={mapOpen ? mapWidth + "px" : "2.3rem"}
+      >
+        {#snippet navigator(minimap: Snippet)}
+          <GraphMapRail bind:open={mapOpen} bind:width={mapWidth} {minimap} name="Workflow Map">
+            {@render tree("")}
+          </GraphMapRail>
+        {/snippet}
+      </GraphCanvas>
       <div class="outline">
         <label
           >Browse nodes<select value={selected} onchange={(e) => inspect(e.currentTarget.value)}>
@@ -152,7 +200,11 @@
         </div>
       </div>
     </div>
-    <aside aria-label="Blueprint inspector">
+    <aside aria-label="Blueprint inspector" class:closed={!inspectorOpen}>
+      <button class="inspector-toggle" aria-label={inspectorOpen ? "Collapse inspector" : "Expand inspector"} aria-expanded={inspectorOpen} onclick={() => inspectorOpen = !inspectorOpen}>{inspectorOpen ? "›" : "‹"}</button>
+      {#if inspectorOpen}
+      <PaneGrip bind:width={inspectorWidth} name="Inspector width" min={225} max={510} />
+      <div class="fields">
       <small>{node.kind.toUpperCase()} · INSPECTOR</small>
       <h3>{node.name}</h3>
       {#if members.length}<button class="enter" onclick={() => inspect(members[0]!.id)}
@@ -277,6 +329,8 @@
             >＋ Add inside {node.kind}</button
           >{/if}
       </div>
+      </div>
+      {/if}
     </aside>
   </div>
   {#if error || message}<p role="status">{error || message}</p>{/if}
@@ -308,7 +362,7 @@
     color: var(--color-ash);
   }
   header small,
-  aside > small {
+  .fields > small {
     color: var(--color-rune);
     letter-spacing: 0.1em;
   }
@@ -322,7 +376,7 @@
   }
   .workspace {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(17rem, 29%);
+    grid-template-columns: minmax(0, 1fr) var(--inspector-width);
     border: 1px solid var(--color-engraving);
     border-radius: 6px;
     overflow: hidden;
@@ -333,9 +387,24 @@
   }
   aside {
     border-inline-start: 1px solid var(--color-engraving);
-    max-height: 74vh;
-    overflow: auto;
-    padding: 1rem;
+    position: relative;
+  }
+  .fields { max-height:80vh; overflow:auto; padding:1rem; }
+  .inspector-toggle { position:absolute; top:.5rem; right:.35rem; z-index:1; }
+  .branches { padding:0; margin:0; list-style:none; }
+  .branches .branches { margin-inline-start:.5rem; padding-inline-start:.4rem; border-inline-start:1px solid var(--color-engraving); }
+  .branch,.target { display:flex; align-items:center; gap:.25rem; }
+  .branch button { font-size:var(--text-xs); border:0; background:transparent; text-align:start; }
+  .branch .fold { padding:.25rem; }
+  .branch .target { flex:1; padding:.35rem .25rem; }
+  .target :global(svg) { flex-shrink:0; color:var(--color-rune); }
+  .target[aria-current],.target:hover { background:var(--color-obsidian-2); color:var(--color-rune); }
+  .actions a { font-size:var(--text-sm); color:var(--color-parchment); }
+  aside.closed { min-height:2.5rem; }
+  header h2 { font-size:clamp(1.1rem,1.7vw,1.6rem); }
+  @container work-area (max-width:46rem) {
+    .fields { max-height:none; }
+    aside :global(.grip) { display:none; }
   }
   nav,
   .outline {

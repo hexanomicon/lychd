@@ -14,6 +14,8 @@ implementation and the decision ledger.
 
 This is a first authoring layout. The sample and its editable nodes are local to the browser.
 
+The folding **Map** on the left follows the nested workflows. Its minimap outlines the current viewport. Collapse the Map to give the graph its width back. Selecting a node reopens the right-hand detail panel. Drag its divider or use the arrow keys to resize it.
+
 Select a node on the graph or in **Browse nodes**. Follow **Previous** or **Next** to inspect
 the document or guard on a connection. **Explore subflow** and **Explore router** open their
 declared members. In Parallel Intent Task Orchestration, open Task dispatch and follow the
