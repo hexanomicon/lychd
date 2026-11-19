@@ -1,0 +1,83 @@
+/* @import url() FONT IMPORTS MUST ALWAYS BE AT THE VERY TOP OF THIS FILE, ABOVE THE TAILWIND IMPORT — DO NOT DELETE THIS COMMENT */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;650;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* CRITICAL: THE FOLLOWING TAILWIND IMPORT MUST NEVER BE DELETED — DO NOT DELETE THIS COMMENT */
+@import 'tailwindcss';
+/* END TAILWIND IMPORTS — ALL OTHER CSS MUST GO BELOW THIS LINE */
+
+@theme inline {
+  --font-sans: 'Inter', 'Segoe UI', system-ui, -apple-system, Helvetica, Arial, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Consolas, monospace;
+  --color-frame: var(--frame);
+  --color-bg: var(--bg);
+  --color-panel: var(--panel);
+  --color-raise: var(--raise);
+  --color-sidebg: var(--side-bg);
+  --color-sunk: var(--sunk);
+  --color-hover: var(--hover);
+  --color-sel: var(--sel);
+  --color-line: var(--line);
+  --color-line2: var(--line2);
+  --color-ink: var(--text);
+  --color-ink2: var(--text2);
+  --color-ink3: var(--text3);
+  --color-primary: var(--primary);
+  --color-onprimary: var(--on-primary);
+  --color-accent: var(--accent);
+  --color-accentsoft: var(--accent-soft);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-bad: var(--bad);
+  --color-oksoft: var(--ok-soft);
+  --color-warnsoft: var(--warn-soft);
+  --color-badsoft: var(--bad-soft);
+  --shadow-pop: var(--shadow);
+  --shadow-card: var(--card-shadow);
+}
+
+/* Light: a dark Altar rail beside a light séance panel and a soft grey workspace of white cards, indigo accent. */
+.altar,
+.altar[data-theme='light'] {
+  --frame: #e7e9ef;
+  --bg: #eef0f4; --panel: #ffffff; --raise: #ffffff; --side-bg: #f7f8fa; --sunk: #f3f4f7; --hover: #f0f1f5; --sel: #eaebf2;
+  --line: #e3e5eb; --line2: #d3d6de; --text: #15161a; --text2: #5b5f6b; --text3: #737785;
+  --primary: #4f55e3; --on-primary: #ffffff; --accent: #4f55e3; --accent-soft: #eceefe;
+  --ok: #2f8552; --warn: #9a6a14; --bad: #b03a3a;
+  --ok-soft: rgba(47,133,82,.10); --warn-soft: rgba(168,116,26,.11); --bad-soft: rgba(176,58,58,.10);
+  --shadow: 0 1px 2px rgba(16,24,40,.06), 0 12px 32px rgba(16,24,40,.12);
+  --card-shadow: 0 1px 2px rgba(16,24,40,.04), 0 2px 6px rgba(16,24,40,.05);
+  --dot: #d6d9e1;
+}
+.altar[data-theme='dark'] {
+  --frame: #08080a;
+  --bg: #0e0e0f; --panel: #151518; --raise: #1a1a1d; --side-bg: #111113; --sunk: #1c1c1f; --hover: #1f1f23; --sel: #25252a;
+  --line: #26262b; --line2: #34343a; --text: #ededed; --text2: #a3a3a8; --text3: #8a8a90;
+  --primary: #6e74f5; --on-primary: #ffffff; --accent: #8f95ff; --accent-soft: rgba(110,116,245,.16);
+  --ok: #6cc08d; --warn: #d9a54a; --bad: #e07a7a;
+  --ok-soft: rgba(108,192,141,.12); --warn-soft: rgba(217,165,74,.12); --bad-soft: rgba(224,122,122,.12);
+  --shadow: 0 1px 2px rgba(0,0,0,.5), 0 12px 32px rgba(0,0,0,.5);
+  --card-shadow: 0 1px 2px rgba(0,0,0,.4);
+  --dot: #2a2a2e;
+}
+
+/* The Altar rail (far-left navigation) is dark in every theme. */
+.altar .chrome {
+  --bg: #17181d; --panel: #17181d; --raise: #20222a; --side-bg: #17181d; --sunk: #1f2027; --hover: #22242c; --sel: #262833;
+  --line: #2a2c35; --line2: #383b46; --text: #f1f2f5; --text2: #a9acb8; --text3: #8b8f9c;
+  --accent: #a3a8ff; --accent-soft: rgba(110,116,245,.18);
+  --ok: #6cc08d; --warn: #e0ad55; --bad: #e88686;
+  --ok-soft: rgba(108,192,141,.14); --warn-soft: rgba(224,173,85,.14); --bad-soft: rgba(232,134,134,.14);
+  --dot: #2a2c35;
+  color: var(--text);
+}
+.altar[data-theme='dark'] .chrome { --bg: #111113; --panel: #111113; --side-bg: #111113; }
+
+.altar { font: 14px/1.5 var(--font-sans); color: var(--text); background: var(--frame); -webkit-font-smoothing: antialiased; }
+.altar button { cursor: pointer; font: inherit; color: inherit; }
+.altar :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+.dotgrid { background-image: radial-gradient(var(--dot) 1px, transparent 1px); background-size: 22px 22px; }
+@keyframes altar-spin { to { transform: rotate(360deg); } }
+.spin { animation: altar-spin 1s linear infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .altar * { transition: none !important; animation: none !important; }
+}
