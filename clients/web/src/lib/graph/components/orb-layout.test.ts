@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { GraphNode, GraphProjection } from "$lib/graph/model";
-import { createOrbLayoutMemory, layoutOrbProjection, orbTerritories } from "./orb-layout";
+import { createOrbLayoutMemory, layoutOrbProjection, orbNodeWidth } from "./orb-layout";
 
 const node = (id: string, group = "run-a", kind = "step"): GraphNode => ({ id, group, kind, label: id, detail: id });
 const graph = (nodes: readonly GraphNode[]): GraphProjection => ({ identity: "orb-field", nodes, edges: [] });
@@ -34,41 +34,40 @@ describe("Orb static spatial presentation", () => {
     expect(expanded).toEqual(before);
   });
 
-  it("places Animator selections within the recorded Run territory", () => {
-    const input = graph([node("run-a", "run-a", "run"), node("run-b", "run-b", "run"), node("run-c", "run-c", "run"),
-      node("selection", "run-a", "animator")]);
-    const positions = layoutOrbProjection(input, createOrbLayoutMemory());
-    const selection = positions.get("selection")!, run = positions.get("run-a")!;
-    expect(Math.hypot(selection.x - run.x, selection.y - run.y)).toBeLessThan(400);
-    expect(positions.get("run-a")!.y).not.toBe(positions.get("run-b")!.y);
-    expect(positions.get("run-b")!.x).not.toBe(positions.get("run-c")!.x);
-  });
-
-  it("reserves separated hex cells with a shallow first-three Run row", () => {
-    const input = graph(Array.from({ length: 19 }, (_, index) => node(`run-${index}`, `run-${index}`, "run")));
-    const positions = layoutOrbProjection(input, createOrbLayoutMemory());
-    const first = [0, 1, 2].map(index => positions.get(`run-${index}`)!);
-    expect(first[1]!.x - first[0]!.x).toBeGreaterThan(950);
-    expect(first[0]!.x - first[2]!.x).toBeGreaterThan(950);
-    expect(Math.max(...first.map(point => point.y)) - Math.min(...first.map(point => point.y))).toBeLessThan(30);
-    const cells = [...positions.values()];
-    for (let a = 0; a < cells.length; a++) for (let b = a + 1; b < cells.length; b++) {
-      expect(Math.hypot(cells[a]!.x - cells[b]!.x, cells[a]!.y - cells[b]!.y)).toBeGreaterThan(950);
+  it("lays out parallel Runs as adjacent lanes with aligned headers", () => {
+    const members = Array.from({ length: 19 }, (_, index) => node(`run-${index}`, `run-${index}`, "run"));
+    const positions = layoutOrbProjection(graph(members), createOrbLayoutMemory());
+    const first = positions.get("run-0")!;
+    for (const [index, member] of members.entries()) {
+      const current = positions.get(member.id)!;
+      expect(current.y).toBe(first.y);
+      if (index) expect(current.x - positions.get(members[index - 1]!.id)!.x).toBeGreaterThan(orbNodeWidth(member));
     }
   });
 
-  it("only decorates supplied Run membership and keeps geometry finite for a bounded busy Run", () => {
+  it("places the entry below its actual Run and an Animator beside its dispatch, even when the Pattern loops", () => {
+    const run = node("header", "run-a", "run"), entry = { ...node("entry"), entry: true };
+    const dispatch = node("dispatch", "run-a", "dispatch"), animator = node("choice", "run-a", "animator");
+    const input = { ...graph([run, animator, dispatch, entry]), edges: [
+      { id: "membership", source: run.id, target: entry.id, relation: "contains", label: "Run lens" },
+      { id: "route", source: entry.id, target: dispatch.id, relation: "permission", label: "Declared permission" },
+      { id: "choice", source: dispatch.id, target: animator.id, relation: "selection", label: "Recorded selection" },
+      { id: "loop", source: dispatch.id, target: entry.id, relation: "permission", label: "Revisit" }
+    ] } satisfies GraphProjection;
+    const points = layoutOrbProjection(input, createOrbLayoutMemory());
+    expect(points.get(run.id)!.x + orbNodeWidth(run) / 2).toEqual(points.get(entry.id)!.x + orbNodeWidth(entry) / 2);
+    expect(points.get(run.id)!.y).toBeLessThan(points.get(entry.id)!.y);
+    expect(points.get(entry.id)!.y).toBeLessThan(points.get(dispatch.id)!.y);
+    expect(points.get(animator.id)!.x).not.toBe(points.get(dispatch.id)!.x);
+    expect(points.get(animator.id)!.y).toBeGreaterThan(points.get(dispatch.id)!.y);
+  });
+
+  it("keeps geometry distinct and finite for disconnected records and uncorrelated components", () => {
     const nodes = [node("run-a", "run-a", "run"), ...Array.from({ length: 70 }, (_, index) => node(`record:${index}`, "run-a", "event")),
       node("external", "unknown-group"), node("animator:one", "animators", "animator")];
-    const input = graph(nodes);
-    const points = layoutOrbProjection(input, createOrbLayoutMemory());
+    const points = layoutOrbProjection(graph(nodes), createOrbLayoutMemory());
     expect(points.size).toBe(nodes.length);
     expect(new Set([...points.values()].map(point => `${point.x}:${point.y}`)).size).toBe(nodes.length);
     expect([...points.values()].every(point => Number.isFinite(point.x) && Number.isFinite(point.y))).toBe(true);
-    const territories = orbTerritories(input, points);
-    expect(territories).toHaveLength(1);
-    expect(territories[0]!.id).toBe("run-a");
-    expect(territories[0]!.path).not.toMatch(/NaN|Infinity/);
-    expect(orbTerritories(graph([node("run-a", "run-a", "run")]), points)).toEqual([]);
   });
 });

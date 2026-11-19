@@ -16,7 +16,7 @@
   onclick={(event) => data.select(data.semantic.id, event.currentTarget)}
 >
   <span class="node-type"
-    ><span aria-hidden="true">{atlasGlyph(data.semantic.kind)}</span>{data.semantic.kind}</span
+    ><span aria-hidden="true">{atlasGlyph(data.semantic.kind)}</span><span class="visually-hidden">{data.semantic.kind}</span></span
   >
   <strong>{data.semantic.label}</strong>
 </button>
@@ -25,11 +25,11 @@
   .atlas-node {
     --tint: var(--color-accent);
     width: 172px;
-    height: 94px;
-    padding: 12px 13px;
+    height:60px;
+    padding:7px 10px;
     display: flex;
-    flex-direction: column;
-    justify-content: center;
+    flex-direction:row; align-items:center;
+    justify-content:flex-start;
     gap: 6px;
     text-align: left;
     border: 1px solid color-mix(in srgb, var(--tint) 56%, var(--color-engraving));
@@ -81,6 +81,6 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
     overflow-wrap: anywhere;
-    font: 500 15px/1.28 var(--font-body);
+    font:600 15px/1.25 var(--font-rune);
   }
 </style>

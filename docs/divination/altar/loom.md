@@ -11,12 +11,29 @@ connection. Before designing a retry, you want to know who checks for a receipt 
 happens if nobody can find one. **Loom** lets you follow those decisions through a workflow.
 For the evidence recorded on a particular attempt, open its Run in [Orb](orb.md).
 
+The installed Loom opens directly on the graph. Expand **Map → Workflows** to switch between
+registered Pattern revisions and local blueprints. Select a station to inspect its incoming
+and outgoing permissions on the right. The Map keeps the current workflow and camera position
+visible while you move between stations.
+
 Choose **Design workflow** to edit the software development blueprint, connect an agent to a
 typed object and examine conditional routes. [Design a workflow](loom-studio.md).
 
 ![The compiled Loom with its workflow Map, camera minimap and selected station.](../../assets/altar-design/loom-built.webp)
 
 ![The Explorator and the two opposed Crucible reviewers in the local inquiry example.](../../assets/altar-design/loom-affect-built.webp)
+
+### Video workflows
+
+Under **Workflows → Local blueprints**, select **Illustrated story**, **Animated lesson**, or
+**Captioned excerpt**. Each opens its own editable composition graph. For example, open
+**Picture production** in Animated lesson to inspect **Render lesson frames**, its visual
+candidate and **Review motion and labels**. **Open in Atelier** returns to that recipe’s brief.
+The local blueprint follows [Atelier’s visual workflow](../../compositions/atelier/index.md)
+and [Broadcast’s editorial cut](../../compositions/broadcast/edit.md). The registry lists the
+exact Pattern revisions supplied by this Vessel.
+
+![Animated lesson with the enclosing picture-production flow, selected visual reviewer and its output fields.](../../assets/altar-design/loom-composition-built.webp)
 
 ## Walk the blueprint {#reading-direction}
 

@@ -1,7 +1,8 @@
 export const operationGroups = [
   {
-    label: "Runtime",
+    label: "Operations",
     areas: [
+      { id: "overview", title: "Overview", mark: "⊞" },
       { id: "board", title: "Capability board", mark: "◎" },
       { id: "transitions", title: "Transitions", mark: "⇄" },
       { id: "installation", title: "Installation", mark: "⌂" },
@@ -26,6 +27,7 @@ export const operationGroups = [
     label: "Intercom",
     areas: [
       { id: "skills", title: "Advertised skills", mark: "✧" },
+      { id: "offers", title: "Connected offers", mark: "⇌" },
       { id: "peers", title: "Peer enrollment", mark: "⇆" },
       { id: "colleagues", title: "Colleagues", mark: "◌" }
     ]
@@ -34,7 +36,8 @@ export const operationGroups = [
     label: "People and access",
     areas: [
       { id: "principals", title: "Users and Principals", mark: "♙" },
-      { id: "access", title: "Access policy", mark: "⚿" }
+      { id: "access", title: "Access policy", mark: "⚿" },
+      { id: "checkpoints", title: "Human checkpoints", mark: "◇" }
     ]
   }
 ] as const;

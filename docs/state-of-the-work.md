@@ -2750,7 +2750,7 @@ supplied occurrence, and loaded records. Exact pinned workflow graphs show decla
 separately from retained evidence. Catalogue queries select bounded metadata without loading
 prompts, manifests, or event histories.
 
-The parallel field uses compact typed marks and stable, irregular Run territories inside the
+The parallel field places each Run in a named lane on the dotted Orb canvas inside the
 shared Svelte Flow adapter. Marks can be rearranged locally without a durable layout or domain
 mutation; viewport scaling keeps their labels readable. Search, exact state/waiting filters,
 the semantic Run list and a collapsible evidence inspector preserve access without canvas gestures.

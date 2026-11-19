@@ -2338,6 +2338,7 @@ export interface components {
             key: string;
             kind: string;
             label: string;
+            output_schema?: string | null;
         };
         /** LoomSummary */
         LoomSummary: {

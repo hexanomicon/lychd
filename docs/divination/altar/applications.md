@@ -18,6 +18,11 @@ come from the [Composition portfolio](../../compositions/index.md#areas).
 
 ![Applications in the compiled Altar, with searchable composition cards and personal rail pins.](../../assets/altar-design/applications-built.webp)
 
+The initial design study below provided the three-column layout and the visual motifs for
+the installed cards above. Labels on the installed cards follow their available destinations.
+
+![Early Applications dashboard study with six Composition cards and rail pins.](../../assets/altar-design/all-apps.webp)
+
 Each card names its destination. **Open market** takes you to
 [Scavenger’s market](../../compositions/scavenger/market.md). **Open boards** takes you to
 [board authoring](../../compositions/canvas/index.md). **View design** opens the guide for
@@ -61,8 +66,9 @@ The cut still runs twelve seconds. The voice and music keep their positions. Aud
 transition, then select the voice clip to adjust gain or lower the music under the line.
 
 The cut design proposes a candidate export for review against its exact bytes.
-In the current [Atelier studio](atelier.md) you can exchange a short-video brief, time its
-lines and play an existing local video. The multitrack cut above is an early design study.
+In the current [Atelier studio](atelier.md) you can exchange a short-video brief, select
+shots, split cues, adjust caption timing, audition local audio and export a WebVTT track.
+The master-render action above is part of the design study.
 
 ## Availability
 

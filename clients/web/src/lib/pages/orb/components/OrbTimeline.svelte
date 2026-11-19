@@ -4,9 +4,10 @@
   import { FIELD_HISTORY_WINDOWS, fieldFrameAt, type FieldFrame } from "$lib/pages/orb/state/field-history";
 
   let {
-    frames, cursorId, pinnedFrame, onseeking, onlive, onpause, windowSeconds = 90, onwindowchange,
+    onrecords, frames, cursorId, pinnedFrame, onseeking, onlive, onpause, windowSeconds = 90, onwindowchange,
     controlRevision = 0, connectionLabel = "Transport status unavailable"
   }: {
+    onrecords?: () => void;
     frames: readonly FieldFrame[];
     cursorId: number | null;
     pinnedFrame?: FieldFrame | null;
@@ -135,7 +136,7 @@
 
 <section class="orb-timeline" aria-label="Tab observation history">
   <div class="timeline-heading">
-    <div class="title"><strong>Tab history</strong><span>observed updates · cleared on reload</span></div>
+    <div class="title">{#if onrecords}<button type="button" onclick={onrecords}>Recorded time</button>{/if}<strong>Tab history</strong><span>observed updates · cleared on reload</span></div>
     <button type="button" aria-controls={`${uid}-lanes`} aria-expanded={lanesOpen} onclick={() => lanesOpen = !lanesOpen}>
       {lanesOpen ? "Fold timeline lanes" : "Show timeline lanes"}
     </button>

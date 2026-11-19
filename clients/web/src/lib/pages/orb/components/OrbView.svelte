@@ -4,6 +4,7 @@
   import { page } from "$app/state";
   import { onDestroy, tick } from "svelte";
 
+  import StationOutput from "./StationOutput.svelte";
   import { getOrbRun } from "$lib/api/client";
   import type { OrbRunSnapshot } from "$lib/api/models";
   import { loadedSubjects, subjectIdentity, attemptIdentity, conflictingStationAttempts } from "$lib/pages/orb/state/orb-evidence";
@@ -126,6 +127,9 @@
   let nextEvidence = $derived(selectedIndex >= 0 ? loadedEvidence[selectedIndex + 1] : undefined);
   let conflictingAttempts = $derived(conflictingStationAttempts(loadedEvidence));
   let selectedGraphId = $derived(selected && (playbackCursor === null || selected.seq <= playbackCursor) ? orbEvidenceNodeId(selected, pattern) : graphSelection);
+  let outputStation = $derived(pattern?.nodes.find(station => (selected?.kind === "node" && (playbackCursor === null || selected.seq <= playbackCursor) && station.key === selected.subject_key) || selectedGraphId === "station:" + station.key));
+  let outputJobs = $derived(snapshot?.delegated_jobs.filter(job => job.step_id === outputStation?.key) ?? []);
+
   let selectedGraphNode = $derived(graph?.nodes.find((node) => node.id === selectedGraphId));
   let linkedJobUnavailable = $derived(Boolean(
     snapshot && requestedJobId && !snapshot.delegated_jobs.some((job) => job.job_id === requestedJobId)
@@ -730,6 +734,7 @@
           <p>Select an evidence row to read its exact identity, recorded fields, and available counterpart links.</p>
         </section>
       {/if}
+      {#if outputStation?.output_schema || (playbackCursor === null && outputJobs.length)}<StationOutput schema={outputStation?.output_schema} jobs={outputJobs} historical={playbackCursor !== null} />{/if}
       <BridgePreferenceSummary summary={snapshot?.bridge_preference} />
     </aside>
 

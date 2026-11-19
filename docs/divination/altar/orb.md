@@ -13,9 +13,23 @@ Open `/orb` for the parallel Run field, or choose **… → View run in Orb** at
 inspect `/orb/{run_id}`. The shell’s **Orb** tab opens the parallel field; exact Run and event
 links preserve the account being reviewed.
 
-![The compiled Orb with a cursor-scoped Map, minimap, selected event and recording timeline.](../../assets/altar-design/orb-built.webp)
+The installed Altar below shows two Runs completed by the local worker. **Bridge Chat** used
+an offline model and **Delegated Rite** used the reference delegated runtime.
+
+![Two observed Runs drawn in parallel, with their station attempts aligned by elapsed time.](../../assets/altar-design/orb-built.webp)
 
 ![An appraisal anchored to the visible record and its file evidence.](../../assets/altar-design/orb-affect-built.webp)
+
+### Inspect a station result
+
+![Project reply selected on the parallel field with its installed result contract.](../../assets/altar-design/orb-output-contract-built.webp)
+
+Select an observed station on the field or in a Run's detail. **Declared output schema** shows
+the installed definition for an exact registered station. Expand a field to read its type,
+required status and nested object or array. A delegation station can separately report the
+latest retained AgentJob’s output presence and artifact count. Rewinding by record hides
+those latest counters. Raw response content is private. A schema or a completed station does
+not establish which output values existed at an earlier moment.
 
 ## Proposed design
 
@@ -103,6 +117,12 @@ minimap and draw its stars and connections. The remaining shared controls are de
 
 ## Read the parallel field
 
+Open **Orb** on the same Vessel where you submitted the Intent. A lane appears for each
+Run in the loaded catalogue. When its exact Pattern is available, the lane uses the
+Pattern's title. Two Runs of the same revision have separate lanes and Run IDs. Hover or
+focus their headers to distinguish them. To see a workflow before it has a Run, open its
+registered revision in [Loom](loom.md).
+
 The installed **Map** lists Runs from the displayed capture. Expand a Run’s loaded subjects
 and station attempts to reach an actual record. Selecting it opens its evidence alongside
 the graph and keeps the capture clock in place. The **Runtime · latest window** branch uses
@@ -133,7 +153,9 @@ explains how admitted profiles join this common view.
 The field starts with a bounded page of Run identities. **Load more retained Runs** extends the
 catalogue; the number shown is the loaded count. Its newest page refreshes every five seconds
 while visible. **Refresh Runs** rereads it immediately, preserving already opened Run lenses.
-The black spatial canvas shows compact typed marks inside stable, irregular Run territories.
+Each lane starts with its Run. Read down the lane to follow the workflow, or across a branch
+to inspect a connected subject. The dotted field continues beyond the visible area. Select
+a mark to inspect its evidence, or open **Map** to navigate with the keyboard.
 Drag the background to pan, scroll or use the viewport controls to zoom, and drag a mark to
 rearrange it locally. This changes no Pattern or execution state. All loaded Run groups remain
 available; at most three live evidence lenses are open. Close a lens before opening another.
@@ -169,8 +191,14 @@ file trees and other resources require identities from their own source.
 
 ## Pause and revisit the observed field
 
-**Fold timeline lanes** hides the per-Run tracks and keeps the clock, playback controls and
-seek bar available. Reopen **Show timeline lanes** to restore the rows at the current cursor.
+The default **Timeline** aligns the loaded Runs by their recorded event times. A task bar
+joins the entry and settlement of a single station attempt. Individual records appear as
+diamonds. Overlapping attempts use separate tracks. Select a bar or diamond to inspect its
+record. Use the slider or arrows to show the evidence through that moment. **Live** returns
+to the latest field. Click **Timeline** to fold the tracks or reopen them.
+
+Choose **Tab history** to replay the snapshots this browser received. In that mode,
+**Fold timeline lanes** keeps the clock and seek bar available.
 
 The bottom **Tab history** keeps up to 300 changed projections received in this open tab, within
 the chosen 30-second, 90-second, five-minute or one-hour window. It starts when the field is read.

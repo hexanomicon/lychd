@@ -14,6 +14,8 @@ export interface GraphNode {
   readonly state?: string;
   readonly count?: number;
   readonly group?: string;
+  /** Explicit enclosing node in a local workflow blueprint. */
+  readonly parent?: string;
   /** Exact known members of a folded presentation group, never an inferred cluster. */
   readonly members?: readonly string[];
   readonly attention?: "latest" | "cursor" | "received";

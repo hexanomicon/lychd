@@ -213,6 +213,7 @@ DELEGATED_RITE = Workflow(
                 key="project_reply",
                 label="Project adopted result",
                 implementation=ProjectDelegatedReply,
+                public_result_type=str,
             ),
             PatternNode(key="end", label="End", kind="terminal"),
         ),

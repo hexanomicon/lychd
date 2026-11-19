@@ -13,11 +13,11 @@ changes no lifecycle state.
 Complete [Altar’s startup and local-access steps](index.md#bring-one-intent), then open
 `http://127.0.0.1:7134/nexus` within the same-host browser boundary.
 
-![Nexus displaying its operations directory, routing defaults and local change proposal.](../../assets/altar-design/nexus-built.webp)
+![Instance overview with the local snapshot, Scroll disclosure, connected offers and human checkpoint review.](../../assets/altar-design/nexus-overview-built.webp)
 
 ![Users and Principals showing the authenticated operator and the installed account boundary.](../../assets/altar-design/nexus-access-built.webp)
 
-This early layout opens on **Installation**. Choose **Orchestration** to inspect the effective queues and priorities. The broader [operations design study](nexus-design.md) uses fictional people and access records.
+This first design opens on **Instance overview**. Its captured time, capability counts, latest transition and request identity come from the local snapshot. Select a row or use the operations directory to open its owner. Choose **Orchestration** to inspect the effective queues and priorities. The broader [operations design study](nexus-design.md) uses fictional people and access records.
 
 ## Choose an operation
 
@@ -50,8 +50,27 @@ Its weight cannot establish a successful outcome. **Exploration** records the ev
 would change a decision and stops on saturation or a finite probe ceiling. Edits stay in this page until exported or the page closes. Their JSON
 files are review documents. The Vessel has no endpoint that applies these designs.
 
-**Advertised skills** describes the public Agent Card boundary. **Peer enrollment** describes the
-operator-managed Intercom task binding. Neither has a discoverable directory on this Vessel.
+### Review Scrolls, offers and checkpoints
+
+In **Advertised skills**, select a registered Scroll revision. The title, entry station, routing
+state and **View in Loom** link refer to that exact local definition. This build serves zero
+public Agent Cards. Prepare the skill, task schema and intended audience to review a disclosure.
+The exported JSON keeps the private target and digest in the local review envelope. Only the
+explicit public fields are candidates for the [advertised contract](../../adr/26-a2a.md#advertised-expertise-and-reusable-knowledge).
+
+**Connected offers** shows the availability of peer-offer inventory. The installed web API
+provides no discovery or connected-offer feed. To review an offer obtained separately, enter
+its workload identity, exact contract revision and task schema, select the receiving Scroll and
+choose how the receiver should handle an unknown Spell. An exported review creates no enrollment
+or binding. **Peer enrollment** describes the operator-managed Intercom task binding.
+
+![Nexus reading the exact consent station and its outgoing routes from the registered Bridge Scroll.](../../assets/altar-design/nexus-checkpoints-built.webp)
+
+**Human checkpoints** reads the selected revision’s immutable manifest. Each declared gate lists
+its outgoing station and relation. A revision with no gates has an explicit empty state. **Review
+pending Run decisions in Bridge** opens the operator’s live decision surface. A gate declaration
+alone says nothing about whether an executing Run is waiting.
+
 **Colleagues** identifies the absence of a current paired-presence projection. **Users and Principals** and **Access policy** show
 the authenticated local subject and Sigil. A policy review can describe a proposed group, role and
 time-limited elevation for an exact action and object. Applying that authority belongs to Ward.

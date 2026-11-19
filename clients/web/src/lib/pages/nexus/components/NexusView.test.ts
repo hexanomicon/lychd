@@ -8,6 +8,8 @@ vi.mock("$app/state", () => ({
   page: { url: new URL("http://localhost/nexus") }
 }));
 vi.mock("$lib/api/client", () => ({
+  getLoomCatalogue: vi.fn().mockResolvedValue([]),
+  getLoomPatternRevision: vi.fn(),
   ApiError: class ApiError extends Error {
     constructor(
       message: string,
@@ -837,10 +839,11 @@ describe("Nexus ownership map and selected properties", () => {
 });
 
 describe("Nexus operations directory", () => {
-  it("lands on installation operations when Nexus opens with no selection", async () => {
+  it("lands on the instance overview when Nexus opens with no selection", async () => {
     page.url.search = "";
     const view = render(NexusView);
-    expect(await screen.findByRole("button", { name: "Installation" })).toHaveProperty("ariaCurrent", "page");
+    expect(await screen.findByRole("button", { name: "Overview" })).toHaveProperty("ariaCurrent", "page");
+    expect(await screen.findByRole("heading", { name: "Instance overview" })).toBeTruthy();
     expect(screen.queryByRole("region", { name: "Capability ownership map" })).toBeNull();
     view.unmount();
   });

@@ -967,9 +967,10 @@ keyboard reading and reduced-motion presentation retain the same information. In
 Loom descriptors preserve exact source/profile/generation selection and cannot become local
 executable workflows.
 
-Orb may select a spatial presentation inside the same shared renderer: compact typed marks,
-stable Run territories, and curved relations on an unbounded black viewport. Territory membership
-comes from the supplied Run, never proximity. Repositioning a mark changes only the current
+Orb lays out parallel Runs side by side on a continuous, dotted graphite field in the shared
+renderer. Each lane opens with its Run identity. Compact station marks and their connections
+let the eye follow a workflow from top to bottom. A subject belongs to a lane through its
+supplied Run identity. Repositioning a mark changes only the current
 adapter's disposable layout; it submits no Pattern or Run mutation. Loom retains its declared-score
 presentation. Filters, disclosure and a semantic Run list remain available without canvas gestures.
 

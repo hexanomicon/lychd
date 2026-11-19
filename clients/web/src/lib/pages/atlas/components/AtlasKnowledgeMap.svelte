@@ -19,6 +19,8 @@
   } from "$lib/atlas/brain-map";
   import { atlasMapHref } from "$lib/atlas/navigation";
   import { atlasGlyph } from "$lib/atlas/glyph";
+  import PaneGrip from "$lib/components/layout/PaneGrip.svelte";
+  import AltarIcon from "$lib/shell/components/AltarIcon.svelte";
   import GraphCanvas from "$lib/graph/components/GraphCanvas.svelte";
   import { navigationId } from "$lib/navigation/instruments";
   import { getSeancesWorkspace, hasSeancesWorkspace } from "$lib/seances/workspace.svelte";
@@ -39,6 +41,10 @@
   let focusRevision = $state(0);
   let mode = $state<"Map" | "List">("Map");
   let query = $state("");
+  let explorerOpen = $state(false);
+  let inspectorOpen = $state(true);
+  let explorerWidth = $state(200);
+  let inspectorWidth = $state(274);
   let recalls = $state.raw<ArchiveRunRecall[]>([]);
   let recallRequest = $state<string | null>(null);
   let recallError = $state<{ run: string; message: string } | null>(null);
@@ -73,7 +79,8 @@
   );
   const kinds = $derived([...new Set(visible.map((item) => item.kind))]);
   const heading = $derived(scope?.session?.title ?? scope?.project?.title ?? "Knowledge map");
-  const scopeName = $derived(sessionId ? "Séance map" : projectId ? "Project map" : "Atlas catalogue");
+  const scopeName = $derived(sessionId ? "Séance map" : projectId ? "Project map" : "Knowledge map");
+  const sourcesAtScope = $derived(map?.nodes.filter(item => item.kind === "source turn") ?? []);
 
   function clearScope() {
     controller?.abort();
@@ -149,6 +156,7 @@
   }
   function select(id: string, center = false) {
     selectedId = id;
+    inspectorOpen = true;
     if (center) {
       focusId = id;
       focusRevision++;
@@ -182,20 +190,18 @@
 
 <svelte:head><title>Knowledge map · Atlas — LychD</title></svelte:head>
 
-<div class="atlas-map">
+<div class="atlas-map" style:--graph-map-width={`min(${explorerWidth}px,40%)`} style:--info-width={`min(${inspectorWidth}px,38%)`}>
   <header class="map-heading">
     <div>
+      <h1>{scopeName}</h1>
       <nav class="crumbs" aria-label="Map scope">
-        <a href="/atlas">Atlas</a><span aria-hidden="true">/</span>
-        {#if projectId || sessionId}<a href={atlasMapHref()}>Knowledge map</a><span aria-hidden="true">/</span
-          >{/if}
-        {#if projectId && sessionId}<a href={atlasMapHref(projectId)}>{scope?.project?.title ?? "Project"}</a
-          ><span aria-hidden="true">/</span>{/if}
-        <span>{scopeName}</span>
+        {#if sessionId || projectId}<a href={atlasMapHref()}>Atlas</a><span aria-hidden="true">/</span><span>{heading}</span>{/if}
+        {#if sessionId}<a href={`/bridge/${encodeURIComponent(sessionId)}`}>← Back to Bridge</a>{:else}<a href="/atlas">Project catalogue →</a>{/if}
       </nav>
-      <h1>{heading}</h1>
     </div>
     <div class="view-switch" role="group" aria-label="Map presentation">
+      {#if mode === "Map"}<button title="Map explorer and minimap" aria-label="Map explorer and minimap" aria-expanded={explorerOpen} onclick={()=>explorerOpen=!explorerOpen}><AltarIcon name="atlas" size={16}/></button>{/if}
+      <button title="Object details" aria-label="Object details" aria-expanded={inspectorOpen} onclick={()=>inspectorOpen=!inspectorOpen}><AltarIcon name="panel" size={16}/></button>
       {#each ["Map", "List"] as item (item)}
         <button aria-pressed={mode === item} onclick={() => (mode = item === "Map" ? "Map" : "List")}
           >{item}</button
@@ -211,27 +217,18 @@
       <button onclick={load}>Retry map</button>
     </div>
   {:else if map}
-    <div class="map-workspace">
+    <div class="map-workspace" class:without-inspector={!inspectorOpen}>
       {#if mode === "Map"}
-        <div class="field-wrap">
+        <div class="field-wrap" class:exploring={explorerOpen}>
           <div class="field-meta">
             <b>{scopeName}</b><span>{map.nodes.length} objects · {map.edges.length} relations</span>
           </div>
-          <GraphCanvas
-            projection={map}
-            label="Atlas knowledge map"
-            presentation="atlas"
-            hideMinimap
-            selectedId={selected?.id}
-            onselect={(id) => select(id)}
-            {focusId}
-            {focusRevision}
-          >
-            {#snippet navigator(minimap: Snippet)}
+            {#snippet explorer(minimap: Snippet)}
               <aside class="map-rail" aria-label="Map navigation">
+                <PaneGrip name="Map explorer width" bind:width={explorerWidth} min={130} max={340} side="left" />
                 <div class="rail-head">
                   <h2>Explorer</h2>
-                  <span>{map?.nodes.length}</span>
+                  <button aria-label="Hide map explorer" onclick={()=>explorerOpen=false}>‹</button>
                 </div>
                 <label class="search"
                   ><span aria-hidden="true">⌕</span><input
@@ -264,7 +261,17 @@
                 </section>
               </aside>
             {/snippet}
-          </GraphCanvas>
+          <GraphCanvas
+            projection={map}
+            label="Atlas knowledge map"
+            presentation="atlas"
+            hideMinimap
+            selectedId={selected?.id}
+            onselect={(id) => select(id)}
+            {focusId}
+            {focusRevision} navigator={explorerOpen ? explorer : undefined}
+          />
+
         </div>
       {:else}
         <section class="map-list" aria-label="Map object list">
@@ -288,14 +295,20 @@
           {:else}<p>No matching objects.</p>{/each}
         </section>
       {/if}
-      <aside class="inspector" aria-label="Map inspector">
+      {#if inspectorOpen}<aside class="inspector" aria-label="Map inspector">
+        <PaneGrip name="Object details width" bind:width={inspectorWidth} min={180} max={540}/>
         {#if selected}
           <header>
-            <h2>Inspector</h2>
+            <h2>{sessionId && !selectedId ? "Source turns" : selected.kind}</h2>
             <span class="type-symbol" aria-hidden="true">{atlasGlyph(selected.kind)}</span>
           </header>
           <div class="inspect-body">
-            <p class="object-kind">{selected.kind}</p>
+            {#if sessionId && !selectedId}
+              {#each sourcesAtScope.slice(0,3) as source (source.id)}
+                <button class="source-quote" onclick={()=>select(source.id,true)}>{source.detail}</button>
+                {#each source.links ?? [] as link (link.href)}<a class="destination" href={link.href}>{link.label} →</a>{/each}
+              {:else}<p>No source turns were retained in this séance.</p>{/each}
+            {:else}
             {#if selected.kind === "source turn"}
               <h3>
                 {selected.facts?.find(([name]) => name === "Role")?.[1] === "user"
@@ -349,17 +362,17 @@
                 >{recallRequest === run ? "Reading Recall…" : "Inspect Recall"}</button
               >
             {/if}
+            {/if}
           </div>
         {/if}
-      </aside>
+      </aside>{/if}
     </div>
   {/if}
 </div>
 
 <style>
   .atlas-map {
-    --graph-map-width: clamp(158px, 15vw, 210px);
-    --atlas-height: clamp(500px, calc(100dvh - 175px), 930px);
+    --atlas-height: max(27rem,calc(100dvh - 8.5rem));
     width: 100%;
     min-width: 0;
     color: var(--color-bone);
@@ -373,6 +386,7 @@
     padding: 1.05rem clamp(1rem, 2vw, 2rem) 1.15rem;
   }
   .crumbs {
+    margin-top:.45rem;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -389,7 +403,7 @@
   }
   h1 {
     margin: 0.26rem 0 0;
-    font: 500 clamp(23px, 2.3vw, 35px)/1.18 var(--font-rune);
+    font: 600 clamp(25px, 2.3vw, 35px)/1.18 var(--font-rune);
     overflow-wrap: anywhere;
   }
   h2,
@@ -424,6 +438,7 @@
     flex: none;
   }
   .view-switch button {
+    display:inline-flex; align-items:center; justify-content:center;
     padding: 4px 13px;
     border: 0;
     font-size: 12px;
@@ -437,11 +452,13 @@
   }
   .map-workspace {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) clamp(190px, 19vw, 310px);
+    grid-template-columns:minmax(0,1fr) var(--info-width); gap:.7rem;
     min-width: 0;
-    border-block: 1px solid var(--color-engraving);
+    margin:0 clamp(.7rem,1.8vw,1.8rem) .7rem;
   }
+  .map-workspace.without-inspector { grid-template-columns:minmax(0,1fr); }
   .field-wrap {
+    border:1px solid var(--color-engraving); border-radius:8px; overflow:hidden;
     position: relative;
     min-width: 0;
   }
@@ -459,7 +476,7 @@
     z-index: 1;
     pointer-events: none;
     top: 15px;
-    left: calc(var(--graph-map-width) + 16px);
+    left:14px;
     display: flex;
     flex-direction: column;
     padding: 5px 9px;
@@ -468,6 +485,7 @@
     font: 10px/1.5 var(--font-glyph);
     color: var(--color-ash);
   }
+  .exploring .field-meta { left:calc(var(--graph-map-width) + 12px); }
   .field-meta b {
     color: var(--color-parchment);
     font-weight: 500;
@@ -479,6 +497,7 @@
     min-width: 0;
   }
   .map-rail {
+    position:relative;
     display: flex;
     flex-direction: column;
     height: 100%;
@@ -501,8 +520,7 @@
     text-transform: uppercase;
     letter-spacing: 0.11em;
   }
-  small,
-  .rail-head > span {
+  small {
     color: var(--color-ash);
     font: 10px/1.4 var(--font-glyph);
   }
@@ -572,6 +590,7 @@
     margin-bottom: 7px;
   }
   .inspector {
+    position:relative; border-radius:8px; border:1px solid var(--color-engraving);
     height: var(--atlas-height);
     overflow: auto;
     border-left: 1px solid var(--color-engraving);
@@ -587,12 +606,6 @@
     padding: 17px 16px;
     overflow-wrap: anywhere;
   }
-  .object-kind {
-    font: 500 10px/1.4 var(--font-glyph);
-    color: var(--color-accent);
-    text-transform: uppercase;
-    letter-spacing: 0.09em;
-  }
   h3 {
     margin: 0.4rem 0 0.7rem;
     font: 500 21px/1.21 var(--font-rune);
@@ -602,10 +615,6 @@
   .object-tree p {
     font-size: 12px;
     color: var(--color-parchment);
-  }
-  .inspect-body .object-kind {
-    color: var(--color-accent);
-    font-size: 10px;
   }
   blockquote {
     margin: 0.8rem 0;
@@ -677,6 +686,9 @@
     font-weight: 500;
     overflow-wrap: anywhere;
   }
+  .source-quote { display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:3; line-clamp:3; overflow:hidden; padding:0; border:0; border-radius:0; background:transparent; text-align:left; font-size:var(--text-sm); line-height:1.6; }
+  .source-quote:not(:first-child) { margin-top:.85rem; }
+  .inspector header h2 { text-transform:none; font:600 1.2rem/1.3 var(--font-rune); letter-spacing:0; }
   .message {
     margin: 1rem;
   }
@@ -685,7 +697,7 @@
       --graph-map-width: 145px;
     }
     .map-workspace {
-      grid-template-columns: minmax(0, 1fr) 180px;
+      grid-template-columns: minmax(0,1fr) var(--info-width);
     }
     .map-rail,
     .inspect-body {
@@ -712,7 +724,7 @@
       padding: 0.75rem;
     }
     .field-meta {
-      left: calc(var(--graph-map-width) + 6px);
+      left: 6px;
       top: 6px;
     }
     .view-switch button {

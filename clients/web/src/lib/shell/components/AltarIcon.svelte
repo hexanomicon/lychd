@@ -13,6 +13,7 @@
   {:else if name === "broadcast"}<circle cx="12" cy="10" r="2"/><path d="M7 5a7 7 0 0 0 0 10m10-10a7 7 0 0 1 0 10M10 21l2-8 2 8"/>
   {:else if name === "riffmaw"}<path d="M4 10v4m4-8v12m4-15v18m4-14v10m4-7v5"/>
   {:else if name === "language"}<path d="M3 4h8l2 2 2-2h6v15h-6l-2 2-2-2H3Z M13 7v12"/>
+  {:else if name === "document"}<path d="M5 2h9l5 5v15H5z M14 2v6h5" />
   {:else if name === "files"}<path d="M3 6h6l2 2h10v12H3Z"/>
   {:else if name === "terminal"}<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m6 9 3 3-3 3m6 0h5"/>
   {:else if name === "web"}<circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18"/>

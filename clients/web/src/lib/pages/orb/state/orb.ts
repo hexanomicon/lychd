@@ -115,7 +115,7 @@ export function projectOrbField(
     const occurrenceIds = lens ? [...new Set(lens.snapshot.evidence.map((record) => occurrenceNodeId(record, lens.pattern)))] : [];
     const members = graph ? [...graph.nodes.map((node) => prefix(node.id)), ...occurrenceIds.map(prefix),
       ...lens!.snapshot.evidence.map((record) => prefix(`record:${record.event_id}`))] : [];
-    nodes.push({ id: header, label: run.workflow_name, detail: `${run.run_id} · recorded: ${run.status} · ${runCoverage(lens?.snapshot, lens?.trimmed)}`,
+    nodes.push({ id: header, label: lens?.pattern?.title || run.workflow_name, detail: `${run.run_id} · recorded: ${run.status} · ${runCoverage(lens?.snapshot, lens?.trimmed)}`,
       kind: "run", state: run.status, group: run.run_id, count: lens?.snapshot.evidence.length, members: level === "runs" ? members : undefined,
       attention: level === "runs" && graph?.nodes.some((node) => node.attention) ? "latest" : undefined });
     selections.set(header, { runId: run.run_id });

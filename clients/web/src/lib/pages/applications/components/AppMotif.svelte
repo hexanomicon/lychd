@@ -13,26 +13,23 @@
   stroke-linejoin="round"
 >
   {#if id === "scavenger"}
-    <path opacity=".45" d="M12 42h136M22 39v6m25-6v6m25-6v6m25-6v6m25-6v6" />
-    <path d="m16 34 23-9 18 5 21-14 18 5 22-10" />
-    <circle cx="118" cy="11" r="3" fill="currentColor" />
+    <rect x="15" y="5" width="76" height="45" rx="5"/>
+    <path d="M16 15h74m-66-5h2m4 0h2m4 0h2" opacity=".7"/>
+    <path d="M23 22h5v5h-5zm0 11h5v5h-5zm12-9h24m-24 12h18" opacity=".75"/>
+    <circle cx="84" cy="35" r="11" fill="var(--color-obsidian)"/><path d="m92 43 12 10m-10-12 12 10"/>
   {:else if id === "atelier"}
-    <rect x="16" y="9" width="126" height="38" rx="3" />
-    <path opacity=".45" d="M16 16h126M16 40h126m-96-24v24m32-24v24m32-24v24" />
-    <path d="m60 20 12 8-12 8z" fill="currentColor" />
-    <path d="M26 12h6m24 0h6m24 0h6m24 0h6m-96 31h6m24 0h6m24 0h6m24 0h6" />
+    <path d="m43 42 9-20L80 6l6 5-15 27-22 8z M51 39l19-19m-18 2 19 16"/>
+    <circle cx="69" cy="20" r="2.6"/><path d="m43 37-23 8m48-10 21 9" opacity=".7"/>
+    <rect x="14" y="42" width="8" height="8" rx="1"/><rect x="88" y="42" width="8" height="8" rx="1"/>
   {:else if id === "canvas"}
-    <path d="M47 28h16q5 0 5-5v-4q0-5 5-5h12m-17 9v12q0 5 5 5h29" />
-    <rect x="17" y="19" width="30" height="18" rx="3" /><rect x="85" y="5" width="32" height="18" rx="3" />
-    <rect x="102" y="32" width="38" height="17" rx="3" /><path
-      opacity=".45"
-      d="M23 25h13m55-14h16m-1 27h24"
-    />
+    <rect x="13" y="8" width="69" height="37" rx="4"/><path d="M36 50h25m-17-5v5m8-5v5"/>
+    <path d="M22 16h22v11H22zm29 8h21v11H51zM44 21h4q4 0 4 4m-8 6h-7"/>
+    <rect x="66" y="28" width="31" height="18" rx="2.5" fill="var(--color-obsidian)"/><path d="M74 50h18m-9-4v4"/>
   {:else if id === "broadcast"}
-    <path
-      d="M80 27v20m-9 0h18m-21-33a18 18 0 0 0 0 25m24-25a18 18 0 0 1 0 25m-30-32a28 28 0 0 0 0 39m36-39a28 28 0 0 1 0 39"
-    />
-    <circle cx="80" cy="24" r="4" fill="currentColor" /><path opacity=".45" d="M16 26h26m76 0h26" />
+    <rect x="13" y="14" width="115" height="34" rx="3"/>
+    <path d="M19 10v4m10-4v4m10-4v4m10-4v4m10-4v4m10-4v4m10-4v4m10-4v4m10-4v4m10-4v4m10-4v4" opacity=".65"/>
+    <path fill="currentColor" opacity=".5" d="M19 20h25v9H19zm30 0h28v9H49zm31 13h29v8H80zM37 33h39v8H37z"/>
+    <path d="M69 9v39m-2-40h4l-2 4z"/>
   {:else if id === "riffmaw"}
     <path opacity=".45" d="M8 28h144" />
     <path
@@ -51,8 +48,8 @@
 <style>
   svg {
     display: block;
-    width: 9rem;
-    max-width: 58%;
-    height: 3.15rem;
+    width: clamp(10rem, 14cqi, 15rem);
+    max-width: 85%;
+    height:auto;
   }
 </style>

@@ -26,6 +26,7 @@
   import { getMemoryPanel, hasMemoryPanel } from "$lib/memory/panel.svelte";
   import { getSeancesWorkspace, hasSeancesWorkspace } from "$lib/seances/workspace.svelte";
   import ConsentCard from "$lib/components/shared/ConsentCard.svelte";
+  import PaneGrip from "$lib/components/layout/PaneGrip.svelte";
   import BridgeConversationFiling from "./BridgeConversationFiling.svelte";
   import BridgeExchangeRail from "./BridgeExchangeRail.svelte";
   import TurnRunMenu from "$lib/pages/bridge/components/TurnRunMenu.svelte";
@@ -71,6 +72,8 @@
   let pins = $state.raw<readonly string[]>([]);
   let pinNotice = $state("");
   let compactHistory = $state(false);
+  let historyFolded = $state(false);
+  let historyWidth = $state(208);
   onMount(() => {
     try { pins = parsePinnedConversations(localStorage.getItem(bridgePinsStorageKey)); }
     catch { /* Pinning remains available for this tab when storage is unavailable. */ }
@@ -1103,11 +1106,12 @@
     <button id={`bridge-pin-${id}`} class="pin-conversation" type="button" aria-label={`${pins.includes(id) ? "Unpin" : "Pin"} conversation: ${session?.title ?? id}`} aria-pressed={pins.includes(id)} onclick={() => togglePin(id)} title={pins.includes(id) ? "Unpin conversation" : "Pin conversation"}><AltarIcon name="pin" size={16} /></button>
   </div>
 {/snippet}
-<div class="instrument-deck instrument-deck--bridge" class:instrument-deck--welcome={firstVisit && pins.length === 0} class:bridge-embedded={embedded}>
+<div class="instrument-deck instrument-deck--bridge" class:instrument-deck--welcome={firstVisit && pins.length === 0} class:bridge-embedded={embedded} class:history-folded={historyFolded && !embedded} style:--history-width={historyWidth+"px"}>
   {#if !firstVisit || pins.length > 0}
-  <aside class="bridge-rail" aria-label="Conversation history">
+  <aside class="bridge-rail" aria-label="Conversation history" hidden={historyFolded && !embedded}>
+    {#if !embedded && !compactHistory}<PaneGrip name="Séance list width" side="left" min={160} max={380} bind:width={historyWidth}/><button class="fold-history" type="button" aria-label="Hide séances" title="Hide séances" onclick={()=>historyFolded = true}><AltarIcon name="panel" size={15}/></button>{/if}
     <details class="conversation-list" open={!embedded && !compactHistory}>
-      <summary>Conversations</summary>
+      <summary>{embedded ? "Conversations" : "Séances"}</summary>
     <button class="rune-btn new-seance" type="button" disabled={creatingSession} aria-busy={creatingSession} onclick={createSession}>✦ &nbsp;{creatingSession ? "Opening…" : "New Séance"}</button>
     <nav aria-label="Conversations">
       <BridgeConversationFiling
@@ -1133,6 +1137,7 @@
 
   <div class="bridge-thread">
     <header class="bridge-heading">
+      {#if historyFolded && !embedded}<button class="unfold-history" type="button" aria-label="Show séances" onclick={()=>historyFolded=false}><AltarIcon name="panel" size={16}/></button>{/if}
       <div>
         {#if !firstVisit}
           <h1>Bridge</h1>
@@ -1357,13 +1362,14 @@
       {/if}
       <div class="composer-area" role="region" aria-label="Bridge composer">
         <div class="composer-shell">
-          <div class="composer-destination">
+          <details class="compose-settings"><summary aria-label="Message destination" title="Message destination"><span aria-hidden="true">＋</span></summary><div class="composer-destination">
             <label for="bridge-destination">Send to</label>
             <select id="bridge-destination" value={composerMode} onchange={changeMode}>
               <option value="chat">Conversation</option>
               <option value="work">{destination}</option>
             </select>
           </div>
+          </details>
           {#if composerMode === "work"}
             <div class="command-help">
               <p>English commands · {destination}</p>
@@ -1385,8 +1391,8 @@
               bind:value={() => prompt, setPrompt}
               {@attach focusCreatedComposer}
               required
-              rows="2"
-              placeholder="What would you like to explore?"
+              rows="1"
+              placeholder={composerMode === "work" ? "Write a command…" : "Message Bridge…"}
               onkeydown={keydown}
               oncompositionstart={() => changeComposition(true)}
               oncompositionend={() => changeComposition(false)}
@@ -1397,7 +1403,7 @@
           <div class="composer-actions" class:composer-actions--work={composerMode === "work"}>
             <div class="composer-voice">
               {#key selected.id}
-                <BridgeVoiceInput bind:this={voice} snapshot={voiceSnapshot} target={commandTarget}
+                <BridgeVoiceInput compact bind:this={voice} snapshot={voiceSnapshot} target={commandTarget}
                   readSnapshot={readVoiceSnapshot} onadopt={adoptVoice} onsubmit={submitVoice}
                   isTargetCurrent={(target) => workCommands?.isCurrent(target) === true}>
                   {#snippet feedback(context)}<DictationFeedback {...context} />{/snippet}
@@ -1405,19 +1411,19 @@
               {/key}
             </div>
             <button
-              class="rune-btn composer-send"
+              class="rune-btn composer-send" title={composerMode === "work" ? "Send command" : "Offer"}
               disabled={voiceSnapshot.busy || composing || !prompt.trim()}
               type="button"
               onclick={sendComposer}
             >
-              {composerMode === "work" ? "Send command" : "Offer"}
+              <span aria-hidden="true">↑</span><span class="visually-hidden">{composerMode === "work" ? "Send command" : "Offer"}</span>
             </button>
           </div>
         </div>
         {#if commandPending}<p class="command-result" role="status">Preparing command…</p>{/if}
         {#if commandResult}<p class="command-result" role="status">{commandResult.status}: {commandResult.summary}</p>{/if}
         <div class="composer-footer">
-          <p id="composer-shortcuts">Enter to {composerMode === "work" ? "send command" : "offer"} · Shift + Enter for a new line</p>
+          <p id="composer-shortcuts" class="visually-hidden">Enter to {composerMode === "work" ? "send command" : "offer"} · Shift + Enter for a new line</p>
           <p id="composer-guidance" class:visually-hidden={!loading && !pendingOffering && !hasUnsettledRun} role="status">{loading ? "Refreshing this conversation before another offering." : pendingOffering ? "Resolve the original offering first. This later draft is kept and is not queued." : hasUnsettledRun ? "Wait for this Run to settle before offering again. You can keep writing; this draft is not queued." : "Draft stays in this open tab."}</p>
         </div>
         {#if error}<div class="turn__fault" role="alert">{error}</div>{/if}
@@ -1428,7 +1434,7 @@
 </div>
 
 <style>
-  .instrument-deck--bridge { display: grid; grid-template-columns: 17rem minmax(0, 1fr); gap: 0; padding: 0; min-height: 0; height: 100%; overflow: hidden; background: var(--color-void); }
+  .instrument-deck--bridge { display: grid; grid-template-columns: minmax(0,min(var(--history-width),35%)) minmax(0,1fr); gap: 0; padding: 0; min-height: 0; height: 100%; overflow: hidden; background: var(--color-void); }
   .instrument-deck--welcome { grid-template-columns: minmax(0, 1fr); }
   .bridge-rail { width: auto; min-width: 0; padding: 1.25rem .85rem; border-right: 1px solid var(--color-engraving); overflow-y: auto; background: var(--color-obsidian); }
   .conversation-list { width: 100%; }
@@ -1569,4 +1575,42 @@
     .composer-footer { gap: .2rem .5rem; }
     .turn--user { max-width: 95%; }
   }
+  .bridge-rail { position:relative; padding:.55rem .65rem; }
+  .bridge-rail[hidden] { display:none; }
+  .history-folded:not(.bridge-embedded) { grid-template-columns:minmax(0,1fr); grid-template-rows:minmax(0,1fr); }
+  .conversation-list > summary { padding-inline-end:2rem; min-height:2.45rem; margin:0; font:600 1.12rem/1.5 var(--font-rune); }
+  .fold-history,.unfold-history { display:grid; place-items:center; border:0; background:transparent; color:var(--color-ash); cursor:pointer; width:1.9rem; height:1.9rem; }
+  .fold-history { position:absolute; inset:.48rem .35rem auto auto; }
+  .bridge-heading:has(.unfold-history) { grid-template-columns:auto minmax(0,1fr) auto; }
+  .new-seance { min-height:2rem; text-align:left; padding:.25rem .6rem; color:var(--color-parchment); background:transparent; border-color:var(--color-engraving); }
+  .new-seance:hover:not(:disabled) { background:var(--color-obsidian-2); color:var(--color-bone); border-color:var(--color-accent); }
+  .conversation-list nav { margin-top:.55rem; }
+  .conversation-row { grid-template-columns:minmax(0,1fr) 1.65rem; }
+  .pin-conversation { min-height:1.9rem; }
+  .seance { min-height:2.1rem; padding:.35rem .45rem; }
+  .seance.current { border-color:var(--color-accent); background:color-mix(in srgb,var(--color-accent) 14%,var(--color-obsidian)); }
+  .bridge-heading { padding:.4rem 1.1rem .55rem; }
+  .conversation-title { margin-top:.2rem; font:600 clamp(1.1rem,1.6vw,1.6rem)/1.35 var(--font-rune); }
+  .bridge-heading h1 { text-transform:none; letter-spacing:0; font:500 .76rem var(--font-body); }
+  .conversation-controls > button,.conversation-tools > summary { min-height:1.95rem; font-size:.76rem; }
+  .turn--agent .who::before { content:""; display:inline-block; width:.78rem; height:.78rem; margin-right:.44rem; border:1px solid var(--color-ash); border-radius:50%; vertical-align:-.03rem; }
+  .turn--user .turn__body { background:color-mix(in srgb,var(--color-accent) 19%,var(--color-obsidian)); }
+  .composer-shell { display:grid; position:relative; grid-template-columns:2rem minmax(0,1fr) auto; align-items:center; column-gap:.45rem; padding:.4rem .5rem; border-color:var(--color-engraving); }
+  .composer { grid-column:2; grid-row:3; }
+  .composer textarea { min-height:2.1rem; max-height:12rem; resize:vertical; align-content:center; padding:.3rem 0; }
+  .compose-settings { grid-column:1; grid-row:3; }
+  .compose-settings > summary { list-style:none; display:grid; place-items:center; min-height:1.9rem; border:1px solid var(--color-engraving); border-radius:5px; color:var(--color-parchment); cursor:pointer; }
+  .compose-settings > summary::-webkit-details-marker { display:none; }
+  .compose-settings[open] > summary { color:var(--color-bone); border-color:var(--color-accent); }
+  .composer-destination { position:absolute; z-index:6; inset:auto auto calc(100% + .4rem) 0; width:min(18rem,100%); padding:.75rem; border:1px solid var(--color-engraving); border-radius:7px; background:var(--color-obsidian); }
+  .composer-shell .composer-actions { grid-area:3/3; position:static; display:flex; align-items:center; gap:.2rem; padding:0; border:0; --voice-action-reserve:0px; --voice-label-display:none; }
+  .composer-shell .composer-send { position:static; min-width:1.95rem; min-height:1.95rem; padding:.16rem; font:600 1.1rem var(--font-body); color:var(--color-void); background:var(--color-primary); border-color:transparent; }
+  .composer-shell .composer-send:disabled { opacity:.5; }
+  .command-help,.composer-instructions { grid-column:1/-1; }
+  .composer-shell:has(:global(.voice-input.expanded)) .composer-actions { grid-column:1/-1; grid-row:4; align-items:flex-start; }
+  .composer-shell:has(:global(.voice-input.expanded)) .composer-voice { flex:1; }
+  .composer-shell:has(:global(.voice-input.expanded)) .composer-send { margin-left:auto; }
+  .composer-footer:has(> :last-child.visually-hidden) { margin:0; }
+  .bridge-embedded .composer-shell { padding:.3rem .4rem; }
+  @media(max-width:48rem) { .bridge-rail { padding:0 .65rem; } .conversation-list > summary { min-height:2.1rem; } }
 </style>

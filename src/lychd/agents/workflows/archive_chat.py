@@ -274,7 +274,12 @@ BRIDGE_CHAT_ARCHIVE = Workflow(
         nodes=(
             PatternNode(key="recall_notes", label="Recall public notes", implementation=RecallNotes),
             PatternNode(key="answer_notes", label="Answer from sources", implementation=AnswerNotes),
-            PatternNode(key="settle_note_answer", label="Settle answer", implementation=SettleNoteAnswer),
+            PatternNode(
+                key="settle_note_answer",
+                label="Settle answer",
+                implementation=SettleNoteAnswer,
+                public_result_type=BridgeReply,
+            ),
             PatternNode(key="end", label="End", kind="terminal"),
         ),
         edges=(

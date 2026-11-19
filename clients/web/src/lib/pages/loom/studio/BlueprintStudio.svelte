@@ -1,16 +1,22 @@
 <script lang="ts">
-  import { onDestroy, type Snippet } from "svelte";
+  import { onDestroy, untrack, type Snippet } from "svelte";
   import { MediaQuery } from "svelte/reactivity";
   import GraphMapRail from "$lib/graph/components/GraphMapRail.svelte";
+  import SchemaFields from "$lib/components/shared/SchemaFields.svelte";
   import PaneGrip from "$lib/components/layout/PaneGrip.svelte";
   import AltarIcon from "$lib/shell/components/AltarIcon.svelte";
   import { resolvePath } from "$lib/navigation/paths";
-  import { studioSession } from "./session";
+  import { studioSession, type StudioKey } from "./session";
+  import { compositionBlueprint } from "./compositions";
+  import { recipes } from "$lib/compositions/video";
+  import type { LoomSummary } from "$lib/api/models";
+  import WorkflowLibrary from "../components/WorkflowLibrary.svelte";
   import GraphCanvas from "$lib/graph/components/GraphCanvas.svelte";
   import {
     example,
     makeNode,
     project,
+    projectLoomCanvas,
     validate,
     kinds,
     relations,
@@ -19,17 +25,19 @@
     type Kind,
   } from "./blueprint";
 
-  let draft = $state.raw<Blueprint>(studioSession.draft ?? example());
-  let selected = $state(studioSession.selected);
-  let dirty = $state(studioSession.dirty);
+  let { documentKey = "sdlc", catalogue = [] }: { documentKey?: StudioKey; catalogue?: LoomSummary[] } = $props();
+  // The caller keys this editor by document identity.
+  const buffer = untrack(() => studioSession.buffer(documentKey));
+  let title = $derived(documentKey === "sdlc" ? "Software development lifecycle" : recipes[documentKey]);
+  let draft = $state.raw<Blueprint>(untrack(() => buffer.draft ?? (documentKey === "sdlc" ? example() : compositionBlueprint(documentKey))));
+  let selected = $state(buffer.selected);
+  let dirty = $state(buffer.dirty);
   onDestroy(() => {
-    studioSession.draft = draft;
-    studioSession.selected = selected;
-    studioSession.dirty = dirty;
+    buffer.draft = draft;
+    buffer.selected = selected;
+    buffer.dirty = dirty;
   });
-  $effect(() => {
-    studioSession.dirty = dirty;
-  });
+  $effect(() => { buffer.dirty = dirty; });
   function warnOnReload(event: BeforeUnloadEvent) {
     if (dirty) {
       event.preventDefault();
@@ -38,12 +46,14 @@
   }
   let node = $derived(draft.nodes.find((n) => n.id === selected)!);
   let graph = $derived(project(draft, node.parent));
+  let canvas = $derived(projectLoomCanvas(draft, node.parent));
   let owner = $derived(draft.nodes.find((n) => n.id === node.parent));
   let members = $derived(draft.nodes.filter((n) => n.parent === selected));
   const compact = new MediaQuery("(max-width: 48rem)");
   let mapOpen = $derived(!compact.current);
   let mapWidth = $state(190);
   let inspectorOpen = $state(true);
+  let inspectorTab = $state<"Ports" | "Prompts" | "Settings">("Ports");
   let inspectorWidth = $state(290);
   let expanded = $state.raw<string[]>([]);
   const icons: Record<Kind,string> = {agent:"nexus",object:"node",router:"connect",subflow:"loom",ledger:"language"};
@@ -70,6 +80,7 @@
     }
     expanded = [...new Set([...expanded, ...parents])];
     inspectorOpen = true;
+    if (inspectorTab === "Prompts" && draft.nodes.find(n => n.id === id)?.kind !== "agent") inspectorTab = "Ports";
     selected = id;
     focusRevision++;
   }
@@ -105,11 +116,11 @@
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "sdlc.loom.json";
+    a.download = documentKey + ".loom.json";
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
     dirty = false;
-    message = "Exported sdlc.loom.json.";
+    message = "Exported " + a.download + ".";
   }
   async function restore(event: Event) {
     const input = event.currentTarget as HTMLInputElement;
@@ -151,41 +162,42 @@
 {/snippet}
 <svelte:window onbeforeunload={warnOnReload} />
 <section class="studio" aria-label="Workflow blueprint editor">
-  <header>
-    <div>
-      <small>LOOM · LOCAL BLUEPRINT</small>
-      <h2>Software development lifecycle</h2>
-    </div>
-    <div class="actions">
-      <a href={resolvePath("/loom")}>Registered Patterns</a>
-      <label class="file"
-        >Open JSON<input type="file" accept="application/json,.json" onchange={restore} /></label
-      ><button class="primary" disabled={!!error} onclick={download}>Export draft ↓</button>
-    </div>
-  </header>
   <div class="workspace" style:--inspector-width={inspectorOpen ? inspectorWidth + "px" : "2.3rem"}>
     <div class="diagram">
-      <nav aria-label="Flow level">
-        <strong>{owner?.name ?? "Workflow overview"}</strong>
-        {#if owner}<button onclick={() => inspect(owner!.id)}>↑ Parent flow</button>{/if}
-        <span>{graph.nodes.length} nodes</span>
-      </nav>
       <GraphCanvas
-        projection={graph}
+        presentation="loom"
+        projection={canvas}
         selectedId={selected}
         focusId={selected}
         {focusRevision}
         onselect={inspect}
         label="Workflow blueprint graph"
-        --graph-height="clamp(380px,65vh,900px)"
+        --graph-height="max(410px,calc(100dvh - 1rem))"
         --graph-map-width={mapOpen ? mapWidth + "px" : "2.3rem"}
       >
         {#snippet navigator(minimap: Snippet)}
           <GraphMapRail bind:open={mapOpen} bind:width={mapWidth} {minimap} name="Workflow Map">
+  <div class="doc-heading">
+    <div>
+      <small>{documentKey === "sdlc" ? "Local blueprint" : "Atelier composition blueprint"}</small>
+      <h2>{title}</h2>
+    </div>
+    <div class="actions">
+      {#if documentKey !== "sdlc"}<a href={resolvePath("/atelier") + "?recipe=" + documentKey}>Open in Atelier ↗</a>{/if}
+      <a href={resolvePath("/loom")}>Registered Patterns</a>
+      <label class="file"
+        >Open JSON<input type="file" accept="application/json,.json" onchange={restore} /></label
+      ><button class="primary" disabled={!!error} onclick={download}>Export draft ↓</button>
+    </div>
+  </div>
+            <WorkflowLibrary {catalogue} current={documentKey} />
+      <nav aria-label="Flow level">
+        <strong>{owner?.name ?? "Workflow overview"}</strong>
+        {#if owner}<button onclick={() => inspect(owner!.id)}>↑ Parent flow</button>
+          <button onclick={() => inspect(draft.nodes.find(item => !item.parent)!.id)}>Full graph</button>{/if}
+        <span>{graph.nodes.length} nodes</span>
+      </nav>
             {@render tree("")}
-          </GraphMapRail>
-        {/snippet}
-      </GraphCanvas>
       <div class="outline">
         <label
           >Browse nodes<select value={selected} onchange={(e) => inspect(e.currentTarget.value)}>
@@ -199,6 +211,10 @@
           Runtime activation is a separate operation.
         </div>
       </div>
+          </GraphMapRail>
+        {/snippet}
+      </GraphCanvas>
+
     </div>
     <aside aria-label="Blueprint inspector" class:closed={!inspectorOpen}>
       <button class="inspector-toggle" aria-label={inspectorOpen ? "Collapse inspector" : "Expand inspector"} aria-expanded={inspectorOpen} onclick={() => inspectorOpen = !inspectorOpen}>{inspectorOpen ? "›" : "‹"}</button>
@@ -210,13 +226,8 @@
       {#if members.length}<button class="enter" onclick={() => inspect(members[0]!.id)}
           >Explore {node.kind} <span>{members.length} nodes →</span></button
         >{/if}
-      <label>Name<input value={node.name} oninput={(e) => update({ name: e.currentTarget.value })} /></label>
-      <label
-        >Purpose<textarea
-          rows="2"
-          value={node.purpose}
-          oninput={(e) => update({ purpose: e.currentTarget.value })}></textarea></label
-      >
+      <p class="purpose">{node.purpose}</p>
+      <div class="peers">
       {#each ["Previous", "Next"] as direction (direction)}
         {@const links = draft.edges.filter((e) =>
           direction === "Previous" ? e.target === selected : e.source === selected,
@@ -228,26 +239,27 @@
                 (n) => n.id === (direction === "Previous" ? edge.source : edge.target),
               )!}
               <button onclick={() => inspect(peer.id)}
-                ><span>{edge.label}</span>{peer.name} {direction === "Previous" ? "↑" : "→"}</button
+                ><span>{direction === "Previous" ? "←" : "→"} {edge.label}</span><strong><AltarIcon name={icons[peer.kind]} size={13} />{peer.name}</strong></button
               >
             {/each}
           </div>{/if}
       {/each}
-      <details open={node.kind === "agent"}>
-        <summary>{node.kind === "agent" ? "Agent configuration" : "Data contract"}</summary>
+      </div>
+      <div class="inspector-tabs" role="group" aria-label="Node details">
+        {#each ["Ports", "Prompts", "Settings"] as tab (tab)}
+          {#if tab !== "Prompts" || node.kind === "agent"}<button type="button" aria-pressed={inspectorTab === tab}
+            onclick={() => inspectorTab = tab as typeof inspectorTab}>{tab}</button>{/if}
+        {/each}
+      </div>
+      {#if inspectorTab === "Ports"}
         <label
           >Inputs<textarea
             rows="2"
             value={node.inputs}
             oninput={(e) => update({ inputs: e.currentTarget.value })}></textarea></label
         >
-        <label
-          >Output schema (JSON)<textarea
-            rows="3"
-            value={node.schema}
-            oninput={(e) => update({ schema: e.currentTarget.value })}></textarea></label
-        >
-        {#if node.kind === "agent"}
+        <SchemaFields source={node.schema} onchange={schema => update({ schema })} />
+      {:else if inspectorTab === "Prompts" && node.kind === "agent"}
           <label
             >System prompt<textarea
               rows="3"
@@ -260,6 +272,15 @@
               value={node.user}
               oninput={(e) => update({ user: e.currentTarget.value })}></textarea></label
           >
+      {:else}
+      <label>Name<input value={node.name} oninput={(e) => update({ name: e.currentTarget.value })} /></label>
+      <label
+        >Purpose<textarea
+          rows="2"
+          value={node.purpose}
+          oninput={(e) => update({ purpose: e.currentTarget.value })}></textarea></label
+      >
+        {#if node.kind === "agent"}
           <label
             >Model<input
               value={node.model}
@@ -289,7 +310,7 @@
             /></label
           >
         {/if}
-      </details>
+      {/if}
       <details>
         <summary>Edit outgoing connections</summary>
         {#each draft.edges.filter((e) => e.source === selected) as edge (edge.id)}
@@ -341,7 +362,6 @@
     color: var(--color-parchment);
     min-width: 0;
   }
-  header,
   nav,
   .actions,
   .links button,
@@ -350,18 +370,13 @@
     align-items: center;
     gap: 0.65rem;
   }
-  header {
-    justify-content: space-between;
-    flex-wrap: wrap;
-    padding: 0.75rem 0 1.1rem;
-  }
   small,
   nav span,
   .note {
     font: var(--text-xs)/1.5 var(--font-glyph);
     color: var(--color-ash);
   }
-  header small,
+  .doc-heading small,
   .fields > small {
     color: var(--color-rune);
     letter-spacing: 0.1em;
@@ -402,7 +417,26 @@
   .target[aria-current],.target:hover { background:var(--color-obsidian-2); color:var(--color-rune); }
   .actions a { font-size:var(--text-sm); color:var(--color-parchment); }
   aside.closed { min-height:2.5rem; }
-  header h2 { font-size:clamp(1.1rem,1.7vw,1.6rem); }
+  .doc-heading { padding:.35rem .15rem .8rem; }
+  .doc-heading .actions { flex-wrap:wrap; gap:.35rem .5rem; margin:.5rem 0 0; }
+  .doc-heading .actions a { font-size:11px; }
+  .doc-heading .actions button,.doc-heading .file { min-height:25px; padding:.2rem .35rem; font-size:11px; }
+  .purpose { color:var(--color-parchment); font:12px/1.5 var(--font-body); margin:.5rem 0; }
+  .peers { display:grid; grid-template-columns:repeat(auto-fit,minmax(96px,1fr)); gap:.3rem; }
+  .peers .links { margin:0; padding:.25rem; border:0; }
+  .peers .links button { display:grid; justify-content:stretch; border-color:var(--color-engraving); padding:.3rem .4rem; }
+  .peers .links strong { display:flex; align-items:center; gap:.3rem; font-size:11px; }
+  .inspector-tabs { display:flex; gap:.5rem; border-block:1px solid var(--color-engraving); margin:.7rem 0; }
+  .inspector-tabs button { border:0; border-radius:0; background:transparent; color:var(--color-ash); font-size:12px; }
+  .inspector-tabs button[aria-pressed=true] { color:var(--color-bone); box-shadow:inset 0 -2px var(--color-accent); }
+  .fields h3 { font:500 1.55rem/1.13 var(--font-rune); }
+  .diagram .outline { padding:.4rem .2rem; }
+  .diagram .outline select { max-width:100%; }
+   .doc-heading h2 { font:500 1.2rem/1.2 var(--font-rune); }
+  .doc-heading small { text-transform:none; letter-spacing:0; }
+  .workspace { border:0; border-radius:0; }
+  .fields { max-height:calc(100dvh - 5rem); }
+  .diagram nav { padding:.4rem .2rem; flex-wrap:wrap; gap:.3rem; font-size:12px; }
   @container work-area (max-width:46rem) {
     .fields { max-height:none; }
     aside :global(.grip) { display:none; }

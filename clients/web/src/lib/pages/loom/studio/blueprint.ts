@@ -284,3 +284,21 @@ export function project(draft: Blueprint, parent: string): GraphProjection {
       .map((e) => ({ ...e, relation: "declared" })),
   };
 }
+
+/** Keep neighbouring phases and the route into the active subflow on the canvas. */
+export function projectLoomCanvas(draft: Blueprint, currentParent: string): GraphProjection {
+  const expanded = new Set<string>([""]);
+  const byId = new Map(draft.nodes.map(node => [node.id, node]));
+  let owner = currentParent;
+  while (owner && !expanded.has(owner)) {
+    expanded.add(owner);
+    owner = byId.get(owner)?.parent ?? "";
+  }
+  const visible = draft.nodes.filter(node => expanded.has(node.parent));
+  const ids = new Set(visible.map(node => node.id));
+  return {
+    identity:"studio:canvas",
+    nodes:visible.map(node => ({ id:node.id, label:node.name, kind:node.kind, detail:node.purpose, parent:node.parent })),
+    edges:draft.edges.filter(edge => ids.has(edge.source) && ids.has(edge.target)).map(edge => ({ ...edge, relation:"declared" }))
+  };
+}

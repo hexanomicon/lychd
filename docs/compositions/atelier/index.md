@@ -11,6 +11,10 @@ The craft can combine generators, editors, renderers, procedural work, capture, 
 
 ## The work
 
+In Altar, open **Applications → Atelier** for the Video master. The shot bin, program monitor
+and timeline share a selection with the caption inspector. **Workflow** opens the current
+recipe in Loom. [Use the cut and caption editor](../../divination/altar/atelier.md).
+
 Start with [Brief](brief.md): what should exist when the commission is done, and how will you
 judge it? [Direction](direction.md) turns those intentions into a visual language.
 

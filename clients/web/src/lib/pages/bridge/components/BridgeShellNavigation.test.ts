@@ -140,7 +140,6 @@ describe("shell-lifetime Bridge conversation", () => {
     expect(screen.getByLabelText("Message")).toBe(composer);
     expect((composer as HTMLTextAreaElement).value).toBe("Unfinished B offering");
     expect(screen.queryByText(/requested consent is unavailable/)).toBeNull();
-    await fireEvent.click(screen.getByRole("button", { name: "Collapse Bridge" }));
     expect(document.getElementById("bridge-dock")?.closest("[hidden]")).toBeTruthy();
     await fireEvent.click(screen.getByRole("button", { name: "Expand Bridge" }));
     expect(screen.getByLabelText("Message")).toBe(composer);
@@ -265,7 +264,6 @@ describe("shell-lifetime Bridge conversation", () => {
     await screen.findByRole("heading", { name: "Conversations awaiting consent" });
     expect(screen.queryByLabelText("Message")).toBeNull();
     await visit("/orb");
-    await fireEvent.click(screen.getByRole("button", { name: "Collapse Bridge" }));
     await fireEvent.click(screen.getByRole("button", { name: "Expand Bridge" }));
     await screen.findByText("Retained answer for session-b");
     expect(vi.mocked(getBridgeSnapshot).mock.calls.map(([id]) => id)).toEqual(["session-b", undefined, "session-b"]);

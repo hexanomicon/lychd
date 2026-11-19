@@ -4,6 +4,7 @@
   import { resolvePath as resolve } from "$lib/navigation/paths";
   import { onMount, setContext, tick, untrack, type Snippet } from "svelte";
   import MemoryPanel from "./MemoryPanel.svelte";
+  import { railContentKey, type RailContent } from "../state/rail-content";
   import AltarRail from "./AltarRail.svelte";
   import AltarBrand from "./AltarBrand.svelte";
   import { createApplicationPins, setApplicationPins } from "$lib/navigation/application-pins.svelte";
@@ -22,11 +23,19 @@
   import { getAltarStatus } from "$lib/api/client";
 
   let { children, offline = false }: { children: Snippet; offline?: boolean } = $props();
+  const railContent = $state<RailContent>({});
+  setContext(railContentKey, railContent);
   const applicationPins=setApplicationPins(createApplicationPins());
   onMount(()=>{applicationPins.load();});
   let connected = $state(false);
   const available = $derived(!offline || connected);
-  let dockOpen = $state(true);
+  const canvasFirst = $derived.by(() => {
+    const pathname = page.url.pathname.replace(/\/$/, "");
+    return [resolve("/orb"), resolve("/atelier"), resolve("/atlas/map"), resolve("/applications")].includes(pathname)
+      || [resolve("/loom"), resolve("/nexus")].some(path => pathname === path || pathname.startsWith(path + "/"));
+  });
+  let dockOpen = $state(untrack(() => !canvasFirst));
+  let toolDock: ReturnType<typeof BridgeDock> | undefined;
   let dockTool = $state("bridge");
   let narrow = $state(false);
   const bridgeFocused = $derived(
@@ -134,6 +143,7 @@
         if (version === mainNavigation && !memory.isOpen) document.getElementById("altar-main")?.focus({ preventScroll: true });
       });
     }
+    if (canvasFirst && type !== "enter") toolDock?.applyCanvasDefault();
     if (selectedSession) {
       navigation.bridgePath = selectedSession;
       bridgeSession = decodeURIComponent(selectedSession.slice("/bridge/".length));
@@ -288,8 +298,8 @@
 
 <a inert={memory.isOpen} class="skip-link" href="#altar-main">Skip to instrument</a>
 <div class="altar-frame">
-<AltarRail instruments={instruments.map(item => {
-  const href=resolve(item.slug==="bridge" ? navigation.bridgePath : `/${item.slug}`);
+<AltarRail section={railContent.section} instruments={instruments.map(item => {
+  const href=resolve(item.slug==="bridge" ? navigation.bridgePath : item.slug==="atlas" ? "/atlas/map" : `/${item.slug}`);
   return {...item,href,current:instrumentCurrent(item,href)};
 })} pathname={page.url.pathname} {available} {pending} suspended={bridgeModal || memory.isOpen}>
   {#snippet brand()}<AltarBrand />{/snippet}
@@ -298,7 +308,7 @@
   <main id={bridgeFocused ? undefined : "altar-main"} tabindex="-1" hidden={bridgeFocused} inert={bridgeModal || memory.isOpen}>
     {@render children()}
   </main>
-  <BridgeDock bind:tool={dockTool} suspended={memory.isOpen} bind:open={dockOpen} bind:narrow focused={bridgeFocused} focusHref={resolve(resolvedBridgeSession ? seanceHref(resolvedBridgeSession) : "/seances")} focusLabel={resolvedBridgeSession ? "Open Séance" : "Browse séances"} browseHref={resolve("/seances")} {workHref} {available} {viewing} onconnect={connect} onexpand={toggleBridge} onsuspend={suspendBridgeVoice}>
+  <BridgeDock bind:this={toolDock} {canvasFirst} bind:tool={dockTool} suspended={memory.isOpen} bind:open={dockOpen} bind:narrow focused={bridgeFocused} focusHref={resolve(resolvedBridgeSession ? seanceHref(resolvedBridgeSession) : "/seances")} focusLabel={resolvedBridgeSession ? "Open Séance" : "Browse séances"} browseHref={resolve("/seances")} {workHref} {available} {viewing} onconnect={connect} onexpand={toggleBridge} onsuspend={suspendBridgeVoice}>
     {#if available}<BridgeView bind:this={bridgeView} visible={!memory.isOpen && ((dockOpen && dockTool === "bridge") || bridgeFocused)} isVisible={readBridgeVisibility} embedded={!bridgeFocused} sessionId={bridgeSession} search={bridgeSearch} onNavigate={selectConversation} onSessionResolved={(id) => { resolvedBridgeSession = id; }} />{/if}
   </BridgeDock>
 </div>

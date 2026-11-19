@@ -3820,6 +3820,16 @@
           },
           "label": {
             "type": "string"
+          },
+          "output_schema": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [

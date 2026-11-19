@@ -1,162 +1,101 @@
 import type { GraphNode, GraphProjection } from "$lib/graph/model";
 import type { Point } from "./layout";
 
-export const ORB_NODE_WIDTH = 128;
-export const ORB_NODE_HEIGHT = 84;
+export const ORB_NODE_WIDTH = 164;
+export const ORB_NODE_HEIGHT = 64;
+export const ORB_RUN_WIDTH = 438;
+const COLUMN = 178;
+const ROW = 80;
+const LANE = COLUMN * 3 + 44;
 const MAX_RETAINED_POSITIONS = 4096;
-const MAX_RETAINED_ISLANDS = 512;
-const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
+const MAX_RETAINED_LANES = 512;
 
 export interface OrbLayoutMemory {
   readonly positions: Map<string, Point>;
-  readonly islands: Map<string, Point>;
-  readonly slots: Map<string, number>;
-  nextIsland: number;
-}
-
-export interface OrbTerritory {
-  readonly id: string;
-  readonly label: string;
-  readonly path: string;
-  readonly labelPosition: Point;
-  readonly tone: "blue" | "purple";
+  readonly lanes: Map<string, number>;
+  nextLane: number;
 }
 
 export function createOrbLayoutMemory(): OrbLayoutMemory {
-  return { positions: new Map(), islands: new Map(), slots: new Map(), nextIsland: 0 };
+  return { positions: new Map(), lanes: new Map(), nextLane: 0 };
 }
 
-function hash(value: string): number {
-  let result = 2166136261;
-  for (const character of value) result = Math.imul(result ^ character.charCodeAt(0), 16777619);
-  return result >>> 0;
+export function orbNodeWidth(node: GraphNode): number {
+  return node.kind === "run" ? ORB_RUN_WIDTH : ORB_NODE_WIDTH;
 }
 
-function islandAnchor(group: string, memory: OrbLayoutMemory): Point {
-  const retained = memory.islands.get(group);
-  if (retained) return retained;
-  const slot = memory.nextIsland++;
-  // Reserve stable cells before detail is loaded; incoming Runs never repack old islands.
-  // The first three use a wide row, then the remaining axial hex neighbors and rings.
-  const firstRing: readonly Point[] = [
-    { x: 1, y: 0 }, { x: -1, y: 0 }, { x: 1, y: -1 },
-    { x: 0, y: -1 }, { x: 0, y: 1 }, { x: -1, y: 1 }
-  ];
-  let axial: Point = { x: 0, y: 0 };
-  if (slot > 0 && slot <= 6) axial = firstRing[slot - 1]!;
-  else if (slot > 6) {
-    let ring = 2, offset = slot - 7;
-    while (offset >= ring * 6) { offset -= ring * 6; ring++; }
-    const directions: readonly Point[] = [
-      { x: -1, y: 1 }, { x: -1, y: 0 }, { x: 0, y: -1 },
-      { x: 1, y: -1 }, { x: 1, y: 0 }, { x: 0, y: 1 }
-    ];
-    axial = { x: ring, y: 0 };
-    for (const direction of directions) {
-      const steps = Math.min(ring, offset);
-      axial = { x: axial.x + direction.x * steps, y: axial.y + direction.y * steps };
-      offset -= steps;
-      if (!offset) break;
-    }
-  }
-  const jitter = hash(group) % 41 - 20;
-  const anchor = {
-    x: 320 + (axial.x + axial.y / 2) * 1000 + (slot ? jitter : 0),
-    y: 220 + axial.y * Math.sqrt(3) / 2 * 1000 + (slot ? jitter * 0.7 : 0)
-  };
-  memory.islands.set(group, anchor);
-  return anchor;
-}
-
-/** A bounded, static presentation layout. Supplied membership is never inferred from geometry. */
+/** Place real Run members in parallel reading lanes. Edges choose the reading order;
+ * the layout never supplies a missing relation. Positions survive disclosure and playback. */
 export function layoutOrbProjection(projection: GraphProjection, memory: OrbLayoutMemory): Map<string, Point> {
   const result = new Map<string, Point>();
   const groups = new Map<string, GraphNode[]>();
+  const byId = new Map(projection.nodes.map(node => [node.id, node]));
+  const children = new Map<string, GraphNode[]>();
   for (const node of projection.nodes) {
-    const group = node.group ?? projection.identity;
-    const members = groups.get(group) ?? [];
+    const key = node.group ?? projection.identity;
+    const members = groups.get(key) ?? [];
     members.push(node);
-    groups.set(group, members);
+    groups.set(key, members);
   }
-  for (const [group, members] of groups) {
-    const anchor = islandAnchor(group, memory);
-    const occupied = members.flatMap(node => memory.positions.has(node.id) ? [memory.positions.get(node.id)!] : []);
-    // Stable semantic sorting only assigns slots to new identities. Existing identities never move.
-    for (const node of members.toSorted((a, b) => Number(b.kind === "run") - Number(a.kind === "run") || a.id.localeCompare(b.id))) {
-      let point = memory.positions.get(node.id);
-      if (!point) {
-        const slot = memory.slots.get(group) ?? 0;
-        memory.slots.set(group, slot + 1);
-        if (node.kind === "run") point = { ...anchor };
-        else {
-          const knownMembers = (node.members ?? []).flatMap(id => memory.positions.has(id) ? [memory.positions.get(id)!] : []);
-          if (knownMembers.length) point = {
-            x: knownMembers.reduce((sum, item) => sum + item.x, 0) / knownMembers.length,
-            y: knownMembers.reduce((sum, item) => sum + item.y, 0) / knownMembers.length
-          };
-          else {
-            const seed = (hash(group) % 628) / 100;
-            // Local placement makes at most 80 attempts and never runs a perpetual simulation.
-            for (let attempt = 0; attempt < 80; attempt++) {
-              const index = slot + attempt;
-              const radius = 105 + Math.sqrt(index + 1) * 64;
-              const angle = index * GOLDEN_ANGLE + seed;
-              point = { x: anchor.x + Math.cos(angle) * radius * 1.12, y: anchor.y + Math.sin(angle) * radius * 0.83 };
-              if (occupied.every(other => Math.abs(point!.x - other.x) > 122 || Math.abs(point!.y - other.y) > 94)) break;
-            }
-          }
+  for (const edge of projection.edges) {
+    const parent = byId.get(edge.source), child = byId.get(edge.target);
+    if (!parent || !child || parent.group !== child.group || parent === child) continue;
+    const branches = children.get(parent.id) ?? [];
+    branches.push(child);
+    children.set(parent.id, branches);
+  }
+
+  for (const [key, members] of groups) {
+    let lane = memory.lanes.get(key);
+    if (lane === undefined) { lane = memory.nextLane++; memory.lanes.set(key, lane); }
+    const center = lane * LANE;
+    // Reserve all retained positions first, so a newly arrived record cannot claim
+    // the cell of a previously displayed sibling, even when records arrive out of order.
+    const occupied: Point[] = members.flatMap(node => {
+      const point = memory.positions.get(node.id);
+      return point ? [{ x: point.x + orbNodeWidth(node) / 2, y: point.y }] : [];
+    });
+    const run = members.find(node => node.kind === "run");
+    const entry = members.find(node => node.entry);
+    const roots = [run, entry, ...members].filter((node): node is GraphNode => !!node);
+    const pending = new Set(members.map(node => node.id));
+    for (const root of roots) {
+      if (!pending.has(root.id)) continue;
+      const queue = [{ node: root, column: 0, row: run && run !== root ? 1 : 0 }];
+      for (let index = 0; index < queue.length; index++) {
+        const { node, column, row } = queue[index]!;
+        if (!pending.delete(node.id)) continue;
+        let point = memory.positions.get(node.id);
+        if (!point) {
+          const x = center + column * COLUMN;
+          let y = row * ROW;
+          while (occupied.some(p => Math.abs(p.x - x) < COLUMN - 8 && Math.abs(p.y - y) < ROW - 6)) y += ROW;
+          point = { x: x - orbNodeWidth(node) / 2, y };
+          occupied.push({ x, y });
+          memory.positions.set(node.id, point);
         }
-        memory.positions.set(node.id, point!);
-        occupied.push(point!);
+        result.set(node.id, { ...point });
+        const branches = children.get(node.id) ?? [];
+        const observed = [...branches].sort((a, b) => Number(!!b.entry) - Number(!!a.entry));
+        for (const [branch, child] of observed.entries()) {
+          if (!pending.has(child.id)) continue;
+          let nextColumn = column;
+          if (branch || child.kind === "animator" || child.kind === "Reach operation") {
+            nextColumn = column === 0 ? (branch % 2 ? -1 : 1) : 0;
+          }
+          queue.push({ node: child, column: nextColumn, row: Math.round(point.y / ROW) + 1 });
+        }
       }
-      result.set(node.id, { ...point! });
     }
   }
-  // Retain folded and temporarily filtered nodes, while bounding this tab's disposable cache.
-  const visible = new Set(projection.nodes.map(node => node.id));
+  const visible = new Set(result.keys());
   for (const id of memory.positions.keys()) {
     if (memory.positions.size <= MAX_RETAINED_POSITIONS) break;
     if (!visible.has(id)) memory.positions.delete(id);
   }
-  for (const group of memory.islands.keys()) {
-    if (memory.islands.size <= MAX_RETAINED_ISLANDS) break;
-    if (!groups.has(group)) { memory.islands.delete(group); memory.slots.delete(group); }
-  }
-  return result;
-}
-
-function roundedBoundary(points: readonly Point[]): string {
-  const middle = (a: Point, b: Point) => `${(a.x + b.x) / 2} ${(a.y + b.y) / 2}`;
-  return `M ${middle(points.at(-1)!, points[0]!)} ` + points.map((point, index) =>
-    `Q ${point.x} ${point.y} ${middle(point, points[(index + 1) % points.length]!)}`).join(" ") + " Z";
-}
-
-/** Decorative envelopes follow explicit Run groups; they supply no extra graph relation. */
-export function orbTerritories(projection: GraphProjection, positions: ReadonlyMap<string, Point>): OrbTerritory[] {
-  const result: OrbTerritory[] = [];
-  for (const run of projection.nodes.filter(node => node.kind === "run" && node.group)) {
-    const members = projection.nodes.filter(node => node.group === run.group);
-    if (members.length < 2) continue;
-    const points = members.flatMap(node => positions.has(node.id) ? [{
-      x: positions.get(node.id)!.x + ORB_NODE_WIDTH / 2,
-      y: positions.get(node.id)!.y + 25
-    }] : []);
-    if (!points.length) continue;
-    const left = Math.min(...points.map(point => point.x));
-    const right = Math.max(...points.map(point => point.x));
-    const top = Math.min(...points.map(point => point.y));
-    const bottom = Math.max(...points.map(point => point.y));
-    const center = { x: (left + right) / 2, y: (top + bottom) / 2 };
-    const phase = hash(run.id) / 0xffffffff * Math.PI * 2;
-    const outline = Array.from({ length: 24 }, (_, index) => {
-      const angle = index / 24 * Math.PI * 2;
-      const c = Math.cos(angle), s = Math.sin(angle);
-      const support = Math.max(...points.map(point => (point.x - center.x) * c + (point.y - center.y) * s));
-      const radius = Math.max(85, support + 95 + Math.sin(angle * 3 + phase) * 16);
-      return { x: center.x + c * radius, y: center.y + s * radius };
-    });
-    result.push({ id: run.id, label: run.label, path: roundedBoundary(outline),
-      labelPosition: { x: left - 8, y: top - 104 }, tone: hash(run.id) % 2 ? "purple" : "blue" });
+  for (const group of memory.lanes.keys()) {
+    if (memory.lanes.size <= MAX_RETAINED_LANES) break;
+    if (!groups.has(group)) memory.lanes.delete(group);
   }
   return result;
 }

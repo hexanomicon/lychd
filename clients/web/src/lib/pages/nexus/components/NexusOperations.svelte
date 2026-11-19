@@ -2,6 +2,7 @@
   import { resolvePath as resolve } from "$lib/navigation/paths";
   import type { NexusSnapshot } from "$lib/api/models";
   import type { Operation } from "../state/operations";
+  import NexusScrolls from "./NexusScrolls.svelte";
   import NexusInventory from "./NexusInventory.svelte";
 
   let { area, snapshot }: { area: Operation; snapshot: NexusSnapshot } = $props();
@@ -25,9 +26,6 @@
   let question = $state("");
   let criterion = $state("");
   let probes = $state(3);
-  let skill = $state("");
-  let skillSchema = $state("");
-  let disclosure = $state("");
   let peer = $state("");
   let peerSchema = $state("");
   let purpose = $state("");
@@ -81,7 +79,6 @@
       case "fallback": return candidates.length ? { ordered_capabilities: candidates, selection: "before_admission", on_exhaustion: "decline", after_dispatch: "retain_exact_binding" } : null;
       case "affect": return affectRoutes.length ? { routes: affectRoutes, baseline: "positive", evaluation: "independent_evidence" } : null;
       case "exploration": return question.trim() && criterion.trim() && Number.isInteger(probes) && probes >= 1 && probes <= 100 ? { question: question.trim(), evidence_criterion: criterion.trim(), probe_ceiling: probes, stop_on: ["saturation", "budget_exhausted"] } : null;
-      case "skills": return skill.trim() && skillSchema.trim() && disclosure.trim() ? { public_skill: skill.trim(), task_schema: skillSchema.trim(), audience: disclosure.trim() } : null;
       case "peers": return peer.trim() && peerSchema.trim() && purpose.trim() ? { peer_identity: peer.trim(), task_schema: peerSchema.trim(), purpose: purpose.trim() } : null;
       case "access": return principal.trim() && object.trim() && reason.trim() && Number.isInteger(minutes) && minutes >= 1 && minutes <= 1440 ? { subject: principal.trim(), group: group.trim() || null, role: role.trim() || null, action, object: object.trim(), audience: "Nexus", duration_minutes: minutes, justification: reason.trim() } : null;
       default: return null;
@@ -140,11 +137,8 @@
   <p class="intro">Plan a bounded inquiry. A probe can earn another probe when it produces evidence that changes the decision. The budget stays fixed.</p>
   <div class="form-stack"><label>Question<textarea bind:value={question} maxlength="1000" placeholder="Which uncertainty could change this decision?"></textarea></label><label>Evidence criterion<textarea bind:value={criterion} maxlength="1000" placeholder="What observation would settle it?"></textarea></label><label>Maximum probes<input type="number" min="1" max="100" bind:value={probes} /></label></div>
   <p>Stop on evidence saturation or budget exhaustion. Carry unresolved questions to review.</p>
-{:else if area.id === "skills"}
-  <h3>Agent Card</h3><p class="intro">This Vessel has no published Agent Card. A future card can advertise explicitly public expertise, reusable material and the task schemas the receiver accepts.</p>
-  <h3>Propose an advertised skill</h3>
-  <div class="form-stack"><label>Public skill or material<input bind:value={skill} maxlength="240" /></label><label>Task schema and version<input bind:value={skillSchema} maxlength="180" /></label><label>Intended audience<input bind:value={disclosure} maxlength="180" /></label></div>
-  <a class="reference" href="https://hexanomicon.dev/adr/26-a2a/#advertised-expertise-and-reusable-knowledge">Public skill and disclosure contract ↗</a>
+{:else if area.id === "skills" || area.id === "offers" || area.id === "checkpoints"}
+  <NexusScrolls mode={area.id} />
 {:else if area.id === "peers"}
   <h3>Private task enrollment</h3><p class="intro">The Intercom operator session owns enrolled peers. Outbound public tasks require an enrolled workload identity, an exact endpoint and an allowed task schema. Nexus has no live task-peer roster.</p>
   <h3>Prepare a peer review</h3>
@@ -165,7 +159,7 @@
   {/if}
 {/if}
 
-{#if ["installation", "orchestration", "fallback", "affect", "exploration", "skills", "peers", "access"].includes(area.id)}
+{#if ["installation", "orchestration", "fallback", "affect", "exploration", "peers", "access"].includes(area.id)}
   <section class="export" aria-label="Local proposal">
     <h3>Local proposal</h3><p>Edits stay on this page. Export a review copy before leaving. Applying a change requires its owner.</p>
     {#if documentText}

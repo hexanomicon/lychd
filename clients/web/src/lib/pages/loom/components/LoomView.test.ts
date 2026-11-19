@@ -488,3 +488,13 @@ it("keeps the draft editor open when the registry has a default revision", async
   expect(goto).not.toHaveBeenCalled();
   rendered.unmount();
 });
+
+it("keeps the selected Atelier composition open and links to its matching recipe", async () => {
+  page.url.search = "?composition=animated-lesson";
+  const rendered = render(LoomView);
+  await screen.findByRole("heading", { name: "Animated lesson" });
+  expect(screen.getByRole("link", { name: /Open in Atelier/ }).getAttribute("href")).toBe("/atelier?recipe=animated-lesson");
+  expect(getLoomPatternRevision).not.toHaveBeenCalled();
+  expect(goto).not.toHaveBeenCalled();
+  rendered.unmount();
+});

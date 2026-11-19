@@ -1,6 +1,7 @@
 <script lang="ts">
   import { getContext, onDestroy, onMount, tick, untrack, type Snippet } from "svelte";
   import { resolvePath as resolve } from "$lib/navigation/paths";
+  import StationOutput from "./StationOutput.svelte";
   import { getOrbRun } from "$lib/api/client";
   import type { OrbRunPage, OrbRunSnapshot } from "$lib/api/models";
   import { getOrbCatalogue, listenToOrb, orbSnapshotSchema, type OrbConnection } from "$lib/pages/orb/state/live";
@@ -11,7 +12,10 @@
   import RuntimeEvidence from "$lib/pages/orb/components/RuntimeEvidence.svelte";
   import GraphCanvas from "$lib/graph/components/GraphCanvas.svelte";
   import AnimatorRail from "$lib/pages/orb/components/AnimatorRail.svelte";
+  import OrbRecordedTimeline from "./OrbRecordedTimeline.svelte";
+  import { atRecordedTime, recordedTimeline } from "../state/recorded-timeline";
   import OrbTimeline from "./OrbTimeline.svelte";
+  import AltarIcon from "$lib/shell/components/AltarIcon.svelte";
   import OrbMapTree from "./OrbMapTree.svelte";
   import GraphMapRail from "$lib/graph/components/GraphMapRail.svelte";
   import PaneGrip from "$lib/components/layout/PaneGrip.svelte";
@@ -54,7 +58,7 @@
   let query = $state("");
   let statusFilter = $state("all");
   let inspectorOpen = $state(false);
-  let mapOpen = $state(true);
+  let mapOpen = $state(false);
   let inspectorLeft = $state(false);
   let mapWidth = $state(202);
   let evidenceWidth = $state(306);
@@ -70,8 +74,23 @@
   const generations = new Map<string, number>();
   const metadataVersions = new Map<string, number>();
   const recovered = new Set<string>();
-  let viewedRuns = $derived(pausedFrame?.runs ?? runs);
-  let viewedLenses = $derived(pausedFrame?.lenses ?? lenses);
+  let tabHistory = $state(false);
+  let recordCursor = $state<number | null>(null);
+  let sourceRuns = $derived(pausedFrame?.runs ?? runs);
+  let sourceLenses = $derived(pausedFrame?.lenses ?? lenses);
+  let recordsTimeline = $derived(recordedTimeline(sourceRuns, sourceLenses));
+  let viewedRuns = $derived(recordCursor === null ? sourceRuns : sourceRuns.filter(run => Date.parse(run.created_at) <= recordCursor!));
+  let viewedLenses = $derived(recordCursor === null ? sourceLenses : atRecordedTime(sourceLenses, recordCursor));
+  function seekRecordTime(time: number) {
+    if (!pausedFrame) pauseField();
+    recordCursor = time;
+    if (selectedRun && selectedEvent && !viewedLenses.get(selectedRun)?.snapshot.evidence.some(record => record.event_id === selectedEvent)) {
+      selectedEvent = null; selectedNode = null;
+    }
+    presentationChanged();
+  }
+  function showTabHistory() { tabHistory = true; recordCursor = null; presentationChanged(); }
+  function showRecordedTime() { tabHistory = false; liveField(); }
   let filteredRuns = $derived(viewedRuns.filter((run) => {
     const matches = `${run.workflow_name} ${run.run_id}`.toLowerCase().includes(query.trim().toLowerCase());
     return matches && (statusFilter === "all" || (statusFilter === "active" ? !["done", "failed", "cancelled"].includes(run.status) : statusFilter === "waiting" ? ["awaiting_hardware", "awaiting_consent", "awaiting_delegate", "awaiting_peer"].includes(run.status) : run.status === statusFilter));
@@ -79,7 +98,14 @@
   let field = $derived(projectOrbField(filteredRuns, viewedLenses, level));
   let runtimeField = $derived(projectRuntime(runtime.snapshot, runtime.received));
   let runtimeSelection = $derived(selectedNode ? runtimeField.selections.get(selectedNode) : undefined);
-  let combinedProjection = $derived(attachRuntime(field.projection, runtimeField, !pausedFrame));
+  let combinedProjection = $derived.by(() => {
+    const combined = attachRuntime(field.projection, runtimeField, !pausedFrame);
+    if (runtimeMode || !sourceRuns.length) return combined;
+    const groups = new Set(filteredRuns.map(run => run.run_id));
+    const nodes = combined.nodes.filter(node => node.group && groups.has(node.group));
+    const ids = new Set(nodes.map(node => node.id));
+    return { ...combined, nodes: recordCursor === null ? nodes : nodes.map(node => node.kind === "run" ? { ...node, state: "recorded time", detail: "Retained records through the selected time" } : node), edges: combined.edges.filter(edge => ids.has(edge.source) && ids.has(edge.target)) };
+  });
   let selectedFieldNode = $derived(field.projection.nodes.find(node => node.id === selectedNode));
   let activeLens = $derived(selectedRun ? viewedLenses.get(selectedRun) : undefined);
   let currentLens = $derived(selectedRun ? lenses.get(selectedRun) : undefined);
@@ -87,6 +113,12 @@
   let viewedRun = $derived(activeLens?.snapshot.run ?? viewedRuns.find((run) => run.run_id === selectedRun));
   let connectionLabel = $derived(lenses.size ? [...new Set([...lenses.values()].map((lens) => lens.connection))].join(" · ") : "No live lenses");
   let record = $derived(activeLens?.snapshot.evidence.find((item) => item.event_id === selectedEvent));
+  let outputStation = $derived(activeLens?.pattern?.nodes.find(station =>
+    (record?.kind === "node" && station.key === record.subject_key) ||
+    (selectedRun && selectedNode === `run:${selectedRun}|${encodeURIComponent("station:" + station.key)}`)));
+
+
+  let outputJobs = $derived(activeLens?.snapshot.delegated_jobs.filter(job => job.step_id === outputStation?.key) ?? []);
 
   function commandSnapshot() {
     return {
@@ -127,11 +159,11 @@
     if (command.kind === "seek") {
       const frame = seekObservationFrame(history, pausedFrame?.id ?? null, command.seconds);
       if (!frame) return { status: "unavailable", summary: "Requested tab observation time is outside the retained captures, or the selected capture was trimmed." };
-      timelineControlRevision++;
+      showTabHistory(); timelineControlRevision++;
       seekField(frame.id);
       return { status: "applied", summary: `Showing tab observation capture ${frame.id}, received ${new Date(frame.observedAt).toISOString()}. This is the nearest retained capture.` };
     }
-    timelineControlRevision++;
+    showTabHistory(); timelineControlRevision++;
     if (command.kind === "pause") { if (!pausedFrame) pauseField(); else presentationChanged(); }
     else liveField();
     return { status: "applied", summary: command.kind === "pause" ? "Paused tab observation presentation; incoming updates continue." : "Showing the latest tab observation capture." };
@@ -149,7 +181,6 @@
   });
 
   onMount(() => {
-    mapOpen = !window.matchMedia?.("(max-width: 48rem)").matches;
     runtimeReader = observeRuntime((next) => runtime = next);
     void loadCatalogue();
     const timer = window.setInterval(() => {
@@ -184,13 +215,13 @@
     pausedFrame = frame; following = false;
     presentationChanged();
   }
-  function liveField() { pausedFrame = null; presentationChanged(); }
+  function liveField() { recordCursor = null; pausedFrame = null; presentationChanged(); }
   function resizeHistory(seconds: number) {
     historyWindow = seconds;
     history = trimFieldFrames(history, seconds);
     presentationChanged();
   }
-  function clearHistory() { history = []; pausedFrame = null; captureField(); presentationChanged(); }
+  function clearHistory() { history = []; pausedFrame = null; recordCursor = null; captureField(); presentationChanged(); }
   function authorityRefused(cause: unknown): boolean {
     return typeof cause === "object" && cause !== null && "status" in cause && (cause.status === 401 || cause.status === 403);
   }
@@ -202,7 +233,7 @@
     catalogueVersion++; catalogueController?.abort();
     loading = false; initialReady = true;
     for (const id of new Set([...lenses.keys(), ...loadingIds])) closeLens(id);
-    runs = []; catalogue = null; history = []; pausedFrame = null; metadataVersions.clear();
+    runs = []; catalogue = null; history = []; pausedFrame = null; recordCursor = null; metadataVersions.clear();
     selectedRun = null; selectedNode = null; selectedEvent = null;
   }
   function clearProtectedRun(id: string) {
@@ -443,21 +474,22 @@
 <svelte:document onkeydown={dismissPanels} onvisibilitychange={() => { runtimeReader?.visibility(); if (document.visibilityState === "visible" && !loading) void loadCatalogue(false, true); }} />
 <div class="orb-field">
   <header class="field-header">
-    <div class="field-title"><h1>Orb</h1>{#if query.trim() || statusFilter !== "all"}<span>{filteredRuns.length}/{viewedRuns.length} Run groups</span>{/if}</div>
-    <label class="search"><span class="sr-only">Filter Runs</span><input type="search" placeholder="Find workflow or Run…" bind:value={query} /></label>
-    <label><span class="sr-only">Run status filter</span><select aria-label="Run status filter" bind:value={statusFilter}><option value="all">All states</option><option value="active">Active</option><option value="running">Running</option><option value="waiting">Waiting</option><option value="done">Done</option><option value="failed">Failed</option><option value="cancelled">Cancelled</option></select></label>
+    <button type="button" class="map-toggle" aria-label={mapOpen ? "Hide Map" : "Show Map"} aria-expanded={mapOpen} onclick={() => mapOpen = !mapOpen}><AltarIcon name="atlas" size={16} /> Map</button>
+    <h1>Orb</h1><span class="field-state">{recordCursor !== null ? "Recorded time" : pausedFrame ? "Paused" : runtimeMode ? "Runtime" : "Run field"}</span><div class="header-space"></div>
     <details class="run-list" bind:open={runsOpen}>
-      <summary>Runs <span>{viewedRuns.length}</span></summary>
+      <summary title="Browse and filter Runs">Runs <span>{viewedRuns.length}</span></summary>
       <div class="run-list-panel" id="orb-run-list">
-        <h2>Semantic Run list · {viewedRuns.length} loaded</h2>
-        <p>All loaded groups remain on the field. Up to three evidence lenses can follow live at once.</p>
+        <h2>Runs <span>{filteredRuns.length}/{viewedRuns.length}</span></h2>
+        <div class="run-filters"><label class="search"><span class="sr-only">Filter Runs</span><input type="search" placeholder="Find workflow or Run…" bind:value={query} /></label>
+    <label><span class="sr-only">Run status filter</span><select aria-label="Run status filter" bind:value={statusFilter}><option value="all">All states</option><option value="active">Active</option><option value="running">Running</option><option value="waiting">Waiting</option><option value="done">Done</option><option value="failed">Failed</option><option value="cancelled">Cancelled</option></select></label></div>
+        <p>Open up to three live evidence lenses.</p>
         <ul>{#each filteredRuns as run (run.run_id)}<li><button type="button" aria-pressed={selectedRun === run.run_id} onclick={() => selectRun(run.run_id)}><strong>{run.workflow_name}</strong><span>{run.status}</span><code>{run.run_id}</code></button><button type="button" disabled={loadingIds.has(run.run_id)} onclick={() => lenses.has(run.run_id) ? closeLens(run.run_id) : openLens(run.run_id)}>{lenses.has(run.run_id) ? "Close lens" : loadingIds.has(run.run_id) ? "Opening…" : "Unfold Run"}</button><a href={resolve(`/orb/${encodeURIComponent(run.run_id)}`)}>History →</a></li>{/each}</ul>
         {#if catalogue?.next_cursor}<button type="button" disabled={loading} onclick={() => loadCatalogue(true)}>Load more retained Runs</button>{/if}
         <p class="coverage">Paged catalogue · refreshes every 5 seconds while visible · {catalogue?.capture.replaceAll("_", " ") ?? "reading"}</p>
       </div>
     </details>
     <details class="view-options" bind:open={optionsOpen}>
-      <summary>View</summary><div class="options-panel">
+      <summary title="Field view options" aria-label="View options"><span aria-hidden="true">•••</span></summary><div class="options-panel">
         <div role="group" aria-label="Graph detail">
           <button type="button" aria-pressed={level === "runs"} onclick={() => chooseLevel("runs")}>Run groups</button>
           <button type="button" aria-pressed={level === "stations"} onclick={() => chooseLevel("stations")}>Stations</button>
@@ -468,34 +500,30 @@
         <button type="button" aria-pressed={following} onclick={toggleFollowing}>{following ? "Pause following" : "Follow selected Run"}</button>
         <p>Run → station/subject → supplied occurrence → loaded records. Deeper subworkflow structure is unavailable until its owner supplies it.</p>
         <p>Dashed paths are declared permissions; membership and recorded Animator selections are separate relations. A latest-record halo is an observation, not continuous computation.</p>
+    <button class="refresh" type="button" disabled={loading} aria-busy={loading} onclick={() => loadCatalogue()}>{loading && !initialReady ? "Reading…" : "Refresh Runs"}</button>
         <button type="button" onclick={clearHistory}>Clear tab history</button>
       </div>
     </details>
-    <button type="button" aria-pressed={runtimeMode && inspectorOpen} onclick={(event) => { runtimeMode = true; inspectorOpen = true; inspectorOpener = event.currentTarget; }}>Runtime <span>{runtime.snapshot?.components.length ?? 0}</span></button>
-    <button class="refresh" type="button" disabled={loading} aria-busy={loading} onclick={() => loadCatalogue()}>{loading && !initialReady ? "Reading…" : "Refresh Runs"}</button>
-    <button id="orb-evidence-toggle" type="button" aria-label={inspectorOpen ? "Hide evidence" : "Show evidence"} aria-expanded={inspectorOpen} aria-controls="orb-evidence" onclick={(event) => { if (inspectorOpen) closeEvidence(); else { inspectorOpener = event.currentTarget; inspectorOpen = true; } }}>Evidence</button>
+    <button class="icon-control" type="button" aria-label={`Runtime ${runtime.snapshot?.components.length ?? 0}`} title="Runtime topology" aria-pressed={runtimeMode} onclick={(event) => { runtimeMode = !runtimeMode; inspectorOpen = runtimeMode; inspectorOpener = event.currentTarget; if (!runtimeMode && runtimeSelection) selectedNode = null; }}><AltarIcon name="nexus" size={16} /></button>
+    <button class="icon-control" id="orb-evidence-toggle" type="button" aria-label={inspectorOpen ? "Hide evidence" : "Show evidence"} title={inspectorOpen ? "Hide evidence" : "Show evidence"} aria-expanded={inspectorOpen} aria-controls="orb-evidence" onclick={(event) => { if (inspectorOpen) closeEvidence(); else { inspectorOpener = event.currentTarget; inspectorOpen = true; } }}><AltarIcon name="panel" size={16} /></button>
   </header>
   {#if error}<p class="field-fault" role="alert">{error}</p>{/if}
   {#if notice}<p class="field-notice" role="status">{notice}</p>{/if}
   <div class={["field-layout", { "inspector-left": inspectorLeft }]}>
     <section class="canvas-area" aria-label="Runtime and parallel Run graph"
-      style:--graph-map-width={mapOpen ? `min(${mapWidth}px,40%)` : "2.15rem"}>
+      style:--graph-map-width={`min(${mapWidth}px,48%)`}>
       {#if runtimeField.projection.nodes.length || (viewedRuns.length && initialReady)}
-        <GraphCanvas projection={combinedProjection} selectedId={selectedNode} onselect={selectNode} label="Runtime and parallel Run workflow field" presentation="orb" hideMinimap={true} onzoom={zoomDetail} onviewportinteraction={manualCamera} {cameraCommand} {focusId} {focusRevision} navigatorRight={inspectorLeft}>
-          {#snippet navigator(minimap: Snippet)}
+          {#snippet mapNavigator(minimap: Snippet)}
             <GraphMapRail bind:open={mapOpen} bind:width={mapWidth} {minimap} name="Orb Map" right={inspectorLeft}>
               <OrbMapTree runs={filteredRuns} lenses={viewedLenses} runtime={runtimeField.projection} {selectedRun} {selectedEvent} {selectedNode}
                 onrun={inspectMapRun} onevent={inspectMapEvent} onruntime={selectNode} />
             </GraphMapRail>
           {/snippet}
-        </GraphCanvas>
+        <GraphCanvas projection={combinedProjection} selectedId={selectedNode} onselect={selectNode} label="Runtime and parallel Run workflow field" presentation="orb" hideMinimap={true} onzoom={zoomDetail} onviewportinteraction={manualCamera} {cameraCommand} {focusId} {focusRevision} navigator={mapOpen ? mapNavigator : undefined} navigatorRight={inspectorLeft} />
+
         {#if viewedRuns.length && !filteredRuns.length}<p class="filter-empty">No Run groups match this filter. <button type="button" onclick={() => { query = ""; statusFilter = "all"; }}>Clear filters</button></p>{/if}
-        <div class="field-caption"><span>{pausedFrame ? "Captured Runs · latest runtime window" : "Latest observed field"}</span><span>{runtime.snapshot?.components.length ?? 0} runtime components · {lenses.size} evidence lenses · {connectionLabel}</span></div>
       {:else}<div class="field-empty"><h2>{!initialReady ? "Reading the Run field…" : error ? "Run field unavailable" : "No retained Runs in this account"}</h2><p>Open a conversation to create work, then inspect its recorded workflow here.</p><a href={resolve("/bridge")}>Open Bridge →</a></div>{/if}
     </section>
-    {#if !inspectorOpen}
-      <button class="feed-opener" type="button" aria-label="Expand evidence panel" title="Expand evidence panel" aria-controls="orb-evidence" aria-expanded="false" onclick={event => { inspectorOpen = true; inspectorOpener = event.currentTarget; }}>{inspectorLeft ? "›" : "‹"}</button>
-    {/if}
     <div class="feed-pane" hidden={!inspectorOpen} style:--evidence-width={`${evidenceWidth}px`}>
     <PaneGrip bind:width={evidenceWidth} name="Evidence panel width" side={inspectorLeft ? "left" : "right"} min={220} max={540} />
     <button class="feed-closer" type="button" aria-label="Close evidence inspector" title="Collapse evidence panel" aria-controls="orb-evidence" aria-expanded="true" onclick={closeEvidence}>{inspectorLeft ? "‹" : "›"}</button>
@@ -511,11 +539,12 @@
           <section class="record-detail" aria-label="Selected graph node"><h3>{selectedFieldNode.label}</h3>
             <p>{selectedFieldNode.kind} · {selectedFieldNode.detail}</p></section>
         {/if}
+          {#if outputStation?.output_schema || (recordCursor === null && outputJobs.length)}<StationOutput schema={outputStation?.output_schema} jobs={outputJobs} historical={recordCursor !== null} />{/if}
           {#if record}<section class="record-detail" aria-label="Selected live record"><h3>{record.summary}</h3><dl><dt>Event</dt><dd><code>{record.event_id}</code></dd><dt>Sequence</dt><dd>#{record.seq}</dd><dt>Subject</dt><dd>{record.subject_key ?? "Not supplied"}</dd><dt>Occurrence</dt><dd>{record.occurrence_id ?? "Not supplied"}</dd><dt>Phase</dt><dd>{record.phase ?? "Not supplied"}</dd></dl><a href={resolve(`/orb/${encodeURIComponent(run.run_id)}?event=${encodeURIComponent(record.event_id)}`)}>Inspect this exact record →</a></section>
           {:else if selectedEvent}<p class="field-notice">The selected record is outside this lens window. Open the exact Run history to inspect it.</p>{/if}
         <p class="run-name">{run.workflow_name}</p><code class="run-identity">{run.run_id}</code>
         {#if !filteredRuns.some((candidate) => candidate.run_id === run.run_id)}<p class="feed-boundary">Selected Run is outside the current filter.</p>{/if}
-        <dl class="feed-status"><dt>Latest fetched status</dt><dd>{activeRun?.status ?? "Not in current catalogue"}</dd><dt>Connection now</dt><dd>{currentLens?.connection ?? "lens closed"}</dd>{#if pausedFrame}<dt>Status at capture</dt><dd>{viewedRun?.status ?? "Not supplied"}</dd>{/if}</dl>
+        <dl class="feed-status"><dt>Latest fetched status</dt><dd>{activeRun?.status ?? "Not in current catalogue"}</dd><dt>Connection now</dt><dd>{currentLens?.connection ?? "lens closed"}</dd>{#if pausedFrame && recordCursor === null}<dt>Status at capture</dt><dd>{viewedRun?.status ?? "Not supplied"}</dd>{/if}</dl>
         <a class="detail-link" href={resolve(`/orb/${encodeURIComponent(run.run_id)}`)}>Open exact Run and history →</a>
         {#if activeLens}
           <AnimatorRail evidence={activeLens.snapshot.evidence} onselect={(seq) => { const event = activeLens?.snapshot.evidence.find((item) => item.seq === seq); if (event) selectRecord(event.event_id); }} />
@@ -534,15 +563,28 @@
     </aside>
     </div>
   </div>
-  <OrbTimeline controlRevision={timelineControlRevision} frames={history} pinnedFrame={pausedFrame} cursorId={pausedFrame?.id ?? null} onseeking={seekField} onlive={liveField} onpause={pauseField} windowSeconds={historyWindow} onwindowchange={resizeHistory} {connectionLabel} />
+  {#if !tabHistory && recordsTimeline.times.length}
+    <OrbRecordedTimeline data={recordsTimeline} cursor={recordCursor} onseek={seekRecordTime} onlive={liveField} onrecord={inspectMapEvent} onhistory={showTabHistory} />
+  {:else}
+    <OrbTimeline onrecords={recordsTimeline.times.length ? showRecordedTime : undefined} controlRevision={timelineControlRevision} frames={history} pinnedFrame={pausedFrame} cursorId={pausedFrame?.id ?? null} onseeking={seekField} onlive={liveField} onpause={pauseField} windowSeconds={historyWindow} onwindowchange={resizeHistory} {connectionLabel} />
+  {/if}
 </div>
 
 <style>
-.orb-field { flex:1 1 0; width:100%; height:100%; min-height:28rem; min-width:0; display:flex; flex-direction:column; position:relative; overflow:hidden; background:#000; color:var(--color-bone); }
-  .field-header { position:relative; z-index:8; display:flex; align-items:center; flex-wrap:wrap; gap:.45rem; flex:none; margin:.9rem .9rem 0; padding:.5rem .65rem; border:1px solid var(--color-engraving); border-radius:8px; background:var(--color-obsidian); box-shadow:0 8px 28px #0005; }
-  .field-title { display:flex; align-items:baseline; gap:.65rem; margin-inline-end:.65rem; white-space:nowrap; }
-  h1 { margin:0; color:var(--color-bone); font:600 1.05rem/1.2 var(--font-body); letter-spacing:-.025em; }
-  .field-title > span,.coverage { color:var(--color-ash); font:12px/1.5 var(--font-body); }
+.orb-field { flex:1 1 0; width:100%; height:100%; min-height:24rem; min-width:0; display:flex; flex-direction:column; position:relative; overflow:hidden; background:var(--color-obsidian); color:var(--color-bone); }
+  .field-header { position:relative; z-index:8; flex:none; display:flex; align-items:center; min-height:3.55rem; gap:.55rem; padding:.45rem 2.85rem .45rem 1.1rem; border-bottom:1px solid var(--color-engraving); background:var(--color-obsidian); }
+  .field-header h1 { margin:0; color:var(--color-bone); font:normal 1.75rem/1 var(--font-rune); letter-spacing:-.045em; }
+  .field-state { margin-inline-start:.35rem; padding-inline-start:.85rem; border-inline-start:1px solid var(--color-engraving); color:var(--color-ash); font:.73rem/1.5 var(--font-glyph); }
+  .header-space { flex:1; }
+  .field-header .map-toggle,.field-header .icon-control { display:inline-flex; align-items:center; justify-content:center; gap:.4rem; min-height:1.95rem; padding:.3rem .55rem; }
+  .field-header .map-toggle { border-color:var(--color-engraving); background:var(--color-obsidian-2); color:var(--color-parchment); }
+  .field-header .icon-control,.field-header details > summary { min-height:1.95rem; border-color:transparent; color:var(--color-ash); }
+  .field-header .icon-control:hover,.field-header details > summary:hover { border-color:var(--color-engraving); color:var(--color-bone); }
+  .field-header .icon-control[aria-pressed="true"] { color:var(--color-accent); }
+  .field-header .view-options > summary::after { display:none; }
+  .run-filters { display:flex; align-items:center; flex-wrap:wrap; gap:.5rem; margin-top:.75rem; }
+  .run-list-panel h2 span { color:var(--color-ash); font:normal .75rem/1 var(--font-glyph); }
+  .coverage { color:var(--color-ash); font:12px/1.5 var(--font-body); }
   h2 { margin:0; font:600 1rem/1.4 var(--font-body); letter-spacing:-.015em; }
   p,small,dt { color:var(--color-parchment); line-height:1.6; }
   button,input,select,summary { min-height:36px; border:1px solid var(--color-control-border); border-radius:5px; background:transparent; color:var(--color-bone); font:400 13px/1.4 var(--font-body); }
@@ -555,7 +597,6 @@
   input::placeholder { color:var(--color-ash); opacity:1; }
   select { padding:.4rem .55rem; background:var(--color-obsidian); }
   .search { flex:1 1 10rem; min-width:9rem; max-width:19rem; }
-  .refresh { margin-inline-start:auto; }
   a { color:var(--color-rune); text-decoration:underline; text-underline-offset:.2em; }
   .run-list > summary,.view-options > summary { display:flex; align-items:center; gap:.45rem; padding:.4rem .65rem; cursor:pointer; list-style:none; }
   .run-list > summary::after,.view-options > summary::after { content:"⌄"; color:var(--color-ash); }
@@ -571,8 +612,7 @@
   .run-list li code { grid-column:1/-1; color:var(--color-ash); font-size:11px; overflow-wrap:anywhere; }
   .run-list li span,.run-list li a { font-size:12px; }
   .field-layout { display:flex; flex:1; min-height:0; min-width:0; position:relative; overflow:hidden; }
-  .canvas-area { flex:1; min-height:0; min-width:0; position:relative; background:#000; }
-  .field-caption { position:absolute; top:.9rem; left:calc(var(--graph-map-width) + .6rem); right:1.1rem; display:flex; justify-content:space-between; gap:1rem; color:var(--color-ash); font:11px/1.5 var(--font-body); pointer-events:none; }
+  .canvas-area { flex:1; min-height:0; min-width:0; position:relative; background:var(--color-obsidian); }
   .field-feed { flex:0 0 clamp(18rem,31%,25rem); width:clamp(18rem,31%,25rem); min-width:0; min-height:0; overflow:auto; overscroll-behavior:contain; padding:1.25rem; border-inline-start:1px solid var(--color-engraving); background:var(--color-obsidian); }
   .field-feed[hidden] { display:none; }
   .field-feed > header { display:flex; justify-content:space-between; align-items:start; gap:.8rem; padding-bottom:1rem; margin-bottom:1rem; border-bottom:1px solid var(--color-engraving); }
@@ -604,20 +644,16 @@
   .filter-empty { position:absolute; inset:35% 1rem auto; text-align:center; font-size:14px; }
   .filter-empty button { margin-inline-start:.5rem; background:var(--color-obsidian); }
   .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; border:0; }
-  @media(max-width:56rem) { .field-header { margin:.6rem .6rem 0; padding:.45rem; gap:.4rem; } .search { max-width:none; } .refresh { margin-inline-start:0; } .field-caption { flex-direction:column; gap:.2rem; } .field-feed { position:absolute; inset:0 0 0 auto; z-index:7; width:min(25rem,100%); box-shadow:-12px 0 40px #0008; } }
-  @media(max-width:35rem) { .field-title { flex:1; } .search { flex-basis:100%; order:2; } .field-title > span { font-size:11px; } .run-list li { grid-template-columns:minmax(0,1fr) auto; } .run-list li > button:first-child { grid-column:1/-1; } .field-feed { padding:1rem; } }
-  @container work-area (max-width:56rem) { .search { max-width:none; } .refresh { margin-inline-start:0; } .field-caption { flex-direction:column; gap:.2rem; } .field-feed { position:absolute; inset:0 0 0 auto; z-index:7; width:min(25rem,100%); box-shadow:-12px 0 40px #0008; } }
+  @container work-area (max-width:36rem) { .field-header { min-height:3rem; gap:.15rem; padding:.3rem 2.05rem .3rem .45rem; } .field-header h1 { font-size:1.4rem; } .field-state { display:none; } .field-header .icon-control { padding:.28rem; } .run-list-panel,.options-panel { width:100%; } .field-feed { padding:1rem; } }
+  @media(max-width:35rem) { .run-list li { grid-template-columns:minmax(0,1fr) auto; } .run-list li > button:first-child { grid-column:1/-1; } }
   @media(prefers-reduced-motion:reduce) { *,*::before,*::after { animation:none; transition:none; scroll-behavior:auto; } }
   .feed-pane { position:relative; flex:0 0 min(var(--evidence-width),48%); min-height:0; }
   .feed-pane[hidden] { display:none; }
   .feed-pane .field-feed { position:static; width:100%; height:100%; }
-  .feed-opener,.feed-closer { position:absolute; inset-block-start:45%; z-index:8; min-height:2.6rem; width:1.35rem; padding:0; border-radius:4px 0 0 4px; background:var(--color-obsidian); }
-  .feed-opener { inset-inline-end:0; }
+  .feed-closer { position:absolute; inset-block-start:45%; z-index:8; min-height:2.6rem; width:1.35rem; padding:0; border-radius:4px 0 0 4px; background:var(--color-obsidian); }
   .feed-closer { inset-inline-end:100%; }
   .inspector-left { flex-direction:row-reverse; }
-  .inspector-left .field-caption { left:.6rem; right:calc(var(--graph-map-width) + .6rem); }
   .inspector-left .feed-closer { inset-inline:auto; inset-inline-start:100%; }
-  .inspector-left .feed-opener { inset-inline:0 auto; }
   .inspector-left .feed-pane { inset-inline:0 auto; }
   @container work-area (max-width:56rem) { .feed-pane { position:absolute; inset:0 0 0 auto; width:min(var(--evidence-width),calc(100% - 2.2rem)); z-index:7; } }
   @media(max-width:56rem) { .feed-pane { position:absolute; inset:0 0 0 auto; width:min(var(--evidence-width),calc(100% - 2.2rem)); z-index:7; } }

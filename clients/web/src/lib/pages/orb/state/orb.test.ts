@@ -5,6 +5,16 @@ import { matchesOrbPattern } from "$lib/graph/model";
 import { mergeOrbEvidence, mergeOrbGaps, orbEvidenceNodeId, projectOrb, projectOrbField } from "./orb";
 
 describe("Orb semantic graph", () => {
+  it("shows the bound workflow title while preserving the same Run identity as its unopened lane", () => {
+    const snapshot = fixtureRun();
+    const unopened = projectOrbField([snapshot.run], new Map(), "runs").projection.nodes[0]!;
+    const lenses = new Map([[snapshot.run.run_id, { snapshot, pattern }]]);
+    const opened = projectOrbField([snapshot.run], lenses, "stations").projection.nodes[0]!;
+    expect(unopened.label).toBe(snapshot.run.workflow_name);
+    expect(opened.label).toBe(pattern.title);
+    expect(opened.id).toBe(unopened.id);
+    expect(opened.detail).toContain(snapshot.run.run_id);
+  });
   it("keeps each recorded Animator selection within its own Run", () => {
     const a = fixtureRun(), b = fixtureRun("run-b");
     a.evidence = [{ ...a.evidence[0]!, kind: "dispatch", model_id: "served-model", animator_name: "local-reasoner", subject_key: "chat" }];

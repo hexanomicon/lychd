@@ -25,16 +25,16 @@
   import NexusOperations from "./NexusOperations.svelte";
   import { findOperation, operationGroups, type Operation } from "../state/operations";
   import NexusProperties from "./NexusProperties.svelte";
-  import PageHeader from "$lib/components/shared/PageHeader.svelte";
+  import NexusOverview from "./NexusOverview.svelte";
   import { createNexusMap } from "$lib/pages/nexus/state/map";
 
   type Preview = { target: string; plan: TransitionPlan };
 
-  let area = $derived(findOperation(page.url.searchParams.has("transition") ? "board" : (page.url.searchParams.get("area") ?? "installation")));
+  let area = $derived(findOperation(page.url.searchParams.has("transition") ? "board" : (page.url.searchParams.get("area") ?? "overview")));
   let navExpanded = $state(false);
 
   function openArea(next: Operation) {
-    const path = next.id === "installation" ? "/nexus" : `/nexus?area=${next.id}` as const;
+    const path = next.id === "overview" ? "/nexus" : `/nexus?area=${next.id}` as const;
     area = next;
     navExpanded = false;
     void goto(resolve(path), { reset: false });
@@ -464,7 +464,7 @@
 
 <div class="nexus-workspace">
   <header class="nexus-title">
-    <PageHeader title="Nexus" />
+    <span class="vessel-label"><span aria-hidden="true">▣</span> Local vessel</span>
     <div class="snapshot-bar">
       {#if snapshot}<time datetime={snapshot.snapshot_at}>Snapshot {new Date(snapshot.snapshot_at).toLocaleTimeString()}</time>
       {:else}<span>Snapshot unavailable</span>{/if}
@@ -472,6 +472,7 @@
     </div>
   </header>
   <nav class="operations-nav" aria-label="Nexus operations">
+    <h2 class="directory-title">Nexus</h2>
     <button type="button" class="operations-toggle" aria-expanded={navExpanded} aria-controls="operation-groups" onclick={() => { navExpanded = !navExpanded; }}>Operations · {area.title} <span aria-hidden="true">{navExpanded ? "▴" : "▾"}</span></button>
     <div id="operation-groups" class:expanded={navExpanded}>
       {#each operationGroups as group (group.label)}
@@ -487,7 +488,7 @@
     </div>
   </nav>
   <div class="operation-page">
-    <h2 class="operation-title">{area.title}</h2>
+    <h1 class="operation-title">{area.id === "overview" ? "Instance overview" : area.title}</h1>
     {#if snapshot?.containment_reason}<div class="containment" role="alert">Runtime admission is contained: {snapshot.containment_reason}</div>{/if}
     {#if snapshot && snapshotStale}<div class="containment" role="alert">The Nexus board is stale. Lifecycle mutations are unavailable until a fresh snapshot loads.</div>{/if}
     {#if area.id !== "board" && area.id !== "transitions" && !snapshot && !loading && error}<div class="turn__fault" role="alert">{error}</div>{/if}
@@ -499,6 +500,7 @@
       <a href="https://hexanomicon.dev/sepulcher/intercom/#prepare-the-two-identities">Prepare an Intercom peer enrollment →</a>
     {/if}
     {#if snapshot}
+      {#if area.id === "overview"}<NexusOverview {snapshot} onselect={openArea} />{/if}
       <NexusOperations {area} {snapshot} />
     {/if}
     <div class="instrument-deck instrument-deck--nexus" hidden={area.id !== "board" && area.id !== "transitions"}>
@@ -665,23 +667,26 @@
 </div>
 
 <style>
-  .nexus-workspace { width: 100%; align-content: start; display: grid; grid-template-columns: 12.5rem minmax(0, 1fr); gap: 1.1rem 1.4rem; min-width: 0; padding: 1rem clamp(.85rem, 2.4vw, 2rem) 2rem; }
-  .nexus-title { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 1rem; border-bottom: 1px solid var(--color-engraving); padding-bottom: .65rem; }
-  .nexus-title :global(.page-header) { border: 0; padding: 0; }
+  .nexus-workspace { width: 100%; min-height: 100%; min-width: 0; display: grid; align-content: start; grid-template-columns: 11.5rem minmax(0, 1fr); grid-template-rows: auto 1fr; background: var(--color-void); }
+  .directory-title { margin: 0 0 1rem; padding: 1.15rem .55rem .85rem; border-bottom: 1px solid var(--color-engraving); font: 500 1.25rem/1.15 Georgia, serif; color: var(--color-bone); }
+  .nexus-title { grid-area: 1 / 2; min-height: 3.4rem; padding: .5rem clamp(1rem, 3vw, 2.5rem); display: flex; gap: 1rem; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--color-engraving); background: var(--color-void); }
+  .vessel-label { color: var(--color-parchment); font: .76rem/1.4 var(--font-glyph); } .vessel-label span { color: var(--color-rune); }
   .nexus-title .snapshot-bar { gap: .65rem; color: var(--color-ash); font-size: var(--text-xs); }
-  .operations-nav { min-width: 0; padding-right: .75rem; border-right: 1px solid var(--color-engraving); }
+  .operations-nav { grid-area: 1 / 1 / span 2; min-width: 0; padding: .25rem .6rem 1rem; border-right: 1px solid var(--color-engraving); background: var(--color-obsidian); }
   .operation-group { margin-bottom: 1.15rem; }
-  .operation-group h2 { margin: 0 .45rem .3rem; color: var(--color-ash); font: 600 var(--text-xs)/1.5 var(--font-body); }
+  .operation-group h2 { text-transform: uppercase; letter-spacing: .075em; margin: 0 .45rem .3rem; color: var(--color-ash); font: 600 var(--text-xs)/1.5 var(--font-body); }
   .operation-group button, .operations-toggle { display: flex; align-items: center; gap: .55rem; width: 100%; min-height: 2.1rem; padding: .34rem .5rem; border: 1px solid transparent; border-radius: var(--radius-glyph); text-align: left; background: transparent; color: var(--color-parchment); font: inherit; font-size: var(--text-sm); cursor: pointer; }
   .operation-group button:hover { background: var(--color-obsidian-2); }
   .operation-group button[aria-current="page"] { color: var(--color-bone); background: color-mix(in srgb, var(--color-rune) 12%, var(--color-obsidian)); border-color: color-mix(in srgb, var(--color-rune) 35%, var(--color-engraving)); font-weight: 600; }
   .operation-mark { display: inline-grid; place-items: center; width: 1.1rem; color: var(--color-rune); }
   .operations-toggle { display: none; }
-  .operation-page { min-width: 0; }
-  .operation-title { margin: 0 0 1rem; color: var(--color-bone); font: 600 clamp(1.15rem, 2vw, 1.5rem)/1.3 var(--font-body); }
+  .operation-page { grid-area: 2 / 2; min-width: 0; padding: clamp(1.25rem, 3vw, 2.6rem); }
+  .operation-title { margin: 0 0 1rem; color: var(--color-bone); font: 500 clamp(1.9rem, 3vw, 2.65rem)/1.1 Georgia, serif; letter-spacing: -.035em; }
   .instrument-deck--nexus[hidden], .nexus-side[hidden] { display: none; }
   @container work-area (max-width: 45rem) {
-    .nexus-workspace { grid-template-columns: minmax(0, 1fr); gap: .75rem; }
+    .nexus-workspace { display: flex; flex-direction: column; }
+    .directory-title { display: none; }
+    .nexus-title { min-height: 3rem; }
     .operations-nav { border-right: 0; padding: 0; }
     .operations-toggle { display: flex; justify-content: space-between; border-color: var(--color-control-border); }
     #operation-groups { display: none; } #operation-groups.expanded { display: grid; grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr)); gap: .5rem; padding: .75rem 0; }

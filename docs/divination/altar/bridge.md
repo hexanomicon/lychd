@@ -13,7 +13,10 @@ and come back to the same draft. To start in the installed Altar, [open a conver
 
 ## Current Bridge
 
-![The current Bridge rail previews an exchange beside its selected mark.](../../assets/altar-design/bridge-built.webp)
+The screenshot shows a completed offline model check, with two sample documents opened
+in the file panel. Drag the divider beside the chat to give the document more room.
+
+![A retained Bridge exchange with its hover preview, the local document and file tree.](../../assets/altar-design/bridge-built.webp)
 
 Hover or focus a mark on the left edge of the chat to read an exchange. Click it to jump to that turn. Active, Archive, named groups and bookmarks are filing choices in this browser. Consent stays with its request.
 

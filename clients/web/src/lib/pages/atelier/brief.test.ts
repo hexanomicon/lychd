@@ -1,5 +1,6 @@
+import { recipes } from "$lib/compositions/video";
 import { expect, it } from "vitest";
-import { decodeBrief, recipes, sampleBrief, timecode, validateBrief } from "./brief";
+import { decodeBrief, sampleBrief, timecode, validateBrief } from "./brief";
 
 it("round-trips all three recipes and preserves exact Unicode script and UTC microseconds", () => {
   for (const recipe of Object.keys(recipes)) {

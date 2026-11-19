@@ -151,9 +151,9 @@
   </div>
 {/if}
 
-{#if visiblePins.length || !archived}
+{#if visiblePins.length}
   <h2>Pinned</h2>
-  {#each visiblePins as id (id)}{@render row(id)}{:else}<p>No pinned conversations.</p>{/each}
+  {#each visiblePins as id (id)}{@render row(id)}{/each}
 {/if}
 {#if offPage}<h2>Selected conversation</h2>
   {@render row(offPage)}{/if}

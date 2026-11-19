@@ -1,10 +1,5 @@
 /** Local editor for the text-only ShortVideoBrief wire document. The receiver validates its own copy. */
-export const recipes = {
-  "illustrated-story": "Illustrated story",
-  "animated-lesson": "Animated lesson",
-  "captioned-excerpt": "Captioned excerpt",
-} as const;
-export type Recipe = keyof typeof recipes;
+import { recipes, type Recipe } from "$lib/compositions/video";
 export type Brief = {
   recipe: Recipe;
   script: string;

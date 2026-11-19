@@ -72,20 +72,17 @@
 </div>
 
 {#if active === "files"}
-  <section class="work-body" aria-label="Files">
-    <header>
-      <h2>Files</h2>
-      <button type="button" aria-expanded={tree} onclick={() => (tree = !tree)}
-        >{tree ? "Hide" : "Show"} file tree</button
-      >
+  <section class="work-body files" aria-label="Files">
+    <header class="file-head">
+      <h2><AltarIcon name="files" size={16}/>{files.current?.name ?? "Files"}</h2>
+      <label class="open-file" title="Open text files">Open…<input aria-label="Open text files" type="file" multiple onchange={openFiles} /></label>
+      <button type="button" aria-label={tree ? "Hide file tree" : "Show file tree"} title={tree ? "Hide file tree" : "Show file tree"} aria-expanded={tree} onclick={() => (tree = !tree)}><AltarIcon name="panel" size={16}/></button>
     </header>
-    <label class="open-file">Open text files<input type="file" multiple onchange={openFiles} /></label>
     {#if files.notice}<p role="status">{files.notice}</p>{/if}
     <div class="file-split">
       <div class="editor">
         {#if files.current}
-          <h3>{files.current.name}</h3>
-          <label>Draft<textarea rows="10" bind:value={files.current.draft}></textarea></label>
+          <label class="document"><span class="visually-hidden">Draft</span><textarea rows="12" spellcheck="false" bind:value={files.current.draft}></textarea></label>
           <div class="actions">
             <button type="button" disabled={files.current.text === files.current.draft} onclick={files.save}
               >Save revision</button
@@ -119,12 +116,12 @@
       {#if tree}
         <nav class="file-tree" aria-label="Open files" style:--tree-width={treeWidth + "px"}>
           <PaneGrip bind:width={treeWidth} name="File tree width" min={80} max={280} />
-          <h3>Open files</h3>
+          <h3>File tree</h3>
           {#each files.all as file (file.id)}
             <button
               type="button"
               aria-pressed={files.current?.id === file.id}
-              onclick={() => files.select(file.id)}>{file.name}</button
+              onclick={() => files.select(file.id)}><AltarIcon name="document" size={13}/>{file.name}</button
             >
           {:else}<p>No files open.</p>{/each}
         </nav>
@@ -279,6 +276,22 @@
   li p {
     margin: 0;
   }
+  .work-body.files { display:flex; flex-direction:column; padding:0; }
+  .file-head { min-height:2.7rem; justify-content:flex-start; gap:.4rem; padding:.3rem .7rem; border-bottom:1px solid var(--color-engraving); }
+  .file-head h2 { display:flex; align-items:center; gap:.45rem; flex:1; min-width:0; margin:0; overflow-wrap:anywhere; font:600 .9rem/1.35 var(--font-body); }
+  .file-head button,.open-file { position:relative; display:grid; place-items:center; margin:0; padding:.35rem .5rem; background:transparent; border:0; color:var(--color-parchment); cursor:pointer; }
+  .open-file input { position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer; }
+  .open-file:focus-within { outline:2px solid var(--color-rune); }
+  .file-split { flex:1; margin:0; gap:0; }
+  .editor { display:flex; flex-direction:column; padding:1rem .8rem; overflow:auto; }
+  .document { display:flex; flex:1; margin:0 0 .6rem; min-height:9rem; }
+  .document textarea { resize:none; padding:.2rem; line-height:1.7; font-size:.86rem; border:0; background:transparent; }
+  .file-tree { padding:.7rem .4rem; box-sizing:border-box; }
+  .file-tree button { display:flex; align-items:center; gap:.4rem; border:0; background:transparent; overflow-wrap:anywhere; width:100%; padding:.3rem .4rem; }
+  .file-tree button[aria-pressed=true] { background:color-mix(in srgb,var(--color-rune) 16%,transparent); color:var(--color-bone); }
+  .actions { justify-content:flex-start; }
+  .ledger { align-self:start; }
+  .editor>p { margin:.3rem 0; }
   button:disabled {
     opacity: 0.6;
   }

@@ -2,14 +2,18 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, Literal
+
+from pydantic import TypeAdapter
 
 from lychd.domain.weaver.inspection import InspectionBinding, PatternInspectionEntry
 from lychd.domain.web.consent_reviews import NativeReviewDocument
 
 if TYPE_CHECKING:
+    from lychd.agents.workflows import WorkflowRegistry
     from lychd.agents.workflows.base import Workflow
     from lychd.domain.animation.services.registry import AnimatorRegistry
     from lychd.domain.orchestration.manager import OrchestratorManager
@@ -105,6 +109,7 @@ class LoomNodeView:
     key: str
     label: str
     kind: str
+    output_schema: str | None = None
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -195,6 +200,20 @@ def build_nexus_board(orchestrator: OrchestratorManager, registry: AnimatorRegis
     return NexusBoard(covens=covens, portals=tuple(portals))
 
 
+def _registered_nodes(workflow: Workflow) -> tuple[LoomNodeView, ...]:
+    return tuple(
+        LoomNodeView(
+            key=node.key,
+            label=node.label,
+            kind=node.kind,
+            output_schema=json.dumps(TypeAdapter(node.public_result_type).json_schema(), separators=(",", ":"))
+            if node.public_result_type is not None
+            else None,
+        )
+        for node in workflow.manifest.nodes
+    )
+
+
 def build_loom_view(workflow: Workflow, *, highlight: Any | None = None) -> LoomView:
     """Project one exact immutable Pattern revision into a Loom view-model."""
     manifest = workflow.manifest
@@ -210,15 +229,25 @@ def build_loom_view(workflow: Workflow, *, highlight: Any | None = None) -> Loom
         title=workflow.title,
         description=workflow.description,
         trigger_hint=workflow.trigger.hint,
-        nodes=tuple(LoomNodeView(**node.snapshot()) for node in manifest.nodes),
+        nodes=_registered_nodes(workflow),
         edges=tuple(LoomEdgeView(**edge.snapshot()) for edge in manifest.edges),
         mermaid_source=workflow.mermaid(highlight=highlight),
     )
 
 
-def build_inspection_view(entry: PatternInspectionEntry) -> LoomView:
-    """Render exact inert score data without resolving a workflow or executing code."""
+def build_inspection_view(entry: PatternInspectionEntry, *, workflows: WorkflowRegistry | None = None) -> LoomView:
+    """Render inspection data; only an exact native binding supplies public result declarations."""
     descriptor = entry.descriptor
+    native = (
+        workflows.get_revision(descriptor.pattern_id, descriptor.revision)
+        if workflows is not None and entry.binding.executable and entry.binding.source_id == "native"
+        else None
+    )
+    nodes = (
+        _registered_nodes(native)
+        if native is not None and native.manifest.digest == descriptor.digest
+        else tuple(LoomNodeView(**node.model_dump()) for node in descriptor.nodes)
+    )
     return LoomView(
         schema_version=descriptor.schema_version,
         pattern_id=descriptor.pattern_id,
@@ -231,7 +260,7 @@ def build_inspection_view(entry: PatternInspectionEntry) -> LoomView:
         title=descriptor.title,
         description=descriptor.description,
         trigger_hint=descriptor.trigger_hint,
-        nodes=tuple(LoomNodeView(**node.model_dump()) for node in descriptor.nodes),
+        nodes=nodes,
         edges=tuple(LoomEdgeView(**edge.model_dump()) for edge in descriptor.edges),
         mermaid_source=descriptor.mermaid(),
         binding=entry.binding,

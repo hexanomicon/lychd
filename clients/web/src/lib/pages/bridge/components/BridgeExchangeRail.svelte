@@ -178,21 +178,15 @@
     </div>
     {#if preview}
       <div class="exchange-preview" id={previewId}>
-        <strong>Exchange {exchanges.indexOf(preview) + 1}</strong>
-        {#if preview.question}<div>
-            <small>You</small>
-            <p>{preview.question.slice(0, 200)}</p>
-          </div>{/if}
-        {#if preview.reply}<div>
-            <small>LychD</small>
-            <p>{preview.reply.slice(0, 240)}</p>
-          </div>
-        {:else}<p>{preview.status ? preview.status.replaceAll("_", " ") : "No reply retained."}</p>{/if}
+        {#if preview.question}<strong>{preview.question.slice(0, 200)}</strong>{/if}
+        <p>{preview.reply ? preview.reply.slice(0, 240) : preview.status ? preview.status.replaceAll("_", " ") : "No reply retained."}</p>
         {#if preview.run && navigationId(preview.run) && navigationId(session)}
           <button
             class="bookmark"
             type="button"
             aria-pressed={marked(preview.run)}
+            aria-label={marked(preview.run) ? "Remove bookmark" : "Bookmark exchange"}
+            title={marked(preview.run) ? "Remove bookmark" : "Bookmark exchange"}
             onkeydown={(event) => {
               if (event.key !== "Escape") return;
               const buttons = event.currentTarget
@@ -207,7 +201,7 @@
               if (preview?.run) bookmark(preview.run);
             }}
           >
-            {marked(preview.run) ? "Remove bookmark" : "Bookmark exchange"}
+            <svg width="16" height="16" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 3.5h10v13l-5-3.5-5 3.5z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" fill={marked(preview.run) ? "currentColor" : "none"}/></svg>
           </button>
         {/if}
         {#if notice}<p role="status">{notice}</p>{/if}
@@ -241,7 +235,7 @@
     align-items: center;
     justify-content: start;
     width: 1.65rem;
-    min-height: 1.45rem;
+    min-height: .86rem;
     padding: 0 0.18rem;
     background: transparent;
     border: 0;
@@ -271,7 +265,7 @@
   .exchange-preview {
     position: absolute;
     inset-inline-start: calc(100% - 0.15rem);
-    width: min(17rem, 63vw);
+    width: min(22rem, 63vw);
     max-height: 38dvh;
     overflow-y: auto;
     padding: 0.7rem 0.85rem;
@@ -282,14 +276,9 @@
     overflow-wrap: anywhere;
   }
   .exchange-preview strong {
+    display:block; white-space:nowrap; text-overflow:ellipsis; overflow:hidden; padding-right:1.4rem;
     color: var(--color-bone);
     font-size: var(--text-sm);
-  }
-  small {
-    display: block;
-    margin-top: 0.5rem;
-    color: var(--color-ash);
-    font-size: var(--text-xs);
   }
   p {
     display: -webkit-box;
@@ -302,17 +291,11 @@
     line-height: 1.45;
   }
   .bookmark {
-    min-height: 2rem;
-    margin-top: 0.45rem;
-    padding: 0.25rem 0.5rem;
-    border: 1px solid var(--color-control-border);
-    border-radius: var(--radius-glyph);
-    background: var(--color-obsidian-2);
-    color: var(--color-rune);
-    cursor: pointer;
-    font: inherit;
-    font-size: var(--text-xs);
+    position:absolute; top:.45rem; right:.45rem; display:grid; place-items:center;
+    width:1.7rem; height:1.7rem; border:0; background:transparent; color:var(--color-ash); cursor:pointer;
   }
+  .bookmark:hover,.bookmark[aria-pressed=true] {color:var(--color-rune);}
+  @media(pointer:coarse) { .mark { min-height:1.5rem; } }
   button:focus-visible {
     outline: 2px solid var(--color-rune);
     outline-offset: -1px;

@@ -221,7 +221,8 @@ describe("shell contextual navigation", () => {
     ["/seances/session-a", "Bridge", "location"],
     ["/canvas", "Atlas", "location"],
     ["/canvas/project-a", "Atlas", "location"],
-    ["/atlas", "Atlas", "page"],
+    ["/atlas", "Atlas", "location"],
+    ["/atlas/map", "Atlas", "page"],
     ["/atlas/project-a", "Atlas", "location"]
   ])("selects the owning instrument at %s", (path, label, current) => {
     vi.mocked(getAltarStatus).mockResolvedValue(status(0));
@@ -300,7 +301,8 @@ it("opens the catalogue by label and the quick list by chevron or context menu",
   view.unmount();
 });
 
-it("places the persistent Bridge chevron at the workbench edge and removes the masthead toggle", async () => {
+it("restores an explicitly expanded Bridge at the chosen workbench edge", async () => {
+  localStorage.setItem(bridgeDockStorageKey, JSON.stringify({ width: 360, side: "left", open: true }));
   vi.mocked(getAltarStatus).mockResolvedValue(status(0));
   page.url.href = "http://localhost/orb";
   const view = render(AltarShell, { children });
@@ -355,5 +357,20 @@ it.each(["notes=invalid", "notes=manage&notes=recall", "investigation=invalid"])
   const view = render(AltarShell, { children });
   expect(screen.getByRole("main").querySelector("p")?.textContent).toBe("Instrument");
   expect(screen.queryByRole("main", { name: "Bridge workspace" })).toBeNull();
+  view.unmount();
+});
+
+it("opens a fresh Orb with the compact rail and a reopenable tools handle", async () => {
+  vi.mocked(getAltarStatus).mockResolvedValue(status(0));
+  localStorage.removeItem(bridgeDockStorageKey);
+  localStorage.removeItem("lychd.altar.nav-folded.v1");
+  page.url.href = "http://localhost/orb";
+  const view = render(AltarShell, { children });
+  await act(() => Promise.resolve());
+  expect(screen.getByRole("link", { name: "Orb" }).closest(".rail")?.classList.contains("folded")).toBe(true);
+  const handle = screen.getByRole("button", { name: "Expand Bridge" });
+  expect(handle.closest(".dock-shell")?.classList.contains("dock-left")).toBe(false);
+  await fireEvent.click(handle);
+  expect(screen.getByRole("separator", { name: "Bridge width" })).toBeTruthy();
   view.unmount();
 });

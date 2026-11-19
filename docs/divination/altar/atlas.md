@@ -24,11 +24,21 @@ remain the designed direction.
 software, firmware, and services: prefer more openness, retain exact evidence and unknowns, and
 distinguish understanding from the ability to modify, replace, or recover a component.
 
-![The compiled Atlas séance map, its left navigator, source relationships and object detail.](../../assets/altar-design/atlas-built.webp)
+The **Atlas** link on the rail opens the knowledge map. Choose **Project catalogue** to
+manage boards. Opening the map from a Bridge conversation takes you directly to that
+séance. In the installed example, the retained question and answer point to the same Run.
+**Return to turn** opens the original message.
+
+![The installed Atlas séance map with its object explorer and minimap on the left and source turns on the right.](../../assets/altar-design/atlas-built.webp)
+
+The first design study uses a file-navigation conversation to explore how a séance could
+map concepts mentioned across several turns.
+
+![Early Atlas study connecting Workspace, Terminal and Shell 2 to a source turn.](../../assets/altar-design/atlas-seance.webp)
 
 ## Put an undertaking on the map
 
-Open **Atlas** in the [Altar](index.md#bring-one-intent) masthead. **Open Canvas →** enters the board
+In the [Altar](index.md#bring-one-intent) rail, choose **Atlas**, then **Project catalogue**. **Open Canvas →** enters the board
 workspace. **New canvas** creates a draft project with a blank board immediately. A name and brief
 can follow.
 Keep the project when it is worth retaining in your working collection, or discard an eligible

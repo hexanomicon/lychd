@@ -14,6 +14,7 @@
     pending,
     suspended,
     brand,
+    section,
   }: {
     instruments: readonly {
       slug: string;
@@ -26,14 +27,16 @@
     pending: number | null;
     suspended: boolean;
     brand: Snippet;
+    section?: Snippet;
   } = $props();
   const pins = getApplicationPins();
-  let folded = $state(false);
+  let compact = $state(false);
+  let preferred = $state<boolean | null>(null);
+  const folded = $derived(preferred ?? (compact || pathname.replace(/\/$/, "") === resolvePath("/orb")));
   let quick = $state(false);
   let quickButton: HTMLButtonElement;
   let popup = $state<HTMLElement>();
   let quickOwner: HTMLElement | null = null;
-  let preferred: boolean | null = null;
   const railKey = "lychd.altar.nav-folded.v1";
   const appHref = (path: string) => (path.startsWith("/") ? resolvePath(path as `/${string}`) : path);
   onMount(() => {
@@ -43,7 +46,7 @@
       if (saved === "true" || saved === "false") preferred = saved === "true";
     } catch {}
     const update = () => {
-      folded = preferred ?? small?.matches ?? false;
+      compact = small?.matches ?? false;
     };
     update();
     small?.addEventListener?.("change", update);
@@ -51,7 +54,6 @@
   });
   function fold() {
     preferred = !folded;
-    folded = preferred;
     try {
       localStorage.setItem(railKey, String(preferred));
     } catch {}
@@ -144,6 +146,7 @@
       >
     </nav>
   {/if}
+  {#if section && !folded}{@render section()}{/if}
   <footer>
     {#if available}<a
         class="attention"
