@@ -478,3 +478,13 @@ it("rejects source-generation substitution without displaying the returned graph
   expect(screen.queryByRole("heading", { name: projection.title })).toBeNull();
   view.unmount();
 });
+
+
+it("keeps the draft editor open when the registry has a default revision", async () => {
+  page.url.search = "?studio=sdlc";
+  const rendered = render(LoomView);
+  await screen.findByRole("heading", { name: "Software development lifecycle" });
+  expect(getLoomCatalogue).not.toHaveBeenCalled();
+  expect(goto).not.toHaveBeenCalled();
+  rendered.unmount();
+});

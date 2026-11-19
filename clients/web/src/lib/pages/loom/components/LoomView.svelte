@@ -80,6 +80,12 @@
   let returnHref = $derived(sourceRun ? orbReturnHref(sourceRun.run.run_id, page.url.search) : null);
 
   $effect(() => {
+    if (designing) {
+      loadVersion++;
+      unregisterCommands?.();
+      unregisterCommands = undefined;
+      return;
+    }
     const request = [patternId, revision, sourceRunId, sourceRunHint, inspectionContext.binding, inspectionContext.error] as const;
     untrack(() => { void load(...request); });
   });
@@ -273,7 +279,7 @@
       if (requestedRun && !originMatches) {
         sourceContextError = "Run context unavailable — this Run could not be verified against the displayed Pattern revision.";
       }
-      if ((!requestedPattern || !requestedRevision) && (!requestedHint || requestedRun)) {
+      if (!designing && (!requestedPattern || !requestedRevision) && (!requestedHint || requestedRun)) {
         const exactPath = `/loom/${next.pattern_id}/${next.revision}${requestedBinding ? inspectionQuery(requestedBinding) : ""}`;
         await goto(
           requestedRun
