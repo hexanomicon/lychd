@@ -38,12 +38,12 @@ dependencies = [
     "alembic>=1.20.1",
     "anyio>=4.16.0",
     "asyncpg>=0.29.0",
-    "click>=8.1.0",
+    "click>=8.5.1",
     "dnspython>=2.9.2,<3",
     "h11>=0.16.0,<0.17",
     "http-message-signatures==3.0.0", # exact Intercom message-signature adapter contract
     "http-sf==1.5.0", # exact Intercom structured-field parser contract
-    "httpx2>=2.16.0,<3",
+    "httpx2>=2.16.2,<3",
     "jinja2>=3.1.6",
     "litestar[sqlalchemy,structlog,pydantic,opentelemetry]>=2.24.0,<3", # v3 migration not audited
     "litestar-granian>=0.17.0",
@@ -51,7 +51,7 @@ dependencies = [
     "pgvector>=0.5.1",
     "psycopg[pool]>=3.2.13,<4",
     "pydantic>=2.14.3",
-    "pydantic-ai-slim[logfire,openai]==2.66.0", # exact agent/message/Graph adapter contract
+    "pydantic-ai-slim[logfire,openai]==2.68.0", # exact agent/message/Graph adapter contract
     "pydantic-settings[toml]>=2.16.2",
     "rich>=13.9.0",
     "sqlalchemy>=2.1.8",
@@ -67,7 +67,7 @@ dependencies = [
 # system libpq is unavailable. The production Vessel never installs extras and
 # explicitly rejects this distribution at image-build time.
 postgres-binary = [
-    "psycopg-binary==3.3.8",
+    "psycopg-binary==3.3.9",
 ]
 
 [project.urls]
@@ -95,14 +95,14 @@ container-test = [
   "testcontainers[postgres]>=4.15.0,<5",
 ]
 lint = [
-    "ruff>=0.17.4",
+    "ruff>=0.17.5",
     "codespell>=2.4.1",
     "bump-my-version"
 ]
 typing = [
     { include-group = "desktop-browser" },
     "basedpyright>=1.40.2",
-    "numpy>=2.0,<3",
+    "numpy>=2.5.5,<3",
 ]
 # NOTE:
 # `typing` is intentionally NOT included in `dev`.
@@ -117,10 +117,10 @@ dev = [
 ]
 music-probe = [
     "dawdreamer==0.9.0",
-    "numpy>=2.0,<3",
+    "numpy>=2.5.5,<3",
 ]
 desktop-browser = [
-    "playwright==1.58.0",
+    "playwright==1.65.2",
 ]
 
 [project.scripts]
