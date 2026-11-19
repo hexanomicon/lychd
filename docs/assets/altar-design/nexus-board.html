@@ -1289,7 +1289,7 @@
 		const row = model()?.rows.find((x) => x.id === id);
 		if (!row) return;
 		if (state.selected !== id) state.ops.preview = null;
-		state.selected = id;
+		state.selected = row.id;
 		state.dock = true;
 		state.tool = "record";
 		if (smallDirectory()) state.directory = false;
@@ -1349,22 +1349,30 @@
 			iam: state.tab === "roles" ? "Role" : "Grant"
 		}[state.section], ...v.columns].map((h) => "<th scope=\"col\">" + e(h) + "</th>").join("");
 		const body = rows.map((r) => "<tr data-id=\"" + e(r.id) + "\" data-selected=\"" + (state.selected === r.id) + "\"><td><button class=\"nx-object\" data-record=\"" + e(r.id) + "\" aria-pressed=\"" + (state.selected === r.id) + "\"><span class=\"nx-mark\">" + svg(r.mark, 15) + "</span><span><b>" + e(r.title) + "</b><small>" + e(r.sub) + "</small></span></button></td>" + r.cells.map((c) => "<td>" + stat(c) + "</td>").join("") + "</tr>").join("");
-		el(".nx-results").innerHTML = "<table aria-label=\"" + e(name(state.section)) + "\"><thead><tr>" + th + "</tr></thead><tbody>" + body + "</tbody></table>" + (rows.length ? "" : "<p class=\"nx-empty\" role=\"status\">" + e(q ? "No matches for “" + state.query + "”." : v.empty || "No records in this snapshot.") + "</p>");
+		const results = el(".nx-results");
+		results.innerHTML = "<table aria-label=\"" + e(name(state.section)) + "\"><thead><tr>" + th + "</tr></thead><tbody>" + body + "</tbody></table>";
+		if (!rows.length) {
+			const empty = document.createElement("p");
+			empty.className = "nx-empty";
+			empty.setAttribute("role", "status");
+			empty.textContent = q ? "No matches for “" + state.query + "”." : v.empty || "No records in this snapshot.";
+			results.append(empty);
+		}
 	}
 	var sessionMessages = {
 		"Model handover": ["Can this vessel load the coding model?", "Open Qwen2.5-Coder 14B in Capabilities and preview the Animator change."],
 		"Access review": ["Which observation can Ada read?", "Open Ada in Users and follow View access to her grant."]
 	};
+	const files = {
+		"snapshot.txt": "Local vessel\n19 Nov 2026, 09:42 UTC\n\nReadiness and request observations from the example capture.",
+		"review.md": "# Access review\n\nInspect the local Principal, scope, object and policy generation."
+	};
 	function toolView() {
 		if (state.tool === "bridge") {
 			const s = sessionMessages[state.session];
-			return detailHeading("Séance", state.session) + "<details class=\"nx-sessions\"><summary>Recent séances</summary>" + Object.keys(sessionMessages).filter((k) => k !== state.session).map((k) => "<button class=\"nx-act\" data-seance=\"" + e(k) + "\">" + e(k) + "</button>").join("") + "</details><section class=\"nx-detail-group\"><h3>Conversation</h3><p class=\"nx-summary nx-question\">" + e(s[0]) + "</p><p class=\"nx-summary\" style=\"margin-top:10px\">" + e(s[1]) + "</p></section><section class=\"nx-detail-group\"><h3>Draft</h3><textarea aria-label=\"Séance draft\" placeholder=\"Message Bridge…\">" + e(drafts.get(state.session) || "") + "</textarea></section>";
+			return detailHeading("Séance", state.session) + "<details class=\"nx-sessions\"><summary>Recent séances</summary>" + Object.keys(sessionMessages).filter((k) => k !== state.session).map((k) => "<button class=\"nx-act\" data-seance=\"" + e(k) + "\">" + e(k) + "</button>").join("") + "</details><section class=\"nx-detail-group\"><h3>Conversation</h3><p class=\"nx-summary nx-question\">" + e(s[0]) + "</p><p class=\"nx-summary\" style=\"margin-top:10px\">" + e(s[1]) + "</p></section><section class=\"nx-detail-group\"><h3>Draft</h3><textarea aria-label=\"Séance draft\" placeholder=\"Message Bridge…\"></textarea></section>";
 		}
 		if (state.tool === "files") {
-			const files = {
-				"snapshot.txt": "Local vessel\n19 Nov 2026, 09:42 UTC\n\nReadiness and request observations from the example capture.",
-				"review.md": "# Access review\n\nInspect the local Principal, scope, object and policy generation."
-			};
 			return detailHeading("Files", state.currentFile) + "<details open><summary>File tree</summary>" + Object.keys(files).map((f) => "<button class=\"nx-detail-link\" data-file=\"" + f + "\">" + svg("paper", 14) + f + "</button>").join("") + "</details><section class=\"nx-detail-group\"><pre class=\"nx-file\">" + e(files[state.currentFile]) + "</pre></section>";
 		}
 		if (state.tool === "terminal" || state.tool === "web") return detailHeading("Local vessel", state.tool === "terminal" ? "Terminal" : "Web", state.tool === "terminal" ? "No terminal session is open in this example." : "No browser tab is open in this example.");
@@ -1400,7 +1408,10 @@
 		el(".nx-open-tools").hidden = state.dock;
 		el(".nx-open-tools").setAttribute("aria-expanded", String(state.dock));
 		for (const b of app.querySelectorAll("[data-tool]")) b.setAttribute("aria-pressed", String(b.dataset.tool === state.tool));
-		el(".nx-detail").innerHTML = toolView();
+		const panel = el(".nx-detail");
+		panel.innerHTML = toolView();
+		const draft = panel.querySelector("textarea");
+		if (draft) draft.value = drafts.get(state.session) || "";
 	}
 	mountChrome(app);
 	el("[data-hide-directory]").innerHTML = svg("left", 15);
@@ -1490,14 +1501,16 @@
 			save();
 			return;
 		}
-		if (b.dataset.seance) {
-			state.session = b.dataset.seance;
+		const session = Object.keys(sessionMessages).find((key) => key === b.dataset.seance);
+		if (session) {
+			state.session = session;
 			render();
 			el(".nx-detail h2").focus();
 			return;
 		}
-		if (b.dataset.file) {
-			state.currentFile = b.dataset.file;
+		const file = Object.keys(files).find((key) => key === b.dataset.file);
+		if (file) {
+			state.currentFile = file;
 			render();
 			el(".nx-detail h2").focus();
 			return;
