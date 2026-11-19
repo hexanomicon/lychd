@@ -25,4 +25,6 @@ Review selects, rejects, or returns attributed findings. The smallest supported 
 
 Paid generation binds idempotency identity and exact request digest. A lost acknowledgement leaves it **unknown** until provider records reconcile it; another attempt could buy the same work twice.
 
-Accepted revisions enter [Package](package.md); temporal work continues through [Motion](motion.md). Neither result carries engine, editorial, or publication authority.
+Accepted revisions enter [Package](package.md), continue through [Motion](motion.md), or
+become exact inputs to a [video master](master.md#edit-the-timeline). Engine import, placement
+in a new cut and distribution each have their own admission.

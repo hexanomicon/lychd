@@ -1098,6 +1098,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/nexus/presence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** SetPresence */
+        post: operations["setNexusPresence"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/nexus/swaps": {
         parameters: {
             query?: never;
@@ -1843,6 +1860,16 @@ export interface components {
             last_line: number;
             source: string;
         };
+        /** ColleagueObservation */
+        ColleagueObservation: {
+            /** @enum {string} */
+            availability: "ready" | "busy" | "unknown";
+            expires_at: string | null;
+            name: string;
+            observed_at: string | null;
+            /** @enum {string} */
+            publication: "waiting" | "published" | "unavailable";
+        };
         /** ConsentCard */
         ConsentCard: {
             args: {
@@ -2546,6 +2573,7 @@ export interface components {
             containment_reason: string | null;
             delegated_runtimes: components["schemas"]["DelegatedRuntimeObservation"][];
             operator?: components["schemas"]["NexusOperator"] | null;
+            presence?: components["schemas"]["PresenceBoard"] | null;
             /** Format: date-time */
             snapshot_at: string;
             transitions: components["schemas"]["TransitionRecordView"][];
@@ -2942,6 +2970,22 @@ export interface components {
         Preference: {
             criterion: string;
             weight: number;
+        };
+        /** PresenceBoard */
+        PresenceBoard: {
+            /** Format: uuid */
+            audience_id: string;
+            peers: components["schemas"]["ColleagueObservation"][];
+            /** @enum {string} */
+            sharing: "ready" | "busy" | "hidden";
+            sharing_until: string | null;
+        };
+        /** PresenceIntent */
+        PresenceIntent: {
+            /** Format: uuid */
+            audience_id: string;
+            /** @enum {string} */
+            availability: "ready" | "busy" | "hidden";
         };
         /** RecallItem */
         RecallItem: {
@@ -6829,6 +6873,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FrameworkError"];
+                };
+            };
+        };
+    };
+    setNexusPresence: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PresenceIntent"];
+            };
+        };
+        responses: {
+            /** @description Request fulfilled, document follows */
+            200: {
+                headers: {
+                    "cache-control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PresenceBoard"];
+                };
+            };
+            /** @description Bad request syntax or unsupported method */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        detail: string;
+                        extra?: null | {
+                            [key: string]: unknown;
+                        } | unknown[];
+                        status_code: number;
+                    };
                 };
             };
         };

@@ -117,10 +117,11 @@ language-metadata tracks. Preserve every non-language stream. Record the preserv
 digests, timebases, codecs, channels, and offsets, the loudness and intelligibility probes, and
 the result digest. These records let a reviewer check what survived and exactly what changed.
 
-If a translated line fits only by shortening a pause in the picture, the editor needs a new cut. Changed cuts, scene order, claims, picture sound, or music return to
-[Broadcast](../broadcast/index.md). A constrained language replacement cannot quietly become a
-new edit. The asset bundle remains a valid handoff without the optional mux; each receiving
-owner judges the exact result for its own use.
+If a translated line fits only by shortening a pause in the picture, [Atelier](../atelier/index.md)
+must judge the timing change and finish a successor master. Atelier also owns scene order,
+caption placement and the picture mix. A change to the music itself returns to Riffmaw. A change
+to a commissioned editorial claim returns to [Broadcast](../broadcast/index.md). The language
+bundle can pass to the editor with or without the optional mux.
 
 ### Model-native timed-language facet
 
@@ -146,10 +147,10 @@ The source and the result pass through distinct kinds of judgment:
 | Neighbour | Contribution it continues to own |
 | --- | --- |
 | Prism | Attributed OCR, regions, frames, motion, lip-alignment observations, and technical derivatives. |
-| Atelier | Accepted visuals. |
+| Atelier | Accepted visuals and the locked video master, including cut, caption placement, picture sound and final mix. |
 | Riffmaw | Music masters, stems, and cues. |
 | Avatar | Eligible presentation. |
-| Broadcast | Locked editorial source and requests; canonical claims and words; picture sound, recut, final edit, release, and correction. |
+| Broadcast | Commissioned editorial sources, claims and scripts, distribution package, release and correction. |
 
 Settled exact references need no Suite. A promised result that actively admits, awaits, cancels,
 retries, recovers, or jointly settles new work across those owners requires one. A Product may

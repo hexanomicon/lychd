@@ -246,8 +246,9 @@ can enter. A wrapper or converted checkpoint repairs none of them.
 
 Until a champion closes that gate, music-conditioned work composes exact Riffmaw
 `MusicCueMap@1` cues, authored or generated clips, Kimodo constraints where eligible, and declared
-Kinesis editing. Riffmaw still owns the music and Atelier still decides the visible response;
-picture-bound sound and the final editorial audiovisual relation remain with Broadcast.
+Kinesis editing. Riffmaw owns the music. [Atelier](../../../compositions/atelier/index.md) decides
+which visible movement answers a cue, places picture-bound sound, and times both against the
+accepted music in the final cut.
 
 ## Profiles, Runes, Covens, and authority
 
@@ -256,8 +257,7 @@ require [Stasis while Orchestrator transitions](index.md#sight-on-finite-iron) a
 or use an explicitly admitted Portal. The abstract job promises no hardware placement.
 
 The [motion handoff](#a-pose-is-not-an-animation) still governs the result: technical settlement
-precedes creative review, engine import, and separately authorized world effects. Broadcast keeps
-final editorial audiovisual placement.
+precedes creative review, engine import, and separately authorized world effects.
 
 ## The proving bake
 

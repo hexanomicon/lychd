@@ -66,7 +66,7 @@ At the sample snapshot, Lin’s **Ready** report is current. Select the paired c
 Ada reported **Busy** at **09:40:58 UTC**. The authenticated report expired at
 **09:41:28 UTC**. Her current preference is unknown. **Ready** means an operator welcomes a
 request. Accepting a task requires its own authorization.
-[Check which colleague observations this build can supply](nexus.md#choose-an-operation).
+[Read colleague presence in the installed Nexus](nexus.md#see-which-colleagues-welcome-requests).
 
 ## Users
 

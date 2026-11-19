@@ -18,7 +18,8 @@
       { id: "checkpoints", title: "Human checkpoints", detail: "Inspect declared consent gates in a Scroll revision.", value: "By Scroll" }
     ]},
     { title: "People and access", rows: [
-      { id: "colleagues", title: "Colleagues", detail: "Paired operators and reported availability.", value: "Unreported" },
+      { id: "colleagues", title: "Colleagues", detail: "Paired operators and reported availability.",
+        value: snapshot.presence ? `${snapshot.presence.peers.length} paired` : "Unconfigured" },
       { id: "principals", title: "Users", detail: "Identity and Sigil for the authenticated operator.", value: snapshot.operator?.subject ?? "Unavailable" },
       { id: "access", title: "Access policy", detail: "Scoped requests and time-limited elevation.", value: "Review" }
     ]}

@@ -28,7 +28,7 @@ def _refuse(code: str) -> NoReturn:
 
 
 _MAX_DECLARATION_SECONDS = 300
-_MAX_TASK_SECONDS = 3600
+_MAX_TASK_SECONDS = 24 * 60 * 60
 _MAX_NETWORK_SECONDS = 30
 
 
@@ -74,8 +74,11 @@ class PeerPolicy:
         if (
             type(self.generation) is not int
             or self.generation < 1
+            or type(self.declaration_seconds) is not int
             or not 1 <= self.declaration_seconds <= _MAX_DECLARATION_SECONDS
+            or type(self.task_seconds) is not int
             or not 1 <= self.task_seconds <= _MAX_TASK_SECONDS
+            or type(self.network_seconds) is not int
             or not 1 <= self.network_seconds <= _MAX_NETWORK_SECONDS
         ):
             _refuse("policy")

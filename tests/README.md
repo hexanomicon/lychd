@@ -38,10 +38,13 @@ production Vessel. Ryuk is unprivileged by default. A deliberately selected root
 profile may use `TESTCONTAINERS_RYUK_PRIVILEGED=true make test-containers`; never export that as
 the repository default. [Ward's receipt](../docs/state-of-the-work.md#remote-iam) records its scope.
 
-[Intercom](../docs/sepulcher/intercom.md)'s two PostgreSQL modules additionally require an explicit
+[Intercom](../docs/sepulcher/intercom.md)'s outbound custody and migration modules additionally require an explicit
 disposable `LYCHD_INTERCOM_TEST_DATABASE_URL`; its migration module needs empty public Intercom
 tables. They do not start a container implicitly. Independent SDK qualification uses a separate
 Python environment and test-only signing middleware, not a production dependency.
+The [paired receiver suite](integration/test_intercom_inbox_pg.py) migrates an isolated schema
+per test and accepts the same explicit disposable database URL. With the URL unset, it starts
+the disposable PostgreSQL container supplied by the manual test profile.
 `uv run --locked python scripts/intercom_lab.py --help` performs no external effect.
 
 Atlas also accepts `LYCHD_ATLAS_TEST_DATABASE_URL` inside the OCI profile for a daemon-free

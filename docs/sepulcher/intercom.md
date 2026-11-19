@@ -12,8 +12,14 @@ tool, game action or another task.
 [State of Work](../state-of-the-work.md#a2a-intercom) owns delivery. The bounded
 [`outbound-public-text@1` profile](../adr/26-a2a.md#peer-task-jsonrpc-1) provides an explicit operator
 session. The separate [`native-public-peer@1` profile](../adr/26-a2a.md#native-public-peer-station)
-adds an explicit Run/Graph lab below. Private Context, voice input and automatic fallback remain
-separate work. Neither session starts a Minecraft client, model or incoming A2A server.
+adds an explicit Run/Graph lab below. To accept a colleague's brief, start the
+[paired receiver](#receive-a-public-brief) on the receiving installation. Private Context,
+voice input and automatic fallback remain separate work.
+
+To see whether a colleague welcomes a request, use [Nexus colleague presence](../divination/altar/nexus.md#see-which-colleagues-welcome-requests).
+Presence pairing and enrollment of a receiving task endpoint have separate credentials.
+The [short-video design](../compositions/atelier/short-video.md#what-nexus-would-show) works
+through a colleague's evening offer, storyboard review and result collection after reconnect.
 
 ## Prepare the two identities
 
@@ -116,6 +122,142 @@ fetches artifacts, streams, discovers endpoints or selects another peer, provide
 
 This profile has one control process and event loop. Cross-process revocation, hostile same-UID
 containment, general remote IAM and private-input anonymization are outside its delivered boundary.
+
+## Receive a public brief
+
+Lin can submit a public script this afternoon for Ada to review and start this evening. Both
+installations need a migrated PostgreSQL database, a dedicated local operator credential and
+their own Ed25519 workload signing key. Migrate the receiver through revision `0028`. Ada
+also needs a TLS certificate for the enrolled hostname and its corresponding private key.
+Lin needs the CA certificate that issued it. Each operator sets `LYCHD_INTERCOM_DATABASE_URL`
+for their own database and `LYCHD_INTERCOM_SIGNING_KEY_FILE` to their own signing key.
+
+**On Ada's PC**, keep the invitation and private keys outside the checkout. On Linux use a
+directory owned by Ada with mode `0700`, and mode `0600` for the invitation and private keys.
+Select exact loopback or RFC 1918 IPv4 addresses. In this example Ada listens on
+`192.168.10.20` and admits the connection from Lin at `192.168.10.21`. Substitute the actual
+addresses, workload UUIDs, enrolled Ed25519 public PEMs, file paths and UTC dates. The TLS
+hostname must match the certificate and Lin's enrollment.
+
+```json
+{
+  "receiver_id": "00000000-0000-4000-8000-000000000002",
+  "sender_id": "00000000-0000-4000-8000-000000000001",
+  "hostname": "atelier.example.test",
+  "port": 8443,
+  "listen_address": "192.168.10.20",
+  "peer_address": "192.168.10.21",
+  "task_schema": "atelier.short-video-brief@1",
+  "sender_key_id": "lin-1",
+  "sender_public_key_pem": "REPLACE WITH LIN'S PUBLIC PEM",
+  "signing_key_id": "ada-1",
+  "receiver_public_key_pem": "REPLACE WITH ADA'S PUBLIC PEM",
+  "valid_until": "2026-11-21T10:00:00Z",
+  "accept_from": "2026-11-20T12:00:00Z",
+  "accept_until": "2026-11-20T17:00:00Z",
+  "tls_certificate": "/absolute/private/atelier-server.pem",
+  "tls_key": "/absolute/private/atelier-server-key.pem"
+}
+```
+
+```bash
+uv run --locked python scripts/intercom_receive.py --config /absolute/private/pair.json serve
+```
+
+**On Lin's PC**, use the [sender session](#prepare-the-two-identities). Enroll Ada's UUID
+and public workload key, the numeric address `192.168.10.20`, hostname `atelier.example.test`,
+port `8443`, path `/a2a/jsonrpc` and an absolute CA file. Select the same purpose in every
+sender command, for example `atelier-production`, the category `public-task` and Ada's exact
+task schema. For an evening job, set the explicit sender policy's `task_seconds` before
+enrollment, for example to `64800` for 18 hours. The default is 900 seconds and the upper
+bound is 86400. Allow time for review, completion and collection within the task lifetime
+and keep the peer credentials and invitation valid through collection.
+
+??? example "Lin's first enrollment"
+
+    Save this public sender configuration after substituting both workload UUIDs and the
+    endpoint. The example budgets sixteen physical operations for the session's selected
+    scopes. Capacity already spent survives restart.
+
+    ```json
+    {
+      "workload_id": "00000000-0000-4000-8000-000000000001",
+      "signing_key_id": "lin-1",
+      "policy": {
+        "generation": 1,
+        "actions": ["enroll", "classify_public", "submit", "poll", "read", "cancel"],
+        "purposes": ["atelier-production"],
+        "categories": ["public-task"],
+        "task_schemas": ["atelier.short-video-brief@1"],
+        "peers": ["00000000-0000-4000-8000-000000000002"],
+        "endpoints": ["https://atelier.example.test:8443/a2a/jsonrpc"],
+        "task_seconds": 64800,
+        "limits": {
+          "host": {"uses": 16, "application_bytes": 1048576, "network_bytes": 8388608},
+          "purpose": {"uses": 16, "application_bytes": 1048576, "network_bytes": 8388608},
+          "peer": {"uses": 16, "application_bytes": 1048576, "network_bytes": 8388608},
+          "task": {"uses": 16, "application_bytes": 1048576, "network_bytes": 8388608}
+        }
+      }
+    }
+    ```
+
+    Run `uv run --locked python scripts/intercom_lab.py --config /absolute/private/sender.json`
+    and authenticate. For the first enrollment, send this line with Ada's real workload public
+    PEM, trusted CA path and key-validity interval. Use JSON newline escapes inside the PEM.
+
+    ```json
+    {"operation":"enroll","peer_id":"00000000-0000-4000-8000-000000000002","purpose":"atelier-production","task_schema":"atelier.short-video-brief@1","endpoint":{"address":"192.168.10.20","hostname":"atelier.example.test","port":8443,"path":"/a2a/jsonrpc","ca_file":"/absolute/private/ca.pem"},"key":{"key_id":"ada-1","public_key_pem":"REPLACE WITH ADA'S PUBLIC PEM","issuer":"00000000-0000-4000-8000-000000000002","protocol":"rfc9421-ed25519@1","audience":"00000000-0000-4000-8000-000000000001","assurance":"operator-enrolled","valid_from":"2026-11-20T10:00:00Z","expires_at":"2026-11-21T10:00:00Z"}}
+    ```
+
+The following is one input line for the sender. `source.text` holds the brief encoded as
+a JSON string. Follow `declare-public` with `submit` using the returned declaration ID.
+
+```json
+{"operation":"declare-public","peer_id":"00000000-0000-4000-8000-000000000002","purpose":"atelier-production","task_schema":"atelier.short-video-brief@1","endpoint":"https://atelier.example.test:8443/a2a/jsonrpc","source":{"public_assertion":true,"text":"{\"recipe\":\"animated-lesson\",\"duration_seconds\":12,\"script\":\"Show how a radius connects the centre to a circle.\",\"not_before\":\"2026-11-20T18:00:00Z\",\"latest_start_at\":\"2026-11-20T19:00:00Z\"}"}}
+```
+
+The three recipe names are `illustrated-story`, `animated-lesson` and `captioned-excerpt`.
+Each accepts 1–180 seconds and a nonblank script. In this example Ada can receive a new brief
+from noon until 17:00 UTC. The brief asks Ada to start it at or after 18:00 and before 19:00
+UTC. An early or missed first start leaves the task submitted for a later eligible start
+or local rejection. Omit both brief timestamps to allow an immediate start. Omit both invitation intake
+timestamps to accept submissions throughout the invitation. An already admitted task can be
+reviewed and collected after the intake window closes. Starting a task records Ada's decision.
+The local [Atelier recipe](../compositions/atelier/short-video.md) describes the production steps.
+
+**Review and return.** In a second terminal on Ada's PC, run the commands below with the
+receiver UUID printed by `pending`. The final line approves the exact standard-input text
+for return to Lin. The local credential prompt uses the controlling terminal.
+
+```bash
+receiver=(uv run --locked python scripts/intercom_receive.py --config /absolute/private/pair.json)
+"${receiver[@]}" pending
+"${receiver[@]}" review RECEIVER_TASK_UUID
+"${receiver[@]}" start RECEIVER_TASK_UUID
+printf '%s' 'Storyboard reviewed. The radius demonstration runs for 12 seconds.' |
+  "${receiver[@]}" complete RECEIVER_TASK_UUID --public-result-stdin
+```
+
+Ada may also `reject RECEIVER_TASK_UUID`. Lin uses the original **sender** task ID for
+`poll`, `read` and `cancel`. After restart, authenticate again on both sides and use the same
+enrollment, database and IDs. If the first acknowledgement was lost, Ada can run
+`find SENDER_TASK_UUID` to reconcile her local receipt with Lin. Lin's sender keeps the outcome
+unknown until it has an authenticated receiver identity. This profile has no remote lookup by
+sender ID. A second submission could commission the work twice. The current sender also
+records an unknown outcome if a submit returns a signed protocol error, including refusal
+at intake. An accepted task that Ada later rejects has a pollable rejected state.
+
+Each pair retains up to 64 task records across configurations and has up to 128 unexpired
+physical replay fences. Intake allows 8192 UTF-8 bytes per brief and returns up to 4096 bytes
+of approved public text. Work and remote result disclosure expire 24 hours after admission.
+Expiry preserves the records and their capacity charge. Up to eight established TLS clients
+can run application requests at once. Change or withdraw the invitation to retire the active
+session. For a later intake window, restart with fresh local authentication. Preserving the
+same identities, signing key bindings, road and schema keeps the same work visible. Reconcile
+outstanding tasks before rotating those bindings. A colleague's Nexus Ready status is a
+separate presence signal. Artifact transfer, scheduled rendering and public internet ingress
+have separate acceptance gates. [Paired receiver contract](../adr/26-a2a.md#paired-incoming-public-text)
 
 ## Native public peer Run
 

@@ -11,7 +11,9 @@ A consumer needs to know exactly which images it received and which uses their a
 
 The package manifest lets another craft inspect the accepted work before using it. It binds the revision/digest, target profile, assets, visual constraints, source and derivative lineage, tools/provider receipts, validators, findings, approvals, and known use or likeness boundaries.
 
-[Foundry](../foundry/) uses that account to decide whether exact revisions can enter an engine and support playability. [Broadcast](../broadcast/) judges their use in claims, storyboards, timeline, render, accessibility, and publication. Either consumer may refuse. The visual director's approval answers the original commission; exported files cannot extend that judgment to an entirely different one.
+[Foundry](../foundry/) uses that account to decide whether exact revisions can enter an engine and support playability. [Atelier's master](master.md#edit-the-timeline) admits their use in a cut.
+[Broadcast](../broadcast/distribution.md) judges editorial use of a settled master or a
+separately admitted still in a publication. Each consumer may refuse. The visual director's approval answers the original commission; exported files cannot extend that judgment to an entirely different one.
 
 The handoff therefore carries no Sigil, secret, provider session, approval for another use, or downstream effect authority.
 
@@ -29,6 +31,8 @@ Begin with a local, style-led 2D commission using licensed references. Freeze th
 
 Then try separate landscape and portrait hero profiles. Keep the accepted stills and animate one or two exact boundary frames through an admitted Video implementation. Probe loop and export behavior before sealing the successor package. The declared still or motion boundary can each be an honest finish.
 
-Model-returned sound may cross into the package only with pre-execution role authority, its independent `SemanticFacetAdmissionReceipt@1`, and the shared compound parent. Retain all three with the admitted material. [Motion](motion.md#clips-and-cues) follows each role's admission. Broadcast alone accepts the final editorial audiovisual relation.
+Model-returned sound may cross into the package only with pre-execution role authority, its independent `SemanticFacetAdmissionReceipt@1`, and the shared compound parent. Retain all three with the admitted material. [Motion](motion.md#clips-and-cues) follows each role's admission. Atelier accepts the
+combined audiovisual result through its [master score](master.md). A visual package also
+stands on its own when that was the requested finish.
 
 Return to [Atelier](index.md), or follow the declared finish in [Motion](motion.md#progressive-visual-depth).

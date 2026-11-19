@@ -12,10 +12,11 @@ starts with a finite offline worker and a local ComfyUI probe. It creates no new
 ## Ownership and requirements
 
 Riffmaw owns musical plans, arrangement revisions, instruments, candidate mixes, listening judgment
-and musical acceptance. Atelier retains visual commissions, candidates, accepted revisions and
-bundles. A future shared view may audition exact settled visual references alongside music.
-Broadcast retains final audiovisual placement and acceptance. Coordinating several owners' live
-Invocations requires a separately admitted Suite. The unresolved cross-craft project lifecycle
+and musical acceptance. [Atelier](../atelier/index.md) retains visual commissions, candidates
+and bundles. It places the accepted music against picture and judges the final audiovisual mix
+and local master. A future shared view may audition exact settled visual references alongside music.
+Coordinating several owners' live Invocations requires a separately admitted Suite.
+The unresolved cross-craft project lifecycle
 remains explicit in [Products and Suites](../products-and-suites.md#atelier-riffmaw-language-edition-and-broadcast).
 
 | Requirement | Observable acceptance |
@@ -173,7 +174,9 @@ rather than Coffin containment.
 
 `schema comfy-profile` and `schema comfy-request` expose the actual Comfy inputs. Supply reviewed
 profile and request files, then run `comfy prepare --profile PROFILE --request REQUEST --workspace
-WORKSPACE`. `comfy attempt submit UUID --profile PROFILE --workspace WORKSPACE` crosses the submit
+WORKSPACE`. A caller that saved its shot UUID first can pass `--occurrence UUID` and recover the
+same receipt after a lost preparation response. Reusing the UUID with a changed profile or request
+refuses. Omitting it starts a new occurrence. `comfy attempt submit UUID --profile PROFILE --workspace WORKSPACE` crosses the submit
 fence once; later `reconcile` queries the same occurrence and `fetch` retains its reviewed outputs.
 The workspace must already exist. After interrupted file installation, `comfy attempt repair UUID
 --profile PROFILE --workspace WORKSPACE` verifies pinned staging and installs only matching bytes.

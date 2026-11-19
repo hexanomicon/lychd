@@ -23,7 +23,8 @@ vi.mock("$lib/api/client", () => ({
   getNexusSnapshot: vi.fn(),
   getNexusSwap: vi.fn(),
   getNexusTransition: vi.fn(),
-  listenToSwap: vi.fn()
+  listenToSwap: vi.fn(),
+  setNexusPresence: vi.fn()
 }));
 
 import {
@@ -33,7 +34,8 @@ import {
   getNexusSnapshot,
   getNexusSwap,
   getNexusTransition,
-  listenToSwap
+  listenToSwap,
+  setNexusPresence
 } from "$lib/api/client";
 import NexusView from "./NexusView.svelte";
 import { beforeNavigate } from "$app/navigation";
@@ -143,6 +145,49 @@ afterEach(() => {
 });
 
 describe("Nexus refresh ownership", () => {
+  it("keeps colleague sharing controls busy through a refresh made after the choice", async () => {
+    vi.useFakeTimers();
+    page.url.search = "?area=colleagues";
+    const board: NonNullable<NexusSnapshot["presence"]> = {
+      audience_id: "eb0065bf-c213-46d5-85c1-c69000f29121",
+      sharing: "hidden", sharing_until: null, peers: []
+    };
+    const current = { ...snapshot, presence: board };
+    const afterChoice: NexusSnapshot = {
+      ...snapshot,
+      presence: { ...board, sharing: "ready", sharing_until: new Date(Date.now() + 3600000).toISOString() }
+    };
+    const earlierPoll = deferred<NexusSnapshot>();
+    const confirmation = deferred<NexusSnapshot>();
+    vi.mocked(getNexusSnapshot)
+      .mockResolvedValueOnce(current)
+      .mockReturnValueOnce(earlierPoll.promise)
+      .mockReturnValueOnce(confirmation.promise);
+    vi.mocked(setNexusPresence).mockResolvedValue(afterChoice.presence!);
+    const view = render(NexusView);
+
+    await act(() => Promise.resolve());
+    const ready = screen.getByRole<HTMLButtonElement>("button", { name: "Share ready" });
+    const busy = screen.getByRole<HTMLButtonElement>("button", { name: "Share busy" });
+    await act(() => vi.advanceTimersByTimeAsync(5000));
+    await fireEvent.click(ready);
+    expect(setNexusPresence).toHaveBeenCalledWith(board.audience_id, "ready");
+    expect(busy.disabled).toBe(true);
+
+    await act(() => earlierPoll.resolve(current));
+    expect(getNexusSnapshot).toHaveBeenCalledTimes(3);
+    expect(busy.disabled).toBe(true);
+
+    await act(async () => {
+      confirmation.resolve(afterChoice);
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(ready.disabled).toBe(true);
+    expect(busy.disabled).toBe(false);
+    expect(screen.getByText("Sharing preference saved.")).toBeTruthy();
+    view.unmount();
+  });
+
   it("schedules the next poll only after the current refresh completes", async () => {
     vi.useFakeTimers();
     const first = deferred<NexusSnapshot>();

@@ -55,7 +55,8 @@ CI_PYTEST_TARGETS := tests/unit/config tests/unit/db \
 	tests/unit/cli/test_reach_trace_archive.py tests/unit/cli/test_reach_trace_capture.py \
 	tests/unit/cli/test_reach_observation.py tests/unit/system/services/test_oculus_snapshot.py \
 	tests/unit/cli/test_reach_operator_onboarding.py \
-	tests/unit/system/services/test_intercom_http.py \
+	tests/unit/system/services/test_intercom_http.py tests/unit/system/services/test_intercom_receiver.py \
+	tests/unit/compositions/test_atelier_brief.py \
 	tests/unit/domain/tether tests/unit/cli/test_tether.py \
 	tests/unit/system/services/test_tether_runtime.py tests/unit/system/services/test_tether_consumer.py \
 	tests/unit/system/services/test_tether_broker_tls.py \
@@ -101,6 +102,7 @@ CONTAINER_TEST_TARGETS ?= tests/integration/test_db_consent_pg.py \
 	tests/integration/test_delegated_host_disposition_pg.py \
 	tests/integration/test_privacy_disclosure_pg.py tests/integration/test_privacy_disclosure_migrations_pg.py \
 	tests/integration/test_intercom_pg.py tests/integration/test_intercom_migrations_pg.py \
+	tests/integration/test_intercom_inbox_pg.py \
 	tests/integration/test_native_peer_migrations_pg.py \
 	tests/integration/test_scout_attempts_pg.py tests/integration/test_scout_migrations_pg.py \
 	tests/integration/test_scout_workflow_pg.py \

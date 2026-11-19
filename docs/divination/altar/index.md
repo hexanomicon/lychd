@@ -43,6 +43,7 @@ the other instruments to find evidence about the same attempt.
 | How can I judge one retained answer against explicit criteria? | [Loom manual output review](./loom.md#review-a-retained-output) |
 | What was observed about readiness or a physical transition? | [Nexus](./nexus.md) |
 | What can this installation advertise, and whose access can I inspect? | [Nexus operations](./nexus.md#choose-an-operation) |
+| Which colleagues welcome work requests? | [Nexus colleague presence](./nexus.md#see-which-colleagues-welcome-requests) |
 | Which Runs are before us, what evidence is arriving, and where does capture run out? | [Orb](./orb.md) |
 
 On the left rail, **Applications** opens the [dashboard](applications.md). Its chevron or

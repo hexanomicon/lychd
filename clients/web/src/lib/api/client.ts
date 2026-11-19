@@ -391,6 +391,15 @@ export async function getNexusSnapshot(): Promise<NexusSnapshot> {
   return unwrap(await client.GET("/api/v1/nexus")) as NexusSnapshot;
 }
 
+export async function setNexusPresence(
+  audienceId: string, availability: components["schemas"]["PresenceIntent"]["availability"]
+): Promise<components["schemas"]["PresenceBoard"]> {
+  return unwrap(await client.POST("/api/v1/nexus/presence", {
+    body: { audience_id: audienceId, availability },
+    headers: await csrfHeaders()
+  }));
+}
+
 export async function getNexusPlan(target: string): Promise<TransitionPlan> {
   return unwrap(
     await client.GET("/api/v1/nexus/plan", {

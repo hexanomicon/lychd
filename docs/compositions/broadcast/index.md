@@ -5,42 +5,50 @@ icon: material/broadcast
 
 # :material-broadcast: Broadcast
 
-A polished video can make a weak claim feel certain. Broadcast keeps the source words and evidence visible while an editor turns them into an article, narration, captions, picture sound, and a final cut. The useful finish is a publication candidate that can be approved, corrected, or refused before it leaves the machine.
+A polished video can make a weak claim feel certain. Broadcast keeps the evidence behind each
+claim and the exact words the editor approved. It prepares articles and finished media for
+particular audiences and accounts for what each channel receives.
 
 ## The work
 
-Begin with the sentence you want an audience to believe. [Sources](sources.md) binds its claims
-to frozen spans; [Script](script.md) establishes the canonical words, preserving uncertainty and
-attribution as the story takes shape.
+Begin with the sentence you want an audience to believe. [Sources](sources.md) binds its
+claims to frozen spans. [Script](script.md) establishes the canonical words, preserving
+uncertainty, attribution and disclosures as the story takes shape.
 
-In [Edit](edit.md), independently owned assets meet in an explicit timeline.
-[Picture-Bound Sound](sound.md) gives the exact locked picture and timebase its effects, foley,
-room tone, and ambience. The cut decides how these contributions meet; their source owners
-remain visible within it.
+For a video, [Atelier](../atelier/master.md) makes and accepts the finished master.
+[Distribution](distribution.md) admits those exact bytes, checks them against the editorial
+brief and intended audience, and plans a package for each channel. If a destination needs a
+vertical crop, different mix or shorter cut, the editor requests a successor master. Earlier
+routes for [Edit](edit.md), [Picture-Bound Sound](sound.md) and [Render](render.md) lead to
+their production owner.
 
-[Render](render.md) makes reproducible, accessible bytes. That local candidate can be a complete
-result. When an editor chooses to put it before an external audience, [Release](release.md)
-handles the separate consequence and any later correction.
+The package can remain local. [Release](release.md) handles the separately authorized draft
+upload or publication, correction and removal at a named destination.
 
 ## The local candidate
 
-`broadcast.studio` revision `4` defines `broadcast.build_local_package@3`. You can trace this
-design on paper. Its Patterns have no executable registration in the current application
-catalogue. [State of Work](../../state-of-the-work.md#composition-portfolio-delivery) records
-which applications can run.
-
-The design takes frozen sources, an editorial brief, a target profile, and admitted visual,
-music, timed-language, and picture-sound assets. It returns `EditorialPackage@2` and
-`PublicationCandidate@2`. A publication receipt exists only after a separate release effect.
-
-Broadcast owns source words/claims, picture sound, editorial judgment, and destination receipts. [Atelier](../atelier/) retains visual/VFX lineage; [Riffmaw](../riffmaw/) music; [Language Edition](../language-edition/) timed-language editions. A delivery adapter cannot inherit editorial judgment. Unattended publication, engagement farming, borrowed asset authority, and unreviewed egress remain outside this application.
+`broadcast.studio` revision `5` defines the principal Pattern
+`broadcast.prepare_distribution@1`. A locally complete candidate binds exact content,
+sources, claims and approved script, plus each channel's target, audience, copy, disclosures
+and checks. A video candidate points to its settled `VideoMaster@1`. The candidate can be
+approved, returned with findings or refused. Public availability requires its own destination
+receipt. [State of Work](../../state-of-the-work.md#composition-portfolio-delivery) records
+which application Patterns can run.
 
 ## Revision continuity
 
-??? info "Earlier designs and their exact successors"
+??? info "Historical designs"
 
-    Revision `4` supersedes revision `3`, advancing the principal Pattern to `broadcast.build_local_package@3` and picture sound to `broadcast.design_picture_sound@2`. It returns `EditorialPackage@2`/`PublicationCandidate@2`, reviews and repairs through `broadcast.review_package@2`/`broadcast.revise_from_correction@2`, and uses only `@2` publication/correction/takedown effects. Revision `3` had introduced timed-language and picture-sound handoffs via `broadcast.build_local_package@2`; revision `4` adds the exact `@2` record family and requires picture-sound authority before model execution, followed by Broadcast's own semantic admission receipt. Retired designs were never registered or run; their meanings remain historical without executable migration.
+    Revision `4` selected `broadcast.build_local_package@3` and `broadcast.design_picture_sound@2`.
+    It accepted the timeline, picture-bound sound and local render, returning `EditorialPackage@2`
+    and `PublicationCandidate@2`. Its review and repair Patterns were `broadcast.review_package@2`
+    and `broadcast.revise_from_correction@2`. Its effects were `broadcast.publish_draft@2`,
+    `broadcast.publish_public@2`, `broadcast.correct_publication@2` and `broadcast.takedown@2`,
+    returning `PublicationReceipt@1` for the exact destination. The producing authority for its generated picture sound was
+    `broadcast.studio` revision `4`, declared before execution with a separate semantic receipt
+    afterward. Revision `3` had introduced timed-language and picture-sound handoffs in
+    `broadcast.build_local_package@2`. These records keep their exact historical meaning.
+    Revision `5` prepares distribution around settled content. An older acceptance cannot serve
+    as authority for an Atelier master or a new destination.
 
-Follow [Workflow](../../adr/28-workflow.md) for casting and application ownership,
-[Vision](../../adr/36-vision.md) and [Audio](../../adr/37-audio.md) for the media contracts beneath
-the work, or return to the [Composition Portfolio](../index.md) to choose another craft.
+[Workflow](../../adr/28-workflow.md) · [Composition Portfolio](../index.md)

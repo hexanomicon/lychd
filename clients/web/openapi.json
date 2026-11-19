@@ -1950,6 +1950,60 @@
         "title": "Citation",
         "type": "object"
       },
+      "ColleagueObservation": {
+        "properties": {
+          "availability": {
+            "enum": [
+              "ready",
+              "busy",
+              "unknown"
+            ],
+            "type": "string"
+          },
+          "expires_at": {
+            "oneOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "observed_at": {
+            "oneOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "publication": {
+            "enum": [
+              "waiting",
+              "published",
+              "unavailable"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "availability",
+          "expires_at",
+          "name",
+          "observed_at",
+          "publication"
+        ],
+        "title": "ColleagueObservation",
+        "type": "object"
+      },
       "ConsentCard": {
         "properties": {
           "args": {
@@ -4649,6 +4703,16 @@
               }
             ]
           },
+          "presence": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PresenceBoard"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "snapshot_at": {
             "format": "date-time",
             "type": "string"
@@ -6382,6 +6446,70 @@
           "weight"
         ],
         "title": "Preference",
+        "type": "object"
+      },
+      "PresenceBoard": {
+        "properties": {
+          "audience_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "peers": {
+            "items": {
+              "$ref": "#/components/schemas/ColleagueObservation"
+            },
+            "type": "array"
+          },
+          "sharing": {
+            "enum": [
+              "ready",
+              "busy",
+              "hidden"
+            ],
+            "type": "string"
+          },
+          "sharing_until": {
+            "oneOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "audience_id",
+          "peers",
+          "sharing",
+          "sharing_until"
+        ],
+        "title": "PresenceBoard",
+        "type": "object"
+      },
+      "PresenceIntent": {
+        "additionalProperties": false,
+        "properties": {
+          "audience_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "availability": {
+            "enum": [
+              "ready",
+              "busy",
+              "hidden"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "audience_id",
+          "availability"
+        ],
+        "title": "PresenceIntent",
         "type": "object"
       },
       "RecallItem": {
@@ -13626,6 +13754,82 @@
           }
         },
         "summary": "Plan"
+      }
+    },
+    "/api/v1/nexus/presence": {
+      "post": {
+        "deprecated": false,
+        "operationId": "setNexusPresence",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PresenceIntent"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PresenceBoard"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {
+              "cache-control": {
+                "deprecated": false,
+                "required": false,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "SetPresence"
       }
     },
     "/api/v1/nexus/swaps": {

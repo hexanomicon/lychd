@@ -59,7 +59,7 @@ guides the work ahead.
 
 The opening chapter is **Genesis**. Orientation is complete by the founder's decision on **6 November**; this records the welcome, not technical acceptance. The current undertaking is a small Discord/VPS-to-PC task with an inspectable reply.
 
-**21 December 2026 is the fixed developer-preview date**, with tutorials and at least one useful Composition. Scope remains flexible as evidence develops. Voice is a high priority; Minecraft and Atelier/Broadcast video making are candidate applications. Later weekly scenes illustrate possible journeys: their feature lists guide selection rather than add mandatory release features.
+**21 December 2026 is the fixed developer-preview date**, with tutorials and at least one useful Composition. Scope remains flexible as evidence develops. Voice is a high priority; Minecraft and Atelier video production are candidate applications. Later weekly scenes illustrate possible journeys: their feature lists guide selection rather than add mandatory release features.
 
 To see what can be used now, read [State of Work](state-of-the-work.md). Follow
 [Compositions](compositions/index.md) for application contracts and [Covenants](adr/index.md) for
@@ -90,7 +90,7 @@ Demonstrations and audience building can begin in November or early December. Th
 
 Real demonstrations, behind-the-scenes material and short clips can explain what works, what people can try and where feedback is useful. Mechanimous YouTube demonstrations and audience building may begin in November or early December, as useful material appears.
 
-YouTube, UNIZA, relevant forums and existing communities are routes to choose according to capacity and relevance. Publishing follows the available material and editorial judgment, without a fixed video quota. Atelier and Broadcast are candidates for making videos; existing tools can support the campaign. Support ends on 24 December before the holiday break.
+YouTube, UNIZA, relevant forums and existing communities are routes to choose according to capacity and relevance. Publishing follows the available material and editorial judgment, without a fixed video quota. Atelier is the candidate for making the videos. Broadcast can prepare them for release, and existing tools can support the campaign. Support ends on 24 December before the holiday break.
 
 Agents can help prepare alternatives, clips and explanations. Existing qualified tools and human editorial work can carry production while selected native handoffs develop. Personal publishing experiments and community roles are voluntary, with their time included in planning.
 
@@ -192,7 +192,7 @@ We let a coherent form emerge through use: language, interfaces, examples, and p
 
 The December campaign begins through YouTube, UNIZA and community conversations. Show the actual laboratory, its people and a real Minecraft encounter, including useful unfinished work. Let viewers understand what they can try and where the experiment still needs help.
 
-Give phone interaction, Altar task visibility, the game encounter and selected visual/presence work a coherent form. Atelier is the visual craft and Broadcast the publication home. Use existing qualified tools and human editorial work for the videos, implementing only the native handoffs needed by the selected scene. Bring viewer and player questions into the next repair or experiment. The cadence follows actual editorial attention, with no compulsory polished film each week.
+Give phone interaction, Altar task visibility, the game encounter and selected visual/presence work a coherent form. Atelier makes the finished videos and Broadcast prepares them for publication. Use existing qualified tools and human editorial work for the videos, implementing only the native handoffs needed by the selected scene. Bring viewer and player questions into the next repair or experiment. The cadence follows actual editorial attention, with no compulsory polished film each week.
 
 <a id="week-05"></a>
 

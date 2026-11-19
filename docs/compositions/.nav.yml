@@ -15,6 +15,8 @@ nav:
           - atelier/assets.md
           - atelier/motion.md
           - atelier/package.md
+          - atelier/master.md
+          - atelier/short-video.md
       - Riffmaw:
           - riffmaw/index.md
           - riffmaw/sources.md
@@ -41,9 +43,7 @@ nav:
           - broadcast/index.md
           - broadcast/sources.md
           - broadcast/script.md
-          - broadcast/sound.md
-          - broadcast/edit.md
-          - broadcast/render.md
+          - broadcast/distribution.md
           - broadcast/release.md
   - Stewardship & Acquisition:
       - stewardship-and-acquisition/index.md

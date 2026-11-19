@@ -89,9 +89,9 @@ with source provenance, rights, quarantine, local verification, and maintenance 
 
 ### [Atelier](../compositions/atelier/index.md) { #atelier }
 
-The Composition for directing and judging visual creation. It owns the commission and creative
-direction, image and visual effects, motion judgment, and acceptance of visual packages. Prism
-supplies the technical contracts beneath those creative decisions.
+The Composition for directing visual work and finishing video. It owns the visual commission,
+image and visual effects, motion and accepted visual packages. For a video master, it also
+owns the timeline, picture sound, mix and final render. Prism supplies the visual tools.
 
 ### [Atlas](../divination/altar/atlas.md) { #atlas }
 
@@ -148,9 +148,9 @@ source-linked working material; explicit continuation returns it to the live Bri
 
 ### [Broadcast](../compositions/broadcast/index.md) { #broadcast }
 
-The Composition that carries editorial work into release and correction. It owns canonical
-source words and claims, sound tied to picture, and the final timeline, render, and mux. Upstream
-media applications keep their own judgments and records when Broadcast uses their work.
+The Composition that owns canonical source words, claims and editorial release. For a video,
+it reviews the exact Atelier master for an audience and chooses the distribution package,
+destination and corrections. Reach carries out authorized external channel effects.
 
 ## C
 

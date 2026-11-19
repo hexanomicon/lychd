@@ -12,11 +12,11 @@ A compound model-native layer also retains its compound digest and Riffmaw-issue
 ## Handoff and authority
 
 Suppose an editor wants this master beneath an interview. Riffmaw has approved the music.
-[Broadcast](../broadcast/edit.md#admit-the-assets) still checks the bundle's exact digest, role,
+[Atelier](../atelier/index.md) checks the bundle's exact digest, role,
 format, timing, rights, findings and approval for use in that cut. Foundry makes its own
 admission decision for use in a game. The bundle carries no Sigil, secret, provider session or
 DAW session. Another capture, a new use of a performer's work, dialogue or picture sound,
-editorial placement and publication each need the relevant owner's authority.
+placement in the video mix and publication each need the relevant owner's authority.
 
 Capture, paid generation, DAW export, and handoff remain separate effects with exact request digests/receipts. A destination may have written bytes before acknowledgement disappeared. Keep that outcome **unknown** and reconcile the write before another attempt.
 

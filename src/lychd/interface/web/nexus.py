@@ -6,6 +6,7 @@ import asyncio
 import json
 from dataclasses import asdict
 from datetime import UTC, datetime
+from functools import partial
 from typing import TYPE_CHECKING, Any
 
 from litestar import Controller, Request, get, post
@@ -14,6 +15,7 @@ from litestar.di import NamedDependency
 from litestar.exceptions import (
     ClientException,
     NotFoundException,
+    PermissionDeniedException,
     ServiceUnavailableException,
     ValidationException,
 )
@@ -25,9 +27,10 @@ from litestar.status_codes import HTTP_202_ACCEPTED, HTTP_404_NOT_FOUND, HTTP_40
 from lychd.config.logging import PRIVATE_CONTENT_LOG_OPT
 from lychd.domain.animation.services.registry import AnimatorRegistry
 from lychd.domain.codex.guards import requires_scopes
-from lychd.domain.codex.local_access import LocalOperatorAuthentication
+from lychd.domain.codex.local_access import LocalOperatorAccess, LocalOperatorAuthentication
 from lychd.domain.codex.sigil import Sigil
 from lychd.domain.cortex.priority import PRIORITY_MAX
+from lychd.domain.intercom.presence import PresenceBoard, PresenceIntent
 from lychd.domain.orchestration.manager import OrchestratorManager
 from lychd.domain.orchestration.schema import TransitionPlan, TransitionTrace
 from lychd.domain.web.contracts import (
@@ -44,6 +47,7 @@ from lychd.domain.web.projection import EventProjector
 from lychd.domain.web.schemas import SwapTicket, build_nexus_board
 from lychd.domain.web.swap_requests import SwapRequestLedger
 from lychd.domain.web.tickets import TicketCapacityError, TicketRecord, TicketStore
+from lychd.system.services.colleague_presence import AudienceChangedError, ColleaguePresence
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
@@ -105,6 +109,7 @@ class NexusController(Controller):
                     limitations=list(definition.limitations),
                 )
             )
+        presence: ColleaguePresence | None = getattr(state, "colleague_presence", None)
         return NexusSnapshot(
             snapshot_at=datetime.now(UTC),
             configuration=getattr(state.services, "nexus_configuration", None),
@@ -117,7 +122,32 @@ class NexusController(Controller):
             containment_reason=orchestrator.containment_reason,
             transitions=[_transition_view(record) for record in orchestrator.transitions.recent()],
             delegated_runtimes=delegated_runtimes,
+            presence=presence.board() if presence is not None else None,
         )
+
+    @post(
+        "/presence",
+        status_code=200,
+        name="nexus:presence",
+        operation_id="setNexusPresence",
+        opt={PRIVATE_CONTENT_LOG_OPT: True},
+        cache_control=CacheControlHeader(no_store=True),
+        guards=[requires_scopes("nexus:share-presence")],
+    )
+    async def set_presence(self, request: Request[Any, Any, Any], data: PresenceIntent, state: State) -> PresenceBoard:
+        """Share a coarse availability choice with the displayed paired audience."""
+        presence: ColleaguePresence | None = getattr(state, "colleague_presence", None)
+        if presence is None:
+            raise NotFoundException(detail="No colleagues are paired for presence.")
+        access = getattr(state, "local_operator_access", None)
+        if not isinstance(access, LocalOperatorAccess) or not access.current(request.auth):
+            raise PermissionDeniedException(detail="Current local operator authority is required.")
+        try:
+            return await presence.choose(data, permitted=partial(access.current, request.auth))
+        except AudienceChangedError as exc:
+            raise ClientException(
+                detail="Refresh Nexus to see the current audience.", status_code=HTTP_409_CONFLICT
+            ) from exc
 
     @get(
         "/plan",

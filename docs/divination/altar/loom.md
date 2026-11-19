@@ -30,7 +30,7 @@ Under **Workflows → Local blueprints**, select **Illustrated story**, **Animat
 **Picture production** in Animated lesson to inspect **Render lesson frames**, its visual
 candidate and **Review motion and labels**. **Open in Atelier** returns to that recipe’s brief.
 The local blueprint follows [Atelier’s visual workflow](../../compositions/atelier/index.md)
-and [Broadcast’s editorial cut](../../compositions/broadcast/edit.md). The registry lists the
+and [video-master design](../../compositions/atelier/master.md). The registry lists the
 exact Pattern revisions supplied by this Vessel.
 
 ![Animated lesson with the enclosing picture-production flow, selected visual reviewer and its output fields.](../../assets/altar-design/loom-composition-built.webp)
