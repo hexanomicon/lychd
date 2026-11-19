@@ -188,9 +188,17 @@ export function example(): Blueprint {
   );
   e("dispatch", "join", "produces", "Eligible solver receipts");
   n("identity", "agent", "Identity solver", "Find the document identity used for retries.", "dispatch", {
+    inputs: "TaskPlan.document_ref",
+    system: "Read the importer and identify the stable key used to deduplicate a document. Cite the source.",
+    user: "Which key identifies {{document_ref}} across retries?",
+    schema: '{"type":"object","properties":{"document_key":{"type":"string"},"source":{"type":"string"}},"required":["document_key","source"]}',
     tools: "read_file",
   });
   n("receipt", "agent", "Receipt solver", "Find the earlier write outcome.", "dispatch", {
+    inputs: "TaskPlan.document_ref, TaskPlan.attempt",
+    system: "Read the matching receipt. Report unknown when the record cannot establish a write outcome.",
+    user: "Find the write outcome for {{document_ref}} in attempt {{attempt}}.",
+    schema: '{"type":"object","properties":{"outcome":{"enum":["written","absent","unknown"]}},"required":["outcome"]}',
     tools: "read_file",
   });
   n(

@@ -205,7 +205,7 @@
       {#if inspectorOpen}
       <PaneGrip bind:width={inspectorWidth} name="Inspector width" min={225} max={510} />
       <div class="fields">
-      <small>{node.kind.toUpperCase()} · INSPECTOR</small>
+      <small>{node.kind.toUpperCase()}</small>
       <h3>{node.name}</h3>
       {#if members.length}<button class="enter" onclick={() => inspect(members[0]!.id)}
           >Explore {node.kind} <span>{members.length} nodes →</span></button
@@ -390,7 +390,8 @@
     position: relative;
   }
   .fields { max-height:80vh; overflow:auto; padding:1rem; }
-  .inspector-toggle { position:absolute; top:.5rem; right:.35rem; z-index:1; }
+  .inspector-toggle { position:absolute; top:.35rem; inset-inline-start:.25rem; z-index:1; }
+  .fields > small { display: block; padding-inline-start: 2rem; min-height: 1.5rem; }
   .branches { padding:0; margin:0; list-style:none; }
   .branches .branches { margin-inline-start:.5rem; padding-inline-start:.4rem; border-inline-start:1px solid var(--color-engraving); }
   .branch,.target { display:flex; align-items:center; gap:.25rem; }
