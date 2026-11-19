@@ -9,6 +9,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
 
 from lychd.domain.archive import RecallReceipt
+from lychd.domain.intercom.presence import PresenceBoard
 from lychd.domain.weaver.inspection import InspectionBinding
 from lychd.domain.web.schemas import ConsentCard, LoomView, NexusBoard, SwapTicket
 
@@ -304,6 +305,7 @@ class NexusSnapshot(ClientContract):
     containment_reason: str | None
     transitions: list[TransitionRecordView]
     delegated_runtimes: list[DelegatedRuntimeObservation]
+    presence: PresenceBoard | None = None
     configuration: NexusConfiguration | None = None
     operator: NexusOperator | None = None
 

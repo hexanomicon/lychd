@@ -98,6 +98,6 @@ Prism links the Core attempt; Reliquary owns custody and provenance. Each reques
 its consuming owner's independent `SemanticFacetAdmissionReceipt@1` under the linked Video
 contract. Unexpected sound is quarantined or deleted rather than assigned a guessed owner.
 
-Broadcast alone judges the final editorial audiovisual relation. Engine completion supplies
-execution facts; passage to an application still requires the exact profile's artifact validation,
-preserved custody and provenance, and each requested facet's independent semantic admission.
+Atelier judges how the accepted picture, timed language, music and picture sound fit its
+final timeline. To admit a Comfy result, the receiving application needs the exact profile's
+artifact validation, custody, provenance and independent decisions for every requested facet.

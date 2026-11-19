@@ -21,8 +21,8 @@ learning.
 ## One body in one breath
 
 In Broadcast's [local publication candidate](./compositions/broadcast/index.md#the-local-candidate),
-the inputs are frozen sources and an editorial brief. The result is a candidate for an editor to
-judge. Preparing that candidate and releasing it are separate acts. Here is how the preparation
+an editor checks frozen sources against the brief. For a video, the editor also reviews the
+exact [Atelier master](./compositions/atelier/index.md) offered for that audience. Preparing that candidate and releasing it are separate acts. Here is how the preparation
 passes through the body.
 
 Your request is an **Intent**. [Spellweaver](sepulcher/aspects/weaver/index.md) resolves the

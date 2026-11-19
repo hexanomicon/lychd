@@ -59,6 +59,7 @@ dependencies = [
     "tomlkit>=0.15.2",
     "typing-extensions==4.16.0",
     "certifi>=2026.10.23",
+    "cryptography>=50.0.2,<51",
 ]
 
 [project.optional-dependencies]

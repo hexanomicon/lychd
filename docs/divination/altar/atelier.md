@@ -40,4 +40,6 @@ and the closing instant is exclusive. **Export brief** downloads the validated J
 validation. Each wire brief is limited to 8,192 UTF-8 bytes and 8,000 script characters.
 
 The [Atelier composition](../../compositions/atelier/index.md) owns the production brief and
-review of the finished work. This first studio layout will be refined as operators use it.
+review of the finished work. Its [short-video example](../../compositions/atelier/short-video.md)
+shows how to hand off a public brief through Intercom and render a single captioned clip locally.
+The browser edits and exports the brief. The Intercom operator session submits it separately.

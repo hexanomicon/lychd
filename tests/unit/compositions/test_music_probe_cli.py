@@ -4,12 +4,24 @@ import hashlib
 import json
 from pathlib import Path
 from typing import Never
+from uuid import uuid4
 
 import httpx2
 import pytest
 from click import ClickException
 from click.testing import CliRunner
 from scripts.music_probe import CHECKOUT_ROOT, cli, external_path, read_json_file
+
+from lychd.domain.comfy_probe import (
+    ComfyArtifact,
+    ComfyProfile,
+    ComfyRequest,
+    MutableInput,
+    OutputOpening,
+    canonical_json,
+    json_digest,
+)
+from lychd.system.services.comfy_probe import ComfyProbe, ProbeRefusedError
 
 pytest_plugins = ["tests.music_probe_support"]
 
@@ -61,19 +73,10 @@ def test_json_reads_bound_input_bytes(probe_path: Path) -> None:
         read_json_file(oversized)
 
 
-def test_comfy_cli_repairs_pinned_stage_without_load_or_http(probe_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    from lychd.domain.comfy_probe import (
-        ComfyArtifact,
-        ComfyProfile,
-        ComfyRequest,
-        OutputOpening,
-        canonical_json,
-        json_digest,
-    )
-    from lychd.system.services.comfy_probe import ComfyProbe, ProbeRefusedError
-
+@pytest.fixture
+def comfy_profile() -> ComfyProfile:
     graph = canonical_json({"1": {"class_type": "AudioSave", "inputs": {"seed": 1}}})
-    profile = ComfyProfile(
+    return ComfyProfile(
         endpoint="http://127.0.0.1:8188",
         deployment_revision="test-only",
         review_reference="no-live-authority",
@@ -81,15 +84,64 @@ def test_comfy_cli_repairs_pinned_stage_without_load_or_http(probe_path: Path, m
         workflow_sha256=json_digest(graph),
         allowed_node_classes=("AudioSave",),
         models=(),
-        mutable_inputs=(),
+        mutable_inputs=(
+            MutableInput(name="seed", node_id="1", input_name="seed", kind="integer", minimum=0, maximum=2),
+        ),
         outputs=(
             OutputOpening(
                 node_id="1", kind="audio", receiving_owner="riffmaw.music", extensions=(".wav",), max_bytes=8
             ),
         ),
     )
-    probe = ComfyProbe(profile, probe_path, (CHECKOUT_ROOT,))
-    attempt = probe.prepare(ComfyRequest(profile_sha256=profile.digest, inputs_json="{}"))
+
+
+def test_comfy_cli_prepare_recovers_named_occurrence(probe_path: Path, comfy_profile: ComfyProfile) -> None:
+    profile_path = probe_path / "profile.json"
+    profile_path.write_text(comfy_profile.model_dump_json())
+    request_path = probe_path / "request.json"
+    request = ComfyRequest(profile_sha256=comfy_profile.digest, inputs_json='{"seed":1}')
+    request_path.write_text(request.model_dump_json())
+    args = [
+        "comfy",
+        "prepare",
+        "--profile",
+        str(profile_path),
+        "--request",
+        str(request_path),
+        "--workspace",
+        str(probe_path),
+    ]
+    occurrence = str(uuid4())
+    named_args = [*args, "--occurrence", occurrence]
+    runner = CliRunner()
+    first = runner.invoke(cli, named_args)
+    assert first.exit_code == 0, first.output
+    assert json.loads(first.output)["occurrence_id"] == occurrence
+    receipt = probe_path / f"{occurrence}.json"
+    original = receipt.read_bytes()
+
+    repeated = runner.invoke(cli, named_args)
+    assert repeated.exit_code == 0, repeated.output
+    assert repeated.output == first.output
+    assert receipt.read_bytes() == original
+
+    independent = runner.invoke(cli, args)
+    assert independent.exit_code == 0, independent.output
+    assert json.loads(independent.output)["occurrence_id"] != occurrence
+
+    request_path.write_text(request.model_copy(update={"inputs_json": '{"seed":2}'}).model_dump_json())
+    conflict = runner.invoke(cli, named_args)
+    assert conflict.exit_code != 0
+    assert isinstance(conflict.exception, ProbeRefusedError)
+    assert "identity changed" in str(conflict.exception)
+    assert receipt.read_bytes() == original
+
+
+def test_comfy_cli_repairs_pinned_stage_without_load_or_http(
+    probe_path: Path, comfy_profile: ComfyProfile, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    probe = ComfyProbe(comfy_profile, probe_path, (CHECKOUT_ROOT,))
+    attempt = probe.prepare(ComfyRequest(profile_sha256=comfy_profile.digest, inputs_json='{"seed":1}'))
     digest = hashlib.sha256(b"WAVE").hexdigest()
     local = f"{attempt.occurrence_id}-0-{digest}.wav"
     artifact = ComfyArtifact(
@@ -114,7 +166,7 @@ def test_comfy_cli_repairs_pinned_stage_without_load_or_http(probe_path: Path, m
     with pytest.raises(ProbeRefusedError, match="missing"):
         probe.load(attempt.occurrence_id)
     profile_path = probe_path / "profile.json"
-    profile_path.write_text(profile.model_dump_json())
+    profile_path.write_text(comfy_profile.model_dump_json())
 
     def forbid_http_client(**_options: object) -> Never:
         pytest.fail("repair must not construct an HTTP client")

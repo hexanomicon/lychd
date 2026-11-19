@@ -21,6 +21,7 @@
     TransitionRecordView
   } from "$lib/api/models";
   import DelegateMark from "$lib/components/shared/DelegateMark.svelte";
+  import NexusColleagues from "./NexusColleagues.svelte";
   import NexusMap from "./NexusMap.svelte";
   import NexusOperations from "./NexusOperations.svelte";
   import { findOperation, operationGroups, type Operation } from "../state/operations";
@@ -169,6 +170,11 @@
       }
     });
     return pending;
+  }
+
+  async function refreshPresence() {
+    if (refreshInFlight) await refreshInFlight;
+    await refresh(false);
   }
 
   async function performRefresh(showLoading: boolean) {
@@ -490,14 +496,20 @@
   <div class="operation-page">
     <h1 class="operation-title">{area.id === "overview" ? "Instance overview" : area.title}</h1>
     {#if snapshot?.containment_reason}<div class="containment" role="alert">Runtime admission is contained: {snapshot.containment_reason}</div>{/if}
-    {#if snapshot && snapshotStale}<div class="containment" role="alert">The Nexus board is stale. Lifecycle mutations are unavailable until a fresh snapshot loads.</div>{/if}
+    {#if snapshot && snapshotStale}<div class="containment" role="alert">The Nexus board is stale. Runtime lifecycle mutations are unavailable until a fresh snapshot loads.</div>{/if}
     {#if area.id !== "board" && area.id !== "transitions" && !snapshot && !loading && error}<div class="turn__fault" role="alert">{error}</div>{/if}
     {#if area.id !== "board" && area.id !== "transitions" && swapAttempts.size}
       <p class="containment" role="status">A transition request is {busy ? "submitting" : "awaiting reconciliation"}. <button type="button" onclick={() => openArea(findOperation("board"))}>View request outcomes</button></p>
     {/if}
     {#if area.id === "colleagues" && snapshot}
-      <p>This Vessel does not project paired colleague availability. A person's willingness to receive work requires a separate, current presence report.</p>
-      <a href="https://hexanomicon.dev/sepulcher/intercom/#prepare-the-two-identities">Prepare an Intercom peer enrollment →</a>
+      {#if snapshot.presence}
+        {#key snapshot.presence.audience_id}
+          <NexusColleagues board={snapshot.presence} stale={snapshotStale} onrefresh={refreshPresence} />
+        {/key}
+      {:else}
+        <p>No colleague pairings configured on this Vessel.</p>
+        <a href="https://hexanomicon.dev/divination/altar/nexus/#pair-two-installations">Pair two installations →</a>
+      {/if}
     {/if}
     {#if snapshot}
       {#if area.id === "overview"}<NexusOverview {snapshot} onselect={openArea} />{/if}

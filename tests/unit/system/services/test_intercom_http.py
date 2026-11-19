@@ -18,8 +18,15 @@ from http_message_signatures import algorithms
 from http_message_signatures.resolvers import HTTPSignatureKeyResolver
 from http_message_signatures.signatures import HTTPMessageSigner, HTTPMessageVerifier
 
-from lychd.domain.intercom.codec import send_params
-from lychd.domain.intercom.transport import IntercomEndpoint, IntercomError, IntercomHandoff, PreparedRequest
+from lychd.domain.intercom.codec import send_params, task_params
+from lychd.domain.intercom.transport import (
+    IntercomEndpoint,
+    IntercomError,
+    IntercomHandoff,
+    IntercomRemoteError,
+    PreparedRequest,
+    TaskMethod,
+)
 from lychd.domain.scout.transport import NetworkHandoff, NetworkTarget
 from lychd.system.services import intercom_http
 from lychd.system.services.intercom_http import (
@@ -28,8 +35,13 @@ from lychd.system.services.intercom_http import (
     RESPONSE_COMPONENTS,
     RESPONSE_TAG,
     BoundedIntercomHTTP,
+    VerifiedPeerRequest,
     content_digest,
     prepare_request,
+    request_content_length,
+    sign_peer_refusal,
+    sign_peer_response,
+    verify_peer_request,
     verify_response,
 )
 
@@ -95,16 +107,18 @@ def keys() -> tuple[_Key, _Key]:
     return _key(), _key()
 
 
-def _prepared(key: _Key) -> PreparedRequest:
+def _prepared(key: _Key, method: TaskMethod = "SendMessage") -> PreparedRequest:
     return prepare_request(
-        method="SendMessage",
+        method=method,
         local_task_id="local-1",
         attempt_id="attempt-1",
         peer_id="peer-1",
         workload_id="workload-1",
         task_schema="public-echo@1",
         endpoint="https://peer.test:8443/a2a",
-        params=send_params("public text", "message-1"),
+        params=send_params("public text", "message-1")
+        if method == "SendMessage"
+        else task_params(method, "receiver-task"),
         signing_key=key.private,
         key_id="workload-key-1",
     )
@@ -182,6 +196,109 @@ def test_actual_ed25519_package_verifies_request_and_distinct_peer_reply(keys: t
     assert prepared.body not in repr(prepared).encode()
     with pytest.raises(IntercomError):
         verify_response(prepared, 200, fields, body, workload.public, "peer-key-1")
+
+
+def _receive(prepared: PreparedRequest, key: _Key) -> VerifiedPeerRequest:
+    return verify_peer_request(
+        http_method="POST",
+        endpoint=prepared.request_uri,
+        headers=prepared.headers,
+        body=prepared.body,
+        sender_id="workload-1",
+        recipient_id="peer-1",
+        task_schema="public-echo@1",
+        peer_public_key=key.public,
+        key_id="workload-key-1",
+    )
+
+
+@pytest.mark.parametrize("method", ["SendMessage", "GetTask", "CancelTask"])
+def test_authenticated_receiver_correlates_task_and_generic_refusal(
+    keys: tuple[_Key, _Key], method: TaskMethod
+) -> None:
+    sender, receiver = keys
+    prepared = _prepared(sender, method)
+    request = _receive(prepared, sender)
+    assert request.method == method
+    assert (request.nonce, request.digest, request.attempt_id) == (prepared.nonce, prepared.digest, "attempt-1")
+    if method == "SendMessage":
+        assert (request.message_id, request.text, request.task_id) == ("message-1", "public text", None)
+        assert "public text" not in repr(request)
+    else:
+        assert (request.message_id, request.text, request.task_id) == (None, None, "receiver-task")
+        with pytest.raises(IntercomError):
+            sign_peer_response(
+                request, task_id="other", state="TASK_STATE_WORKING", signing_key=receiver.private, key_id="peer-key-1"
+            )
+    reply = sign_peer_response(
+        request,
+        task_id="receiver-task",
+        state="TASK_STATE_COMPLETED",
+        text="public reply",
+        signing_key=receiver.private,
+        key_id="peer-key-1",
+    )
+    observed = verify_response(prepared, reply.status, reply.headers, reply.body, receiver.public, "peer-key-1")
+    assert (observed.foreign_task_id, observed.text, observed.terminal) == ("receiver-task", ("public reply",), True)
+    refused = sign_peer_refusal(request, signing_key=receiver.private, key_id="peer-key-1")
+    with pytest.raises(IntercomRemoteError) as exc:
+        verify_response(prepared, refused.status, refused.headers, refused.body, receiver.public, "peer-key-1")
+    assert exc.value.remote_code == -32000
+
+
+@pytest.mark.parametrize(
+    "change",
+    ["identity", "recipient", "schema", "body", "key", "path", "method", "duplicate", "response-only", "expired"],
+)
+def test_receiver_binds_current_enrolled_key_target_and_exact_wire(
+    keys: tuple[_Key, _Key], change: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    sender, receiver = keys
+    prepared = _prepared(sender)
+    fields = list(prepared.headers)
+    if change == "duplicate":
+        fields.append(("Content-Digest", prepared.digest))
+    if change == "response-only":
+        fields.append(("X-LychD-Request-Nonce", prepared.nonce))
+    if change == "expired":
+        future = time.time() + 31
+        monkeypatch.setattr(intercom_http.time, "time", lambda: future)
+    with pytest.raises(IntercomError):
+        verify_peer_request(
+            http_method="GET" if change == "method" else "POST",
+            endpoint=prepared.request_uri + ("/other" if change == "path" else ""),
+            headers=fields,
+            body=prepared.body + (b" " if change == "body" else b""),
+            sender_id="other" if change == "identity" else "workload-1",
+            recipient_id="other" if change == "recipient" else "peer-1",
+            task_schema="other" if change == "schema" else "public-echo@1",
+            peer_public_key=receiver.public if change == "key" else sender.public,
+            key_id="workload-key-1",
+        )
+
+
+def test_receiver_requires_fresh_request_before_signing(
+    keys: tuple[_Key, _Key], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    request = _receive(_prepared(keys[0]), keys[0])
+    monkeypatch.setattr(intercom_http.time, "time", lambda: request.expires_at)
+    with pytest.raises(IntercomError):
+        sign_peer_refusal(request, signing_key=keys[1].private, key_id="peer-key-1")
+
+
+def test_request_framing_precedes_h11_normalization(keys: tuple[_Key, _Key]) -> None:
+    prepared = _prepared(keys[0])
+    head = prepared.wire.partition(b"\r\n\r\n")[0] + b"\r\n\r\n"
+    assert request_content_length(head, "/a2a") == len(prepared.body)
+    for bad in (
+        head.replace(b"/a2a ", b"/a2a? "),
+        head[:-2] + b"Content-Length: 1\r\n\r\n",
+        head[:-2] + b"Transfer-Encoding: chunked\r\n\r\n",
+        head[:-2] + b"Content-Encoding: gzip\r\n\r\n",
+        b"POST /a2a HTTP/1.1\r\nContent-Length: 49153\r\n\r\n",
+    ):
+        with pytest.raises(IntercomError):
+            request_content_length(bad, "/a2a")
 
 
 @pytest.mark.parametrize(

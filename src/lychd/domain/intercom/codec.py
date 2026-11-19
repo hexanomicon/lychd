@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import re
+from dataclasses import dataclass
 from typing import cast
 
 from lychd.domain.intercom.transport import (
@@ -101,13 +102,21 @@ def task_params(method: TaskMethod, foreign_task_id: str) -> dict[str, object]:
     raise IntercomError(IntercomCode.INPUT)
 
 
-def encode_request(method: TaskMethod, local_task_id: str, params: dict[str, object]) -> bytes:  # noqa: C901
-    """Seal an exact supported operation; caller identity is not a receiver task id."""
-    visible_id(local_task_id)
+@dataclass(frozen=True, slots=True, repr=False)
+class PeerOperation:
+    """Validated inert operation within the public-text profile."""
+
+    method: TaskMethod
+    message_id: str | None
+    text: str | None
+    task_id: str | None
+
+
+def _operation(method: TaskMethod, params: dict[str, object]) -> PeerOperation:
     if method == "SendMessage":
         value = _object(params, required={"message", "configuration"}, optional=set())
         message = _object(value["message"], required={"messageId", "role", "parts"}, optional=set())
-        visible_id(message["messageId"])
+        message_id = visible_id(message["messageId"])
         parts = message["parts"]
         if not isinstance(parts, list):
             raise IntercomError(IntercomCode.PROTOCOL)
@@ -122,29 +131,75 @@ def encode_request(method: TaskMethod, local_task_id: str, params: dict[str, obj
         )
         if type(config["returnImmediately"]) is not bool or type(config["historyLength"]) is not int:
             raise IntercomError(IntercomCode.PROTOCOL)
-        if message["role"] != "ROLE_USER" or params != send_params(
-            cast("str", part["text"]), cast("str", message["messageId"])
-        ):
+        text = cast("str", part["text"])
+        if message["role"] != "ROLE_USER" or params != send_params(text, message_id):
             raise IntercomError(IntercomCode.PROTOCOL)
-    elif method in {"GetTask", "CancelTask"}:
+        return PeerOperation(method, message_id, text, None)
+    if method in {"GetTask", "CancelTask"}:
         if method == "GetTask" and type(params.get("historyLength")) is not int:
             raise IntercomError(IntercomCode.PROTOCOL)
-        if params != task_params(method, visible_id(params.get("id"))):
+        task_id = visible_id(params.get("id"))
+        if params != task_params(method, task_id):
             raise IntercomError(IntercomCode.PROTOCOL)
-    else:
-        raise IntercomError(IntercomCode.INPUT)
+        return PeerOperation(method, None, None, task_id)
+    raise IntercomError(IntercomCode.INPUT)
+
+
+def _encoded(body: dict[str, object], limit: int) -> bytes:
     try:
-        raw = json.dumps(
-            {"jsonrpc": "2.0", "id": local_task_id, "method": method, "params": params},
-            ensure_ascii=False,
-            separators=(",", ":"),
-            allow_nan=False,
-        ).encode("utf-8")
+        raw = json.dumps(body, ensure_ascii=False, separators=(",", ":"), allow_nan=False).encode("utf-8")
     except (ValueError, UnicodeError, TypeError):
         raise IntercomError(IntercomCode.INPUT) from None
-    if len(raw) > MAX_REQUEST_BODY_BYTES:
+    if len(raw) > limit:
         raise IntercomError(IntercomCode.LIMIT)
     return raw
+
+
+def encode_request(method: TaskMethod, local_task_id: str, params: dict[str, object]) -> bytes:
+    """Seal an exact supported operation; caller identity is not a receiver task id."""
+    visible_id(local_task_id)
+    _operation(method, params)
+    return _encoded({"jsonrpc": "2.0", "id": local_task_id, "method": method, "params": params}, MAX_REQUEST_BODY_BYTES)
+
+
+def decode_request(raw: bytes, *, local_task_id: str) -> PeerOperation:
+    """Interpret authenticated wire bytes with the same closed shapes used by the sender."""
+    if type(raw) is not bytes or not 0 < len(raw) <= MAX_REQUEST_BODY_BYTES:
+        raise IntercomError(IntercomCode.LIMIT)
+    body = _object(_decoded(raw), required={"jsonrpc", "id", "method", "params"}, optional=set())
+    method = body["method"]
+    params = body["params"]
+    if (
+        body["jsonrpc"] != "2.0"
+        or visible_id(body["id"]) != local_task_id
+        or method not in ("SendMessage", "GetTask", "CancelTask")
+        or not isinstance(params, dict)
+    ):
+        raise IntercomError(IntercomCode.PROTOCOL)
+    return _operation(method, cast("dict[str, object]", params))
+
+
+def encode_task_response(
+    *, method: TaskMethod, local_task_id: str, task_id: str, state: str, text: str | None
+) -> bytes:
+    """Project one receiver-owned task with optional inline text and no history."""
+    if state not in _STATES:
+        raise IntercomError(IntercomCode.INPUT)
+    task: dict[str, object] = {"id": visible_id(task_id), "status": {"state": state}}
+    if text is not None:
+        if type(text) is not str or len(text) > MAX_RESPONSE_BODY_BYTES:
+            raise IntercomError(IntercomCode.LIMIT)
+        task["artifacts"] = [{"artifactId": "result", "parts": [{"text": text, "mediaType": "text/plain"}]}]
+    result = {"task": task} if method == "SendMessage" else task
+    return _encoded({"jsonrpc": "2.0", "id": visible_id(local_task_id), "result": result}, MAX_RESPONSE_BODY_BYTES)
+
+
+def encode_refusal(local_task_id: str) -> bytes:
+    """Return one fixed refusal without revealing task existence or peer content."""
+    return _encoded(
+        {"jsonrpc": "2.0", "id": visible_id(local_task_id), "error": {"code": -32000, "message": "Request refused"}},
+        MAX_RESPONSE_BODY_BYTES,
+    )
 
 
 def _parts(value: object) -> tuple[str, ...]:

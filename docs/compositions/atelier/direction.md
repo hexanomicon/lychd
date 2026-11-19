@@ -15,6 +15,10 @@ Make the reasoning visible in four layers. Begin with the **intent** and the res
 
 Provider prompts, seeds, controls, and exploratory images can help discover this visual system. The accepted direction remains their governing reference, and each accepted asset records the exact direction revision used in its review.
 
+For a finished video, express those decisions in a storyboard the director can inspect before
+production. Put the actual selected shot references, timing, camera, words, transitions and
+intended sound together. The [master](master.md#edit-the-timeline) records the exact reviewed revision.
+
 ## Review and correction
 
 When a candidate fails, identify the relevant rule and decide whether the rule or its execution needs repair. `atelier.revise_from_correction@1` admits a bounded forward correction to that layer. Conflicting rules, an impossible target, or exhausted correction return exact non-completion.

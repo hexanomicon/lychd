@@ -48,9 +48,9 @@ each returned facet:
 | speech transcription, synthesis, cloning, or delivery | [Echo](../../../../aspects/echo.md) and the requesting owner |
 | music, musical vocal, production effect, or musical cue map | [Riffmaw](../../../../../compositions/riffmaw/index.md) |
 | timed-language dialogue, narration, or caption edition | [Language Edition](../../../../../compositions/language-edition/index.md), using its exact Echo and Translation operations |
-| picture-bound effect, foley, room tone, or ambience | [Broadcast](../../../../../compositions/broadcast/index.md) |
+| picture-bound effect, foley, room tone, or ambience | [Atelier](../../../../../compositions/atelier/index.md) for the exact picture and timebase |
 | game-event, state, space, listener, or runtime sound | [Foundry](../../../../../compositions/foundry/sound.md) |
-| final audiovisual assembly | [Broadcast's pinned renderer and timeline](../../../../../compositions/broadcast/render.md) |
+| final audiovisual assembly | [Atelier](../../../../../compositions/atelier/index.md) for its timeline, mix and local video master |
 
 Prism settles technical results, Core owns any `ServiceJobAttempt@1`, and each consuming owner
 independently admits its facet. For model-native video with sound, follow

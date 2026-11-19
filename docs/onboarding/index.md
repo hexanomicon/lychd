@@ -12,7 +12,7 @@ The caption says “will.” The render looks finished. Would you publish it?
 
 Start with **who gets to decide**. In [Broadcast](../compositions/broadcast/index.md#the-work),
 the application for editorial work, an editor can follow a claim back to the speaker's words
-and return the cut for correction. Even an approved cut can stay on disk. Sending it to an
+and ask [Atelier](../compositions/atelier/index.md) to correct the cut. Even an approved cut can stay on disk. Sending it to an
 audience is a [separate decision](../compositions/broadcast/release.md). When the Prophecy
 calls the person at the machine the *Magus*, that power to correct or refuse is part of what
 it means. [Transcendence](../divination/transcendence/index.md) asks what the Lich could learn

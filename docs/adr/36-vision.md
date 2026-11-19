@@ -173,11 +173,17 @@ records the container, stream digests, shared timebase and technical settlement.
 Each declared owner then issues its own `SemanticFacetAdmissionReceipt@1` before that facet may
 enter application truth:
 
-- Atelier judges visual and VFX material;
-- Riffmaw judges music;
-- Language Edition judges timed-language material;
-- Foundry judges interactive world sound; and
-- Broadcast judges picture-bound sound and the final editorial audiovisual relation.
+- Atelier judges visuals, VFX and picture-bound sound. Its master approval binds the final
+  picture edit, caption placement, sound mix and exported bytes to one timeline revision.
+- Riffmaw judges music.
+- Language Edition judges timed-language material.
+- Foundry judges interactive world sound.
+
+A commissioned [Atelier videomaster](../compositions/atelier/master.md) can finish locally or be
+returned to its commissioning peer. Broadcast may separately select an accepted master for a
+destination and request an Atelier successor when a different cut, crop or mix is required.
+Publication approval binds that exact master and destination. An earlier receipt naming another
+Composition revision remains evidence for its original contract and use.
 
 An undeclared facet fails closed. Inseparable streams must be accepted or refused for their
 declared compound use. Neither the provider's output shape nor a `generate_sound` flag supplies

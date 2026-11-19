@@ -96,10 +96,9 @@ facts.
 If a model emits sound with video, Prism records one compound candidate, original container digest,
 shared timebase, and generation receipt, then separates the returned streams into attributable
 child artifacts when their rights and formats permit it. [Atelier](../../../compositions/atelier/index.md)
-retains visual judgment; [Riffmaw](../../../compositions/riffmaw/index.md) musical judgment;
-[Language Edition](../../../compositions/language-edition/index.md) timed-language judgment;
-[Broadcast](../../../compositions/broadcast/index.md) picture-sound and final editorial audiovisual judgment;
-and [Foundry](../../../compositions/foundry/sound.md) world-sound judgment.
+judges the visual and picture-sound facets separately. [Riffmaw](../../../compositions/riffmaw/index.md)
+judges music, [Language Edition](../../../compositions/language-edition/index.md) judges timed
+language, and [Foundry](../../../compositions/foundry/sound.md) judges world sound.
 
 After technical settlement, each declared consumer still judges its own facet. Its independent
 `SemanticFacetAdmissionReceipt@1` pins Composition identity and revision, owner request digest,
@@ -107,9 +106,9 @@ facet and compound digests, role, use boundary, evidence and findings, decision 
 `accepted`, `refused`, or `quarantined` disposition. Prism can link those receipts to the result,
 but cannot issue, merge, or upgrade them.
 
-If the same bytes serve two roles, they require two receipts. Broadcast's later judgment of the
-final editorial audiovisual relation cannot replace admission by Atelier, Riffmaw, Language
-Edition, or Foundry. Technical validity alone therefore makes no facet usable.
+If the same bytes serve two roles, they require two receipts, including when Atelier owns both
+roles. Atelier's final timeline cites the receipts for every admitted facet it uses. A
+distributor reviewing that master can trace each use back to its owner.
 
 If returned sound was absent from `MediaFacetAuthoritySet@1`, record an
 `UnexpectedMediaFacet@1` finding and fail closed for that facet. The pinned retention rule
@@ -140,10 +139,10 @@ closed. The Spell placement retains the surrounding semantic contract.
 
 [Prism's Lens](../../../adr/36-vision.md#decision) may use a pinned FFmpeg revision as deterministic
 machinery for per-artifact probing, extraction, normalization, interpolation, or
-encoding with declared loss. [Atelier](../../../compositions/atelier/motion.md) owns creative
-motion and accepted visual sequences; [Broadcast](../../../compositions/broadcast/edit.md) owns the
-final audiovisual timeline, trim, placement, captions, mix, mux, and editorial render. A
-generative `v2v` operation never becomes the final cut merely because its input was already video.
+encoding with declared loss. A generative `v2v` result enters [Atelier](../../../compositions/atelier/motion.md)
+as a motion candidate. For a finished video, Atelier sets the trim, caption placement, picture
+sound and mix, then renders and checks the local `VideoMaster@1`. Broadcast can take up that exact
+master for claims review and distribution.
 
 ## First model profiles
 

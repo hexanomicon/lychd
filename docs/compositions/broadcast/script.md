@@ -17,4 +17,7 @@ Approve narration and caption words before assembly. For a timed language versio
 
 Review the words for factual support, quotation, attribution, privacy, likeness, disclosures, accessible language, and audience. Tie each finding to the exact claim or text revision so a bounded forward repair can answer it. Where support or authority remains unresolved, keep the result as a draft, correction request, or refusal.
 
-[Edit](edit.md) receives the accepted script by digest. Later correction stales dependent narration, captions, cuts, renders, and publications, preserving the original words and review history.
+[Atelier](../atelier/master.md#edit-the-timeline) admits the accepted script by digest when
+a video is commissioned. [Distribution](distribution.md) binds the approved words to their
+channel uses. Later correction stales dependent narration, captions, cuts, renders and
+publications while preserving the original words and review history.

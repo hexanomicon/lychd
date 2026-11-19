@@ -558,7 +558,7 @@ migration `0009` provides only the initial Project aggregate.
 
 ## Outbound Intercom custody
 
-The Designed [public-text peer profile](26-a2a.md#peer-task-jsonrpc-1) keeps immutable peer identity,
+The [public-text peer profile](26-a2a.md#peer-task-jsonrpc-1) keeps immutable peer identity,
 credential history, current policy/revocation generations, attributed public-source declarations,
 sealed task intent/outbox, each physical transmission decision/claim and authenticated received
 result in dedicated custody. It does not borrow AgentJob, consent or a fabricated Run owner.
@@ -600,6 +600,25 @@ One metadata-derived PostgreSQL migration enters this schema transactionally. Do
 every owned table against concurrent writers and refuses while any retained peer, key, capacity,
 declaration, task or transmission remains. Actual PostgreSQL concurrency, lost-acknowledgement,
 separate-owner recovery, schema/catalog parity and nonempty downgrade refusal are required.
+
+## Receiving Intercom custody
+
+The private receiver commits the enrolled pair, task schema, active invitation policy, sender's
+request and message IDs, exact signed-body digest, bounded public text and receiver-assigned ID
+before acknowledging admission. Fresh physical requests for the same semantic task converge on
+that ID. Reuse with changed content refuses. Per-pair serialization protects task admission,
+the retained task ceiling and the bounded set of live attempt IDs and signature nonces.
+
+The inbox retains its original expiry, operator decisions and approved public reply across
+process restarts. A current invitation and local operator authentication authorize review and
+reconciliation. A remote poll additionally requires the original sender request identity and
+the receiver-assigned task ID. When a submit reply is lost, the receiver operator can locate
+the committed task by the original sender ID. The outbound owner retains uncertainty until
+it possesses a receiver ID obtained through its admitted protocol.
+
+Cancellation and completion serialize on the same task. The first terminal decision fixes the
+result. Migration downgrade locks both receiver tables and refuses while either retains custody.
+[Intercom task protocol](26-a2a.md#durable-task-protocol)
 
 ## Privacy and delivery boundary
 

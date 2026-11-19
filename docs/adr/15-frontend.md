@@ -96,8 +96,9 @@ navigation and does not recur on stream refresh. An event return preserves the o
 and selected record. A stale or unavailable selection is reported, never silently replaced with
 another Run.
 
-One Bridge séance may contain many Invocations. The [Circle](../divination/altar/circle.md) identifies one turn's Invocation. Bridge keeps supplied status beside the
-message and puts **View run in Orb** in the turn menu. The action carries that Run's exact
+One Bridge séance may contain many Invocations. The [Circle](../divination/altar/circle.md)
+identifies one turn's Invocation. Bridge keeps supplied status beside the message and puts
+**View run in Orb** in the turn menu. The action carries that Run's exact
 identity. Required consent and unresolved admission stay visible at the originating request.
 
 ### Creation investigation within Bridge
@@ -914,6 +915,11 @@ commit. Retry explicitly resends that same envelope; a new offering cannot repla
 authoritative resolution. An in-flight response settles browser recovery state even if its view
 has unmounted. Leaving the browser document warns while drafts or unresolved admissions remain;
 this initial recovery state does not claim persistence across reload or browser termination.
+
+Nexus also projects [paired colleague presence](26-a2a.md#private-colleague-presence) outside
+the capability ownership map. The operator sees the exact audience before starting a bounded
+sharing session. The browser clears current peer availability on expiry or stale refresh and
+submits choices to the displayed audience generation.
 
 #### Nexus request and refresh identity
 

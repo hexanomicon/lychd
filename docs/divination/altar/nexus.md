@@ -71,9 +71,75 @@ its outgoing station and relation. A revision with no gates has an explicit empt
 pending Run decisions in Bridge** opens the operator’s live decision surface. A gate declaration
 alone says nothing about whether an executing Run is waiting.
 
-**Colleagues** identifies the absence of a current paired-presence projection. **Users and Principals** and **Access policy** show
+**Users and Principals** and **Access policy** show
 the authenticated local subject and Sigil. A policy review can describe a proposed group, role and
 time-limited elevation for an exact action and object. Applying that authority belongs to Ward.
+
+## See which colleagues welcome requests
+
+Open **Colleagues** in Nexus. **Ready** means the other operator welcomes a request. **Busy**
+means they have asked colleagues to hold off. **Availability unknown** means there is no
+current authenticated report. A stopped Vessel and a delayed replica can look the same.
+
+For a disposable local walkthrough, run this from the checkout on a POSIX host:
+
+```bash
+uv run --locked python scripts/nexus_colleagues_demo.py
+```
+
+Two presence services exchange real encrypted reports in a temporary local folder. Alice shares
+Ready, Bob shares Busy, and Alice withdraws. Bob then stops reporting and his last lease expires. The demo uses
+generated keys and cleans up on exit. Two computers need a private, bidirectionally replicated folder that both operators control.
+
+### Pair two installations
+
+1. Give this pair its own local replica directory and a separate local directory for its key.
+   On a default Linux installation the Vessel can already read and write its Lab. For example,
+   run the following as the installation owner on each machine. Substitute your actual Lab path
+   if you use a different data root. The profile requires private POSIX directories.
+
+    ```bash
+    install -d -m 700 ~/.local/share/lychd/lab/nexus/ada-lin ~/.local/share/lychd/lab/nexus/keys
+    ```
+
+2. Generate **one** dedicated secret for the pair. On the first machine, run the following
+   once. Copy the resulting file to the second operator through an independently trusted
+   private channel and set its mode to `0600` there. Keep both key copies outside all replicas.
+
+    ```bash
+    (umask 077; set -C; openssl rand -hex 32 > ~/.local/share/lychd/lab/nexus/keys/ada-lin.key)
+    ```
+
+3. Use your private file replication tool to synchronize the contents of **ada-lin** between
+   the two machines. Only `a.lease` and `b.lease` need to travel. Use real local directories
+   on both ends so the service can pin them across refreshes. Synchronize both clocks. A report more than three seconds ahead is refused. The key authenticates and encrypts the choice. Someone with
+   access to the replica can still see when its files change.
+
+4. Add this pair to `lychd.toml` on each installation. Use absolute paths visible to its Vessel.
+   In Ada's configuration, `name` identifies Lin locally and `slot` is `a`. In Lin's
+   configuration use the name `Ada`, slot `b`, and Lin's own absolute paths. Each additional
+   colleague needs another pair, directory and key. Restart the Vessels to load the roster.
+
+    ```toml
+    [[server.web.presence.pairs]]
+    name = "Lin"
+    slot = "a"
+    directory = "/home/ada/.local/share/lychd/lab/nexus/ada-lin"
+    key_file = "/home/ada/.local/share/lychd/lab/nexus/keys/ada-lin.key"
+    ```
+
+5. In Nexus, check the listed audience and choose **Share ready** or **Share busy**. Sharing
+   lasts one hour and continues with the browser closed. Lin should see Ada's choice and report
+   time after replication and the next refresh. Change to Busy and check again. **Stop sharing**
+   writes a withdrawal. If the process or replication stops abruptly, the previous report
+   expires within 30 seconds of issue. Each startup begins hidden. A publication failure is
+   shown for its pair. Remove the pair and restart to revoke local access.
+
+To send actual work, ask the other operator for a separate Intercom invitation. The receiver
+starts a private listener for one enrolled sender and one task schema. The operators can then
+send a public request and review it using the Intercom commands. Keep the task ID from
+your sender's `submit` command to poll and read the acknowledged task after reconnecting.
+**Ready** in Nexus is a presence report. [Receive a public brief](../../sepulcher/intercom.md#receive-a-public-brief)
 
 ## Read the observation before planning
 
@@ -205,6 +271,14 @@ Its map is a read-only lens over validated observations within the semantic boar
 its admission gates.
 
 ## Reading direction
+
+In an earlier standalone study, follow a model from a nonbinding preview to its sample
+transition, or follow a local account to its scoped grant. Six views of the same screen
+show the separate observation times, record identities and return paths. The study uses
+fictional data. [Open the interactive design](../../assets/altar-design/nexus-board.html)
+or [walk through the illustrated Nexus guide](nexus-design.md).
+
+[![An early Nexus overview groups Capabilities and Transitions under Operations, with Colleagues, Users and IAM under People and access.](../../assets/altar-design/nexus-overview.webp){ loading="lazy" }](../../assets/altar-design/nexus-overview.webp)
 
 The current layout keeps snapshot time and containment first, then the ownership map or grouped
 list, selected properties, one selected preview and its explicit request. Exact plan overlays and

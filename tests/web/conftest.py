@@ -15,6 +15,7 @@ from litestar.datastructures import State
 from lychd.agents.workflows import builtin_workflow_registry
 from lychd.domain.animation.services.registry import AnimatorRegistry
 from lychd.domain.codex.ledger import InMemoryConsentLedger
+from lychd.domain.codex.local_access import LocalOperatorAccess
 from lychd.domain.codex.middleware import sigil_auth_middleware
 from lychd.domain.cortex.engine import RunEngine
 from lychd.domain.cortex.events import InProcessEventBus
@@ -324,6 +325,7 @@ def fake_services() -> SimpleNamespace:
 @pytest.fixture
 def altar_client(fake_services: SimpleNamespace) -> AsgiClient:
     """A test client wired to the real API and SPA controllers."""
+    access = LocalOperatorAccess(access_password=TEST_ACCESS_PASSWORD)
     app = Litestar(
         route_handlers=[
             AltarController,
@@ -334,12 +336,13 @@ def altar_client(fake_services: SimpleNamespace) -> AsgiClient:
             OrbController,
         ],
         dependencies=web_dependencies,
-        middleware=[sigil_auth_middleware(access_password=TEST_ACCESS_PASSWORD)],
+        middleware=[sigil_auth_middleware(operator_access=access)],
         openapi_config=build_openapi_config(title="LychD Test", version="test", use_handler_docstrings=True),
         plugins=[StrictPydanticSchemaPlugin()],
         state=State(
             {
                 "services": fake_services,
+                "local_operator_access": access,
                 "csrf_contract": CsrfClientContract(
                     cookie_name="csrftoken",
                     header_name="x-csrftoken",
