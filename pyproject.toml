@@ -49,7 +49,7 @@ dependencies = [
     "litestar-granian>=0.17.0",
     "litestar-saq>=0.5.3",
     "pgvector>=0.5.1",
-    "psycopg[pool]>=3.2.13,<4",
+    "psycopg[pool]>=3.3.9,<4",
     "pydantic>=2.14.3",
     "pydantic-ai-slim[logfire,openai]==2.66.0", # exact agent/message/Graph adapter contract
     "pydantic-settings[toml]>=2.16.2",
