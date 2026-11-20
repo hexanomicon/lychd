@@ -169,6 +169,8 @@ async def test_model_and_research_wire_inherit_exact_native_task_context_and_res
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     binding = OperatorConversationProfile(
+        animator_id="night-qwen38",
+        model_id="Qwen3.8-27B",
         persona_name="Example",
         persona_instructions="Public evidence only.",
         adaptive_context=True,

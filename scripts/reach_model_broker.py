@@ -8,14 +8,15 @@ from __future__ import annotations
 
 import asyncio
 import ipaddress
-import re
 import time
 from collections.abc import Callable
 from typing import Any, cast
+from urllib.parse import urlsplit
 
 import httpx2
 
 from lychd.compositions.reach.operator_model_wire import (
+    MAX_MODEL_ID_CHARS,
     MAX_MODEL_PAYLOAD_BYTES,
     OperatorConversationProfile,
     OperatorModelProbe,
@@ -28,52 +29,30 @@ from lychd.compositions.reach.operator_trace import TraceEmitter, TraceName, Tra
 from lychd.compositions.reach.operator_wire import strict_json
 from lychd.lib.http import create_async_http_client
 
-MODEL_ENDPOINT = "http://127.0.0.1:28000"
 MAX_MODEL_IDS = 32
-MAX_REMOTE_MODEL_IDS = 4096
-MAX_MODEL_ID_CHARS = 256
-_ORIGIN = re.compile(
-    r"^(?P<scheme>https?)://(?P<host>\[[0-9a-fA-F:.]+\]|[A-Za-z0-9.-]+)(?::(?P<port>[0-9]{1,5}))?(?P<path>(?:/[A-Za-z0-9._~-]+)*)$"
-)
-_API_KEY = re.compile(r"^[\x21-\x7e]{1,4096}$")
-
-
-def is_loopback_endpoint(endpoint: str) -> bool:
-    """Whether the endpoint is a plain-HTTP loopback IP literal, the original local road."""
-    matched = _ORIGIN.fullmatch(endpoint)
-    if matched is None or matched["scheme"] != "http":
-        return False
-    try:
-        return ipaddress.ip_address(matched["host"].strip("[]")).is_loopback
-    except ValueError:
-        return False
 
 
 def validate_endpoint(endpoint: str) -> str:
-    """Admit a loopback HTTP origin or an HTTPS endpoint; caller frames cannot alter it.
-
-    Plain HTTP is limited to a loopback IP literal with an explicit port and no path.
-    HTTPS may name any host and an optional path prefix. Credentials, queries,
-    fragments, trailing slashes and port zero are refused.
-    """
-    matched = _ORIGIN.fullmatch(endpoint)
-    port = int(matched["port"]) if matched is not None and matched["port"] is not None else None
-    if (
-        matched is None
-        or (port is not None and not 1 <= port <= 65535)  # noqa: PLR2004 - TCP port range
-        or (matched["scheme"] == "http" and (port is None or matched["path"] or not is_loopback_endpoint(endpoint)))
-    ):
-        msg = "model_endpoint"
-        raise ValueError(msg)
-    return endpoint
-
-
-def validate_api_key(value: str) -> str:
-    """Admit one printable header-safe bearer credential without echoing it."""
-    if _API_KEY.fullmatch(value) is None:
-        msg = "model_api_key"
-        raise ValueError(msg)
-    return value
+    """Admit only an explicit and unadorned HTTP loopback origin."""
+    try:
+        parsed = urlsplit(endpoint)
+        host = parsed.hostname
+        port = parsed.port
+        loopback = host is not None and ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        loopback = False
+    else:
+        if (
+            loopback
+            and port
+            and parsed.username is None
+            and parsed.password is None
+            and "%" not in parsed.netloc
+            and endpoint == f"http://{parsed.netloc}"
+        ):
+            return endpoint
+    msg = "model_endpoint"
+    raise ValueError(msg)
 
 
 def _object(value: Any, code: str) -> dict[str, Any]:
@@ -134,17 +113,16 @@ class OperatorModelBroker:
         self,
         profile: OperatorConversationProfile,
         *,
-        endpoint: str = MODEL_ENDPOINT,
+        endpoint: str,
         transport: httpx2.AsyncBaseTransport | None = None,
         trace: TraceSink | None = None,
-        api_key: str | None = None,
+        vllm_options: bool = False,
     ) -> None:
         """Bind transport to a frozen profile without opening any network connection."""
         self.profile = profile
         self.endpoint = validate_endpoint(endpoint)
-        self._local = is_loopback_endpoint(self.endpoint)
-        self._api_key = validate_api_key(api_key) if api_key is not None else None
         self.transport = transport
+        self._vllm_options = vllm_options
         self._busy = False
         self.trace = TraceEmitter("host", trace)
         self._active_request: OperatorModelRequest | None = None
@@ -197,12 +175,10 @@ class OperatorModelBroker:
             )
 
     async def _probe(self, client: httpx2.AsyncClient) -> str:
-        # A remote OpenAI-compatible API has no standard /health route; its inventory is the probe.
-        if self._local:
-            await self._request(client, "GET", "/health")
+        await self._request(client, "GET", "/health")
         value = _object(await self._request(client, "GET", "/v1/models"), "model_inventory")
         entries = _array(value.get("data"), "model_inventory")
-        if len(entries) > (MAX_MODEL_IDS if self._local else MAX_REMOTE_MODEL_IDS):
+        if len(entries) > MAX_MODEL_IDS:
             msg = "model_inventory"
             raise ValueError(msg)
         model_ids: list[str] = []
@@ -220,15 +196,17 @@ class OperatorModelBroker:
         if self.profile.model_id not in ids:
             msg = "model_identity"
             raise LookupError(msg)
-        if len(ids) > MAX_MODEL_IDS:
-            # A gateway catalogue can exceed the wire bound; the worker needs only its own model.
-            ids = (self.profile.model_id,)
         return canonical_json(OperatorModelProbe(healthy=True, model_ids=ids).model_dump(mode="json"))
 
     async def _generate(
         self, client: httpx2.AsyncClient, payload: str, *, authorize: Callable[[], None] | None = None
     ) -> str:
-        body = canonical_json(validate_generation_payload(self.profile, payload)).encode()
+        validated = validate_generation_payload(self.profile, payload)
+        if not self._vllm_options:
+            # The default closed wire includes false for digest compatibility. Ordinary
+            # Chat Completions endpoints need not implement the thinking extension.
+            del validated["chat_template_kwargs"]
+        body = canonical_json(validated).encode()
         if len(body) > MAX_MODEL_PAYLOAD_BYTES:
             msg = "model_request_limit"
             raise ValueError(msg)
@@ -236,7 +214,7 @@ class OperatorModelBroker:
             await self._request(client, "POST", "/v1/chat/completions", body, authorize=authorize), "model_completion"
         )
         self._completion_metadata = _completion_observation(value)
-        if not self.profile.serves(value.get("model")):
+        if value.get("model") != self.profile.model_id:
             msg = "model_completion"
             raise ValueError(msg)
         choices = _array(value.get("choices"), "model_choices")
@@ -276,11 +254,7 @@ class OperatorModelBroker:
                 create_async_http_client(
                     transport=self.transport,
                     timeout=httpx2.Timeout(budget),
-                    headers={
-                        "Content-Type": "application/json",
-                        "Accept-Encoding": "identity",
-                        **({"Authorization": f"Bearer {self._api_key}"} if self._api_key else {}),
-                    },
+                    headers={"Content-Type": "application/json", "Accept-Encoding": "identity"},
                 ) as client,
             ):
                 payload = await (

@@ -584,7 +584,12 @@ def paragraph_request(text: str) -> Any:
 
 
 def test_context_projection_opt_in_preserves_legacy_bindings_and_whole_offers() -> None:
-    raw = {"persona_name": "Example", "persona_instructions": "Be useful."}
+    raw = {
+        "animator_id": "night-qwen38",
+        "model_id": "Qwen3.8-27B",
+        "persona_name": "Example",
+        "persona_instructions": "Be useful.",
+    }
     omitted = OperatorConversationProfile.model_validate_json(canonical_json(raw))
     explicit = OperatorConversationProfile.model_validate_json(canonical_json(raw | {"context_projection_version": 1}))
     assert omitted.digest == explicit.digest == "150082ac6f4444eb5e577d16215ffdf93ce24ead56887dedf42e90ecec016b15"

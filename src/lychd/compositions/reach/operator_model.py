@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime
-from typing import Any, cast
+from pathlib import Path
+from typing import Any, ClassVar, cast
 
 import httpx2
 from pydantic_ai.models import Model
@@ -23,6 +24,7 @@ from lychd.compositions.reach.operator_model_wire import (
     validate_generation_payload,
 )
 from lychd.compositions.reach.operator_wire import strict_json
+from lychd.config.quadlet import QuadletConfig
 from lychd.domain.animation.capabilities import CapabilityPhase, CapabilitySpec, CapabilityState, SourceKind
 from lychd.domain.animation.connectors import Connector, ModelConnector
 from lychd.domain.animation.links import Link
@@ -32,7 +34,6 @@ from lychd.domain.animation.schemas.capability_family import CapabilityFamily
 from lychd.domain.animation.schemas.generation import GenerationProfile
 from lychd.domain.animation.services.adapters.contracts import RuntimeAnimator, RuntimePlan
 from lychd.domain.animation.services.adapters.surfaces import SoulstoneAnimator
-from lychd.extensions.builtin.animator.soulstones.vllm import VllmSoulstoneConfig
 from lychd.lib.http import create_async_http_client
 
 type ModelRelay = Callable[[str, str], Awaitable[str]]
@@ -78,7 +79,7 @@ class _RelayTransport(httpx2.AsyncBaseTransport):
             choice = result["choices"][0]
             message = choice["message"]
             valid = (
-                self.profile.serves(result["model"])
+                result["model"] == self.profile.model_id
                 and choice.get("finish_reason") != "length"
                 and (not thinking or choice.get("finish_reason") == "stop")
                 and len(result["choices"]) == 1
@@ -160,10 +161,18 @@ class OperatorModelConnector(Connector, ModelConnector):
         return warm
 
 
-class OperatorModelAdapter:
-    """One explicit adapter snapshot for the already-running local vLLM Soulstone."""
+class OperatorRelayRune(SoulstoneConfig):
+    """Networkless projection of the exact binding admitted by the trusted host."""
 
-    runtime = "vllm"
+    path_fragment: ClassVar[Path] = Path("reach-relay")
+    runtime: str = "reach-relay"
+    quadlet: QuadletConfig = QuadletConfig(image="localhost/lychd-reach-relay:inactive")
+
+
+class OperatorModelAdapter:
+    """One explicit relay snapshot for the already-running local Soulstone."""
+
+    runtime = "reach-relay"
 
     def __init__(self, profile: OperatorConversationProfile, relay: ModelRelay) -> None:
         """Pin the declared model profile and its narrow relay callable."""
@@ -176,7 +185,7 @@ class OperatorModelAdapter:
 
     def build_runtime(self, soulstone: SoulstoneConfig) -> RuntimeAnimator:
         if (
-            type(soulstone) is not VllmSoulstoneConfig
+            type(soulstone) is not OperatorRelayRune
             or soulstone.name != self.profile.animator_id
             or soulstone.served_model_id != self.profile.model_id
         ):
@@ -186,14 +195,14 @@ class OperatorModelAdapter:
 
     def build_capability_specs(self, animator: RuntimeAnimator) -> list[CapabilitySpec]:
         rune = animator.rune
-        if not isinstance(rune, VllmSoulstoneConfig):
+        if not isinstance(rune, OperatorRelayRune):
             msg = "model_binding"
             raise TypeError(msg)
         return [
             CapabilitySpec(
                 key=self.profile.capability_key,
                 animator_name=animator.name,
-                runtime="vllm",
+                runtime=self.runtime,
                 source_kind=SourceKind.SOULSTONE,
                 family=CapabilityFamily.CHAT,
                 model_id=self.profile.model_id,
@@ -227,6 +236,6 @@ class OperatorModelAdapter:
         ]
 
 
-def operator_model_rune(profile: OperatorConversationProfile) -> VllmSoulstoneConfig:
-    """Declare the fixed observed runtime route without discovering or changing host configuration."""
-    return VllmSoulstoneConfig(name=profile.animator_id, port=28000, served_model_id=profile.model_id)
+def operator_model_rune(profile: OperatorConversationProfile) -> OperatorRelayRune:
+    """Reconstruct the exact model selection without loading any host configuration."""
+    return OperatorRelayRune(name=profile.animator_id, served_model_id=profile.model_id)

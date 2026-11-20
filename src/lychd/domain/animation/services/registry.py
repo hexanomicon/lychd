@@ -421,7 +421,7 @@ class AnimatorRegistry:
         spec = self._capabilities.get(key)
         if spec is None:
             raise CapabilityUnavailable(key, "unknown capability")
-        if spec.egress_refused:
+        if spec.source_kind is SourceKind.PORTAL:
             raise CapabilityUnavailable(key, "portal egress admission is not configured")
         spec.require_executable_v1_family()
 

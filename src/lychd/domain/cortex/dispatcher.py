@@ -175,13 +175,12 @@ class Dispatcher:
 
     @staticmethod
     def _require_egress_admission(spec: CapabilitySpec) -> None:
-        """Refuse remote execution unless the operator opted the Portal in.
+        """Quarantine remote execution until a typed egress authority exists.
 
         Portal declarations and health remain observable through the registry/Nexus,
-        but dispatching prompts or history to them is deny-by-default: only a Rune
-        with ``allow_dispatch = true`` is eligible.
+        but dispatching prompts or history to them is a deny-by-default boundary.
         """
-        if spec.egress_refused:
+        if spec.source_kind is SourceKind.PORTAL:
             raise CapabilityUnavailable(
                 spec.key,
                 "portal egress admission is not configured",
@@ -264,7 +263,7 @@ class Dispatcher:
                 continue
             if requires_tools and spec.supports_tools is not True:
                 continue
-            if spec.egress_refused:
+            if spec.source_kind is SourceKind.PORTAL:
                 quarantined_portal = True
                 continue
             # Cached failure and invalidation do not remove the declared route.
@@ -297,11 +296,8 @@ class Dispatcher:
     def _candidate_sort_key(
         self,
         candidate: tuple[CapabilitySpec, CapabilityState],
-    ) -> tuple[bool, bool, bool, bool, bool, str, str]:
-        """Prefer open admission before warmth so a draining runtime gets no new work.
-
-        Among equally ready candidates a local Soulstone outranks an admitted Portal.
-        """
+    ) -> tuple[bool, bool, bool, bool, str, str]:
+        """Prefer open admission before warmth so a draining runtime gets no new work."""
         spec, state = candidate
         draining = self._leases.admission(spec.animator_name) is AnimatorAdmission.DRAINING
         return (
@@ -309,7 +305,6 @@ class Dispatcher:
             state.phase is CapabilityPhase.ERROR,
             not state.is_active,
             not state.warm,
-            spec.source_kind is SourceKind.PORTAL,
             spec.animator_name,
             spec.key,
         )

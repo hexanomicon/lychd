@@ -21,9 +21,11 @@ import sys
 import tempfile
 from collections.abc import Generator, Sequence
 from contextlib import contextmanager, nullcontext
+from dataclasses import dataclass
 from hashlib import sha256
 from pathlib import Path
-from typing import Any, Literal, NoReturn
+from typing import TYPE_CHECKING, Any, Literal, NoReturn
+from urllib.parse import urlsplit
 from uuid import uuid4
 
 from lychd.compositions.reach.documents import (
@@ -41,13 +43,7 @@ from lychd.compositions.reach.operator_wire import MAX_WIRE_BYTES
 from lychd.interface.discord.operator_io import load_policy
 
 if __package__:
-    from scripts.reach_model_broker import (
-        MODEL_ENDPOINT,
-        OperatorModelBroker,
-        is_loopback_endpoint,
-        validate_api_key,
-        validate_endpoint,
-    )
+    from scripts.reach_model_broker import OperatorModelBroker, validate_endpoint
     from scripts.reach_observation import ReachObservationPublisher
     from scripts.reach_operator_transport import remove_owned, safe_environment, strict_object, supervise
     from scripts.reach_podman_model import PodmanModelTransport
@@ -55,19 +51,16 @@ if __package__:
     from scripts.reach_trace_archive import TraceArchive
     from scripts.reach_trace_capture import TraceCapture
 else:
-    from reach_model_broker import (
-        MODEL_ENDPOINT,
-        OperatorModelBroker,
-        is_loopback_endpoint,
-        validate_api_key,
-        validate_endpoint,
-    )
+    from reach_model_broker import OperatorModelBroker, validate_endpoint
     from reach_observation import ReachObservationPublisher
     from reach_operator_transport import remove_owned, safe_environment, strict_object, supervise
     from reach_podman_model import PodmanModelTransport
     from reach_research_broker import OperatorResearchBroker
     from reach_trace_archive import TraceArchive
     from reach_trace_capture import TraceCapture
+
+if TYPE_CHECKING:
+    from lychd.compositions.reach.operator_model_wire import OperatorConversationProfile
 
 ROOT = Path(__file__).resolve().parents[1]
 WIRE_LIMIT = MAX_WIRE_BYTES
@@ -499,25 +492,95 @@ def instance_lock(state: Path) -> Generator[None]:
         os.close(descriptor)
 
 
-def model_credential(args: argparse.Namespace) -> str | None:
-    """Validate the model road and read its optional bearer credential from a private file.
+class ModelSelectionError(ValueError):
+    """Fixed model-selection diagnostics that may be shown in a private terminal."""
 
-    The Podman transport execs into the local model container and reaches only its loopback
-    endpoint, so it cannot carry a remote endpoint. The credential never appears in argv.
-    """
-    try:
-        validate_endpoint(args.model_endpoint)
-    except ValueError:
-        _fail("operator_model_endpoint")
-    if args.model_transport == "podman" and not is_loopback_endpoint(args.model_endpoint):
-        _fail("operator_model_transport")
-    if args.model_api_key_file is None:
-        return None
-    raw = read_regular(args.model_api_key_file, 8192, private=True)
-    try:
-        return validate_api_key(raw.decode("ascii").strip())
-    except (UnicodeDecodeError, ValueError):
-        _fail("operator_model_api_key")
+
+def load_conversation_profile(raw: bytes) -> OperatorConversationProfile:
+    """Require the operator to name the Soulstone and model in the existing profile."""
+    from lychd.compositions.reach.operator_model_wire import OperatorConversationProfile
+
+    values = strict_object(raw)
+    if "animator_id" not in values or "model_id" not in values:
+        msg = "Reach conversation profile requires explicit animator_id and model_id."
+        raise ModelSelectionError(msg)
+    return OperatorConversationProfile.model_validate_json(raw)
+
+
+@dataclass(frozen=True, slots=True)
+class ModelRoute:
+    """Private route retained by the supervisor for one worker generation."""
+
+    endpoint: str
+    transport: PodmanModelTransport | None
+    vllm_options: bool = False
+
+
+def resolve_model_route(profile: OperatorConversationProfile, *, podman: bool) -> ModelRoute:
+    """Resolve the exact registered local Chat capability on the trusted host."""
+    from lychd.config.runes.registry import load_rune_registry
+    from lychd.config.settings.root import get_settings
+    from lychd.domain.animation.capabilities import CapabilityFamily, SourceKind
+    from lychd.domain.animation.schemas.model_info import ModelSurface
+    from lychd.domain.animation.services.adapters.registry import RuntimeAdapterRegistry
+    from lychd.domain.animation.services.adapters.surfaces import OpenAICompatibleConnector
+    from lychd.domain.animation.services.declarations import compile_animator_declarations
+    from lychd.extensions.host import assemble_extensions
+    from lychd.system.constants import PATH_RUNES_DIR
+    from lychd.system.unit_names import animator_service_stem
+
+    settings = get_settings()
+    extensions = assemble_extensions(settings)
+    runes = load_rune_registry(extensions, PATH_RUNES_DIR)
+    declarations = compile_animator_declarations(settings=settings, runes=runes)
+    stone = next((item for item in declarations.soulstones if item.name == profile.animator_id), None)
+    if stone is None:
+        msg = "Reach conversation requires the selected local Soulstone in the active Codex."
+        raise ModelSelectionError(msg)
+    adapters = RuntimeAdapterRegistry(soulstone_registrations=extensions.soulstone_registrations)
+    runtime = adapters.build_runtime(stone)
+    if runtime is None or not isinstance(runtime.connector, OpenAICompatibleConnector):
+        msg = "Reach conversation requires a local OpenAI-compatible Soulstone."
+        raise ModelSelectionError(msg)
+    if not any(
+        info.id == profile.model_id and info.surface is ModelSurface.CHAT for info in runtime.connector.model_infos
+    ):
+        msg = "The selected Soulstone does not declare the exact Chat Completions model."
+        raise ModelSelectionError(msg)
+    matching = [
+        spec
+        for spec in adapters.build_capability_specs(runtime)
+        if spec.source_kind is SourceKind.SOULSTONE
+        and spec.family is CapabilityFamily.CHAT
+        and spec.key == profile.capability_key
+        and spec.animator_name == stone.name
+        and spec.model_id == profile.model_id
+        and "text" in spec.modalities_in
+        and not spec.is_dynamic
+    ]
+    if len(matching) != 1:
+        msg = "The selected Soulstone does not declare the exact static text Chat model."
+        raise ModelSelectionError(msg)
+    vllm_options = stone.runtime == "vllm"
+    if not vllm_options and (profile.json_object_output or profile.enable_thinking or profile.thinking_phases):
+        msg = "Reach thinking and structured output options require a compatible vLLM Soulstone."
+        raise ModelSelectionError(msg)
+
+    base_url = urlsplit(str(stone.base_url))
+    host = base_url.hostname
+    port = stone.port
+    if base_url.scheme != "http" or base_url.path not in {"/v1", "/v1/"} or port is None or base_url.port != port:
+        msg = "Reach conversation requires an HTTP loopback Soulstone with a /v1 API root."
+        raise ModelSelectionError(msg)
+    if host == "localhost":
+        host = "127.0.0.1"
+    if host is None or (podman and host != "127.0.0.1"):
+        msg = "Reach Podman model transport requires IPv4 loopback."
+        raise ModelSelectionError(msg)
+    loopback = f"[{host}]" if ":" in host else host
+    endpoint = validate_endpoint(f"http://{loopback}:{port}")
+    transport = PodmanModelTransport(container=animator_service_stem(stone.name), port=port) if podman else None
+    return ModelRoute(endpoint=endpoint, transport=transport, vllm_options=vllm_options)
 
 
 def container_arguments(engine: str, image: str, cidfile: Path, *, offline: bool) -> list[str]:
@@ -599,12 +662,11 @@ def run_containers(args: argparse.Namespace) -> int:  # noqa: C901, PLR0912, PLR
     if re.fullmatch(r"[a-z][a-z0-9_]{0,31}", args.command_name) is None:
         _fail("operator_command_name")
     profile = None
+    model_route = None
     if args.conversation_profile is not None:
-        from lychd.compositions.reach.operator_model_wire import OperatorConversationProfile
-
         profile_raw = read_regular(args.conversation_profile, WIRE_LIMIT, private=True)
-        strict_object(profile_raw)
-        profile = OperatorConversationProfile.model_validate_json(profile_raw)
+        profile = load_conversation_profile(profile_raw)
+        model_route = resolve_model_route(profile, podman=args.model_transport == "podman")
     if (policy.allowed_reply_channel_ids or policy.allowed_adjacent_followup_channel_ids) and (
         profile is None or not profile.adaptive_context or not args.history
     ):
@@ -630,7 +692,6 @@ def run_containers(args: argparse.Namespace) -> int:  # noqa: C901, PLR0912, PLR
     if args.onboarding_profile is not None:
         onboarding_raw = read_regular(args.onboarding_profile, 4096, private=True)
         strict_object(onboarding_raw)
-    model_api_key = model_credential(args)
     publications = None
     if args.publications_dir is not None:
         publications = private_directory(args.publications_dir)
@@ -722,7 +783,7 @@ def run_containers(args: argparse.Namespace) -> int:  # noqa: C901, PLR0912, PLR
             if re.fullmatch(r"[1-9][0-9]{0,19}", identity) is None:
                 _fail("operator_admin_identity")
             edge += ["--admin-user", identity]
-        if profile is not None:
+        if profile is not None and model_route is not None:
             return asyncio.run(
                 supervise(
                     args.engine,
@@ -731,10 +792,10 @@ def run_containers(args: argparse.Namespace) -> int:  # noqa: C901, PLR0912, PLR
                     read_identity=read_regular,
                     broker=OperatorModelBroker(
                         profile,
-                        endpoint=args.model_endpoint,
-                        transport=PodmanModelTransport() if args.model_transport == "podman" else None,
+                        endpoint=model_route.endpoint,
+                        transport=model_route.transport,
                         trace=capture.host,
-                        api_key=model_api_key,
+                        vllm_options=model_route.vllm_options,
                     ),
                     research_broker=research_broker,
                     capture=capture,
@@ -831,8 +892,6 @@ def parser() -> argparse.ArgumentParser:
             child.add_argument("--command-name", default="reach")
             child.add_argument("--conversation-profile", type=Path)
             child.add_argument("--onboarding-profile", type=Path)
-            child.add_argument("--model-endpoint", default=MODEL_ENDPOINT)
-            child.add_argument("--model-api-key-file", type=Path)
             child.add_argument("--model-transport", choices=("host", "podman"), default="host")
             child.add_argument("--research-profile", type=Path)
             child.add_argument("--research-state-dir", type=Path)
@@ -864,6 +923,9 @@ def main(argv: list[str] | None = None) -> int:
             return admin_containers(args)
     except KeyboardInterrupt:
         return 130
+    except ModelSelectionError as exc:
+        sys.stderr.write(f"{exc}\n")
+        return 1
     except Exception:  # noqa: BLE001 - never render token-bearing or foreign tool diagnostics
         print("reach_operator_refused", file=sys.stderr)  # noqa: T201
         return 1

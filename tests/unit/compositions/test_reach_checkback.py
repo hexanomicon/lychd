@@ -851,7 +851,13 @@ async def test_research_repair_reuses_identical_source_projection_without_new_re
 def test_checkback_is_explicit_and_binds_exact_host_inputs_without_model_digest_echoes() -> None:
     assert not profile().checkback
     with pytest.raises(ValidationError):
-        OperatorConversationProfile(persona_name="Example", persona_instructions="Voice", checkback=True)
+        OperatorConversationProfile(
+            animator_id="night-qwen38",
+            model_id="Qwen3.8-27B",
+            persona_name="Example",
+            persona_instructions="Voice",
+            checkback=True,
+        )
     request = make_request(action="converse")
     envelope = CheckbackEnvelope.prepare(request, '{"question":"What?"}')
     candidate = '{"kind":"clarify","text":"Which source?"}'

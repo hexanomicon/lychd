@@ -383,42 +383,37 @@ channel whose surrounding content you did not intend to admit.
 
 ## Enable local conversation
 
-By default local conversation requires an already running, warm local `Qwen3.8-27B` at
-`http://127.0.0.1:28000`. The private profile's `animator_id` and `model_id` select a different
-binding, and `--model-endpoint` a different road: plain HTTP is admitted only for a loopback IP
-literal with an explicit port, while HTTPS may name any OpenAI-compatible endpoint with an
-optional path prefix. `--model-api-key-file` reads one bearer credential from a private `0600`
-file; it never appears in argv. A loopback endpoint is checked with fresh `/health` and
-`/v1/models` observations; a remote endpoint has no standard health route, so its `/v1/models`
-inventory is the probe, and only the selected model's presence crosses to the worker. A
-gateway may report the bare model it reached for a routed id such as `vendor/model`; that exact
-suffix is the only accepted alias. The transport cannot start, activate, evict or replace an
-engine. An absent or unsuitable model refuses the turn; document search and another model are
-not fallbacks. The remote road sends the conversation, persona and selected context to that
-provider as-is, without redaction or anonymization. It is off unless `--model-endpoint` names a
-remote endpoint, and is intended for a developer instance holding test data. The planned
-[Egress Gate](https://github.com/hexanomicon/lychd/issues/25) is to authorize the exact
-destination and payload, and apply any required privacy transformation, before this road or a
-Portal granted through `allow_dispatch` may send.
+Run Reach under the same operator account and XDG configuration as the LychD installation
+that owns the model. The private `--conversation-profile` requires both `animator_id` and
+`model_id`. Set them to the Soulstone Rune's `name` and the exact ID of its declared text-chat
+model. Reach resolves that pair in the current Codex. For an existing command, remove
+`--model-endpoint` and add both IDs to any profile that previously omitted them. See
+[declared Soulstone models](../../sepulcher/extensions/animators/soulstone/rune.md#declared-models-become-v1-capabilities).
 
-The default `--model-transport host` reads that loopback endpoint on the operator host.
-When the already-running model is inside the native Podman pod, explicitly select
-`--model-transport podman` (loopback endpoints only). Its bounded transport executes only a fixed Python HTTP helper
-in the exact `lychd-night-qwen38` container and reads the same loopback endpoint there.
-Request text crosses standard input, never shell arguments. The helper cannot select a
-different container, URL, command, model, or runtime transition; it publishes no host port.
-Both roads retain the exact health/model and generation-payload checks.
+The selected capability must be static, and the model must already be running and warm. Its
+OpenAI-compatible Chat Completions API must use an HTTP `/v1` root on loopback. Reach derives the
+endpoint and port from the selected Rune and checks `/health` and `/v1/models` for the exact
+model. The default `--model-transport host` reaches the endpoint on the operator host. To reach the model over IPv4 loopback inside its managed rootless Podman
+container, select `--model-transport podman`. That container must provide `python3` for the
+fixed HTTP helper. The helper runs in the exact `lychd-<animator_id>` container and receives
+request text on standard input. Docker can run the Reach images while Podman serves the model.
 
-Create a private `0600` file at `$REACH_ROOT/conversation-01.json` with your local editor. This
-synthetic example selects an explicit input allowance:
+Reach refuses an unavailable or unsuitable binding. The conversation relay has no endpoint
+or credential override and no authority to start the runtime or fall back to another model or
+document search. Remote model access remains deferred to the
+[Egress Gate](https://github.com/hexanomicon/lychd/issues/25).
+
+Create a private `0600` file at `$REACH_ROOT/conversation-01.json` with your local editor. Replace
+the example Animator and model IDs below with the exact values from your Rune. This example
+also selects an explicit input allowance.
 
 ```json
 {
   "schema_version": 1,
   "persona_name": "Example",
   "persona_instructions": "Answer clearly and state uncertainty when evidence is missing.",
-  "animator_id": "night-qwen38",
-  "model_id": "Qwen3.8-27B",
+  "animator_id": "example-soulstone",
+  "model_id": "example-chat-model",
   "max_context": 70000,
   "max_tokens": 1536,
   "temperature": 0.6,
@@ -445,7 +440,8 @@ Stop the foreground instance before launching the conversation profile with its 
 Add `converse` to the first matching rule's actions. Keep `answer_docs` for `admin-inspect`
 and `summarize_context` for the excerpt-only context command. This first launch uses the
 original zero history limit. If you already enabled [bounded surrounding history](#enable-bounded-surrounding-history-only-when-intended),
-add `--history` to match the positive policy limit.
+add `--history` to match the positive policy limit. Add `--model-transport podman` if the
+selected model is reached inside its managed Podman container.
 
 ```bash
 uv run --locked python scripts/reach_operator.py run \
@@ -455,8 +451,7 @@ uv run --locked python scripts/reach_operator.py run \
   --state-dir "$REACH_ROOT/state" \
   --images "$REACH_ROOT/images-01.json" \
   --corpus-dir "$REACH_ROOT/corpus-01" \
-  --conversation-profile "$REACH_ROOT/conversation-01.json" \
-  --model-endpoint http://127.0.0.1:28000
+  --conversation-profile "$REACH_ROOT/conversation-01.json"
 ```
 
 The corpus supplies relevant public-document excerpts. If history is enabled, the worker
@@ -769,13 +764,12 @@ closed issue codes, attempts and input digests, without candidates, source bodie
 
 ### Reasoning and structured decisions
 
-The private profile may opt into `"enable_thinking": true` for the same already-running local
-model. Omitted or false retains the existing request mode and logical profile digest; true is
-included in the binding. Native and host relays require the one exact profile-selected
-`chat_template_kwargs.enable_thinking` value and refuse conflicting or expanded settings. This
-closed private binding does not add a generic generation policy or model lifecycle authority.
-The existing model server must already support separated reasoning output; no server change or
-automatic fallback follows. Qualify the exact profile and backend before using it.
+A profile selecting a compatible vLLM Soulstone may opt into `"enable_thinking": true`.
+For that runtime, omission or false preserves explicit false in the request. Native and host
+relays validate the exact profile-selected `chat_template_kwargs.enable_thinking` value, and
+the host omits that extension for other static Chat Completions runtimes. Reasoning requires an
+already-running model server that supports separated output. Qualify the exact profile and backend
+before using it.
 
 Reasoning and final content share the profile's completion allowance, bounded to 4,096 tokens,
 which must remain below its declared context window, and its existing timeout. A known length
@@ -794,8 +788,9 @@ exact validated grammar carrier, and natural-stop enforcement uses that actual p
 This adds no model, call, completion allowance, timeout or lifecycle authority. Qualify the complete
 selected profile; a useful isolated review replay does not qualify conversation or repair behavior.
 
-An adaptive profile may also opt into `"json_object_output": true`. Its immutable binding then
-selects `decision_schema_version = 4` and includes the exact compact-grammar bundle digest. Version
+An adaptive profile selecting a compatible vLLM Soulstone may opt into `"json_object_output": true`.
+Its immutable binding then selects `decision_schema_version = 4` and includes the exact
+compact-grammar bundle digest. Version
 3 profiles refuse explicitly; they are not silently migrated. Profiles enabling `request_goals` or
 `json_object_output` must explicitly declare `decision_schema_version = 4`; omission refuses.
 Disabled legacy profiles retain their omitted-version behavior. This contract requires a separately
@@ -1210,8 +1205,9 @@ For the supplied kickoff scenario, select a corpus containing `doc:docs/roadmap.
 conversation profile, enable `adaptive_context`, research, and [expressions](#optional-reactions-and-gifs)
 with a verified GIF entry named `so_it_begins`. The probe checks the source IDs and GIF
 before launching its worker. Set `CORE_IMAGE` to the exact Core ID in the retained record
-for your selected engine. This example reaches the model inside Podman. For an existing
-host-loopback model, the probe spells its transport `--model-transport http`.
+for your selected engine. The probe resolves the same explicit Animator and model IDs from the
+current Codex. It defaults to Podman transport. For a Rune endpoint reachable on the host,
+select `--model-transport http`.
 
 Copy the scenario into the private workspace and run it:
 
