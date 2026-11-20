@@ -433,6 +433,10 @@ installation adoption retain their existing owners.
 
 ## Assimilate one mechanism at a time
 
+When the local need is clear but the reference project is unknown, assign
+[reference discovery](assimilation.md#find-reference-implementations) first. The explorer
+returns source evidence for the receiving owner's decision.
+
 When a campaign studies or re-expresses foreign craft, follow Assimilation's
 [upstream reuse and notices](assimilation.md#upstream-reuse-and-notices). That procedure covers source
 selection, the reuse decision, attribution and the handoff to packaging and Evolution.
