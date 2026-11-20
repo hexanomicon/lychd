@@ -1,7 +1,8 @@
 nav:
   - Overview: index.md
   - Platform differences: platform-differences.md
-  - Personal macOS and Windows hosts: desktop.md
+  - Personal native hosts: desktop.md
+  - Container on a personal desktop: container-desktop.md
   - Desktop installers: desktop-packages.md
   - Desktop volume snapshots: volume-snapshots.md
   - Desktop private service: desktop-tether.md

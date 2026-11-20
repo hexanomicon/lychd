@@ -25,3 +25,10 @@ export function atlasHref(projectId?: string, intent?: AtlasLinkIntent | null): 
   if (!validIntent) return path;
   return `${path}?link_kind=${encodeURIComponent(validIntent.kind)}&link_id=${encodeURIComponent(validIntent.targetId)}`;
 }
+
+export function atlasMapHref(project?: string | null, session?: string | null): string {
+  const query = new URLSearchParams();
+  if (project) query.set("project", project);
+  if (session) query.set("session", session);
+  return query.size ? `/atlas/map?${query}` : "/atlas/map";
+}

@@ -27,6 +27,7 @@ async function mount() {
   const registry = createWorkCommandRegistry();
   const view = render(OrbField, {context:new Map([[workCommandKey,registry]])});
   await waitFor(() => expect(listenToOrb).toHaveBeenCalledOnce());
+  await fireEvent.click(await screen.findByRole('button', {name:'Tab history'}));
   await waitFor(() => expect(screen.getByRole('button',{name:'Pause live field'}).hasAttribute('disabled')).toBe(false));
   await waitFor(() => expect(screen.getByRole('button', {name:'Zoom in'})).toBeTruthy());
   return {registry,view};

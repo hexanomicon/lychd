@@ -2,14 +2,18 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, Literal
+
+from pydantic import TypeAdapter
 
 from lychd.domain.weaver.inspection import InspectionBinding, PatternInspectionEntry
 from lychd.domain.web.consent_reviews import NativeReviewDocument
 
 if TYPE_CHECKING:
+    from lychd.agents.workflows import WorkflowRegistry
     from lychd.agents.workflows.base import Workflow
     from lychd.domain.animation.services.registry import AnimatorRegistry
     from lychd.domain.orchestration.manager import OrchestratorManager
@@ -70,6 +74,9 @@ class NexusCovenRow:
     dedicated: bool
     persistent_resident: bool
     registrant_id: str | None = None
+    groups: tuple[str, ...] = ()
+    supports_tools: bool | None = None
+    connector: str | None = None
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -102,6 +109,7 @@ class LoomNodeView:
     key: str
     label: str
     kind: str
+    output_schema: str | None = None
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -160,8 +168,15 @@ def build_nexus_board(orchestrator: OrchestratorManager, registry: AnimatorRegis
     portals: list[NexusCovenRow] = []
 
     for status in orchestrator.list_capability_statuses():
+        portal = status["source_kind"] == "portal"
+        stone = None if portal else registry.get_soulstone_rune(str(status["animator_name"]))
+        key = str(status["capability_key"])
+        spec = registry.get_capability(key)
         row = NexusCovenRow(
-            capability_key=str(status["capability_key"]),
+            groups=stone.groups if stone else (),
+            supports_tools=spec.supports_tools if spec else None,
+            connector=registry.get_connector_name(str(status["animator_name"])),
+            capability_key=key,
             animator_name=str(status["animator_name"]),
             family=str(status["family"]),
             runtime=str(status["runtime"]),
@@ -176,21 +191,27 @@ def build_nexus_board(orchestrator: OrchestratorManager, registry: AnimatorRegis
             dedicated=bool(status["dedicated"]),
             persistent_resident=bool(status["persistent_resident"]),
         )
-        if status["source_kind"] == "portal":
+        if portal:
             portals.append(row)
             continue
-        grouped.setdefault(_coven_name(registry, row.animator_name), []).append(row)
+        grouped.setdefault(row.groups[0] if row.groups else row.animator_name, []).append(row)
 
     covens = tuple((name, tuple(rows)) for name, rows in sorted(grouped.items(), key=lambda item: item[0]))
     return NexusBoard(covens=covens, portals=tuple(portals))
 
 
-def _coven_name(registry: AnimatorRegistry, animator_name: str) -> str:
-    """Resolve an animator's coven label (its first group), falling back to its name."""
-    soulstone = registry.get_soulstone_rune(animator_name)
-    if soulstone is not None and soulstone.groups:
-        return soulstone.groups[0]
-    return animator_name
+def _registered_nodes(workflow: Workflow) -> tuple[LoomNodeView, ...]:
+    return tuple(
+        LoomNodeView(
+            key=node.key,
+            label=node.label,
+            kind=node.kind,
+            output_schema=json.dumps(TypeAdapter(node.public_result_type).json_schema(), separators=(",", ":"))
+            if node.public_result_type is not None
+            else None,
+        )
+        for node in workflow.manifest.nodes
+    )
 
 
 def build_loom_view(workflow: Workflow, *, highlight: Any | None = None) -> LoomView:
@@ -208,15 +229,25 @@ def build_loom_view(workflow: Workflow, *, highlight: Any | None = None) -> Loom
         title=workflow.title,
         description=workflow.description,
         trigger_hint=workflow.trigger.hint,
-        nodes=tuple(LoomNodeView(**node.snapshot()) for node in manifest.nodes),
+        nodes=_registered_nodes(workflow),
         edges=tuple(LoomEdgeView(**edge.snapshot()) for edge in manifest.edges),
         mermaid_source=workflow.mermaid(highlight=highlight),
     )
 
 
-def build_inspection_view(entry: PatternInspectionEntry) -> LoomView:
-    """Render exact inert score data without resolving a workflow or executing code."""
+def build_inspection_view(entry: PatternInspectionEntry, *, workflows: WorkflowRegistry | None = None) -> LoomView:
+    """Render inspection data; only an exact native binding supplies public result declarations."""
     descriptor = entry.descriptor
+    native = (
+        workflows.get_revision(descriptor.pattern_id, descriptor.revision)
+        if workflows is not None and entry.binding.executable and entry.binding.source_id == "native"
+        else None
+    )
+    nodes = (
+        _registered_nodes(native)
+        if native is not None and native.manifest.digest == descriptor.digest
+        else tuple(LoomNodeView(**node.model_dump()) for node in descriptor.nodes)
+    )
     return LoomView(
         schema_version=descriptor.schema_version,
         pattern_id=descriptor.pattern_id,
@@ -229,7 +260,7 @@ def build_inspection_view(entry: PatternInspectionEntry) -> LoomView:
         title=descriptor.title,
         description=descriptor.description,
         trigger_hint=descriptor.trigger_hint,
-        nodes=tuple(LoomNodeView(**node.model_dump()) for node in descriptor.nodes),
+        nodes=nodes,
         edges=tuple(LoomEdgeView(**edge.model_dump()) for edge in descriptor.edges),
         mermaid_source=descriptor.mermaid(),
         binding=entry.binding,

@@ -95,12 +95,12 @@ A single engine or compound container can produce several roles. The role's acce
 | --- | --- | --- |
 | **[Prism](../sepulcher/aspects/prism/index.md) · Aspect** | visual/spatial effect contracts, technical result settlement, provenance, and derivative facts | a visual commission or creative acceptance |
 | **[Echo](../sepulcher/aspects/echo.md) · Aspect** | speech capture, STT/TTS, speech chronology, delivery, and playback facts | translation, casting, music, or application purpose |
-| **[Atelier](atelier/index.md) · Composition** | visual commission, direction, image, VFX, motion, and accepted visual package | music, timed-language editions, editorial cut, or publication |
+| **[Atelier](atelier/index.md) · Composition** | visual direction and packages, audiovisual cut and timeline, caption placement, picture sound, final mix and local video master | musical acceptance, timed-language or voice acceptance, editorial claims, or publication |
 | **[Riffmaw](riffmaw/index.md) · Composition** | musical composition, instrumental and vocal performance, arrangement, mix/master, and musical cue map | ordinary speech, dubbing, standalone foley, or picture sound |
 | **[Language Edition](language-edition/index.md) · Composition** | source-aligned language versions, translation/adaptation judgment, spoken performance, captions, dialogue conform, and restricted language-version packaging | Persona identity, music, editorial recut, or publication |
 | **[Avatar](avatar/index.md) · Composition** | Persona-linked presentation eligibility, Morphe selection, and projection bindings, including exact eligible voice references | Persona lineage, raw media, speech engines, or target-world authority |
 | **[Foundry](foundry/index.md) · Composition** | interactive world sound bound to exact game events, states, places, listeners, and runtime behavior | music, ordinary speech, picture-bound post-production, or a reusable universal sound library |
-| **[Broadcast](broadcast/index.md) · Composition** | canonical source words and claims, picture-bound sound, final editorial timeline/render/mux, release, and correction | upstream visual, musical, voice, or provider truth |
+| **[Broadcast](broadcast/index.md) · Composition** | commissioned editorial claims and scripts, distribution packaging of an accepted master, audience, outlets, release and correction | the audiovisual cut or its component crafts |
 
 A Translation Spell has an authority-qualified publisher; Spellweaver validates placement without taking linguistic or application truth. Compound model returns likewise keep one technical parent and independent visual/music/dialogue/picture/world-sound semantic admission. No generic reusable-sound Composition is accepted; a future owner must prove its own lifecycle rather than hide in an existing craft.
 

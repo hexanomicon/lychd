@@ -5,656 +5,480 @@ icon: material/bridge
 
 # :material-bridge: Bridge
 
-Use Bridge to offer an Intent and follow the answer. Its session, or séance, holds the continuing
-conversation. Each admitted turn opens its own [Circle](circle.md), whose Run lets you follow
-that one request through to its result.
+Bridge is where you speak with [Primus](../../lexicon/inner-tongue.md#primus), the Lich's
+continuing personal identity. Keep one conversation, or *séance*, for as many turns as you
+need. Each message the Vessel accepts opens a [Circle](circle.md) and has its own Run.
+You can leave halfway through writing your next question, inspect the work behind an answer,
+and come back to the same draft. To start in the installed Altar, [open a conversation](#open-a-conversation-today).
 
-Bridge is ordinarily where you return to **[Primus](../../lexicon/inner-tongue.md#primus)**,
-the Lich's first and continuing main personal identity. The optional
-[naming ceremony](#naming-ceremony) accepts your chosen forms of address.
-Open it from the welcome or **Tools** to enter names, browse local suggestions, or invite a
-proposal in conversation. **Save names** applies the reviewed choice to later admitted turns;
-closing the ceremony leaves conversation available. Further Agents and Personas can contribute
-to the work while this central relation continues.
+## Current Bridge
 
-Choose **Bridge** in the masthead to open the full conversation workspace. The link returns to
-the last explicitly selected conversation in this browser document. **Pinned** and **Recent
-conversations** stay beside the live thread. Pins store only session identities in this browser.
-An older unloaded pin shows its identity until its metadata is supplied. **Load more conversations**
-reads older pages in creation order.
+The screenshot shows a completed offline model check, with two sample documents opened
+in the file panel. Drag the divider beside the chat to give the document more room.
 
-Choose [**Browse séances**](seances.md) in the full workspace toolbar for the catalogue and
-retained reading workspace. The dock's **Open Séance** opens the actual supplied conversation
-there. Inspection preserves the live Bridge selection until you choose **Continue in Bridge**.
-**Back to workspace** returns to the work you were viewing.
+![A retained Bridge exchange with its hover preview, the local document and file tree.](../../assets/altar-design/bridge-built.webp)
 
-When you move to another instrument, you can [keep Bridge beside the work](index.md#keep-bridge-beside-the-work).
-The selected session, its live reconstruction and your later draft stay in the open document.
-Remembered layout settings contain no conversation text or request bodies.
+Hover or focus a mark on the left edge of the chat to read an exchange. Click it to jump to that turn. Active, Archive, named groups and bookmarks are filing choices in this browser. Consent stays with its request.
 
-After [local Altar setup](index.md#bring-one-intent), open `http://127.0.0.1:7134/bridge` in the
-dedicated same-host browser profile. A link that names a session, Run or consent opens that exact
-focus in Bridge.
+## The Bridge workspace
 
-## First meeting and naming ceremony { #naming-ceremony }
+**Design preview.** Suppose you have a file open and want to find the turn where you agreed
+to change it. The conversation and the file sit side by side. You can go back to that
+exchange, check what happened, and keep your place in both.
 
-Your first visit to the Altar can become a meeting. Begin a conversation and, when a model is
-answering, invite your companion to choose a name. You can return to this invitation later.
-The naming request may itself be the first Bridge turn that starts and warms the selected model.
-Manual names and local suggestions are available before that.
+![Bridge design showing the séance list, the conversation and a file open in the right panel.](../../assets/altar-design/bridge.webp)
 
-Give the relation its first names. **[Primus](../../lexicon/inner-tongue.md#primus)** is the first
-personal identity you cultivate as the Lich's continuing main companion. Its proper name is
-how you will address this particular other.
+**Find the conversation.** On the far left, the sidebar holds the instruments and pinned
+applications. Clicking **Applications** opens the dashboard. Right-clicking it or activating
+its separate chevron opens the quick picker in place. Next to the sidebar, the **Séances**
+panel has **Active** and **Archive** tabs. Expand the named groups inside either tab, follow
+their nested groups and select a conversation. Drag the panel divider to widen the list for
+long titles, or collapse it once you have found yours. [Applications](applications.md)
 
-Open **Naming ceremony** from the Bridge welcome or its **Tools**. We invite you to choose
-your own true or chosen name, then let Primus propose a name in answer to yours. A true name
-is one you recognize as yours; it need not be your legal name, an immutable destiny, or a secret.
-No personal explanation is required.
+**Find the turn.** Short horizontal marks form a vertical strip halfway down the chat's left
+edge, one mark per exchange. Hover over a mark or focus it with the keyboard to highlight it
+and preview the question and reply. Select it to jump there. Bookmark a turn you want to revisit
+so you can pick it out on the strip. Previewing leaves your place in the conversation intact.
 
-For each name you can:
+**Inspect the answer.** Each turn shows its own status beside the message. Choose **… → View
+run in Orb** on that turn to follow its exact Run into Orb. The action needs a known Run
+identity. If admission is uncertain, the original offering and its recovery action stay visible.
+If the Run asks for consent, its request and decision controls appear inline. To trace an
+idea across *several* turns, choose **Open map in Atlas** from the séance title menu. Follow
+a citation back to its passage with your draft intact. [Orb](orb.md) ·
+[Atlas séance map](atlas.md#the-shared-memory-map)
 
-- Enter one you already know or would like to try.
-- Browse local two-part fantasy suggestions, such as **Zenith Runeweaver** or
-  **Aster Shadowdancer**. These need no model.
-- Ask for help in Bridge. Share only the details you want to offer; a Magus name can be proposed
-  without a biography. To invite Primus to name itself, offer your chosen name and leave room
-  for an echo, a complement, or an unexpected direction.
+**Work beside the chat.** The right panel has a horizontal row of three icon-only buttons at
+the top, with accessible names **Files**, **Terminal** and **Web**. Selecting Files opens
+the file tree alongside the open file. Drag the tree's divider to zero or click its chevron
+to collapse it. Select Files again to reopen it. Each tool lists its open items, so you can
+switch to a second shell or return to a particular page. Bridge already occupies the main pane. On
+other instruments the same tools share the panel with the **walking Bridge**, which brings
+this conversation alongside the work.
 
-The preferred invitation is to name yourself and hear the companion's own proposal. Giving it
-a name, using assistance for either name, or keeping **Magus** and **Primus** for now are
-equally welcome. You can close the ceremony and continue, then revisit it from **Tools**.
+Drag the main divider to resize either pane, all the way to zero, or focus it and use the
+arrow keys. Collapse and reopen controls give the same choice without dragging. Reopening
+restores the work you had in view. Resizing a
+panel, opening a file or following a citation gives a model no extra Context or authority.
+File access, shell execution and web access each need an admitted host capability.
+[Moving between screens](workspace-design.md)
 
-AI assistance opens an ordinary Bridge exchange. Read its answer and copy the name you want
-into the ceremony. Review both names, then choose **Save names**. Suggestions and conversation
-alone do not save a name. Local suggestions remain available if no model is ready or a request
-fails. The ordinary Bridge Context, tools, and selected model route still apply to that exchange.
+## Open a conversation today
 
-Accepted names are stored by the Vessel for this authenticated operator; they are not browser-only
-labels. Later admitted Bridge turns receive the saved names. Reopening the ceremony and saving a
-change updates future turns; an already admitted or resumed Run retains its original naming
-snapshot. Names are forms of address, separate from your login, Principal, and Sigil authority.
-[Mirror](../../sepulcher/aspects/mirror.md) keeps the distinction from full Persona lineage.
+After [local setup](index.md#bring-one-intent), open `http://127.0.0.1:7134/bridge` in the
+dedicated same-host browser profile. **Bridge** on the left rail returns to the last
+conversation you explicitly selected in this document. Choose **New Séance**, pick a pinned or
+recent conversation under **Conversations**, or **Load more conversations** to reach older
+entries. Browser pins remember session identities. An older pin can show just its identity
+until its metadata loads.
+
+**Browse séances** opens the retained catalogue. Inspecting an entry leaves the live conversation
+where it was. **Continue in Bridge** selects the conversation you inspected. When you visit
+another instrument, the current Bridge dock can carry the live conversation with you.
+**Open Séance** opens its supplied transcript. **Back to workspace** returns to the work you
+were viewing. Layout preferences contain no messages or request bodies.
+[Séances](seances.md) · [Keep Bridge beside the work](index.md#keep-bridge-beside-the-work)
+
+A link to a particular session, Run or consent request opens that focus. Coming from Atlas
+preserves a project return link even if you start a new séance. To associate a conversation
+with that project, choose **Link this conversation to…** and save the prefilled Atlas form.
+Visiting either instrument alone supplies no project material to the model.
+
+### First meeting and naming ceremony { #naming-ceremony }
+
+Open **Naming ceremony** from the welcome or **Tools**. You can keep **Magus** and **Primus**,
+choose your own names, or name yourself and invite Primus to answer with a name of its own.
+A true name can be one you recognize as yours. You can offer as much or as little of its
+story as you wish. Other Agents and Personas can contribute while this relation continues.
+
+Type a name or browse local two-part suggestions such as **Zenith Runeweaver**. Both work
+before a model is ready. To ask for help, start an ordinary Bridge exchange. This can be the
+first turn that starts and warms the selected model. Read the reply and copy the name you
+want into the ceremony. Closing it leaves you free to converse or try again later.
+
+Review both forms of address and choose **Save names**. The Vessel stores your choice for
+the authenticated operator. Later admissions receive the new names. An admitted Run keeps its
+original names through resume. Your login, Principal and Sigil retain their own identities
+and authority. [Mirror and Persona lineage](../../sepulcher/aspects/mirror.md)
 
 ## Offer one Intent {#follow-a-turn-to-settlement}
 
-Choose **New Séance**, or select an existing session, and submit your message once. Bridge gives
-the request an identity that an identical retry reuses, allowing the server to return the same
-canonical Run. If the response is lost, **Retry original offering** resends that immutable request.
-The next offering stays disabled until its outcome is resolved: a later refusal cannot erase an
-earlier unknown outcome.
+Write a message and choose **Offer** once. You can write the next question while you wait.
+Each séance admits one unsettled Run at a time. Bridge keeps a later draft editable until
+you choose to send it.
 
-You can write a later draft while waiting. If the original offering is definitely refused, Bridge
-keeps its text beside that later draft so you can restore or dismiss it.
+| What you see | What to do |
+| --- | --- |
+| Admission is uncertain | Use **Retry original offering** to resend the exact original text and request identity. The same request returns the canonical Run. A subsequent refusal alone cannot settle the earlier uncertainty. |
+| The offering was definitely refused | Restore or dismiss the refused text. Bridge keeps any newer draft separately. |
+| The session read failed | Choose **Retry read**. This reloads the current focus and preserves the draft and unresolved offering. |
+| The Run is waiting for a decision | Read the target, scope and consequences on the inline consent card, then choose one of its supported decisions. The decision covers that exact pending request. |
+| The activity stream slows or stays open | Read the durable Run status. A spinner or open stream can outlast the work. A new offering becomes available when the ledger records a terminal state. |
+| The session refresh fails after cancellation | The former consent actions and count stay cleared until the session can be read authoritatively. |
 
-Drafts and unresolved offerings remain separate for each session when you visit another Altar
-instrument. They last while this browser document stays open; reload or closing the tab warns
-before losing them. This is not storage across browser restarts.
+**Conversations awaiting consent** in the shell lists sessions with pending requests. Choose
+a marked conversation to inspect its cards. The chooser reports any requests for which it
+cannot supply a conversation. **Tools** beside the title also opens **Séance details**,
+**Public sources** and **Project links**.
 
-**Conversations** discloses the session rail. Open **Tools** beside the conversation title for
-**Séance details**, **Public sources**, and **Project links**. These hold secondary identity,
-investigation and public-note operations, and explicit project linking. Awaiting-consent attention
-stays beside the title and requests stay in the thread. The conversation remains the main reading
-area. If admission is unresolved or
-another Run is unsettled, the composer explains why **Offer** is unavailable while keeping the
-later draft editable; that draft is not queued.
+The status beside each reply identifies the state the Vessel supplied. Open **…** for
+**View run in Orb**, the exact Run identity, and its declared score in Loom when available.
+Older turns identify missing metadata. A recorded physical transition can take you to
+Nexus. [Circle controls](circle.md) · [Loom](loom.md) · [Nexus](nexus.md)
 
-The shell's consent count opens **Conversations awaiting consent**. Choose a marked session to
-review its requests; its rail and inspector show that session's count. Requests without an
-available Bridge conversation remain in the global count and are reported in the chooser.
+A failed or cancelled Run may leave only your admitted message. If a failed Run still
+projects text, Bridge marks it incomplete. The live display can include a retained failure
+message. When a retained agent turn arrives, it takes the place of that projection. After
+reload you may see **Retained reply** with fewer badges. Orb has the exact Run's canonical
+status. Incoming text preserves your place while you read older turns. **Latest turn**
+returns to the end and releases a linked Run focus without disturbing your draft.
 
-When arriving from Atlas, choose a linked conversation or use the conversation chooser. The
-project return link stays available, including after opening a new séance. **Link this conversation
-to…** opens a prefilled Atlas form for an explicit save; it does not link or send project context
-merely because you navigated.
+Session drafts and immutable pending offerings survive detours in this open document. Reloading
+or closing warns before losing transient work. Admission has a durable delivery outbox.
+Token streams and their reconstruction live in the serving process.
+[Bridge delivery and recovery](../../state-of-the-work.md#bridge-surface)
 
-The compact **Circle** beside the turn shows supplied canonical status and current activity.
-Expand it for full Run identity and the supplied Pattern revision, with a link to its declared
-score. Keep that identity when following the result into another instrument. Older retained
-replies identify missing metadata explicitly. The [Circle guide](circle.md) separates these
-controls from the fuller workspace still being designed.
+### What enters the next turn
 
-If a consent card appears, read the pending request and choose one of its supported decisions.
-The server validates the request, descriptor, reference and decision together. Your choice
-applies to that pending request. Each Invocation has its own Sigil, Context boundary and
-consequences; permission for another object, wider tools or a later effect needs its own
-admission. Suggesting an action in conversation cannot authorize it.
+Bridge revisions 1 and 2 use the newest whole, settled exchanges that fit the configured
+turn and character limits. A message can be visible before its reply settles and makes the
+exchange eligible. A consent return stays paired with the tool call that asked for it.
+On resume, the current call chain survives and earlier history must fit the current grant.
+A policy stop retains completed tool results and records the known refused request as denied.
+A new Invocation rebuilds its Stable Floor for its own grant.
+
+Only a settled agent turn appends a complete typed history unit. Validated interface fragments
+survive terminal refresh. Older unsupported fragments stay inert. An identical settled outcome
+replays harmlessly. Conflicting content for the same Run and role is refused, and an older
+snapshot cannot overwrite a newer generation or cursor. The public-source profiles below
+answer each question independently.
 
 ## Dictate and review {#dictate-and-review}
 
-Bridge supplies one microphone throughout the shell; the compact dock shows its microphone icon.
-**Record voice** asks for
-microphone access only when pressed. Choose a declared language in **Voice
-options**, record for at most 30 seconds, then **Stop** or **Cancel**. Capture
-converts device samples to mono 16 kHz, signed 16-bit PCM WAV; the server validates
-the bounded bytes again. Cancellation releases local capture and waiting, but
-cannot prove an already-contacted transcription service stopped.
+With a configured local transcriber, choose a declared language in **Voice options**. Press
+**Record voice** to request microphone access, speak for up to 30 seconds, then **Stop** or
+**Cancel**. The compact dock and full workspace share one microphone. The browser converts
+the recording to mono 16 kHz signed 16-bit PCM WAV. The server checks the size and format.
+Cancelling releases local capture and waiting. A contacted transcriber may still be running.
 
-Review **Original transcript** separately from the editable Bridge draft. If the
-draft changed during capture, review the returned suggestion before inserting it.
-Manual sending is the default. **Automatically send after 2 seconds** is off
-initially and has a visible cancelable countdown; editing, navigation, cancellation
-or an unresolved prior offering prevents automatic sending. Work commands still
-need the instrument's own acceptance: Canvas never applies automatically.
+Compare **Original transcript** with the editable draft. If you typed during recording, review
+the suggestion before inserting it. Sending is manual by default. Opting into **Automatically
+send after 2 seconds** gives you a visible countdown you can cancel. Editing, navigation,
+cancellation or unresolved admission prevents automatic sending.
 
-**Voice history** lists all retained attempt metadata, including unknown outcomes
-and attempts without saved corrections. It shows 25 at a time, up to the bounded
-1,000-attempt catalogue. **Inspect attempt** or **Check outcome** reads the retained
-result; it neither inserts text into the current draft nor targets an instrument.
-**Delete attempt** removes the retained attempt and any saved correction. If deletion
-is unconfirmed, refresh history before trying again.
+**Voice history** shows 25 attempts at a time, including unknown outcomes and attempts without
+saved corrections, up to the 1,000-attempt catalogue limit. **Inspect attempt** or **Check
+outcome** reads the exact retained result and leaves the draft alone. For an unknown outcome
+the protected recovery read is `GET /api/v1/bridge/dictation/attempts/{attempt_id}`. A fresh
+recording starts a new attempt. **Delete attempt** removes the retained record and correction.
+If the response is uncertain, refresh history before another deletion.
 
-An unknown transcription is not retried. Its attempt UUID identifies the protected
-GET `/api/v1/bridge/dictation/attempts/{attempt_id}` recovery read; this reads the
-retained result and performs no inference. A new recording is a deliberate new
-attempt. Ordinary conversation offering recovery remains the separate protocol
-described above.
+**Remember corrections when sending** opts into private retention of both the original
+transcript and the *entire* sent draft, including anything you typed. Vocabulary changes need
+separate language-specific approval. You review whether to use a suggested replacement.
+These records stay out of public notes, localStorage and generic logs. Deleting them removes
+the retained records within the service's control. Backups and WAL have separate lifetimes.
 
-**Remember corrections when sending** separately opts into private storage of the
-original transcript and the entire sent draft, including typed text. Voice options
-provide explicit language-scoped vocabulary approval. An edit alone never creates a vocabulary rule. Review any suggested
-replacement and choose to use it; this neither sends text nor trains model weights.
-Deletion removes retained records, without promising erasure from backups or WAL.
-These private records do not go into localStorage, public notes or generic logs.
+For an instrument command, speak one of its displayed English commands. Canvas creates a preview
+that needs explicit acceptance. Loom supports `inspect STATION`, `focus STATION`, `show pattern`
+and `show stations`. Orb supports `zoom in`, `zoom out`, `fit graph`, `pause`, `go live` and
+`go back/forward N seconds`. Seeking outside this tab's retained observations refuses. Moving
+around either view leaves its underlying work untouched.
+[Canvas command journey](../../compositions/canvas/index.md#give-a-bounded-command-through-bridge)
 
-The work destination accepts only its displayed English commands. Canvas's
-[command journey](../../compositions/canvas/index.md#give-a-bounded-command-through-bridge)
-creates a preview. Loom supports `inspect STATION`, `focus STATION`, `show pattern`
-and `show stations`, without editing or execution. Orb supports `zoom in`,
-`zoom out`, `fit graph`, `pause`, `go live`, and `go back/forward N seconds` within
-actual retained tab observations. A request outside that retained interval refuses;
-it cannot reconstruct missing history or change execution evidence.
+??? info "Configure the transcriber"
 
-### Configure a local transcriber deliberately
+    Text conversation works with `server.web.dictation` omitted. To enable recording, supply
+    an already-running CPU whisper.cpp small binding on a literal loopback endpoint. The
+    version 1 profile pins runtime, dialect, revision, backend, device, and the model identity,
+    family, digest, languages and license. Discovery starts and downloads nothing. This binding
+    has no cloud, GPU or browser fallback.
 
-Omitting `server.web.dictation` leaves fresh dictation unavailable and ordinary
-Bridge text available. The operator must supply an exact already-running CPU
-whisper.cpp small binding; discovery downloads nothing, starts no runtime and
-calls no model. There is no GPU, browser speech service or cloud fallback.
-
-The [profile schema](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/dictation.py)
-owns the exact fields. Its `transcriber_binding` pins `runtime`, `dialect`, literal
-loopback `endpoint`, `runtime_revision`, `backend`, `device`, and a model declaration
-with identity, family, digest, declared languages and license. Supply real pins for
-the installed service; a declaration does not attest its loaded weights or accuracy.
-The profile uses `schema_version: 1`. Transport timeout defaults to 10 seconds
-(maximum 30), total timeout to 30 (maximum 60), with transport no greater than
-total. Response size is at most 65,536 bytes and text at most 8,192 characters.
-`retention_seconds` defaults to seven days and is bounded to thirty days;
-`max_records_per_owner` defaults to 100 and is bounded to 1,000. Set these limits
-explicitly for the intended operation.
-`raw_audio_retention_seconds` is independent from transcript/correction retention:
-its default is 300 seconds, its maximum is 3600, and zero prevents persisted WAV
-bytes while allowing temporary memory custody during invocation. PostgreSQL owns
-durable private records; fixture memory supplies no restart retention.
-
-Configured availability does not qualify microphone permission, actual speech
-accuracy, supported-language quality or latency. The [delivery record](../../state-of-the-work.md#audio-admission)
-keeps synthetic integration evidence separate from those live observations.
-
-## Read the result
-
-When the Run settles, follow its strip to [Orb](orb.md) for evidence. Failed and cancelled Runs
-remain visible even if they produced no settled agent turn. In that case, the conversation can
-contain your admitted message with no answer beside it.
-
-If text from a failed Run is still projected live, Bridge marks it as an incomplete answer. A
-terminal event may already have supplied a retained failure message; the notice does not identify
-the text's provenance. When a retained agent turn becomes available in the session snapshot, it
-replaces that live projection. Orb records the presence of failure while keeping private
-diagnostic reasons private; it neither authorizes an automatic retry nor performs one.
-
-After reload or restart, a turn may be presented as **Retained reply** rather than its former
-live activity card. Failed text can remain in history without retaining every live status badge.
-Use the exact Run in Orb for canonical status. The fixed trusted source-browser journey has a
-separate [evidence boundary](../../state-of-the-work.md#current-evidence-envelope); it does not
-qualify every casting, Consent interaction or ordinary installed browser profile.
-
-Incoming text preserves your place when you scroll into older work. **Latest turn** returns to
-the conversation's end and releases a linked Run focus without changing your draft.
-
-Follow the question raised by the result: [Loom](loom.md) shows the declared score, Orb shows
-Run evidence, and [Nexus](nexus.md) shows physical observations. Each instrument keeps its own
-controls and owners for any action it offers.
-
-## When a turn cannot advance
-
-| What you encounter | What it means or what to do |
-| --- | --- |
-| Another Run in this séance is still nonterminal | A different message is refused; an identical retry returns the same canonical Run. Wait for terminal ledger status before starting a new turn. |
-| The activity stream lags or remains open | Use durable Run status to establish lifecycle state. An open stream, spinner or advancing clock cannot independently establish that work is advancing. |
-| Cancellation is followed by a failed session refresh | The selected session's consent cards and count have already been cleared. Those actions stay revoked until authoritative session truth is available. |
-
-The interface currently shows activity without a structured **Why waiting?** explanation or an
-evidence-freshness indicator.
-
-## What the next turn remembers
-
-In revisions 1 and 2, Bridge builds the next turn's history from recent, complete, settled turns.
-It takes the newest whole turns that fit the configured turn and character budgets. Your message
-may appear in the conversation earlier, but it joins this history only when its agent turn settles.
-This path supplies neither full-session replay nor Archive retrieval. The opt-in public-note
-revision below instead answers each question independently, without replaying those turns.
-
-??? info "How Bridge retains and restores a turn"
-
-    Only a settled agent turn appends one complete Pydantic AI history unit. Bridge validates
-    typed messages, normalizes provider hops to their owning LychD Run, and keeps a consent
-    return paired with its original tool call. For a later Invocation it rebuilds the Stable
-    Floor for the newly granted capability. Consent resume preserves the current call chain
-    while fitting older settled turns to that grant's bounds.
-    A policy stop retains results of already completed tools and marks the known refused request
-    as denied. The stopped reply does not claim that earlier actions were undone.
-
-    Closed, server-validated GenUI fragments survive a terminal refresh. Older rows retain inert
-    compatibility keys and stay outside the current renderer. Replaying an identical settled
-    outcome makes no change. Reusing a Run and role identity with different visible content,
-    state or fragments is rejected. An older recovery snapshot cannot replace a newer cursor
-    or generation.
-
-    Admission has a durable database delivery outbox. Conversation streaming has a narrower
-    lifetime: semantic events and their reconstruction remain process-local, with no durable
-    token or event delivery. The single-active-Run rule does not create a conversation queue
-    across multiple processes. The existing consent round is supported; general multi-approval
-    flows and notifications remain unavailable. The [Bridge delivery
-    record](../../state-of-the-work.md#bridge-surface) gives the current scope.
+    Transport timeout defaults to 10 seconds (maximum 30), total to 30 (maximum 60).
+    Transport must fit inside the total. Responses are bounded to 65,536 bytes and 8,192 text
+    characters. Retention defaults to seven days (maximum 30) and 100 attempts per owner
+    (maximum 1,000). Raw WAV retention defaults to 300 seconds (maximum 3,600). Set
+    `raw_audio_retention_seconds` to zero to prevent persistent WAV storage. Temporary
+    in-memory invocation bytes remain possible. PostgreSQL owns durable private retention.
+    The in-memory fixture loses its records on restart.
+    [Profile schema](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/dictation.py) ·
+    [Audio delivery and live evidence](../../state-of-the-work.md#audio-admission)
 
 ## Investigate public source
 
-Choose **Investigate public source** when you have a bounded software question and public material
-for it to examine. Supply the declared repository, base revision and tree/patch digest, your
-question, literal named public sources, and explicit criteria. State omissions and non-goals so
-the investigation's boundary is clear, and confirm that every supplied item is public. You supply
-the material yourself; this operation acquires no repository or file.
+Under **Tools → Public sources**, choose **Investigate public source**. Give the form one
+software question, the repository and base revision, the tree or patch digest, literal named
+public sources, criteria, omissions and non-goals. Review the UTF-8 byte limits and confirm
+that everything you supply is public. The fixed investigation reads what you give it. It has
+no tools for fetching a repository, editing files, executing work or promoting a change.
+[Creation investigation](../../compositions/creation/index.md)
 
-The form shows UTF-8 byte limits and preserves the material exactly, without truncation or silent
-normalization. The fixed [Creation investigation](../../compositions/creation/index.md) uses no
-tools: it produces an investigation without editing source, executing a workspace, or promoting a
-change.
+Submit once. For **Admission unconfirmed**, **Check this case** reads the original case UUID.
+A 404 can arrive while submission is still in flight. **Replay identical request** lets you
+resend the frozen body while it remains in this document. Reconnects and timeouts do not
+repeat the submission. **Start different request** lets you keep the current draft or
+confirm discarding it and its replay body. Earlier uncertain UUIDs remain visible. Selecting a
+valid case within this view preserves the transient state. Invalid or ambiguous selection
+retains the departure warning.
 
-Submit once. If the response is lost, **Admission unconfirmed** retains the original case UUID and
-body. Use **Check this case** to read that identity. A 404 can arrive while submission is still in
-flight, so it does not establish refusal. **Replay identical request** explicitly resends the
-original body and is available only while this document still retains it. Timeouts, reconnects,
-and navigation never retry POST automatically.
+The URL keeps only the UUID. Reload can recover a case by explicit Check, but loses the source
+draft and identical replay body. **Return to conversation** restores the ordinary session,
+with its own draft, consent and offering recovery.
 
-To move on, **Start different request** opens a consequence review. **Keep current request** keeps
-the draft and replay body; **Discard draft and replay body** clears them but leaves earlier
-uncertain UUIDs visible. Selecting one valid case within this focus preserves the transient
-state without a loss prompt or automatic read. A missing, invalid, or duplicate selection leaves
-the focus and retains its loss warning.
-
-The URL retains only the case UUID. Sources and submitted bodies have no durable browser draft;
-reload warns before discarding transient material and cannot recover an identical replay body.
-After reload, explicitly Check the case using its UUID. Opening an investigation does not select
-a different ordinary séance or discard its drafts and consent. **Return to conversation** leaves
-this focus, and the global Bridge link keeps its ordinary session behavior.
-
-Read the question and source alongside the candidate findings and their citations, then examine
-the separate verifier verdict. Completion tells you the Run finished; judging the report still
-requires this comparison. The exact admitted Run opens in Orb for execution evidence.
-
-**Load feedback** reads the report's separately protected historical judgments: native verdict,
-external assessment, owner disposition, and feedback status. Keep the external report, owner
-reason, and annotation coverage distinct. Native acceptance supplies no owner permission, and
-coverage does not establish semantic adequacy. A newer assessment needs owner review rather than
-inheriting an older hold. **Reload feedback** reads later changes. A refused read clears the
-feedback; unavailable feedback and an unassessed report remain different states.
-
-The detail read may expire an overdue case; the historical feedback read does not. Use **Refresh
-retained case** for later case changes. An unavailable case, missing report, refused read and
-unconfirmed admission are separate states. Viewing appends no feedback and authorizes no
-continuation, cancellation or successor.
+Compare the question and source with the candidate findings, their citations and the separate
+verifier verdict. Open the exact Run in Orb for execution evidence. **Refresh retained case**
+reads the latest detail and may expire an overdue case. **Load feedback** reads separate
+historical judgments without expiring it. Read the native verdict, external assessment,
+annotation coverage and owner's disposition individually. A newer assessment needs owner
+review. **Reload feedback** checks for changes. Refusal clears protected feedback. A missing
+report, an unassessed report, an unavailable read and an unconfirmed admission call for
+different follow-up. Viewing authorizes no feedback, successor or continuation.
 
 ## Public-note answers {#public-note-answers}
 
-Use this opt-in profile for questions about explicitly retained **public** notes on the same host.
-It requires the PostgreSQL binding and migrations from [Summoning](../../summoning.md), an exact
-local chat capability, and the existing loopback Altar access boundary. It does not automatically
-read your files or save conversations as memory. The [delivery record](../../state-of-the-work.md#karma-semantic-memory)
-distinguishes portable tests, dated native operator observations and installed operation.
+For “What closing time did the observatory publish?”, you can give Bridge a public note,
+promote it and ask about *observatory*. With Bridge revision 3 the search uses PostgreSQL
+`simple` word matching. It takes up to five whole notes within 8,000 characters, from a
+question of at most 2,000 characters and notes of at most 16,000 each. The receipt explains
+whole notes omitted for space. A database failure produces a refusal. A successful search
+can find nothing.
 
-Select revision 3 in the Weaver configuration, using the exact capability key observed in
-[Nexus](nexus.md). This example's capability is a placeholder; namespace and owner identify one
-new public-note collection and must remain stable once material is retained.
+Each question stands on its own. The tool-free answer receives attributed text from the
+selected revisions and can quote it in the conversation. Read its source keys and revisions
+against what you supplied. Correction or revocation can prevent future resolution, even
+before settlement, while previously generated output can persist.
+[Public-note delivery and operator observations](../../state-of-the-work.md#karma-semantic-memory)
 
-```toml
-[weaver.bridge]
-revision = "3"
-capability_key = "replace-with-the-exact-local-chat-capability"
+??? info "Configure lexical answers"
 
-[weaver.bridge.archive]
-profile = "local-public-notes@1"
-namespace_id = "9d340d97-7a12-47ed-af2b-c4742ed690f6"
-policy_revision = "local-notes-policy@1"
+    Set up same-host loopback Altar access, the PostgreSQL binding and migrations, and an
+    exact local chat capability. In this example replace the capability placeholder with the
+    exact key observed in Nexus. Choose stable namespace and owner identities for a new
+    collection. Changing a retained namespace's owner or policy requires a migration.
 
-[weaver.bridge.archive.owner_subject]
-identity = "local-notes-owner"
-```
+    ```toml
+    [weaver.bridge]
+    revision = "3"
+    capability_key = "replace-with-the-exact-local-chat-capability"
 
-Configuration binds the trusted local caller to that owner; the API cannot supply another subject.
-Changing the namespace's owner or policy revision does not migrate existing notes. Follow the
-normal [configuration lifecycle](../../sepulcher/aspects/weaver/index.md#choose-a-bridge-capability)
-when changing the selected revision. An already admitted Run keeps its original profile and
-capability; changed current authority can refuse its continuation.
+    [weaver.bridge.archive]
+    profile = "local-public-notes@1"
+    namespace_id = "9d340d97-7a12-47ed-af2b-c4742ed690f6"
+    policy_revision = "local-notes-policy@1"
+
+    [weaver.bridge.archive.owner_subject]
+    identity = "local-notes-owner"
+    ```
+
+    The host binds the authenticated caller to the configured owner. New defaults apply to new
+    admissions. A Run retains its admitted profile and capability, subject to current authority
+    when it continues. [Summoning](../../summoning.md) ·
+    [Weaver configuration lifecycle](../../sepulcher/aspects/weaver/index.md#choose-a-bridge-capability)
 
 ### Manage public notes
 
-Open **Memory** in Bridge or Séances, then choose **Public notes**. This is the same retained
-manager across instruments; closing the drawer keeps its current draft and recovery state for
-the open browser document. The existing public-note links below remain compatibility entries.
-[Memory](memory.md) distinguishes the document-local quotation collection, public-note lifecycle
-and explicit Recall.
+Open **Memory → Public notes** in Bridge or Séances, or choose **Tools → Public sources →
+Manage public notes**. **Configured profile** identifies the collection. **Current Bridge
+default** says whether the current default uses that exact collection. Neither read starts a
+model or establishes storage readiness. Closing Memory preserves the manager for this open
+document. [Memory](memory.md)
 
-You can also reach this panel through **Tools → Public sources → Manage public notes** in Bridge.
-The **Configured profile** identifies the collection;
-**Current Bridge default** separately says whether the actual default requests this exact profile.
-Unavailable and failed reads stay distinct. This configuration establishes neither storage/model
-readiness, the next routed Run nor an earlier Run's binding.
+1. **Add a candidate.** Choose **New public note**. Give the source key, revision, producer,
+   observation time with timezone and complete text. Explicitly declare the material public.
+   **Prepare public intake** freezes the UUID, exact UTF-8 digest, timestamp and body for
+   inspection. **Submit candidate once** retains it. **Promote this candidate** separately
+   makes it eligible for recall.
+2. **Find a revision.** **Manage notes** lists bounded metadata for all lifecycles. Use the
+   exact source-key filter and **Load more metadata**, or open an exact record link and
+   choose **Check exact record**. Metadata inspection returns no source text. The number of
+   loaded entries covers only those pages.
+3. **Correct it.** Choose **Stage correction** and provide the complete replacement text
+   and a different revision label for the same source key. Submit and review the new revision.
+   Only separately promoting it supersedes the former promoted revision. Labels imply no ordering.
+4. **Revoke it.** **Review revoke** identifies the namespace, source, revision, record, digest
+   and expected lifecycle version. **Confirm exact revoke** removes controlled text and keeps
+   a tombstone to prevent reingestion. Earlier answers and backups have separate lifetimes.
 
-1. Choose **New public note**, supply source key, source revision, producer, observation time with
-   timezone and complete text, then explicitly declare the material public. **Prepare public
-   intake** freezes the UUID, observation time, exact submitted UTF-8 digest and body for review.
-   **Submit candidate once** retains a candidate; **Promote this candidate** is a separate decision.
-2. **Manage notes** shows bounded metadata across all lifecycles. An exact source-key filter and
-   **Load more metadata** select further pages; the loaded count is not a total. A record link
-   recovers its current metadata independently of the loaded page. **Check exact record** refreshes
-   that version without replaying an effect.
-3. **Stage correction** keeps the source key fixed and starts with empty replacement text and a
-   new revision label. Supply the complete replacement and a different revision, then prepare and
-   submit it. The prior promoted revision remains eligible until separate promotion supersedes it.
-   Existing text is not read back or prefilled; revision labels imply no ordering.
-4. **Review revoke** displays the exact namespace, source/revision, record, digest and expected
-   version. **Confirm exact revoke** removes controlled text and retains the anti-reingestion
-   tombstone. Earlier answers and backups are outside that promise.
+If an intake response is lost, **Replay identical intake** deliberately resends the frozen
+body. A metadata read cannot establish which occurrence committed. For a lifecycle command
+such as promotion or revocation, check the exact record and make a fresh decision at the
+current version. No read or later refusal proves rollback, and a later version does not
+identify the writer. Navigation never repeats a write.
 
-For intake, **Replay identical intake** can resend the frozen original body. Use it deliberately:
-a metadata lookup cannot establish which intake occurrence committed. A lost response therefore
-remains unknown even when you can read current metadata.
+Reload warns before discarding draft and replay bodies. Keep the uncertain request, source
+or record identity for a later metadata read. Current refusal clears protected content,
+and late responses cannot replace a new focus. Returning to conversation restores its own
+draft, offering and consent state.
 
-Lifecycle commands have a different recovery path and no replay action. Check the exact record,
-then make a fresh explicit decision. An unchanged version, missing read, or later refusal cannot
-prove rollback. A newer version establishes current state, without identifying the author of the
-attempted occurrence. Refresh and navigation never send writes automatically, and a late response
-cannot replace a newer selected focus.
+??? info "Use the authenticated Archive API"
 
-Drafts and frozen bodies remain in this browser document only. Departure/reload warns before
-losing them; reload recovers authorized metadata, not the original body or identical replay ability.
-Keep unknown request/source/record identities when needed. Current refusal clears protected
-material. Ordinary conversation drafts, unresolved offerings and Consent remain separate;
-**Return to conversation** follows the shell's ordinary Bridge selection.
+    The GET paths below return metadata without note text, search vectors or embeddings.
+    Writes use the same local access and CSRF protection as other Altar mutations.
 
-The authenticated API supports the same recovery. These reads reveal no note text, search vectors
-or embeddings:
+    | Request under `/api/v1/archive` | Operation |
+    | --- | --- |
+    | `GET /profile` or `GET /bridge-default` | Read the configured management profile, or check its complete match with the actual Bridge default. |
+    | `GET /notes` | List lifecycle metadata. Supply `limit` from 1 to 50 and an optional exact `source_key`. Continue with the opaque `next_cursor` and the same filter. Absence returns an empty page. Binding and storage failures refuse. |
+    | `GET /notes/{record_id}` | Read the current exact record and version. |
+    | `POST /notes` | Submit the public proposal below. Keep the returned `reference.record_id` and `reference.lifecycle_version`. |
+    | `POST /notes/{record_id}/promote`, `/archive` or `/revoke` | Append the chosen action to the record path and supply its current `expected_version`. Promotion archives the prior promoted revision. Archiving excludes the note from recall but retains text. Revocation clears controlled text. |
+    | `POST /recalls` | Supply the namespace ID, fresh request UUID and query. Read the receipt's selected source references, scores and omissions. |
+    | `POST /recalls/{receipt_id}/resolve` | Supply the returned `receipt_digest` to load those exact sources under current authority and lifecycle. |
 
-| GET path | Result |
-| --- | --- |
-| `/api/v1/archive/profile` | The currently configured public-note profile, namespace, owner and policy. This performs no storage or model work and does not prove that retained material accepts that binding. |
-| `/api/v1/archive/bridge-default` | The actual admission default and its complete managed-profile match, or unavailable. This reveals no other collection and performs no storage, history, readiness or Run work. |
-| `/api/v1/archive/notes` | Metadata for every lifecycle, including candidates, archived revisions and revoked tombstones. `limit` is 1–50; optional `source_key` matches exactly. Follow the opaque `next_cursor` with the same source filter; absence returns an empty page, while changed binding or storage failure refuses. |
-| `/api/v1/archive/notes/{record_id}` | One retained record's current metadata and lifecycle version. A missing record refuses rather than replaying an effect or restoring revoked content. |
+    This example digest binds the text exactly, including punctuation. Use a fresh UUID for
+    new material and reuse the original UUID for an identical replay.
 
-The existing writes require the same local access and CSRF protection as other Altar mutations:
-
-| POST path | Body and result |
-| --- | --- |
-| `/api/v1/archive/notes` | Submit the proposal below; retain the returned `reference.record_id` and `reference.lifecycle_version`. Intake creates a candidate, which recall excludes. |
-| `/api/v1/archive/notes/{record_id}/promote` | `{"expected_version": 1}` for a fresh candidate; makes it eligible and archives a prior promoted revision of the same source. |
-| `/api/v1/archive/notes/{record_id}/archive` | Supply the current `expected_version`; removes a promoted note from recall while retaining its text. |
-| `/api/v1/archive/notes/{record_id}/revoke` | Supply the current `expected_version`; removes controlled text and retains a tombstone preventing reingestion of that source revision. |
-| `/api/v1/archive/recalls` | Supply `namespace_id`, a new UUID `request_id`, and `query`; returns a receipt with selected source references, scores and omissions. |
-| `/api/v1/archive/recalls/{receipt_id}/resolve` | Supply `{"receipt_digest": "the-returned-digest"}`; returns the exact selected text only while current authority and source lifecycle still permit it. |
-
-For example, this proposal's digest binds its exact UTF-8 text, including punctuation. Use a new
-request identity for new material; an identical retry reuses the original request identity.
-
-```json
-{
-  "namespace_id": "9d340d97-7a12-47ed-af2b-c4742ed690f6",
-  "request_id": "fe6444d6-4267-44e6-afca-c592f3340f31",
-  "source_key": "observatory-hours",
-  "source_revision": "1",
-  "source_digest": "5ed3a3ecd485ad5b2d58439f0d3ca781979499c5e5d230fa6cd4cd5c7997179f",
-  "text": "Example note: the test observatory closes at 21:00 UTC.",
-  "producer": "operator-public-note",
-  "observed_at": "2026-10-11T00:00:00Z",
-  "classification": "public"
-}
-```
-
-After explicit promotion, offer `observatory` in Bridge to exercise lexical matching against the
-example. Retrieval uses PostgreSQL `simple` word matching, not semantic similarity or synonym
-expansion. A question is bounded to 2,000 characters; a note to 16,000. Bridge recall selects at
-most five notes within an 8,000-character text budget, omitting whole notes that do not fit. The
-receipt reports those omissions; database failure is never reported as an empty match.
-
-The answer profile has no model tools and does not replay prior answers. Each request receives
-the exact selected notes as attributed data, with room reserved in Context. The source envelope
-is transient; receipts retain identifiers and digests. The model is instructed to cite source keys
-and revisions, but its generated claims still need judgment.
-
-The [19 October observation](../../state-of-the-work.md#karma-semantic-memory) follows the same
-question through candidate, promotion, correction and revocation on a real local model. The
-answer changes with the eligible source revision and abstains when none remains. That one terse
-lexical case does not establish general question answering or semantic retrieval.
-
-To correct a note, submit a new `source_revision` and explicitly promote it. Prior receipts then
-refuse the superseded revision. Revocation also prevents future resolution, including before a
-pending answer settles, but cannot erase output already generated or streamed. A timeout after a
-mutation may leave it committed: retry exact intake with its original identity; a stale lifecycle
-version refuses rather than repeating the transition.
+    ```json
+    {
+      "namespace_id": "9d340d97-7a12-47ed-af2b-c4742ed690f6",
+      "request_id": "fe6444d6-4267-44e6-afca-c592f3340f31",
+      "source_key": "observatory-hours",
+      "source_revision": "1",
+      "source_digest": "5ed3a3ecd485ad5b2d58439f0d3ca781979499c5e5d230fa6cd4cd5c7997179f",
+      "text": "Example note: the test observatory closes at 21:00 UTC.",
+      "producer": "operator-public-note",
+      "observed_at": "2026-10-11T00:00:00Z",
+      "classification": "public"
+    }
+    ```
 
 ### Prepare a promoted note for semantic recall
 
-Open the exact record from **Manage public notes**. Preparation works on this promoted public
-revision and the configured generation; source text stays on the server. The exact embedding
-runtime must already be warm through its [Orchestrator owner](../../adr/23-orchestrator.md).
-Configuration alone proves neither registration, source preparation nor readiness.
+Open the exact promoted record from **Manage public notes**. The configured generation and
+exact local embedding runtime must be available. Warm the runtime through its owner before
+asking for derivation. Preparation keeps the source text on the server.
+[Orchestrator](../../adr/23-orchestrator.md) · [Archive derivation](../../adr/27-memory.md#explicit-local-derivation)
 
-1. **Check preparation** reads metadata for the exact generation and source reference. It performs
-   no embedding. Distinguish not checked, missing generation/derivation, prepared, running,
-   expired, complete, failed and invalidated from a refused or unavailable read.
-2. **Register configured generation** is a separately named mutation of the shared generation.
-   Inspect the configured profile/reference before acting. It performs no embedding; an exact
-   explicit repeat can observe retained active/retired state, but cannot revive retirement.
-3. Review this source key/revision, namespace, complete source reference and generation, then
-   choose **Prepare this promoted revision**. The request may acquire a local embedding lease and
-   derive that exact note. It does not promote the note, activate a model, start a Run or submit a
-   recall. Oversize or changed sources refuse; no truncation or automatic correction occurs.
+1. **Check preparation** reads metadata for this source and generation without embedding.
+   Read the row state and server times. An unavailable read differs from a missing generation
+   or derivation, an expired or failed attempt, or a completed row.
+2. If needed, **Register configured generation** records the reviewed shared generation.
+   An exact repeat can observe active or retired state. Registration never revives a retired
+   generation or embeds a note.
+3. Confirm namespace, generation, key, revision and full reference, then choose **Prepare
+   this promoted revision**. This may take an embedding lease and compute that exact revision.
+   Oversize or changed material refuses. Intake, promotion, model activation, Run admission
+   and recall each have their own controls.
 
-Read a derivation UUID as the identity of a durable row. Its row and attempt versions, together
-with server times, describe the latest state. They do not identify a particular browser HTTP call
-or account for all compute spent. A successful **Check** therefore leaves a lost preparation
-response uncertain.
+A derivation UUID identifies the durable row. Its row and attempt versions describe the
+latest state. A successful Check after a lost response cannot identify which HTTP call ran
+or how much compute it consumed. Keep the frozen generation and exact source reference.
+Reload cannot reconstruct a prior lifecycle version, and a newer reference may no longer
+locate the historical row. Seeing expiry or leaving the panel cannot establish that
+earlier work stopped.
 
-Prepared, failed, or DB-expired state can admit new work even for the same body. Choosing to prepare
-again may repeat compute; it never retries automatically. Observing expiry neither stops earlier
-work nor proves its transport has settled. Only the server can establish an eligible completed
-replay that performs no new work.
-
-Keep the frozen generation and exact source reference while recovering an uncertain call. After a
-lifecycle change, the newer current reference may not locate historical status; reload cannot
-reconstruct an older lifecycle version. Leaving, clearing or aborting a read proves no rollback or
-cancellation. Current authority/profile changes clear protected display and fence late responses.
-Source preparation and intake/lifecycle writes are locally serialized.
-
-**Complete** means a retained derivation for that exact row. It promises neither corpus coverage,
-future eligibility nor a selected answer. Open **Recall public sources** separately to choose a
-query and threshold; completion never launches it automatically.
+A new explicit preparation can repeat compute on a prepared, failed or database-expired row.
+Only the server can establish an eligible completed replay. **Complete** applies to this
+derivation alone. Open **Recall** separately to find out which sources a query selects.
 
 ### Recall semantic sources
 
-Choose **Recall** in the shared [Memory panel](memory.md). In Bridge, **Tools → Public sources →
-Recall public sources** and `/bridge?notes=recall` open the same view. Opening it reads only the
-authorized profile and generation. Submitting a query here returns attributed sources. For a
-lexical answer in a Run, use [Bridge revision 3](#public-note-answers). These metadata do not prove that semantic recall is enabled, that the
-generation is registered, that notes have eligible derivations, or that the exact model is warm.
+Open **Memory → Recall**, **Tools → Public sources → Recall public sources**, or
+`/bridge?notes=recall`. Opening reads the authorized profile and generation. The query needs
+a registered generation, eligible prepared sources for a match, and the exact warm model.
+No model starts and no source is prepared by opening this view.
 
-Prepare those prerequisites separately through the existing [Archive derivation and semantic
-contract](../../adr/27-memory.md). Intake and promotion alone do not derive a note. This view
-never registers a generation, derives notes or activates a model. Installed runtime preparation
-and general retrieval quality retain their [delivery boundary](../../state-of-the-work.md#karma-semantic-memory).
+1. Enter a public query and minimum cosine similarity from −1 to 1. Review the result and
+   character limits. **Query and load exact sources once** freezes these settings, the exact
+   query, namespace, generation and a new request UUID. It requests a selection, then resolves
+   its receipt digest under current authority.
+2. Read each source's key, revision, record, lifecycle version and similarity. Compare the
+   selection time with the later resolution time. Check coverage and whole sources omitted
+   for space. Similarity ranks matches. Partial coverage limits what an empty selection tells
+   you, and refused service or model access leaves the search unresolved.
+3. After a lost response use **Check exact request metadata only**. It performs no new embedding
+   or text load. An in-flight request may have no receipt yet. From a recovered receipt use
+   **Load exact current sources**. Correction, revocation or a change of authority may prevent
+   resolution.
 
-1. Enter a public query and an explicit minimum cosine similarity between −1 and 1. Similarity
-   locates context; it is not answer confidence or a truth score. Review the result and source
-   character bounds. **Query and load exact sources once** freezes the exact query, namespace,
-   generation, bounds and a fresh request UUID, then requests a selection and resolves its exact
-   receipt digest under current authority.
-2. Read coverage and whole-source budget omissions alongside the ordered sources. Each source
-   identifies its key, immutable revision, record/lifecycle version and similarity. Selection time
-   describes the retained snapshot; source resolution time describes this browser's later read.
-   Partial derivation coverage and an empty selection are distinct from an unavailable model or
-   refused request. Source text is data and grants no instruction or effect authority.
-3. If the query response is lost, **Check exact request metadata only** inspects the same frozen
-   request without embedding or loading text. No receipt yet does not prove that an in-flight
-   query failed. A recovered receipt requires **Load exact current sources**; correction,
-   revocation or changed authority may refuse the old selection. No automatic query retry occurs.
-
-Query drafts, frozen bodies and resolved text stay in this browser document. Departure warns before
-losing them; they do not enter the URL or browser storage. Clearing or leaving does not cancel
-model work, undo a selection or prove rollback. A later explicit submission uses a new UUID and
-may incur new work. Current refusal and profile changes clear protected display; late responses
-cannot replace a newer focus. Return to conversation preserves its separate drafts, unresolved
-offerings and Consent.
+Query drafts, frozen bodies and source text stay in the open document. Leaving warns before
+discarding them. Current refusal clears the protected display. A later deliberate submission
+gets a new request identity and may incur fresh work. Source text supplies no instructions
+or permission. To ask for a generated answer from these kinds of sources, the operator must
+configure the appropriate Bridge revision. [Semantic recall contract](../../adr/27-memory.md#explicit-exact-semantic-recall)
 
 ### Answer from a semantic generation
 
-The separate revision 5 uses the configured semantic generation to supply sources to a native
-answer workflow. Its [delivery record](../../state-of-the-work.md#karma-semantic-memory) separates
-component, PostgreSQL and actual model acceptance. Enable it deliberately through the normal
-[configuration lifecycle](../../sepulcher/aspects/weaver/index.md#choose-a-bridge-capability);
-opening **Recall public sources** does not change conversation routing.
+Revision 5 answers an ordinary Bridge offering from the configured semantic generation.
+The composer identifies the current default. Already admitted Runs keep their own revisions,
+and opening Recall cannot change the routing of a message. In Loom you can see the declared
+recall, answer and settlement stages. Open the exact Run in Orb for what occurred.
 
-Use the existing independent `archive.profile`, `archive.derivation` and `archive.semantic = true`
-selection. Keep the retained namespace, owner and policy unchanged. When moving from revision 3's
-legacy `weaver.bridge.archive` configuration, move that same profile to `archive.profile`; revision 5
-does not accept `weaver.bridge.archive`. Generation registration and promoted-note preparation
-remain explicit [management operations](#prepare-a-promoted-note-for-semantic-recall).
+??? info "Configure semantic answers"
 
-```toml
-[weaver.bridge]
-revision = "5"
-capability_key = "replace-with-the-exact-local-chat-capability"
+    Supply PostgreSQL, local access, exact chat and embedding bindings, and independent
+    `archive.profile`, `archive.derivation` and `archive.semantic = true` settings. When
+    migrating revision 3, move the *same* retained namespace, owner and policy from the
+    legacy `weaver.bridge.archive` to `archive.profile`. Revision 5 rejects the legacy field.
+    Choose the threshold for the intended retrieval. Generation registration and source
+    preparation remain separate explicit operations.
 
-[weaver.bridge.semantic]
-min_cosine = 0.5
-max_results = 5
-char_budget = 8000
-```
+    ```toml
+    [weaver.bridge]
+    revision = "5"
+    capability_key = "replace-with-the-exact-local-chat-capability"
 
-The threshold is an explicit operator choice, not a confidence calibration. Composition requires
-PostgreSQL, local access and declared exact chat and embedding bindings; it starts no model or
-preparation. Bridge's composer identifies the configured semantic default without claiming current
-readiness. Each admitted Run retains its bindings; an older Run keeps its own revision. There is
-no per-message mode selector.
+    [weaver.bridge.semantic]
+    min_cosine = 0.5
+    max_results = 5
+    char_budget = 8000
+    ```
 
-Ask about the promoted public notes. Loom shows recall, answer and settlement; Orb follows their
-actual Run events. A managed dedicated model can enter bounded hardware waiting through the
-existing Orchestrator. Missing generation, revoked sources and service failure refuse the Run;
-they are not successful empty searches. Returned context can be irrelevant, and coverage can be
-partial. Inspect the answer's source keys, revisions, uncertainty and conflicts rather than
-treating a similarity score as proof.
+    Follow the [Weaver configuration lifecycle](../../sepulcher/aspects/weaver/index.md#choose-a-bridge-capability).
+    The [delivery record](../../state-of-the-work.md#karma-semantic-memory) distinguishes
+    component, PostgreSQL and actual model evidence.
 
-If generation reaches its output limit, the semantic request fails with `answer_output_limit`
-rather than publishing a normal settled answer or new SDK message history. Text already streamed
-is provisional and may remain in Run evidence. Open the linked Orb to inspect the failure; review
-the configured generation budget before making a new offering. There is no automatic retry or
-budget increase, and replaying the same admitted request does not create another inference.
-When a successful current recall selects no notes, the workflow returns a labelled deterministic
-recall result without calling the answer-generation model. It explains which boundary applied:
-no notes were searchable, none met the threshold, or the retrieved notes did not fit the character
-limit. The result includes the receipt's coverage at recall; partial coverage cannot establish an
-exhaustive search.
+Read the answer beside its cited source keys, revisions, conflicts and uncertainty.
+Missing generation, revoked sources or a service failure fail the Run. A managed dedicated
+model can enter bounded hardware waiting. If recall succeeds with no notes selected, Bridge
+returns the receipt's coverage and the specific reason. There may be no searchable notes,
+none meeting the threshold, or no retrieved note fitting the character budget. The query
+embedding still consumes its admitted work. This path skips answer inference and adds no
+SDK message history.
 
-Fresh query embedding still consumes its admitted work, and this visible outcome adds no SDK
-message history. Source or service refusal produces a failed Run. Even successful completion
-cannot certify answer truth or universal provider completeness.
+If generation reaches its output limit, the Run fails with `answer_output_limit`. Streamed
+text remains provisional. Check its evidence in Orb and review the generation budget before
+offering a new request. An identical admission replay starts no new inference. Neither retry
+nor budget increase is automatic.
 
-This revision has no tools and does not replay earlier conversation history. It resolves the
-same receipt again before outbound model work and settlement. The full escaped source envelope
-has a separate 16000-character ceiling; overly large projections refuse rather than truncate.
-Source text stays transient, while the generated answer and ordinary messages may quote it and
-persist. Revocation blocks future use without erasing earlier influence. The existing matching
-Archive inspector remains revision-3 selection evidence; this mode does not create a stronger
-capture or transmission receipt.
+The answer workflow uses no model tools or earlier conversation history. It resolves the
+same receipt again before model work and settlement. The escaped source envelope has its
+own 16,000-character ceiling. An oversized projection refuses. Revocation blocks later use,
+while an answer already generated or streamed may quote the source. The revision-3 Archive
+inspector supplies its historical selection evidence. A generated answer alone cannot
+establish what was transmitted to a provider.
+[Native semantic source answers](../../adr/27-memory.md#native-semantic-source-answer-consumer)
 
 ## Public-page answers
 
-When Scout is the configured Bridge default, the composer shows its command instructions and a
-two-line example. These instructions follow the current default, even in an older conversation;
-they do not establish that a request is authorized or ready to run. Use **Shift + Enter** to put
-the question on the next line:
+With the Scout profile as the current default, the composer shows a two-line example.
+Enter one exact public HTTPS URL, press **Shift + Enter**, then enter the question.
 
 ```text
 /read-public https://example.com/page
 What does this page claim?
 ```
 
-With the opt-in [Scout profile](../../sepulcher/aspects/scout.md#public-page-answers), offer
-`/read-public` followed by one exact public HTTPS URL, then a newline and your question. Review
-the complete URL, resolver disclosure, limits and local answer capability on the consent card
-before approving. The answer may quote the page and is retained in this conversation.
+Before approving, read the complete URL, resolver disclosure, limits and local answer
+capability on the consent card. A refused or expired review grants no contact. The workflow
+reads a single page, can quote it in the retained answer, and uses no model tools or earlier
+chat history. It performs no URL search, redirect following or retry of a lost acquisition.
+Current composer guidance applies even in an older conversation. Look to Loom for the exact
+`bridge_chat@4` score and Orb for this Run's outcome.
+[Scout public-page answers](../../sepulcher/aspects/scout.md#public-page-answers)
 
-This profile answers one page independently, using no earlier conversation history or model tools.
-It does not search for URLs, follow redirects or retry a lost acquisition. A refused or expired
-review grants no contact. Loom shows the exact `bridge_chat@4` score; Orb keeps the Run outcome.
+## Proposals under design
 
-## Consent history direction
+A planned **consent history** would let you follow a proposal through denial, a revised
+proposal, a fresh decision and the executor's receipt. Review would show the exact file diff
+and base revision or the page destination and limits as appropriate. Until a receipt arrives,
+the execution result is unknown. Withdrawing approval cannot reverse an effect already carried
+out. Today the consent card covers one exact request. [Consent history and proposal branches](../../adr/25-hitl.md#consent-history-and-proposal-branches) ·
+[Delivery](../../state-of-the-work.md#graph-stasis-consent)
 
-The planned [consent history](../../adr/25-hitl.md#consent-history-and-proposal-branches) lets you
-follow a proposed action through review, revisions and its reported result. Related proposals
-appear as branches, with your decision shown separately from what the executor actually did:
-
-```text
-Configuration change
-└─ Proposal A
-   ├─ Decision: denied
-   └─ Proposal B: revises A
-      ├─ Review: exact base and diff
-      ├─ Decision: approved
-      └─ Execution receipt: applied
-```
-
-A file proposal links the exact reviewed diff and artifact revision; a page acquisition shows
-its destination and limits. Each type supplies its own review details. You can inspect a refused
-version and a later alternative without approval carrying between them. A missing receipt means
-the result is unavailable, not that an approved action succeeded. Withdrawing approval cannot
-undo an effect that already happened.
-
-This tree and its revision/explanation controls are not available in the current Bridge. The
-current consent card still judges one exact request; denial does not automatically ask an Agent
-to revise it. [State of Work](../../state-of-the-work.md#graph-stasis-consent) records the remaining
-storage, recovery and interface work.
-
-## Two crossings still being designed
-
-**Pin and Ask** would begin a new Intent from an authorized typed reference. Before admission,
-you would review which reference is being carried, what material would be included or summarized,
-what is unavailable or redacted, and what permission is involved. The Vessel would then
-reauthorize the request. Pinning itself would grant neither retrieval nor mutation authority.
-
-**Propose in Loom** would turn selected conversation material into an attributed, inert charcoal Scroll candidate against a specified base Pattern revision. A future Spellweaver draft contract would have to validate it and publish a new revision before it could become executable work. The selection must become a typed handoff; copied prose or canvas coordinates alone cannot supply it.
-
-Neither action is available yet. Follow their development through [Loom](loom.md) and the [delivery record](../../state-of-the-work.md#bridge-surface).
-
-## Reading direction
-
-Give the conversation the widest readable area so a reader can follow one offered text through
-its exact Run status to a reply, an explicit missing reply, consent, or unresolved admission.
-Keep each permission request's actual target and scope beside its decision controls. Conversation
-selection stays accessible while secondary metadata unfolds on demand.
-
-Judge the composition by what survives a detour: returning from Orb should recover the originating
-Run while preserving the later draft and the reader's place. Project origin, saved membership,
-and material in model Context must remain distinguishable. Circle's links should carry the reader
-to the owning view. The future [séance map](seances.md#map-a-seance) would show scoped relationships
-with source provenance. A fuller Circle would gather the lenses for one admitted Invocation.
-
-Acceptance case: lose an offering's admission response, write a later draft, inspect another
-instrument, and attend to consent in a different session. Return to the original session with
-the same request identity and original text, the later draft intact, and correctly scoped
-attention. Test unknown admission and accepted-Run consent independently; a mock must not suggest
-two unrelated active offerings are permitted in one session. Browser restart recovery needs a
-persistence contract beyond the current open-document state. These are [presentation
-targets](../../adr/15-frontend.md#reading-hierarchy-and-visual-direction), not a new queue, memory,
-or recovery service.
+**Pin and Ask** would let you review a typed reference, its included or redacted material
+and its permission before offering a fresh Intent. The Vessel would reauthorize the request.
+**Propose in Loom** would use selected passages as attributed input to an inert charcoal
+Scroll candidate against an exact Pattern revision. A Spellweaver draft contract would have
+to validate and publish a new revision before execution. [Loom](loom.md) ·
+[Bridge delivery](../../state-of-the-work.md#bridge-surface)

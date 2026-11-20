@@ -7,11 +7,15 @@ export interface GraphNode {
   readonly id: string;
   readonly label: string;
   readonly detail: string;
+  /** A separately attributed presentation mark, such as an operator's local appraisal. */
+  readonly annotation?: string;
   readonly kind: string;
   readonly entry?: boolean;
   readonly state?: string;
   readonly count?: number;
   readonly group?: string;
+  /** Explicit enclosing node in a local workflow blueprint. */
+  readonly parent?: string;
   /** Exact known members of a folded presentation group, never an inferred cluster. */
   readonly members?: readonly string[];
   readonly attention?: "latest" | "cursor" | "received";

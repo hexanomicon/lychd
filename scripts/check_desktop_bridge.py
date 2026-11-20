@@ -1,7 +1,7 @@
 """Exercise real browser chat and recover the answer across a native restart in a fresh disposable OS account.
 
 Install the project, PostgreSQL 18 with pgvector, a local llama-server, an instruct GGUF,
-and Chrome (or Edge). Run with Python Playwright available in the qualification environment:
+and Chrome (or Edge). On Linux, set LYCHD_VESSEL_MODE=native. Run with Python Playwright available:
     python scripts/check_desktop_bridge.py --engine PATH --model PATH --output NEW_DIRECTORY
 The program installs the desktop profile into the fresh account and leaves the stopped data
 directory in place. Its output contains screenshots of the synthetic conversation only.
@@ -26,7 +26,13 @@ from typing import TYPE_CHECKING
 from urllib.parse import urljoin
 
 import tomlkit
-from check_desktop_startup import check_password_rotation, check_registered_backup, check_routes, request
+from check_desktop_startup import (
+    check_password_rotation,
+    check_registered_backup,
+    check_routes,
+    request,
+    require_fresh_native_installation,
+)
 
 from lychd.domain.web.contracts import MessageAccepted, MessageIntent
 from lychd.system.constants import PATH_SOULSTONES_DIR
@@ -228,15 +234,9 @@ def arguments() -> argparse.Namespace:
 
 def main() -> None:
     args = arguments()
-    if sys.platform not in {"win32", "darwin"}:
-        msg = "Use a fresh disposable Windows or macOS account."
-        raise SystemExit(msg)
     from playwright.sync_api import sync_playwright
 
-    profile = json.loads(subprocess.check_output([*CLI, "platform"], text=True))
-    if profile["profile"] != "personal-desktop" or any(Path(profile[k]).exists() for k in ("data", "config")):
-        msg = "A fresh disposable account with no existing LychD installation is required."
-        raise SystemExit(msg)
+    require_fresh_native_installation(CLI)
     args.output.mkdir(parents=True, exist_ok=False)
     subprocess.run([*CLI, "desktop", "install"], check=True)
     try:

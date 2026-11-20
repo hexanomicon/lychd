@@ -12,7 +12,7 @@ import tomlkit
 
 from lychd.extensions.builtin.animator.soulstones import LlamaCppSoulstoneConfig
 from lychd.system.constants import PATH_LYCHD_TOML, PATH_SOULSTONES_DIR
-from lychd.system.desktop.private import check_path
+from lychd.system.desktop.private import check_native_inputs, check_path
 
 _BRIDGE_KEY = "personal:chat:personal-model"
 _HEADER = "# Managed by lychd desktop configure-model.\n"
@@ -33,6 +33,10 @@ def configure(engine: Path, model: Path, port: int) -> None:
     """Bind the installed native engine and GGUF while retaining other extension selections."""
     engine = engine.resolve(strict=True)
     model = model.resolve(strict=True)
+    try:
+        check_native_inputs(engine, model)
+    except (OSError, ValueError) as exc:
+        raise click.ClickException(str(exc)) from exc
     if engine.name.lower() not in {"llama-server.exe", "llama-server"} or not os.access(engine, os.X_OK):
         msg = "The engine must be an executable llama-server or llama-server.exe."
         raise click.ClickException(msg)

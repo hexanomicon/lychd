@@ -17,8 +17,10 @@ from granian.server.embed import Server
 
 from lychd.interface.server_policy import (
     ServerRuntimePolicyError,
+    validate_native_database,
     validate_server_environment,
 )
+from lychd.system.vessel_mode import require_native_user, vessel_mode
 
 if TYPE_CHECKING:
     from types import FrameType
@@ -168,7 +170,7 @@ async def serve_application(app: Litestar, *, host: str, port: int) -> None:
             startup_cancelled = True
             lifecycle.cancel()
 
-    if sys.platform in {"darwin", "win32"}:
+    if vessel_mode() == "native":
         app.state.native_request_stop = request_stop
 
     server._retire = request_stop  # noqa: SLF001 # pyright: ignore[reportPrivateUsage] - before Granian's shutdown await
@@ -194,26 +196,22 @@ async def serve_application(app: Litestar, *, host: str, port: int) -> None:
 
 def run_production_server() -> None:
     """Construct the image application with its fixed internal listener."""
-    if sys.platform != "linux":
-        message = "The caged image listener requires Linux."
+    if sys.platform != "linux" or vessel_mode() != "container":
+        message = "The caged image listener requires Linux in container mode."
         raise ServerRuntimePolicyError(message)
     _run_listener(_CAGED_HOST, _CAGED_PORT)
 
 
 def run_native_server() -> None:
     """Bind the foreground personal Vessel to its fixed loopback interface."""
-    if sys.platform not in {"darwin", "win32"}:
-        message = "The native listener requires macOS or Windows."
-        raise ServerRuntimePolicyError(message)
+    try:
+        require_native_user()
+    except ValueError as exc:
+        raise ServerRuntimePolicyError(str(exc)) from exc
     from lychd.config.settings.root import get_settings
 
     settings = get_settings()
-    if settings.server.database.host not in {"127.0.0.1", "localhost", "::1"}:
-        message = "The native Vessel requires a loopback PostgreSQL host."
-        raise ServerRuntimePolicyError(message)
-    if settings.server.database.profile != "postgres":
-        message = "The native Vessel requires PostgreSQL."
-        raise ServerRuntimePolicyError(message)
+    validate_native_database(settings.server.database)
     _run_listener("127.0.0.1", settings.server.port)
 
 

@@ -101,8 +101,10 @@ TTS.
 source and target words, casting, performance direction, dialogue timing, caption fit, and
 acceptance of a constrained language-track replacement. It may place STT, Translation, and TTS or
 human-performance steps in one Pattern, but that orchestration does not make Echo the application
-or Translation an ambient feature. Language Edition may alter only declared language tracks against a locked
-master; Broadcast retains editorial recutting, final assembly, and publication.
+or Translation an ambient feature. Language Edition may alter only declared language tracks against
+a locked master. [Atelier](../compositions/atelier/master.md) owns picture-bound sound, final cut,
+placement and mix against picture, and acceptance of the exported local videomaster. A new mix
+produces a successor master. Broadcast owns the separate publication decision.
 
 ## Capture and custody
 

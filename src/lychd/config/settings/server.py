@@ -9,6 +9,7 @@ from urllib.parse import urlsplit
 from litestar.data_extractors import RequestExtractorField, ResponseExtractorField
 from pydantic import Field, SecretStr, ValidationInfo, field_validator, model_validator
 
+from lychd.config.settings.presence import PresenceSettings
 from lychd.config.settings.section import SettingsSection
 from lychd.domain.dictation import DictationProfile
 from lychd.system.secret_names import validate_podman_secret_name
@@ -117,6 +118,8 @@ class WebSettings(SettingsSection):
         return validate_local_access_password(value) if value is not None else None
 
     debug: bool = False
+    presence: PresenceSettings | None = None
+    """Private local pair folders selected for the Nexus colleague board."""
     dictation: DictationProfile | None = None
     """Explicit already-running CPU transcription binding; omission disables fresh dictation."""
 

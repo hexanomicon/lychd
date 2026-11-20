@@ -26,11 +26,20 @@ from http_message_signatures.resolvers import HTTPSignatureKeyResolver
 from http_message_signatures.signatures import HTTPMessageSigner, HTTPMessageVerifier
 from http_sf.compat import Dictionary, InnerList, Item
 
-from lychd.domain.intercom.codec import decode_response, encode_request, visible_id
+from lychd.domain.intercom.codec import (
+    PeerOperation,
+    decode_request,
+    decode_response,
+    encode_refusal,
+    encode_request,
+    encode_task_response,
+    visible_id,
+)
 from lychd.domain.intercom.transport import (
     MAX_HEADER_BYTES,
     MAX_HEADER_FIELDS,
     MAX_OPERATION_SECONDS,
+    MAX_REQUEST_BODY_BYTES,
     MAX_REQUEST_BYTES,
     MAX_RESPONSE_BODY_BYTES,
     IntercomCode,
@@ -108,10 +117,25 @@ class _ResponseMessage:
     status_code: int
 
 
+@dataclass(frozen=True, slots=True, repr=False)
+class VerifiedPeerRequest(PeerOperation):
+    """Fresh signed facts; replay fencing and authorization belong to the receiving service."""
+
+    sender_id: str
+    recipient_id: str
+    task_schema: str
+    request_uri: str
+    local_task_id: str
+    attempt_id: str
+    digest: str
+    nonce: str
+    expires_at: int
+
+
 class _Signer(Protocol):
     def sign(
         self,
-        message: _RequestMessage,
+        message: _RequestMessage | _ResponseMessage,
         *,
         key_id: str,
         nonce: str,
@@ -126,7 +150,9 @@ class _Signer(Protocol):
 
 
 class _Verifier(Protocol):
-    def verify(self, message: _ResponseMessage, *, expect_tag: str, max_age: timedelta) -> list[object]: ...
+    def verify(
+        self, message: _RequestMessage | _ResponseMessage, *, expect_tag: str, max_age: timedelta
+    ) -> list[object]: ...
 
 
 class _SigningKey(HTTPSignatureKeyResolver):
@@ -178,8 +204,9 @@ def _uri(uri: str) -> tuple[str, str]:
     return parsed.netloc, parsed.path
 
 
-def _headers(fields: Sequence[tuple[str, str]], body: bytes) -> dict[str, str]:
-    if len(fields) > MAX_HEADER_FIELDS or sum(len(k) + len(v) + 4 for k, v in fields) + 2 > MAX_HEADER_BYTES:
+def _headers(fields: Sequence[tuple[str, str]], body: bytes, *, start_line_bytes: int = 0) -> dict[str, str]:
+    size = start_line_bytes + sum(len(k) + len(v) + 4 for k, v in fields) + 2
+    if len(fields) > MAX_HEADER_FIELDS or size > MAX_HEADER_BYTES:
         raise IntercomError(IntercomCode.LIMIT)
     result: dict[str, str] = {}
     allowed_profile = set(REQUEST_COMPONENTS + RESPONSE_COMPONENTS)
@@ -220,7 +247,7 @@ def _signature(
     key_id: str,
     tag: str,
     components: tuple[str, ...],
-) -> str:
+) -> tuple[str, int]:
     try:  # Package parsing and consumer checks share one diagnostic quarantine.
         fields: dict[str, Dictionary] = {}
         for name in ("signature", "signature-input"):
@@ -262,7 +289,7 @@ def _signature(
             raise IntercomError(IntercomCode.AUTHENTICATION)  # noqa: TRY301
     except Exception:  # noqa: BLE001 - Never export package diagnostics or foreign structured fields.
         raise IntercomError(IntercomCode.AUTHENTICATION) from None
-    return nonce
+    return nonce, expires
 
 
 def _serialize(uri: str, fields: Sequence[tuple[str, str]], body: bytes) -> bytes:
@@ -291,6 +318,55 @@ def _serialize(uri: str, fields: Sequence[tuple[str, str]], body: bytes) -> byte
     return wire
 
 
+def _signed_fields(
+    message: _RequestMessage | _ResponseMessage,
+    body: bytes,
+    *,
+    key_id: str,
+    signing_key: bytes,
+    tag: str,
+    components: tuple[str, ...],
+) -> tuple[tuple[tuple[str, str], ...], str]:
+    nonce = secrets.token_hex(16)
+    try:
+        signer = cast(
+            "_Signer",
+            HTTPMessageSigner(signature_algorithm=algorithms.ED25519, key_resolver=_SigningKey(key_id, signing_key)),  # pyright: ignore[reportPrivateImportUsage]
+        )
+        now = datetime.now(UTC)
+        signer.sign(
+            message,
+            key_id=key_id,
+            nonce=nonce,
+            tag=tag,
+            created=now,
+            expires=now + timedelta(seconds=MAX_OPERATION_SECONDS),
+            covered_component_ids=components,
+            label=SIGNATURE_LABEL,
+            body=body,
+            use_existing_digest=True,
+        )
+    except Exception:  # noqa: BLE001 - Secret loaders/package errors are intentionally content-free.
+        raise IntercomError(IntercomCode.AUTHENTICATION) from None
+    fields = tuple(message.headers.items())
+    _signature(_headers(fields, body), key_id=key_id, tag=tag, components=components)
+    return fields, nonce
+
+
+def _authenticate(
+    message: _RequestMessage | _ResponseMessage, *, key_id: str, peer_public_key: bytes, tag: str
+) -> None:
+    try:
+        verifier = cast(
+            "_Verifier",
+            HTTPMessageVerifier(signature_algorithm=algorithms.ED25519, key_resolver=_PeerKey(key_id, peer_public_key)),  # pyright: ignore[reportPrivateImportUsage]
+        )
+        if len(verifier.verify(message, expect_tag=tag, max_age=timedelta(seconds=MAX_OPERATION_SECONDS))) != 1:
+            raise IntercomError(IntercomCode.AUTHENTICATION)  # noqa: TRY301
+    except Exception:  # noqa: BLE001 - Foreign and package diagnostics never leave this boundary.
+        raise IntercomError(IntercomCode.AUTHENTICATION) from None
+
+
 def prepare_request(
     *,
     method: TaskMethod,
@@ -312,7 +388,6 @@ def prepare_request(
         visible_id(expected_context_id)
     authority, _ = _uri(endpoint)
     body = encode_request(method, local_task_id, params)
-    nonce = secrets.token_hex(16)
     headers = {
         "host": authority,
         "content-type": "application/json",
@@ -327,28 +402,14 @@ def prepare_request(
         "x-lychd-task-id": local_task_id,
         "x-lychd-attempt-id": attempt_id,
     }
-    try:
-        signer = cast(
-            "_Signer",
-            HTTPMessageSigner(signature_algorithm=algorithms.ED25519, key_resolver=_SigningKey(key_id, signing_key)),  # pyright: ignore[reportPrivateImportUsage]
-        )
-        now = datetime.now(UTC)
-        signer.sign(
-            _RequestMessage(endpoint, headers),
-            key_id=key_id,
-            nonce=nonce,
-            tag=REQUEST_TAG,
-            created=now,
-            expires=now + timedelta(seconds=MAX_OPERATION_SECONDS),
-            covered_component_ids=REQUEST_COMPONENTS,
-            label=SIGNATURE_LABEL,
-            body=body,
-            use_existing_digest=True,
-        )
-    except Exception:  # noqa: BLE001 - Secret loaders/package errors are intentionally content-free.
-        raise IntercomError(IntercomCode.AUTHENTICATION) from None
-    fields = tuple(headers.items())
-    _signature(_headers(fields, body), key_id=key_id, tag=REQUEST_TAG, components=REQUEST_COMPONENTS)
+    fields, nonce = _signed_fields(
+        _RequestMessage(endpoint, headers),
+        body,
+        key_id=key_id,
+        signing_key=signing_key,
+        tag=REQUEST_TAG,
+        components=REQUEST_COMPONENTS,
+    )
     wire = _serialize(endpoint, fields, body)
     return PreparedRequest(
         method,
@@ -380,7 +441,7 @@ def verify_response(
     if type(body) is not bytes or not 0 < len(body) <= MAX_RESPONSE_BODY_BYTES:
         raise IntercomError(IntercomCode.LIMIT)
     fields = _headers(headers, body)
-    nonce = _signature(fields, key_id=key_id, tag=RESPONSE_TAG, components=RESPONSE_COMPONENTS)
+    nonce, _ = _signature(fields, key_id=key_id, tag=RESPONSE_TAG, components=RESPONSE_COMPONENTS)
     expected = {
         "x-lychd-sender": prepared.peer_id,
         "x-lychd-recipient": prepared.workload_id,
@@ -393,26 +454,12 @@ def verify_response(
     }
     if status != _OK_STATUS or any(fields.get(name) != value for name, value in expected.items()):
         raise IntercomError(IntercomCode.AUTHENTICATION)
-    try:
-        verifier = cast(
-            "_Verifier",
-            HTTPMessageVerifier(signature_algorithm=algorithms.ED25519, key_resolver=_PeerKey(key_id, peer_public_key)),  # pyright: ignore[reportPrivateImportUsage]
-        )
-        if (
-            len(
-                verifier.verify(
-                    _ResponseMessage(
-                        prepared.request_uri, {name.title(): value for name, value in fields.items()}, status
-                    ),
-                    expect_tag=RESPONSE_TAG,
-                    max_age=timedelta(seconds=MAX_OPERATION_SECONDS),
-                )
-            )
-            != 1
-        ):
-            raise IntercomError(IntercomCode.AUTHENTICATION)  # noqa: TRY301
-    except Exception:  # noqa: BLE001 - Foreign diagnostics and package exceptions never leave this boundary.
-        raise IntercomError(IntercomCode.AUTHENTICATION) from None
+    _authenticate(
+        _ResponseMessage(prepared.request_uri, {name.title(): value for name, value in fields.items()}, status),
+        key_id=key_id,
+        peer_public_key=peer_public_key,
+        tag=RESPONSE_TAG,
+    )
     return decode_response(
         body,
         method=prepared.method,
@@ -421,6 +468,113 @@ def verify_response(
         expected_context_id=prepared.expected_context_id,
         response_nonce=nonce,
     )
+
+
+def verify_peer_request(
+    *,
+    http_method: str,
+    endpoint: str,
+    headers: Sequence[tuple[str, str]],
+    body: bytes,
+    sender_id: str,
+    recipient_id: str,
+    task_schema: str,
+    peer_public_key: bytes,
+    key_id: str,
+) -> VerifiedPeerRequest:
+    """Verify one POST at its actual enrolled endpoint before decoding the public task.
+
+    The ingress binds the actual request target to the configured endpoint before calling.
+    Purpose is a local policy binding. The caller must still fence replay and recheck authority.
+    """
+    if type(body) is not bytes or not 0 < len(body) <= MAX_REQUEST_BODY_BYTES:
+        raise IntercomError(IntercomCode.LIMIT)
+    authority, path = _uri(endpoint)
+    fields = _headers(headers, body, start_line_bytes=len(f"POST {path} HTTP/1.1\r\n"))
+    expected = {
+        "host": authority,
+        "content-length": str(len(body)),
+        "x-lychd-sender": visible_id(sender_id),
+        "x-lychd-recipient": visible_id(recipient_id),
+        "x-lychd-task-schema": visible_id(task_schema),
+    }
+    if (
+        http_method != "POST"
+        or any(fields.get(name) != value for name, value in expected.items())
+        or any(name.startswith("x-lychd-") and name not in REQUEST_COMPONENTS for name in fields)
+    ):
+        raise IntercomError(IntercomCode.AUTHENTICATION)
+    nonce, expires = _signature(fields, key_id=visible_id(key_id), tag=REQUEST_TAG, components=REQUEST_COMPONENTS)
+    _authenticate(
+        _RequestMessage(endpoint, {name.title(): value for name, value in fields.items()}),
+        key_id=key_id,
+        peer_public_key=peer_public_key,
+        tag=REQUEST_TAG,
+    )
+    local_task_id = visible_id(fields.get("x-lychd-task-id"))
+    attempt_id = visible_id(fields.get("x-lychd-attempt-id"))
+    operation = decode_request(body, local_task_id=local_task_id)
+    return VerifiedPeerRequest(
+        method=operation.method,
+        message_id=operation.message_id,
+        text=operation.text,
+        task_id=operation.task_id,
+        sender_id=sender_id,
+        recipient_id=recipient_id,
+        task_schema=task_schema,
+        request_uri=endpoint,
+        local_task_id=local_task_id,
+        attempt_id=attempt_id,
+        digest=fields["content-digest"],
+        nonce=nonce,
+        expires_at=expires,
+    )
+
+
+def _signed_response(request: VerifiedPeerRequest, body: bytes, signing_key: bytes, key_id: str) -> RawResponse:
+    if time.time() >= request.expires_at:
+        raise IntercomError(IntercomCode.AUTHENTICATION)
+    headers = {
+        "content-type": "application/json",
+        "content-digest": content_digest(body),
+        "content-length": str(len(body)),
+        "a2a-version": "1.0",
+        "a2a-extensions": EXTENSION_URI,
+        "x-lychd-sender": request.recipient_id,
+        "x-lychd-recipient": request.sender_id,
+        "x-lychd-task-schema": request.task_schema,
+        "x-lychd-task-id": request.local_task_id,
+        "x-lychd-attempt-id": request.attempt_id,
+        "x-lychd-request-uri": request.request_uri,
+        "x-lychd-request-digest": request.digest,
+        "x-lychd-request-nonce": request.nonce,
+    }
+    fields, _ = _signed_fields(
+        _ResponseMessage(request.request_uri, headers, _OK_STATUS),
+        body,
+        key_id=visible_id(key_id),
+        signing_key=signing_key,
+        tag=RESPONSE_TAG,
+        components=RESPONSE_COMPONENTS,
+    )
+    return RawResponse(_OK_STATUS, fields, body)
+
+
+def sign_peer_response(
+    request: VerifiedPeerRequest, *, task_id: str, state: str, signing_key: bytes, key_id: str, text: str | None = None
+) -> RawResponse:
+    """Sign one correlated observation of the admitted receiver task."""
+    if request.method != "SendMessage" and request.task_id != task_id:
+        raise IntercomError(IntercomCode.PROTOCOL)
+    body = encode_task_response(
+        method=request.method, local_task_id=request.local_task_id, task_id=task_id, state=state, text=text
+    )
+    return _signed_response(request, body, signing_key, key_id)
+
+
+def sign_peer_refusal(request: VerifiedPeerRequest, *, signing_key: bytes, key_id: str) -> RawResponse:
+    """Sign one indistinguishable refusal after authenticated request and egress policy checks."""
+    return _signed_response(request, encode_refusal(request.local_task_id), signing_key, key_id)
 
 
 class _SocketGate:
@@ -452,7 +606,7 @@ def _request_fresh(prepared: PreparedRequest) -> None:
         key_id = cast("dict[str, object]", inputs.params)["keyid"]
         if (
             not isinstance(key_id, str)
-            or _signature(fields, key_id=key_id, tag=REQUEST_TAG, components=REQUEST_COMPONENTS) != prepared.nonce
+            or _signature(fields, key_id=key_id, tag=REQUEST_TAG, components=REQUEST_COMPONENTS)[0] != prepared.nonce
         ):
             raise IntercomError(IntercomCode.AUTHENTICATION)  # noqa: TRY301
     except Exception:  # noqa: BLE001 - Package structured-field diagnostics remain private.
@@ -588,11 +742,29 @@ class BoundedIntercomHTTP:
 def _raw_head(head: bytes) -> None:
     """Reject ambiguous framing before h11 combines repeated Content-Length."""
     lines = head[:-4].split(b"\r\n")
-    if not lines[0].startswith(b"HTTP/1.1 200 ") or len(lines) - 1 > MAX_HEADER_FIELDS:
+    if not lines[0].startswith(b"HTTP/1.1 200 "):
+        raise IntercomError(IntercomCode.PROTOCOL)
+    _raw_length(lines[1:], MAX_RESPONSE_BODY_BYTES)
+
+
+def request_content_length(head: bytes, path: str) -> int:
+    """Check one exact request line and uncombined framing before reading any body."""
+    if len(head) > MAX_HEADER_BYTES:
+        raise IntercomError(IntercomCode.LIMIT)
+    if not path.isascii() or not path.startswith("/") or not head.endswith(b"\r\n\r\n"):
+        raise IntercomError(IntercomCode.PROTOCOL)
+    lines = head[:-4].split(b"\r\n")
+    if lines[0] != b"POST " + path.encode("ascii") + b" HTTP/1.1":
+        raise IntercomError(IntercomCode.PROTOCOL)
+    return _raw_length(lines[1:], MAX_REQUEST_BODY_BYTES)
+
+
+def _raw_length(lines: list[bytes], limit: int) -> int:
+    if len(lines) > MAX_HEADER_FIELDS:
         raise IntercomError(IntercomCode.PROTOCOL)
     names: set[bytes] = set()
     length: bytes | None = None
-    for line in lines[1:]:
+    for line in lines:
         name, separator, value = line.partition(b":")
         if not separator or name.lower() in names or name != name.strip() or value.startswith(b"\t"):
             raise IntercomError(IntercomCode.PROTOCOL)
@@ -601,10 +773,6 @@ def _raw_head(head: bytes) -> None:
             length = value.strip(b" ")
     if b"content-length" not in names or names & {b"transfer-encoding", b"content-encoding"}:
         raise IntercomError(IntercomCode.PROTOCOL)
-    if (
-        length is None
-        or not length.isdigit()
-        or len(length) > _MAX_LENGTH_DIGITS
-        or not 0 < int(length) <= MAX_RESPONSE_BODY_BYTES
-    ):
+    if length is None or not length.isdigit() or len(length) > _MAX_LENGTH_DIGITS or not 0 < int(length) <= limit:
         raise IntercomError(IntercomCode.LIMIT)
+    return int(length)

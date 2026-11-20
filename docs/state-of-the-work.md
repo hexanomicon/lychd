@@ -9,8 +9,9 @@ LychD is **pre-alpha**. This page answers the practical question that follows th
 promise: what can this revision actually support, and where is the evidence?
 
 The primary Linux runtime is local and loopback-oriented, with one user, one control process
-and a managed container Vessel. The [personal desktop guide](deployments/desktop.md) covers
-macOS and Windows. Native trials on macOS 15 Apple Silicon and Windows Server 2025 x64
+and a managed container Vessel. The [personal native guide](deployments/desktop.md) covers
+foreground operation on Linux, macOS and Windows. Linux native is an explicit selection with
+separate XDG roots and an ordinary-user runtime. Native trials on macOS 15 Apple Silicon and Windows Server 2025 x64
 opened Bridge and retained a real model reply across restart. Core repository checks use
 the OCI test image. The [evidence envelope](#current-evidence-envelope) dates the production-image
 and Ward PostgreSQL observations and identifies which source revisions they cover.
@@ -75,6 +76,30 @@ recovered the same Run, answer and model grant. Both also recovered a committed 
 from a verified physical backup. Windows 11 workstation setup, cold login, GPU performance
 and signed OS distribution have separate qualification criteria.
 
+A separate [native Linux receipt](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/runtime/bridge-native-linux-2026-11-18.json)
+records an ordinary user on openSUSE Tumbleweed running the installed wheel directly, with
+PostgreSQL 18.7, pgvector and a CPU llama.cpp engine. Chrome completed a Bridge turn, both
+exclusive model transitions succeeded, and the same reply and Run survived a restart of
+Vessel, PostgreSQL and the browser. The [native setup](deployments/desktop.md#choose-the-installation)
+uses separate XDG roots. Container isolation and accelerator performance have separate evidence.
+
+The [portable Compose deployment](deployments/container-desktop.md) was built and exercised on a
+Linux Docker runner in CI occurrence `44311383918`. The deployment guide links that occurrence. The caged
+production image required browser authentication. Recreating the project containers over the
+retained named volumes preserved the credential and a committed PostgreSQL row. A separate [Linux Compose browser trial](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/runtime/bridge-portable-linux-2026-11-18.json)
+used the same project with a pinned CPU engine and GGUF on rootless Podman. After recreating the
+containers and reopening Chrome it recovered the same Bridge Run, answer and model grant. Docker Desktop
+on physical macOS and Windows still needs host-side checks of the published loopback port,
+resource limits and restart. The [repeatable CI workflow](https://github.com/hexanomicon/lychd/blob/main/.github/workflows/portable-vessel.yml)
+uses the [portable install/recreation test](https://github.com/hexanomicon/lychd/blob/main/scripts/check_portable_vessel.py).
+
+That test opens files under the running Vessel's unprivileged identity. A Linux Compose trial
+on rootless Podman denied access to the database administrator credential and denied writes to
+a runtime credential and the image. The same process wrote to its lab volume. The native
+[engine launch tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_native_runtime.py)
+exercise private scratch, descriptor closure, refused paths and cleanup on Linux. Native Vessel
+and its engine share their OS account's file permissions. [Native file access](deployments/desktop.md#which-host-files-can-a-native-vessel-read)
+
 The desktop custody trial on 18 November 2026 recovered the five generated values from
 the login Keychain on macOS and CurrentUser DPAPI on Windows. The
 [macOS and Windows host jobs](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/runtime/desktop-platform-checks-2026-11-18.json)
@@ -134,6 +159,8 @@ The combined migration source keeps lineage `0015`–`0020`, then appends disclo
 `0024`, dictation custody at `0025`, and approved private vocabulary at `0026`.
 The [naming migration](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/migrations/versions/0027_primus_naming.py)
 follows at `0027` and adds the table for accepted [names](#primus-naming).
+The [paired Intercom inbox migration](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/migrations/versions/0028_intercom_inbox.py)
+follows at `0028` and retains incoming tasks and spent request signatures.
 Reconciling that source does not renew either the 21 October production observation or the imported
 22–23 October peer and companion observations. Their source maps, migration identities,
 dependencies, and limits remain dated evidence. Qualification of the current combined source
@@ -1303,12 +1330,23 @@ and [storage/focus tests](https://github.com/hexanomicon/lychd/blob/main/clients
 
 **State:** Partial
 
-**Proved now:** The masthead orders Bridge, Atlas, Loom, Nexus, Orb, and Applications. Bridge opens
-the full conversation workspace at the last explicitly selected session in the open browser
-document. **Browse séances** opens the catalogue from that workspace. The dock's **Open Séance**
-opens the exact server-supplied session. An unresolved default offers the catalogue. Atlas
-retains **Open Canvas →** and **New canvas**. The masthead marks Bridge on Séances routes and
-Atlas on Canvas routes. Existing direct URLs remain available, and the root opens Orb.
+**Proved now:** The collapsible rail opens Bridge, Atlas, Loom, Orb, Nexus and Applications.
+The Applications label opens the searchable catalogue, and its chevron opens an in-place list.
+Browser-local pins control which applications have a rail shortcut. **Atelier** imports and
+exports a validated short-video brief, edits caption cues at 30 frames per second, exports WebVTT,
+auditions local audio references and plays an operator-selected video. **Workflow** opens the
+chosen recipe's [blueprint in Loom](./divination/altar/loom.md#video-workflows).
+A full Bridge turn offers its exact Run through **View run in Orb**. Its left exchange marks
+preview and locate turns. The session can open its source map in Atlas.
+
+The graph instruments share their renderer and camera minimap. Loom exposes declared station
+permissions, a bounded inquiry example and opposed Crucible reports. Its browser-local workflow
+studio opens, edits and exports typed draft graphs with conditional links and agent prompts. Orb projects captured
+attempts at the selected cursor and keeps an operator's appraisal attached to its original
+record. Atlas relates projects, séances, source turns and retained material with explicit
+provenance. Nexus projects effective startup and orchestration settings and the current
+operator. Access, fallback and affect proposals can be exported for review. No runtime
+applies these proposals or emits the worked example's affect signals.
 
 The shell keeps one conversation mounted across navigation, retaining exact-session drafts,
 unresolved offerings, and live subscriptions. Full-route Bridge fills the work area with one
@@ -1353,8 +1391,7 @@ without destroying the conversation. Source-development Canvas opens that shell 
 makes no protected Bridge/status requests until an explicit connection. Production
 authentication remains intact.
 
-**Boundary — Not yet:** The shared Atlas ontology, provenance-bearing séance map, and generalized
-memory curation remain design work. The dock supplies no new model context or attachment
+**Boundary — Not yet:** General ontology authoring, automatic relationship discovery and cross-session memory consolidation remain design work. The séance map displays explicit source relationships and retained material. The dock supplies no new model context or attachment
 admission, global conversation merge, cross-instance history, durable browser draft storage or
 execution authority. Séances supplies no automatic analysis, durable working-material store,
 private conversation-to-Archive intake, or Persona authoring. Viewing a page is not transmitting
@@ -1493,9 +1530,8 @@ outside this evidence; existing installations require migration `0009` before us
 inspection, semantic SSE, closed GenUI descriptors, durable request identity, authoritative
 snapshot recovery, lifecycle fencing, and bounded reconstruction against server-owned Run and
 Pattern identities. Exact retries reuse the canonical Run; distinct overlapping turns are refused.
-Its compact per-turn Circle exposes complete supplied identity, evidence and exact declared-score
-links, status/activity and eligible cancellation. Older retained replies report missing metadata;
-a mismatched Run projection cannot provide another Run's status or actions. Dispatcher grant ids
+The turn status and Run menu expose supplied status, the exact Run and eligible cancellation.
+Older retained replies can lack Run metadata. Status and actions remain bound to the matching Run. Dispatcher grant ids
 rebind the Environment snapshot before inference and after consent re-entry. History governors
 retain whole exchanges, including legacy tool-call, result, and retry chains without Run ids.
 
@@ -1564,9 +1600,7 @@ Consent, other castings or public-note browser acceptance.
 
 **Boundary — Not yet:** There is no ordinary installed production-browser receipt, durable cross-process event/token
 delivery, general multi-approval, Attention, or notification channel. Bridge admits text,
-including reviewed or explicitly auto-sent [dictation](#audio-admission). No focused Circle
-workspace composes Scroll, active Spell placement,
-Context/authority, capability, and evidence projections.
+including reviewed or explicitly auto-sent [dictation](#audio-admission).
 Selected-session turns and model history still hydrate that one conversation. There is no general
 storage quota or retention policy; archive paging and stream limits do not bound every retained
 payload or protect against a hostile authenticated operator.
@@ -1582,8 +1616,8 @@ they do not qualify production deployment or live effects.
 **Evidence**
 
 - **Source:** [Bridge controller](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/web/bridge.py), [Bridge client](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/pages/bridge/components/BridgeView.svelte), [Altar shell](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/shell/components/AltarShell.svelte), and [Context assembly](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/cortex/context.py), with [native review resolution](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/web/consent_reviews.py) and [binding migration](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/migrations/versions/0010_native_consent_binding.py).
-- **Source:** [Circle Run disclosure](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/pages/bridge/components/CircleRun.svelte)
-- **Verification:** [Circle identity/action tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/pages/bridge/components/CircleRun.test.ts)
+- **Source:** [Turn status and Run menu](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/pages/bridge/components/TurnRunMenu.svelte)
+- **Verification:** [Turn identity and Run menu tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/pages/bridge/components/TurnRunMenu.test.ts)
 - **Verification:** [Configured composer projection tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_bridge_composer.py)
 - **Verification:** [Bridge tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_bridge.py), [archive tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_bridge_archive.py), [stream admission tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_bridge_stream_budget.py), [PostgreSQL archive receipts](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_db_consent_pg.py), and [client recovery tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/pages/bridge/components/BridgeView.test.ts), [initial read recovery tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/shared/InstrumentReadRecovery.test.ts), [shell navigation tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/pages/bridge/components/BridgeShellNavigation.test.ts), [client review tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/shared/ConsentCard.test.ts), and [decision transport tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/api/client.test.ts), plus [complete-history tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/cortex/test_context.py), [native binding tests](https://github.com/hexanomicon/lychd/blob/main/tests/codex/test_native_consent.py), and [reviewer and decision tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_native_consent_review.py).
 - **Law:** [Frontend](./adr/15-frontend.md), [Context](./adr/21-context.md), and [native Consent review](./adr/25-hitl.md#required-review-for-native-actions)
@@ -1611,6 +1645,12 @@ Preview loading belongs to its target, and closing the preview fences late respo
 uncertain request identities remain visible; selecting another preview preserves the previous
 ticket. Containment and no-op conditions explicitly disable the transition action.
 
+The optional POSIX [colleague panel](divination/altar/nexus.md#see-which-colleagues-welcome-requests)
+shares Ready or Busy for a bounded session. An operator-provisioned replica carries short-lived,
+pair-authenticated observations. The local two-owner demonstration uses a shared temporary directory.
+Independent-host replication and real colleague hardware await verification. Operators can already
+exchange a public work request through the separately enrolled [Intercom receiver](#a2a-intercom).
+
 **Boundary — Not yet:** Only request admission is durable. Transition observations lack a durable
 owner, complete history, cross-process projection, restart recovery, and production-browser
 receipt. Durable admission prevents duplicate launch, but a lost ticket cannot prove the outcome
@@ -1619,6 +1659,8 @@ topology measurement and no configuration editor.
 
 **Evidence**
 
+- **Source:** [Colleague presence](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/colleague_presence.py) and [two-owner demonstration](https://github.com/hexanomicon/lychd/blob/main/scripts/nexus_colleagues_demo.py)
+- **Verification:** [Paired Nexus cases](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_colleague_presence.py) and [availability controls](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/pages/nexus/components/NexusColleagues.test.ts)
 - **Source:** [Nexus controller](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/web/nexus.py)
 - **Verification:** [Nexus tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_nexus.py) and [client transition tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/pages/nexus/components/NexusView.test.ts)
 - **Source:** [Native ownership map](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/pages/nexus/components/NexusMap.svelte), [typed projection](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/pages/nexus/state/map.ts), and [selected properties](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/pages/nexus/components/NexusProperties.svelte)
@@ -1689,8 +1731,9 @@ lifecycle, graph-failure, editor or general accessibility acceptance.
 **State:** Partial
 
 **Proved now:** The Portfolio publishes application contracts and worked examples. An editor can
-follow [Broadcast](./compositions/broadcast/index.md) from source to a publication candidate on
-paper. Its Patterns have no executable registration. For working examples, compare Creation
+follow [Atelier](./compositions/atelier/master.md) to an accepted local videomaster and
+[Broadcast](./compositions/broadcast/distribution.md) from that master to a distribution
+candidate on paper. Neither principal Pattern has executable registration. For working examples, compare Creation
 and Scavenger below with the [Blockworld experiments](#blockworld-experiments),
 [Reach operator profiles](#reach-operator-profiles), and the [Android client](#companion-android-client).
 
@@ -2598,7 +2641,7 @@ separately scoped.
 - **Law:** [Explicit Reach research profile](./adr/30-webcrawler.md#explicit-reach-operator-research-profile) and [separate operator authority](./adr/38-iam.md#trusted-local-scout-profile).
 - **Topic:** [Discord operator profile](./compositions/reach/operator.md)
 
-### Offline music and Comfy engineering probes {#music-comfy-engineering-probes}
+### Offline music, Comfy and local video probes {#music-comfy-engineering-probes}
 
 **State:** Partial
 
@@ -2615,11 +2658,19 @@ supports explicit digest-verified repair after interrupted file installation, wi
 receipt identity changes. Unpinned staging blocks refetch. Focused tests exercise real
 DawDreamer 0.9.0 audio and MockTransport Comfy failure paths.
 
-**Boundary — Not yet:** These are finite engineering mechanisms, not a native Riffmaw or Atelier
-application, canonical musical project, registered Pattern, Invocation, ServiceJob, media custody
-or semantic acceptance path. There is no shipped studio API/editor, live input, plug-in loading,
-realtime/latency proof, engine containment, Comfy deployment, loaded-model attestation or real
-MiniMax generation. Lost, damaged or unpinned Comfy staging and conflicting final files still
+The Comfy runner accepts a caller-retained occurrence UUID to recover the exact preparation
+after a lost reply. A separate local operator command selects one whole-second MP4 cut up to
+180 seconds, burns in a literal caption in a supplied TrueType font, and can replace the audio
+with a WAV from time zero. It checks the resulting picture frame count, duration and expected
+streams, and publishes a new file without overwriting an existing candidate. A local FFmpeg trial
+with synthetic video and narration returned 60 frames at 30 fps and two seconds of picture and
+audio. A repeated command preserved the existing candidate.
+
+**Boundary — Not yet:** These engineering probes run separately from the [Atelier browser editor](./divination/altar/atelier.md).
+Native render integration, a canonical musical project, registered execution Patterns, media
+custody and semantic acceptance remain separate work. Live input, plug-in loading, realtime
+latency, engine containment, Comfy deployment, loaded-model attestation and MiniMax generation
+await qualification. Lost, damaged or unpinned Comfy staging and conflicting final files still
 require manual reconciliation; targeted
 cancellation refuses. Stable operator-owned external directories and the optional native profile
 remain explicit prerequisites. See the [Portfolio](#composition-portfolio-delivery) for which
@@ -2631,6 +2682,9 @@ the proposed general job interface.
 - **Source:** [Recipe contracts](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/riffmaw/offline/models.py), [guarded edits](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/riffmaw/offline/recipe.py), [offline worker](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/music_probe.py), [audition](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/riffmaw/offline/audition.py), [Comfy attempt contracts](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/comfy_probe.py), [Comfy probe](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/comfy_probe.py), and [development runner](https://github.com/hexanomicon/lychd/blob/main/scripts/music_probe.py)
 - **Verification:** [Recipe tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/test_riffmaw_offline.py), [runner tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/test_music_probe_cli.py), [audition boundary tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/test_music_audition.py), [native audio tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_music_probe.py), and [Comfy protocol tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_comfy_probe.py)
 - **Topic:** [Riffmaw Workbench](./compositions/riffmaw/workbench.md)
+- **Source:** [Single-clip render command](https://github.com/hexanomicon/lychd/blob/main/scripts/short_video_cut.py)
+- **Verification:** [Cut, timing and no-overwrite cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/test_short_video_cut.py)
+- **Topic:** [Three-minute commission and local cut](./compositions/atelier/short-video.md)
 - **Law:** [Backend package boundaries](./adr/11-backend.md), [Workers](./adr/14-workers.md), and [Workflow](./adr/28-workflow.md)
 
 ### Companion Android Client {#companion-android-client}
@@ -2717,7 +2771,7 @@ supplied occurrence, and loaded records. Exact pinned workflow graphs show decla
 separately from retained evidence. Catalogue queries select bounded metadata without loading
 prompts, manifests, or event histories.
 
-The parallel field uses compact typed marks and stable, irregular Run territories inside the
+The parallel field places each Run in a named lane on the dotted Orb canvas inside the
 shared Svelte Flow adapter. Marks can be rearranged locally without a durable layout or domain
 mutation; viewport scaling keeps their labels readable. Search, exact state/waiting filters,
 the semantic Run list and a collapsible evidence inspector preserve access without canvas gestures.
@@ -4012,16 +4066,37 @@ under that receipt's original migration identities. The merged source now uses `
 the historical observation does not qualify this changed migration closure.
 The lab's delivery queue is process-owned; these trials do not qualify a SAQ broker.
 
-**Boundary — Not yet:** There is no incoming LychD A2A server, durable receiving inbox, discovery,
-callback, artifact fetch, streaming, private-input Cut transport,
-voice/Context anonymization, automatic fallback or normal-boot activation. An operator's public
-assertion is neither PII detection nor proof text was never pasted. Unsigned stock SDK routes
-cannot satisfy the required extension.
+An explicitly started, private IPv4 listener accepts an enrolled sender's signed public task.
+The receiver assigns an ID after PostgreSQL admission. Its operator can inspect the request,
+start it, decline it or complete it with approved public text. The Atelier schema admits a
+short-video recipe, script and requested duration for human review.
+
+A 19 November 2026 source-checkout trial used separate LychD sender and receiver processes,
+pinned TLS over loopback and separate databases on disposable PostgreSQL 18.6 at migration `0028`. After receiver and
+sender restarts, an authorized poll returned the original working task and later its exact
+approved text. In a second submission the client discarded the unread reply after receiver
+commit. The receiver operator found one task by the sender's original ID. The sender retained
+one charged submission, reported an unknown outcome and refused to poll without a receiver ID.
+The Atelier trial exercised review, cancellation, rejection, malformed input and a closed intake
+window. A brief scheduled twelve hours ahead was admitted immediately. Early and late starts
+left the task submitted. An on-time start survived a receiver restart, and withdrawal of the
+invitation released the idle listener port. The sender retained its configured 18-hour task
+lifetime. Concurrent submissions converged to one task. A physical replay and changed-content
+reuse were refused. The migrated catalog matched ORM metadata and downgrade refused retained custody.
+
+**Boundary — Not yet:** Operation between independent hosts, public ingress, discovery, callbacks,
+artifact fetch, streaming, private-input Cut transport, voice/Context anonymization, automatic fallback and normal-boot
+activation await qualification. The receiver accepts work for manual review. Native render execution,
+delivery of media bytes and browser task controls remain separate work. The sender relies on the
+operator's public-source assertion. Automatic PII detection and verification of pasted material
+remain outside that declaration. Unsigned stock SDK routes cannot satisfy the required extension.
 
 **Evidence**
 
 - **Topic:** [Intercom operator session](./sepulcher/intercom.md)
 - **Source:** [Task service](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/intercom.py), [wire admission and HTTPS](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/intercom_http.py), [custody store](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/intercom.py), and [operator entry](https://github.com/hexanomicon/lychd/blob/main/scripts/intercom_lab.py)
+- **Source:** [Receiver operator commands](https://github.com/hexanomicon/lychd/blob/main/scripts/intercom_receive.py), [paired listener](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/intercom_receiver.py), [durable inbox](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/intercom_inbox.py), and [Atelier brief schema](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/atelier/brief.py)
+- **Verification:** [Receiver PostgreSQL custody and migration cases](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_intercom_inbox_pg.py), [listener and invitation tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_intercom_receiver.py), and [Atelier start-window cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/test_atelier_brief.py)
 - **Verification:** [Protocol and receipt](https://github.com/hexanomicon/lychd/tree/main/tests/unit/domain/intercom), [real cryptography and parser](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_intercom_http.py), [authority and lifecycle](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_intercom.py), [PostgreSQL custody](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_intercom_pg.py), and [migration](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_intercom_migrations_pg.py)
 - **Verification:** [Bounded manual peer receipt](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/intercom/operator-public-source.json)
 - **Source:** [Native peer Run service](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/peer_runs.py), [Graph station](https://github.com/hexanomicon/lychd/blob/main/src/lychd/agents/workflows/native_public_peer.py), and [explicit native lab](https://github.com/hexanomicon/lychd/blob/main/scripts/intercom_native_lab.py)

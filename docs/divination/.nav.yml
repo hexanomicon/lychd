@@ -9,14 +9,20 @@ nav:
       - transmutation/distillation.md
   - Altar:
       - altar/index.md
+      - altar/workspace-design.md
       - altar/bridge.md
+      - altar/applications.md
+      - altar/atelier.md
       - altar/seances.md
       - altar/circle.md
       - altar/atlas.md
       - altar/memory.md
       - Owned Technology Map: altar/technology-map.md
       - altar/loom.md
+      - altar/loom-sdlc.md
+      - altar/loom-studio.md
       - altar/nexus.md
+      - altar/nexus-design.md
       - altar/orb.md
   - Transcendence:
       - transcendence/index.md

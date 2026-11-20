@@ -1950,6 +1950,60 @@
         "title": "Citation",
         "type": "object"
       },
+      "ColleagueObservation": {
+        "properties": {
+          "availability": {
+            "enum": [
+              "ready",
+              "busy",
+              "unknown"
+            ],
+            "type": "string"
+          },
+          "expires_at": {
+            "oneOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "observed_at": {
+            "oneOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "publication": {
+            "enum": [
+              "waiting",
+              "published",
+              "unavailable"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "availability",
+          "expires_at",
+          "name",
+          "observed_at",
+          "publication"
+        ],
+        "title": "ColleagueObservation",
+        "type": "object"
+      },
       "ConsentCard": {
         "properties": {
           "args": {
@@ -3820,6 +3874,16 @@
           },
           "label": {
             "type": "string"
+          },
+          "output_schema": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -4316,6 +4380,105 @@
         "title": "NexusBoard",
         "type": "object"
       },
+      "NexusConfiguration": {
+        "additionalProperties": false,
+        "properties": {
+          "actuator": {
+            "type": "string"
+          },
+          "background_concurrency": {
+            "type": "integer"
+          },
+          "bridge_capability_key": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "bridge_preference": {
+            "items": {
+              "$ref": "#/components/schemas/NexusPreferenceRoute"
+            },
+            "type": "array"
+          },
+          "bridge_revision": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "builtin_extensions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "crypt_extensions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "database_profile": {
+            "type": "string"
+          },
+          "drain_timeout_s": {
+            "type": "number"
+          },
+          "hard_swap_priority": {
+            "type": "integer"
+          },
+          "interactive_concurrency": {
+            "type": "integer"
+          },
+          "planning_timeout_s": {
+            "type": "number"
+          },
+          "routing": {
+            "items": {
+              "$ref": "#/components/schemas/NexusQueueRule"
+            },
+            "type": "array"
+          },
+          "server_port": {
+            "type": "integer"
+          },
+          "switching_policy": {
+            "type": "string"
+          },
+          "warmup_timeout_s": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "actuator",
+          "background_concurrency",
+          "bridge_capability_key",
+          "bridge_preference",
+          "bridge_revision",
+          "builtin_extensions",
+          "crypt_extensions",
+          "database_profile",
+          "drain_timeout_s",
+          "hard_swap_priority",
+          "interactive_concurrency",
+          "planning_timeout_s",
+          "routing",
+          "server_port",
+          "switching_policy",
+          "warmup_timeout_s"
+        ],
+        "title": "NexusConfiguration",
+        "type": "object"
+      },
       "NexusCovenRow": {
         "properties": {
           "animator_name": {
@@ -4335,11 +4498,28 @@
               }
             ]
           },
+          "connector": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "dedicated": {
             "type": "boolean"
           },
           "family": {
             "type": "string"
+          },
+          "groups": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
           },
           "health": {
             "type": "string"
@@ -4387,6 +4567,16 @@
             ],
             "type": "string"
           },
+          "supports_tools": {
+            "oneOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "warm": {
             "type": "boolean"
           }
@@ -4409,11 +4599,83 @@
         "title": "NexusCovenRow",
         "type": "object"
       },
+      "NexusOperator": {
+        "additionalProperties": false,
+        "properties": {
+          "scopes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "sigil": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "scopes",
+          "sigil",
+          "subject"
+        ],
+        "title": "NexusOperator",
+        "type": "object"
+      },
+      "NexusPreferenceRoute": {
+        "additionalProperties": false,
+        "properties": {
+          "capability_key": {
+            "type": "string"
+          },
+          "weight": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "capability_key",
+          "weight"
+        ],
+        "title": "NexusPreferenceRoute",
+        "type": "object"
+      },
+      "NexusQueueRule": {
+        "additionalProperties": false,
+        "properties": {
+          "priority": {
+            "type": "integer"
+          },
+          "queue": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "priority",
+          "queue",
+          "source"
+        ],
+        "title": "NexusQueueRule",
+        "type": "object"
+      },
       "NexusSnapshot": {
         "additionalProperties": false,
         "properties": {
           "board": {
             "$ref": "#/components/schemas/NexusBoard"
+          },
+          "configuration": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/NexusConfiguration"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "containment_reason": {
             "oneOf": [
@@ -4430,6 +4692,26 @@
               "$ref": "#/components/schemas/DelegatedRuntimeObservation"
             },
             "type": "array"
+          },
+          "operator": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/NexusOperator"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "presence": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PresenceBoard"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "snapshot_at": {
             "format": "date-time",
@@ -6164,6 +6446,70 @@
           "weight"
         ],
         "title": "Preference",
+        "type": "object"
+      },
+      "PresenceBoard": {
+        "properties": {
+          "audience_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "peers": {
+            "items": {
+              "$ref": "#/components/schemas/ColleagueObservation"
+            },
+            "type": "array"
+          },
+          "sharing": {
+            "enum": [
+              "ready",
+              "busy",
+              "hidden"
+            ],
+            "type": "string"
+          },
+          "sharing_until": {
+            "oneOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "audience_id",
+          "peers",
+          "sharing",
+          "sharing_until"
+        ],
+        "title": "PresenceBoard",
+        "type": "object"
+      },
+      "PresenceIntent": {
+        "additionalProperties": false,
+        "properties": {
+          "audience_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "availability": {
+            "enum": [
+              "ready",
+              "busy",
+              "hidden"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "audience_id",
+          "availability"
+        ],
+        "title": "PresenceIntent",
         "type": "object"
       },
       "RecallItem": {
@@ -13315,7 +13661,15 @@
               }
             },
             "description": "Request fulfilled, document follows",
-            "headers": {}
+            "headers": {
+              "cache-control": {
+                "deprecated": false,
+                "required": false,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
           }
         },
         "summary": "Snapshot"
@@ -13400,6 +13754,82 @@
           }
         },
         "summary": "Plan"
+      }
+    },
+    "/api/v1/nexus/presence": {
+      "post": {
+        "deprecated": false,
+        "operationId": "setNexusPresence",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PresenceIntent"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PresenceBoard"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {
+              "cache-control": {
+                "deprecated": false,
+                "required": false,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "SetPresence"
       }
     },
     "/api/v1/nexus/swaps": {

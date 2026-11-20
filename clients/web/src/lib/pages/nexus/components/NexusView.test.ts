@@ -8,6 +8,8 @@ vi.mock("$app/state", () => ({
   page: { url: new URL("http://localhost/nexus") }
 }));
 vi.mock("$lib/api/client", () => ({
+  getLoomCatalogue: vi.fn().mockResolvedValue([]),
+  getLoomPatternRevision: vi.fn(),
   ApiError: class ApiError extends Error {
     constructor(
       message: string,
@@ -21,7 +23,8 @@ vi.mock("$lib/api/client", () => ({
   getNexusSnapshot: vi.fn(),
   getNexusSwap: vi.fn(),
   getNexusTransition: vi.fn(),
-  listenToSwap: vi.fn()
+  listenToSwap: vi.fn(),
+  setNexusPresence: vi.fn()
 }));
 
 import {
@@ -31,7 +34,8 @@ import {
   getNexusSnapshot,
   getNexusSwap,
   getNexusTransition,
-  listenToSwap
+  listenToSwap,
+  setNexusPresence
 } from "$lib/api/client";
 import NexusView from "./NexusView.svelte";
 import { beforeNavigate } from "$app/navigation";
@@ -50,7 +54,7 @@ const snapshot: NexusSnapshot = {
             animator_name: "local",
             capability_key: "chat:local",
             checked_at: "2026-07-30T00:00:00Z",
-            dedicated: false,
+            groups: [], dedicated: false,
             family: "chat",
             health: "ready",
             is_active: true,
@@ -123,6 +127,7 @@ function deferred<T>() {
 }
 
 beforeEach(() => {
+  page.url.search = "?area=board";
   vi.clearAllMocks();
   localStorage.clear();
   vi.stubGlobal("ResizeObserver", class { observe() {} unobserve() {} disconnect() {} });
@@ -140,6 +145,49 @@ afterEach(() => {
 });
 
 describe("Nexus refresh ownership", () => {
+  it("keeps colleague sharing controls busy through a refresh made after the choice", async () => {
+    vi.useFakeTimers();
+    page.url.search = "?area=colleagues";
+    const board: NonNullable<NexusSnapshot["presence"]> = {
+      audience_id: "eb0065bf-c213-46d5-85c1-c69000f29121",
+      sharing: "hidden", sharing_until: null, peers: []
+    };
+    const current = { ...snapshot, presence: board };
+    const afterChoice: NexusSnapshot = {
+      ...snapshot,
+      presence: { ...board, sharing: "ready", sharing_until: new Date(Date.now() + 3600000).toISOString() }
+    };
+    const earlierPoll = deferred<NexusSnapshot>();
+    const confirmation = deferred<NexusSnapshot>();
+    vi.mocked(getNexusSnapshot)
+      .mockResolvedValueOnce(current)
+      .mockReturnValueOnce(earlierPoll.promise)
+      .mockReturnValueOnce(confirmation.promise);
+    vi.mocked(setNexusPresence).mockResolvedValue(afterChoice.presence!);
+    const view = render(NexusView);
+
+    await act(() => Promise.resolve());
+    const ready = screen.getByRole<HTMLButtonElement>("button", { name: "Share ready" });
+    const busy = screen.getByRole<HTMLButtonElement>("button", { name: "Share busy" });
+    await act(() => vi.advanceTimersByTimeAsync(5000));
+    await fireEvent.click(ready);
+    expect(setNexusPresence).toHaveBeenCalledWith(board.audience_id, "ready");
+    expect(busy.disabled).toBe(true);
+
+    await act(() => earlierPoll.resolve(current));
+    expect(getNexusSnapshot).toHaveBeenCalledTimes(3);
+    expect(busy.disabled).toBe(true);
+
+    await act(async () => {
+      confirmation.resolve(afterChoice);
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(ready.disabled).toBe(true);
+    expect(busy.disabled).toBe(false);
+    expect(screen.getByText("Sharing preference saved.")).toBeTruthy();
+    view.unmount();
+  });
+
   it("schedules the next poll only after the current refresh completes", async () => {
     vi.useFakeTimers();
     const first = deferred<NexusSnapshot>();
@@ -831,6 +879,93 @@ describe("Nexus ownership map and selected properties", () => {
     expect(within(selectedRegion()).queryByText("model-a")).toBeNull();
     expect(within(screen.getByRole("region", { name: "Request outcomes" })).getByText(requestId)).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Request transition" })).toBeNull();
+    view.unmount();
+  });
+});
+
+describe("Nexus operations directory", () => {
+  it("lands on the instance overview when Nexus opens with no selection", async () => {
+    page.url.search = "";
+    const view = render(NexusView);
+    expect(await screen.findByRole("button", { name: "Overview" })).toHaveProperty("ariaCurrent", "page");
+    expect(await screen.findByRole("heading", { name: "Instance overview" })).toBeTruthy();
+    expect(screen.queryByRole("region", { name: "Capability ownership map" })).toBeNull();
+    view.unmount();
+  });
+
+  async function open(title: string) {
+    await fireEvent.click(await screen.findByRole("button", { name: title }));
+  }
+
+  function exportedProposal() {
+    const link = screen.getByRole("link", { name: "Export proposal" });
+    const href = link.getAttribute("href")!;
+    return JSON.parse(decodeURIComponent(href.slice(href.indexOf(",") + 1))).proposal;
+  }
+
+  it("preserves the proposed fallback order between sections and never submits it", async () => {
+    const view = render(NexusView);
+    await open("Animator fallback");
+    const key = screen.getByRole("combobox", { name: "Capability key" });
+    for (const name of ["first:chat:a", "second:chat:b"]) {
+      await fireEvent.input(key, { target: { value: name } });
+      await open("Add candidate");
+    }
+    await open("Move second:chat:b earlier");
+    await open("Advertised skills");
+    expect(screen.queryByRole("link", { name: "Export proposal" })).toBeNull();
+    await open("Animator fallback");
+    expect(exportedProposal().ordered_capabilities).toEqual(["second:chat:b", "first:chat:a"]);
+    expect(getNexusPlan).not.toHaveBeenCalled();
+    expect(createNexusSwap).not.toHaveBeenCalled();
+    view.unmount();
+  });
+
+  it("exports only the operator's selected signal route and a bounded exploration plan", async () => {
+    const view = render(NexusView);
+    await open("Affect routing");
+    await fireEvent.input(screen.getByRole("slider"), { target: { value: "25" } });
+    await open("Add signal route");
+    expect(exportedProposal().routes).toEqual([{ producer: "Ecstatic Harmonizer", receiver: "Exploration", weight_percent: 25 }]);
+    await open("Exploration");
+    await fireEvent.input(screen.getByLabelText("Question"), { target: { value: "Which assumption failed?" } });
+    expect(screen.queryByRole("link", { name: "Export proposal" })).toBeNull();
+    await fireEvent.input(screen.getByLabelText("Evidence criterion"), { target: { value: "A retained counterexample." } });
+    expect(exportedProposal().stop_on).toEqual(["saturation", "budget_exhausted"]);
+    await fireEvent.input(screen.getByLabelText("Maximum probes"), { target: { value: "0" } });
+    expect(screen.queryByRole("link", { name: "Export proposal" })).toBeNull();
+    view.unmount();
+  });
+
+  it("distinguishes declared groups and connector from an Animator's display group", async () => {
+    const row = snapshot.board.covens[0]![1][0]!;
+    vi.mocked(getNexusSnapshot).mockResolvedValue({
+      ...snapshot, board: { covens: [["first", [{ ...row, groups: ["first", "second"], connector: "LocalConnector" }]]], portals: [] }
+    });
+    const view = render(NexusView);
+    await open("Animator inventory");
+    await fireEvent.change(screen.getByLabelText("Group by"), { target: { value: "groups" } });
+    expect(screen.getByRole("heading", { name: "second" })).toBeTruthy();
+    await fireEvent.click(screen.getAllByRole("button", { name: /model-a/ })[0]!);
+    const inspector = within(screen.getByRole("region", { name: "Selected inventory capability" }));
+    expect(inspector.getByText("first, second")).toBeTruthy();
+    expect(inspector.getByText("LocalConnector")).toBeTruthy();
+    expect(getNexusPlan).not.toHaveBeenCalled();
+    view.unmount();
+  });
+
+  it("uses the current local request identity and requires an object and reason before exporting an elevation review", async () => {
+    vi.mocked(getNexusSnapshot).mockResolvedValue({ ...snapshot, operator: { subject: "local-operator", sigil: "magus", scopes: ["*"] } });
+    const view = render(NexusView);
+    await open("Access policy");
+    expect(screen.getByText("magus")).toBeTruthy();
+    await fireEvent.input(screen.getByLabelText("Principal"), { target: { value: "reviewer" } });
+    await fireEvent.change(screen.getByLabelText("Requested action"), { target: { value: "orchestrator:transition" } });
+    expect(screen.queryByRole("link", { name: "Export proposal" })).toBeNull();
+    await fireEvent.input(screen.getByLabelText("Exact object"), { target: { value: "chat:local" } });
+    await fireEvent.input(screen.getByLabelText("Reason"), { target: { value: "Scheduled readiness review" } });
+    expect(exportedProposal()).toMatchObject({ subject: "reviewer", object: "chat:local", action: "orchestrator:transition", duration_minutes: 15 });
+    expect(createNexusSwap).not.toHaveBeenCalled();
     view.unmount();
   });
 });

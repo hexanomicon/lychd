@@ -24,7 +24,7 @@ possession and confers full local authority. A remote road requires its own [acc
 profile and qualification](../../deployments/index.md).
 
 The installed Altar opens at `http://127.0.0.1:7134/` in **Orb**. Open **Bridge** in the
-masthead, choose **New Séance**, and offer a bounded Intent. If it pauses for your consent,
+left rail, choose **New Séance**, and offer a bounded Intent. If it pauses for your consent,
 the request appears beside the turn that needs your judgment.
 
 ## Carry the Run with you
@@ -42,15 +42,18 @@ the other instruments to find evidence about the same attempt.
 | Which stations and paths does this exact Scroll permit? | [Loom](./loom.md) |
 | How can I judge one retained answer against explicit criteria? | [Loom manual output review](./loom.md#review-a-retained-output) |
 | What was observed about readiness or a physical transition? | [Nexus](./nexus.md) |
+| What can this installation advertise, and whose access can I inspect? | [Nexus operations](./nexus.md#choose-an-operation) |
+| Which colleagues welcome work requests? | [Nexus colleague presence](./nexus.md#see-which-colleagues-welcome-requests) |
 | Which Runs are before us, what evidence is arriving, and where does capture run out? | [Orb](./orb.md) |
 
-Open **Applications** by clicking, hovering or focusing the menu. **Scavenger market** is
+On the left rail, **Applications** opens the [dashboard](applications.md). Its chevron or
+context menu opens the quick list. **Scavenger** is
 visible even when Scavenger is unconfigured. To submit a market observation the host needs the
 [finite feed observation profile](../../compositions/scavenger/market.md#finite-feed-observation).
 In **Atlas**, LychD's own Canvas stays pinned first. A project can begin there before it has
 a conversation or a Run.
 
-For one turn, choose **Look into the Orb** beside the Bridge reply. From its evidence you can
+For one turn, open the reply menu and choose **View run in Orb**. From its evidence you can
 open the exact score in Loom or follow a recorded physical transition into Nexus. To compare
 several Runs, use the [parallel field](orb.md#read-the-parallel-field). In Nexus, **Preview**
 only inspects a plan. **Request transition** sends a real maximum-priority request to change
@@ -58,7 +61,7 @@ the machine.
 
 ## Return to Bridge
 
-Choose **Bridge** in the masthead to return to the last explicitly selected conversation in this
+Choose **Bridge** on the left rail to return to the last explicitly selected conversation in this
 browser document. **Browse séances** opens the catalogue. The dock's **Open Séance** opens the
 current conversation for inspection, and **Continue in Bridge** explicitly selects an inspected
 conversation for live exchange.
@@ -84,7 +87,7 @@ Execution belongs to the [Vessel](../../sepulcher/vessel/index.md), committed tr
 [Phylactery](../../sepulcher/phylactery/index.md), and physical readiness to the Orchestrator.
 The Altar projects those accounts so the Magus can inspect and act through their admitted seams.
 
-The delivered interface is English-only and uses **LychD Dark**. **Appearance** in the masthead
+The delivered interface is English-only and uses **LychD Dark**. **Appearance** on the left rail
 offers **Violet**, **Iris**, and **Neutral** decorative accents, plus **Reset to LychD Dark**.
 The choice is local to this browser and falls back to the default if its saved value is invalid
 or storage is unavailable. Focus, activity, warning and refusal keep their established colours;
@@ -95,6 +98,13 @@ not a light/system selector or a free-form theme editor. Future
 contracts remain with Frontend.
 
 ## Presentation direction
+
+Start with one of the proposed screens. In [Bridge](bridge.md#the-bridge-workspace), follow a
+turn or open a file beside the conversation. In [Applications](applications.md), browse the
+catalogue and pin a shortcut. In [Loom](loom.md), inspect a node or trace a permitted branch.
+The [software-change example](loom-sdlc.md) follows an Intent through the blueprint and into a
+separate evaluation workflow. [Moving between screens](workspace-design.md) explains which
+tools travel with you. The [Nexus design](nexus-design.md) covers operations, users and access policy.
 
 The graphite frame leaves black spatial surfaces to the work. Neutral primary actions, a quiet
 purple instrument identity, cyan manipulation controls, and green observed activity have distinct
@@ -108,11 +118,10 @@ Canvas's **Selection tools** unfold when ink or nodes are selected, or can be op
 Identity and history unfold as needed, while uncertainty,
 consent, capture limits, and physical consequences stay beside the choices they qualify.
 [Frontend's reading hierarchy](../../adr/15-frontend.md#reading-hierarchy-and-visual-direction)
-owns this shared design. Each instrument's **Reading direction** explains its current composition,
-further targets, and a practical acceptance case.
+owns this shared design.
 
 Follow [Atlas's concerns and citations](atlas.md#reading-direction),
-[Bridge's conversation and recovery](bridge.md#reading-direction),
+[Bridge's conversation and recovery](bridge.md#the-bridge-workspace),
 [Orb's parallel evidence field](orb.md#reading-direction), [Nexus's preview and observations](nexus.md#reading-direction),
 or [Loom's declared score](loom.md#reading-direction). Current controls and the boundaries of
 graph expansion remain those described in the operating sections and [State of

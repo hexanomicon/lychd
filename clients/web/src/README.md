@@ -20,7 +20,7 @@ routes to the implementation and its operating guide rather than duplicating eit
 | Spatial Run field, tab observation history, and one Run's retained records and gaps | [OrbField.svelte](lib/pages/orb/components/OrbField.svelte), [OrbTimeline.svelte](lib/pages/orb/components/OrbTimeline.svelte), [OrbView.svelte](lib/pages/orb/components/OrbView.svelte) | [Orb](../../../docs/divination/altar/orb.md) |
 | Admitted runtime topology, actual call attempts, source coverage and inspection-only scores | [Runtime evidence](lib/pages/orb/components/RuntimeEvidence.svelte), [runtime reader](lib/pages/orb/state/runtime.ts), [generic projection](lib/pages/orb/state/runtime-projection.ts) | [Connected components](../../../docs/sepulcher/aspects/oculus.md#connected-components-and-activity) |
 | Exact-Run matching Archive selection and capture limits | [ArchiveRecallPanel.svelte](lib/pages/orb/components/ArchiveRecallPanel.svelte) | [Archive selection](../../../docs/divination/altar/orb.md#inspect-a-matching-archive-selection) |
-| Capability ownership map/list, selected properties, preview, ticket, and physical request | [NexusView.svelte](lib/pages/nexus/components/NexusView.svelte), [native map](lib/pages/nexus/components/NexusMap.svelte), [projection](lib/pages/nexus/state/map.ts), [properties](lib/pages/nexus/components/NexusProperties.svelte) | [Nexus](../../../docs/divination/altar/nexus.md) |
+| Capability ownership map/list, selected properties, preview, ticket, physical request, and paired colleague availability | [NexusView.svelte](lib/pages/nexus/components/NexusView.svelte), [native map](lib/pages/nexus/components/NexusMap.svelte), [projection](lib/pages/nexus/state/map.ts), [properties](lib/pages/nexus/components/NexusProperties.svelte), [Colleagues](lib/pages/nexus/components/NexusColleagues.svelte) | [Nexus](../../../docs/divination/altar/nexus.md) |
 | Exact registered score and computed graph | [LoomView.svelte](lib/pages/loom/components/LoomView.svelte), [shared canvas](lib/graph/components/GraphCanvas.svelte) | [Loom](../../../docs/divination/altar/loom.md) |
 
 [The layout](routes/+layout.svelte) supplies browser-document context;
@@ -38,6 +38,13 @@ equivalence. Code used by one instrument lives in that instrument's `lib/pages/<
 [Boundary tests](lib/boundaries.test.ts) enforce this.
 Focused component tests live beside their components; navigation has its own
 [identity tests](lib/navigation/instruments.test.ts).
+
+Use the instrument name for a page folder, such as `orb`, `loom` or `atlas`. A Run can be
+presented in Bridge and Orb and linked from Loom. Keep its domain name on its data and
+operations. A folder called `runsOrb` would incorrectly make one instrument the owner of
+that shared concept. Existing URLs remain stable. [Applications](lib/pages/applications/)
+owns the catalogue, [Atelier](lib/pages/atelier/) owns the short-video editor and the
+[shell](lib/shell/) owns the rail, session-preserving dock and browser-local file revisions.
 
 [API contracts](lib/api/models.ts) alias [generated transport types](lib/api/openapi.d.ts).
 Their Python owners are [Altar controllers](../../../src/lychd/interface/web/) and

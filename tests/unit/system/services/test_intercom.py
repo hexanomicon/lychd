@@ -158,6 +158,17 @@ async def setup() -> tuple[
 
 
 @pytest.mark.asyncio
+async def test_overnight_policy_requires_explicit_bounded_task_lifetime() -> None:
+    _, _, authority, _, _, _, _ = await setup()
+    assert authority.policy.task_seconds == 900
+    overnight = replace(authority.policy, task_seconds=86_400)
+    assert overnight.digest != authority.policy.digest
+    assert overnight.network_seconds == 30
+    with pytest.raises(PeerAuthorityError, match="policy"):
+        replace(overnight, task_seconds=86_401)
+
+
+@pytest.mark.asyncio
 async def test_reconstructed_marker_and_unclassified_source_have_no_authority() -> None:
     service, _, _, marker, peer_id, uri, _ = await setup()
     forged = LocalOperatorAuthentication(marker.subject, marker.authentication_generation)

@@ -96,9 +96,10 @@ navigation and does not recur on stream refresh. An event return preserves the o
 and selected record. A stale or unavailable selection is reported, never silently replaced with
 another Run.
 
-One Bridge séance may contain many Invocations. A future [Circle](../divination/altar/circle.md)
-focus may compose authorized Loom, Nexus, and Orb lenses around exactly one of them while each
-lens retains its own authority. The per-turn Run strip is the delivered presentation.
+One Bridge séance may contain many Invocations. The [Circle](../divination/altar/circle.md)
+identifies one turn's Invocation. Bridge keeps supplied status beside the message and puts
+**View run in Orb** in the turn menu. The action carries that Run's exact
+identity. Required consent and unresolved admission stay visible at the originating request.
 
 ### Creation investigation within Bridge
 
@@ -317,6 +318,14 @@ suppresses dock controls while preserving saved side, width, and open state. Lea
 work view reveals the same conversation beside the work. Investigation and public-note focus
 keep their separate composition.
 
+In the [proposed screen layout](../divination/altar/workspace-design.md), Files, Terminal and
+Web are available across instruments in the panel’s horizontal icon row. Full Bridge gives
+the conversation its own pane. Other screens put the conversation first in the row, followed
+by their own tools and then those three shared tools. Loom’s Inspector follows the selected
+station or artifact. Switching tools preserves the conversation, the selected object and the
+open work within the active authority. The [Applications design](../divination/altar/applications.md)
+gives the dashboard and its quick list distinct controls on the rail.
+
 A compact dark-wood altar mark with two separate legs, purple cloth and small front-mounted
 candles opens About; a permanent product wordmark is unnecessary in the masthead. About retains
 the LychD identity, version, source and licence provenance. The fixed natural-colour mark is
@@ -443,9 +452,9 @@ becomes another owner of an existing action:
 | Instrument | Primary reading order | Role of a graph |
 | --- | --- | --- |
 | Canvas and its Atlas catalogue | The selected Project's board, catalogue, or retained project record; concerns, assessment basis, brief and next step remain directly addressable | Freehand visual authorship on the board; an optional concern relation lens preserves decomposition, addressing, and citation distinctions. |
-| Bridge | Conversation and offered text; the exact Run's reply, consent or unresolved admission; next draft | No default graph. A future Circle composes authorized lenses around one Invocation. |
+| Bridge | Offered text and status, reply or outstanding decision, next draft | The séance menu opens its map in Atlas. The turn menu opens its Run in Orb. |
 | Orb | Parallel Run groups; selected Run and capture limits; ordered evidence; selected record; bounded delegated jobs | Zoom discloses supplied Run, station, occurrence, and record membership; declared permissions and observed records remain distinct. |
-| Nexus | Snapshot and containment; capability ownership map or equivalent list; selected properties; explicit preview and request; ticket and physical observations | Native DOM/SVG edges mean supplied Animator ownership only. Preview highlights exact planned Animator evictions and launches without asserting physical topology. |
+| Nexus | Section directory for operations, people and access. Capability observations, preview, explicit request, ticket and physical outcome retain their distinct meanings. | Section rows and object details carry the proposed design. The current ownership view displays supplied Animator relationships. |
 | Loom | Exact registered revision and entry; stations and allowed successors; selected station; immutable identity | A read-only score can explain declared branches, joins, and loops, using the same permission data as its outline. |
 
 This is the composition target, not a delivery claim or a second implementation specification.
@@ -636,8 +645,9 @@ Context remain outside this initial contract.
 #### Shared memory map
 
 The future Atlas opens on retained knowledge and its provenance. A shared ontology lets each
-instrument refer to the same authorized identities and explicitly typed relationships. Bridge can
-project a séance as a scoped subgraph whose evidence points to exact turns. Projects and maps
+instrument refer to the same authorized identities and explicitly typed relationships. Opening
+a séance map from Bridge takes the reader to Atlas, scoped to that conversation, with citations
+back to exact turns. Projects and maps
 linking requirements, use cases, exact ADR revisions, and acceptance evidence are further slices.
 A citation preserves its source and basis across those views.
 
@@ -906,6 +916,11 @@ authoritative resolution. An in-flight response settles browser recovery state e
 has unmounted. Leaving the browser document warns while drafts or unresolved admissions remain;
 this initial recovery state does not claim persistence across reload or browser termination.
 
+Nexus also projects [paired colleague presence](26-a2a.md#private-colleague-presence) outside
+the capability ownership map. The operator sees the exact audience before starting a bounded
+sharing session. The browser clears current peer availability on expiry or stale refresh and
+submits choices to the displayed audience generation.
+
 #### Nexus request and refresh identity
 
 Nexus retains an ambiguous transition request UUID per target, so inspecting another target cannot
@@ -958,9 +973,10 @@ keyboard reading and reduced-motion presentation retain the same information. In
 Loom descriptors preserve exact source/profile/generation selection and cannot become local
 executable workflows.
 
-Orb may select a spatial presentation inside the same shared renderer: compact typed marks,
-stable Run territories, and curved relations on an unbounded black viewport. Territory membership
-comes from the supplied Run, never proximity. Repositioning a mark changes only the current
+Orb lays out parallel Runs side by side on a continuous, dotted graphite field in the shared
+renderer. Each lane opens with its Run identity. Compact station marks and their connections
+let the eye follow a workflow from top to bottom. A subject belongs to a lane through its
+supplied Run identity. Repositioning a mark changes only the current
 adapter's disposable layout; it submits no Pattern or Run mutation. Loom retains its declared-score
 presentation. Filters, disclosure and a semantic Run list remain available without canvas gestures.
 

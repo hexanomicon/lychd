@@ -29,6 +29,7 @@ if TYPE_CHECKING:
     from litestar import Litestar
 
     from lychd.config.runes.registry import RuneRegistry
+    from lychd.config.settings.presence import PresenceSettings
     from lychd.config.settings.root import Settings
     from lychd.domain.animation.services.registry import AnimatorRegistry
     from lychd.domain.cortex.cancellation import RunEffectLifecycle
@@ -182,12 +183,10 @@ async def altar_services_lifespan(app: Litestar) -> AsyncGenerator[None]:
         # cannot claim work, and HTTP cannot resolve services, before this point.
         from lychd.domain.cortex.substrate import set_run_substrate
 
-        set_run_substrate(services.substrate)
-
-        # Publish the web-facing handle last: a partially warmed runtime is never
-        # observable through app.state.
-        app.state.services = services
-        yield
+        async with _colleague_presence_lifespan(app, settings.server.web.presence):
+            set_run_substrate(services.substrate)
+            app.state.services = services
+            yield
     finally:
         from lychd.domain.cortex.substrate import reset_run_substrate
 
@@ -199,6 +198,28 @@ async def altar_services_lifespan(app: Litestar) -> AsyncGenerator[None]:
                 await services.aclose()
         finally:
             await disconnect_run_queues(connected_queues)
+
+
+@asynccontextmanager
+async def _colleague_presence_lifespan(app: Litestar, settings: PresenceSettings | None) -> AsyncGenerator[None]:
+    """Fence the optional audience and drain its file work before closing its descriptors."""
+    if settings is None:
+        yield
+        return
+    from lychd.system.services.colleague_presence import ColleaguePresence
+
+    with ColleaguePresence.open(settings) as presence:
+        app.state.colleague_presence = presence
+        renewal = asyncio.create_task(presence.maintain(), name="lychd-colleague-presence")
+        try:
+            yield
+        finally:
+            presence.fence()
+            app.state.pop("colleague_presence", None)
+            try:
+                await _stop_delivery_relay(renewal)
+            finally:
+                await presence.stop()
 
 
 async def _load_initial_capabilities(registry: AnimatorRegistry) -> None:

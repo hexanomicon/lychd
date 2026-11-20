@@ -9,6 +9,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
 
 from lychd.domain.archive import RecallReceipt
+from lychd.domain.intercom.presence import PresenceBoard
 from lychd.domain.weaver.inspection import InspectionBinding
 from lychd.domain.web.schemas import ConsentCard, LoomView, NexusBoard, SwapTicket
 
@@ -252,6 +253,50 @@ class DelegatedRuntimeObservation(ClientContract):
     limitations: list[str]
 
 
+class NexusQueueRule(ClientContract):
+    """One configured semantic source and its scheduling defaults."""
+
+    source: str
+    queue: str
+    priority: int
+
+
+class NexusPreferenceRoute(ClientContract):
+    """One configured Bridge admission candidate with its ordinal weight."""
+
+    capability_key: str
+    weight: int
+
+
+class NexusConfiguration(ClientContract):
+    """Allowlisted, read-only settings from the assembled Vessel generation."""
+
+    database_profile: str
+    server_port: int
+    builtin_extensions: list[str]
+    crypt_extensions: list[str]
+    interactive_concurrency: int
+    background_concurrency: int
+    routing: list[NexusQueueRule]
+    actuator: str
+    switching_policy: str
+    hard_swap_priority: int
+    planning_timeout_s: float
+    drain_timeout_s: float
+    warmup_timeout_s: float
+    bridge_revision: str | None
+    bridge_capability_key: str | None
+    bridge_preference: list[NexusPreferenceRoute]
+
+
+class NexusOperator(ClientContract):
+    """Secret-free attribution from this authenticated local request."""
+
+    subject: str
+    sigil: str
+    scopes: list[str]
+
+
 class NexusSnapshot(ClientContract):
     """A projection assembled from explicitly timestamped capability observations."""
 
@@ -260,6 +305,9 @@ class NexusSnapshot(ClientContract):
     containment_reason: str | None
     transitions: list[TransitionRecordView]
     delegated_runtimes: list[DelegatedRuntimeObservation]
+    presence: PresenceBoard | None = None
+    configuration: NexusConfiguration | None = None
+    operator: NexusOperator | None = None
 
 
 SwapRequestId = Annotated[

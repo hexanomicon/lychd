@@ -1,163 +1,289 @@
 ---
 title: Loom
+description: Follow a document import through a Loom workflow, inspect its agents and objects, and compare the blueprint with a recorded Run.
 icon: material/vector-polyline
 ---
 
-# :material-vector-polyline: Loom: The Visible Scroll
+# :material-vector-polyline: Loom
 
-Open Loom when you want to understand what a workflow permits. It presents one exact Pattern
-revision as a declared Scroll: its stations and the routes between them. Once you can read that
-score, compare it with a particular Run's evidence in [Orb](orb.md) or use Evaluation to review
-a retained output. The score remains read-only.
+A document import timed out. The write might have succeeded before the importer lost its
+connection. Before designing a retry, you want to know who checks for a receipt and what
+happens if nobody can find one. **Loom** lets you follow those decisions through a workflow.
+For the evidence recorded on a particular attempt, open its Run in [Orb](orb.md).
 
-## Find the exact score
+The installed Loom opens directly on the graph. Expand **Map → Workflows** to switch between
+registered Pattern revisions and local blueprints. Select a station to inspect its incoming
+and outgoing permissions on the right. The Map keeps the current workflow and camera position
+visible while you move between stations.
 
-After [Altar setup](index.md#bring-one-intent), open `http://127.0.0.1:7134/loom`.
-Loom selects the configured default, then puts the exact Pattern and revision in the address.
-For example, the unconfigured Bridge opens at `/loom/bridge_chat/1`. Copy the full address
-when you want someone to review the same score. A link without the revision is rejected.
+Choose **Design workflow** to edit the software development blueprint, connect an agent to a
+typed object and examine conditional routes. [Design a workflow](loom-studio.md).
 
-Look at the labels beside `pattern_id@revision`. **Default** identifies the ordinary route for
-a new request. Other selectable entries can show **Route** with its rank or **Active route**.
-**Retained** means the revision is still available to inspect after routing changes. Use [Weaver's admission table](../../sepulcher/aspects/weaver/pattern-lifecycle.md#identity-before-motion)
-to check which Bridge or delegation score a configuration selects.
+![The compiled Loom with its workflow Map, camera minimap and selected station.](../../assets/altar-design/loom-built.webp)
 
-Selected extensions and connected profiles can add exact inspection-only scores through the same
-catalogue. **Inspection binding** names the source, Registrant, profile, generation and publication
-meaning. **Observation only · not executable in this Vessel** does not change local routing or
-permit admission or resume. An executable native entry is separately labelled **Executable in
-this Vessel**. The complete remote source/profile/generation selection stays in its detail link;
-an unavailable or changed binding is reported instead of opening a similarly named score.
+![The Explorator and the two opposed Crucible reviewers in the local inquiry example.](../../assets/altar-design/loom-affect-built.webp)
 
-These descriptions come from the same manifest as the source profile. Profile metadata does not
-change that Pattern's checksum. Registering a descriptor does not publish executable code or
-activate an extension. [Oculus](../../sepulcher/aspects/oculus.md#connected-components-and-activity)
-owns the bounded source handoff used by the first connected profile.
+### Video workflows
 
-## Read identity, then possibility
+Under **Workflows → Local blueprints**, select **Illustrated story**, **Animated lesson**, or
+**Captioned excerpt**. Each opens its own editable composition graph. For example, open
+**Picture production** in Animated lesson to inspect **Render lesson frames**, its visual
+candidate and **Review motion and labels**. **Open in Atelier** returns to that recipe’s brief.
+The local blueprint follows [Atelier’s visual workflow](../../compositions/atelier/index.md)
+and [video-master design](../../compositions/atelier/master.md). The registry lists the
+exact Pattern revisions supplied by this Vessel.
 
-Read the views together:
+![Animated lesson with the enclosing picture-production flow, selected visual reviewer and its output fields.](../../assets/altar-design/loom-composition-built.webp)
 
-| View | What to inspect |
-| --- | --- |
-| Header | `title`, `description`, `pattern_id@revision`, declared entry, and **Registered from source**. A durable publication store is not implemented. |
-| **Pattern graph** | Pan and zoom through the declared score. **Whole Pattern** folds it into one group; **Stations** reveals the declared stations and permissions. |
-| **Graph outline** | Station and permission counts; each node's `label`, `key`, `kind`, declared entry and permitted successors. Select a station to inspect it. |
-| **Selected station** | Incoming and outgoing permissions with endpoint labels, keys and the declared relation; self-loops are explicit. **Back to selected station** returns keyboard focus to its row. |
-| **Identity & source** | Expand the disclosure for `checkpoint`, declared `entry`, reviewed `implementation` revision, 64-character `digest`, `trigger`, and plain-text Mermaid `source`. |
+## Walk the blueprint {#reading-direction}
 
-The workflow canvas and semantic outline derive the same stations and permissions, including
-declared wait loops, from the exact manifest. Zoom changes whole-Pattern and station detail;
-explicit buttons offer the same operation. The shared Svelte Flow renderer supplies a read-only
-computed layout. It subscribes to no execution and highlights no live station. A Run's retained
-evidence in Orb establishes which movements were observed.
+The screenshots follow **Import retry** in an early design prototype. Its layout and controls will be refined through use. You can inspect
+the nodes and try an edit in your open page. The installed Altar lets you read the workflow
+at an exact revision. [Open the interactive canvas](../../assets/altar-design/loom-canvas.html)
+or [open a revision in the installed Loom](#find-the-exact-score).
 
-Hover or keyboard focus on a canvas node reveals its meaning and identity without selecting it.
-Escape closes that preview. The same graph adapter serves Orb; a plain canvas background keeps
-the score readable, while declared kinds remain distinct from inferred agent or tool identities.
+[![The Import retry canvas with the workflow Map on the left and Storage explorer selected inside the Receipt solver frame. Its ports are open on the right.](../../assets/altar-design/loom-overview.webp)](../../assets/altar-design/loom-overview.webp)
 
-The selected station and its outline remain usable if the graph fails. **No
-outgoing permission declared** describes the manifest; it does not infer that execution has
-terminated. A failed score read offers **Retry reading Pattern**, preserving the requested exact
-revision instead of silently selecting another one.
+Start at the selected **Storage explorer**. The frame around it is the subgraph that owns
+the work. The smaller **Receipt evidence** node below it is the object it produces.
+Selecting any of the three opens a different definition in the right panel.
 
-Read a station's kind as a declaration in the current manifest. The accepted grammar also gives
-a Spell its own identity and places that exact semantic-action contract in a Scroll-local
-station. Current manifests do not yet carry that independent Spell identity. Thus a `delegate`
-glyph identifies a station kind; it cannot establish an independent Spell contract or prove
-provider-backed execution.
+### Open the Receipt solver subgraph
 
-## Compare it with a Run
+Select **Receipt solver** in the Map or click the frame title. The canvas brings the group
+into view. Its inspector explains the job, lists the agents and objects inside, and shows
+each wire crossing the boundary. Here **Task dispatch** sends an `ExplorationTask` on its
+**B · receipt** exit. The solver sends `ReceiptEvidence` out to **Write outcome?**.
 
-An Invocation is the admitted Circle; casting performs its Scroll, and the Run is its durable ledger identity. Compare the declaration in Loom with [Orb's retained evidence of traversal](orb.md), accounting for any gaps and omissions there.
+[![Receipt solver detail with Storage explorer under Agents inside, Receipt evidence under Objects, and the entering and leaving connections.](../../assets/altar-design/loom-receipt-subgraph.webp){ width="553" loading="lazy" }](../../assets/altar-design/loom-receipt-subgraph.webp)
 
-Orb can attach `?run={run_id}` when it opens the score. This supplies the Run you are reviewing;
-the path still selects the Pattern identity. Before offering **Return to Run in Orb**, Loom
-validates the Run's pinned manifest and requires it to equal the entire registered score. Matching
-only digest, Pattern ID, and revision is insufficient. It also checks that the separately fetched
-displayed score still has the validated digest.
+Use **Workflow** in the left Map to browse the ownership tree. A tree chevron exposes children
+while you keep reading the current node. Drag or zoom the canvas to explore it. The minimap
+at the foot of the Map keeps the outer branches in place. Its marker shrinks as you zoom
+into a branch.
+**Up one level** frames the parent. **Fit full graph** (`F`) brings the whole blueprint back.
+The Orb design reuses these navigation gestures for the branches observed by a particular
+moment in a Run. [Navigate the Orb capture](orb.md#navigate-with-the-minimap).
 
-A valid return preserves the selected event or delegated-job hint. Invalid, unavailable, or
-mismatched Run context remains explicit. Choosing another Pattern discards the Run query.
+### Inspect the agent
 
-??? info "Compare the source contract"
+Choose **Storage explorer** under **Agents inside**. In **Ports**, follow the incoming
+`in` pin back to Task dispatch or the outgoing `out` pin to its receipt object.
+**Previous agent** and **Next agent** traverse the objects and decisions in between.
+The previous agent here is **Orchestrator**. Open the choices beside **Next agent** to
+find **Outcome lookup** on the recovery route or **Advocate** and **Challenger** in review.
 
-    The revision endpoint is `/api/v1/loom/source/patterns/{pattern_id}/{revision}`. The
-    current-revision shortcut is `/api/v1/loom/source/workflows/{workflow}`. Their separate source
-    namespace keeps `/api/v1/loom/{pattern_id}/{revision}` legal, including a revision named `source`.
+Open **Prompts**. The system prompt tells the agent to read the earlier write and preserve an
+unknown outcome when confirmation is missing. The user prompt supplies the document and
+storage reference for this task. **Variable bindings** shows how the placeholders resolve.
+For example, `{{task.storage_ref}}` reads the string at `in.storage_ref`.
 
-The fixed trusted source-browser [journey](../../state-of-the-work.md#current-evidence-envelope)
-checks the exact `bridge_chat@2` score and keyboard return to its Run. It does not qualify the
-planned editor, every graph interaction or the shared renderer's cross-engine lifecycle gate.
+[![Storage explorer’s Prompts tab shows the system and user templates above bindings for task.document_id and task.storage_ref.](../../assets/altar-design/loom-storage-prompts.webp){ width="553" loading="lazy" }](../../assets/altar-design/loom-storage-prompts.webp)
 
-## Review a retained output
+In **Settings**, inspect the model profile, temperature, output limit, allowed tools and
+primary and fallback Animators. Storage explorer has a read-only
+`read_receipt(document_id, storage_ref)` tool. A fallback can take over if the primary is
+unavailable before submission. An uncertain submission needs reconciliation before another
+attempt. [Execution-road planning](../../adr/28-workflow.md#execution-road-planning).
 
-An exact revision's **Evaluation** view offers **Manual output review**. It is a retrospective
-review of a historical answer, with no new execution. Begin with a bounded goal, the criteria and
-evidence needed to judge it, and your declared reviewer name. Freeze that contract before loading
-the output for this review; this does not claim that the criteria preceded the original Run.
+??? info "Compare the other explorer"
 
-Choose an exact Run whose full pinned manifest and inspection binding match the displayed score.
-The review reads the matching retained agent turn from its exact Session. Its quoted words,
-supplied identities, timestamp and content digest identify the source. A missing or ambiguous
-answer stays unavailable; the review never substitutes the most recent answer or a process-local
-Orb projection.
+    On branch **A · identity**, **Repository explorer** takes the assigned question and
+    revision at `in.task`. Its system prompt requires file and line references. The user
+    template binds `task.revision` and `task.question`. Its `out.evidence` pin produces
+    an `EvidencePacket` with a finding, source references and outstanding questions.
 
-For each criterion, inspect what is actually present, then enter your verdict, reason and
-supporting quotation or evidence limitation. `UNKNOWN` is the starting verdict. A completed Run
-can contain an incorrect answer; an output that claims an effect does not prove the effect
-occurred. Source Run status and your review's completion remain separate from quality verdicts.
+    Its sample Gemma profile uses temperature 0.2, top p 0.9 and up to 1,200 output tokens.
+    `search_repo(query)` returns source references. `read_file(path, start_line, end_line)`
+    reads an inclusive line range and returns the path, revision, range and text. For the
+    actual Animator, rendered request or tool result, follow the Run to Orb and inspect
+    what the attempt retained. [Animator readiness in Nexus](nexus.md).
 
-Finishing freezes a local review record. Regrading creates another revision with the same frozen
-criteria and output. To change criteria or reviewer, start a new review and freeze a new contract.
-Export JSON or readable Markdown to keep the exact source, criteria, judgments, limitations and
-declared reviewer together. Reviews last only in this open browser document and are not saved to
-Vessel or localStorage; export before leaving. The reviewer name is self-declared, not authenticated
-attribution. Current access refusal clears protected captures and fences late reads.
+### Open the receipt object
 
-This is an authored review over retained output. It does not run a Trial Suite, establish new
-cost/latency observations, prove that another workflow revision improves outcomes, promote a
-model, or create a durable Drift Outcome. [Drift](../../adr/34-drift.md) owns those evaluation
-contracts. Orb remains the place to inspect the source Run's bounded execution evidence.
+Return to **Ports** and select **Receipt evidence** under **Outputs**. Expand `receipt` in
+the object schema. When a stored receipt is present, `id` identifies it and `recorded_at`
+gives the time storage recorded the write. The field may also be null. Expand `source` to
+find `ref`, the reference supporting the observation.
+
+[![ReceiptEvidence schema with the optional WriteReceipt expanded to id and recorded_at, and EvidenceSource expanded to ref.](../../assets/altar-design/loom-receipt-schema.webp){ width="553" loading="lazy" }](../../assets/altar-design/loom-receipt-schema.webp)
+
+**Produced by** takes you back to `Storage explorer.out`. **Consumed by** opens the
+`in` pin’s owner, **Write outcome?**. Those two endpoints identify this particular binding
+even if another station produces the same schema. To read the receipt for a specific
+import, inspect the object retained by that Run in Orb.
+
+### Follow the router tree
+
+Switch the left Map to **Router tree**. Open **Task dispatch**, follow **B · receipt**
+and expand **Write outcome?**. **Known** leads to **Join**. **Unknown** leads to
+**Lookup available?**. With read-only access the workflow can ask **Outcome lookup** for
+evidence. Without access it records **Unresolved**. Both outcomes can go forward to review.
+
+[![Router tree expanded from task dispatch to the known and unknown write outcomes and the read-only lookup decision.](../../assets/altar-design/loom-routing.webp){ width="843" loading="lazy" }](../../assets/altar-design/loom-routing.webp)
+
+The identity and receipt checks can start together. **Join** waits for the identity evidence
+and one receipt result. **Crucible** then tests the evidence for a retry. Changing an
+unknown result into permission to repeat the write would require an explicit change to the
+workflow.
+
+Under **Canvas layers**, fold **Router tree** to work on a solver with its boundary wires
+still visible. **Intent stage** folds independently. Click a folded section’s body to
+inspect what it contains or its chevron to open it. **Routes** and **All stations** switch
+the overall level of detail. During execution the backend assigns workers and evaluates
+the declared conditions. Orb records the route taken.
+
+??? info "Trace the work back to the Intent"
+
+    Expand **Intent stage**. The target-state and current-state analysts describe the desired
+    behavior and the importer as it exists. **Reconcile analyses** records the gap and
+    acceptance criteria in **Difference**. **Task decomposition** emits an atomic task or
+    splits a composite task and calls the same definition for each child. A recursive call
+    appears in the tree as a reference to that definition.
+
+    The conditional task plan tells the Orchestrator which work can start. The queue uses
+    priority to choose among waiting Runs. An explicit Intent priority overrides the routing
+    rule on a 0–100 scale. Work already running keeps its claim. Follow the
+    [software-change blueprint](loom-sdlc.md) through exploration, the human checkpoint,
+    implementation and the separate Eval workflow. [Worker admission](../../adr/14-workers.md#publication-and-exact-hop-claims).
 
 ## The planned editor {#where-charcoal-must-wait}
 
-Editing, proposal, publication, execution, and layout changes belong to the future design. The [Loom workflow views record](../../state-of-the-work.md#loom-workflow-views) tracks which parts of that design have been implemented.
+To put a reviewer between the storage agent and its output object, start at
+**Storage explorer → Ports → Outputs → Add node**. Pick **Agent**, name it
+**Receipt reviewer** and choose **Insert before Receipt evidence [in]** under
+**Placement**. Read the two replacement connections in **Preview** before choosing **Apply**.
 
-Future charcoal drafts and grey Spell placements would first produce inert candidates and redacted
-resolution reports. Until every exact placement passes [Scroll admission](../../adr/28-workflow.md#spells-scrolls-and-casting),
-the whole candidate remains `castable=false`; no placeholder enters the executable Graph.
+[![Add node dialog for Receipt reviewer with its source output, node type, placement and replacement wire preview.](../../assets/altar-design/loom-add-node.webp){ width="464" loading="lazy" }](../../assets/altar-design/loom-add-node.webp)
 
-Follow [ADR 15's editing gate](../../adr/15-frontend.md#loom-workload-and-editing-gate) for the future editor and [Spellweaver](../../sepulcher/aspects/weaver/index.md) for a candidate's passage to a published revision.
+Choose **Add a branch** if both the original and new destinations should receive the output.
+Use **Connect** for an existing node and select its compatible input pin. You can also drag
+between handles or enter `Insert Reviewer before Task dispatch` in the composer and
+choose **Review change**. **Cancel** dismisses a proposal and **Undo** reverses an applied
+edit. Prototype edits stay in the open page. Each running workflow stays pinned to its
+admitted revision. [Editor design and admission](../../adr/15-frontend.md#loom-workload-and-editing-gate).
 
-## Reading direction
+??? info "From a draft to a published workflow"
 
-The exact revision, source registration, entry, station counts, and declared successors should
-be legible before the reader opens digest or source detail. The computed graph has an outline
-and station inspector beside or below it as space permits. That outline must answer the same
-question without pan or zoom gestures.
+    In the planned editor, Charcoal drafts and grey Spell placements produce inert candidates
+    and redacted resolution reports. A candidate stays `castable=false` until every exact
+    placement passes Scroll admission. A human checkpoint may pause a route for an authorized
+    decision. Its policy defines where approval, refusal and expiry lead.
+    [Scroll admission](../../adr/28-workflow.md#spells-scrolls-and-casting) and
+    [Spellweaver](../../sepulcher/aspects/weaver/index.md).
 
-The proposed [shared workflow station inspector](index.md#shared-workflow-station-inspector)
-opens on the station's definition in Loom.
+The tool icons along the top of the right panel let you return to **Walking Bridge**, your
+files, terminal or browser. Selecting a graph node opens its inspector. Switching back to
+Walking Bridge restores the séance and its unsent draft. Both side panels can be resized,
+folded or swapped. [Shared panel design](workspace-design.md#keep-the-conversation-on-loom).
 
-The future workflow map expands nested declared subgraphs until each agent can be inspected.
-Open one group to work within it, or expand the complete declared graph. Context policy and
-[Evaluation](../../adr/34-drift.md#evaluating-a-workflow-change) follow the exact revision.
-For example, a policy could request a retained rollout decision with its source.
-[Archive](../../adr/27-memory.md) governs eligibility, and
-[Context](../../adr/21-context.md#explicit-archive-projection) governs assembly for the Invocation.
-The current Score reads supplied stations and permissions. Evaluation supports retrospective
-[manual review](#review-a-retained-output).
+## Find the exact score
 
-Judge every mark against the manifest. Both views share declared nodes and permission endpoints;
-station detail exposes incoming and outgoing permissions. Placement cannot supply a conditional
-edge label, station effect, independent Spell identity, or execution colour. Handles must not
-imply connecting, editing, publishing, or running this read-only score.
+In the installed Altar, open `http://127.0.0.1:7134/loom`. Loom opens the configured
+default and puts the **Pattern** and its **revision** in the address. The unconfigured
+Bridge score opens at `/loom/bridge_chat/1`. Copy that full address to share the same
+workflow definition. Its **Scroll** declares the entry, stations and permitted connections.
+[Altar setup](index.md#bring-one-intent).
 
-Acceptance case: open a retained exact revision with Run context, find all permitted successors
-and a return loop using the keyboard, then fail the graph. The outline must still
-answer the same question and preserve selection. Return to the original Orb event; selecting a
-different Pattern discards that context. [Frontend](../../adr/15-frontend.md#reading-hierarchy-and-visual-direction)
-owns this target and the shared renderer gates; installation does not establish the required
-cross-engine lifecycle receipt. [State](../../state-of-the-work.md#loom-workflow-views) keeps that
-qualification separate from the available canvas.
+| Label beside the revision | What it tells you |
+| --- | --- |
+| **Default** | Ordinary route for a new request. |
+| **Route** and **Active route** | The routing rank and whether the entry is active. |
+| **Retained** | This exact revision remains inspectable after routing changes. |
+
+For a contributed score, **Inspection binding** identifies its source, Registrant, profile,
+generation and publication meaning. **Observation only · not executable in this Vessel**
+allows inspection. **Executable in this Vessel** identifies a separately executable native
+entry. A deep link preserves the binding, and Loom reports changes or loss of access at that
+address. [Connected sources](../../sepulcher/aspects/oculus.md#connected-components-and-activity)
+and [route selection](../../sepulcher/aspects/weaver/pattern-lifecycle.md#identity-before-motion).
+
+### Read identity, then possibility
+
+In the installed read-only **Pattern graph**, choose **Whole Pattern** for the group or
+**Stations** to reveal its contents. Zoom changes between the same two levels. Hover or
+focus a node for a preview and press Escape to dismiss it.
+
+| Control | What to inspect |
+| --- | --- |
+| **Graph outline** | Select a station by label or key. Its permitted successors, incoming and outgoing connections and declared self-loops remain readable if the graph fails to render. |
+| **Selected station** | Inspect the endpoints and relation on each permission. **Back to selected station** returns keyboard focus to its row. |
+| **Identity & source** | Read the checkpoint schema, entry, reviewed implementation revision, manifest digest, trigger and Mermaid source. The header identifies the revision and its registration source. |
+
+**No outgoing permission declared** describes the manifest. Use a Run trace to establish
+where execution ended. If the score fails to load, **Retry reading Pattern** retries the
+same revision. [Scroll and Spell contracts](../../adr/28-workflow.md#spells-scrolls-and-casting).
+
+The installed **Map** lists the revision's declared stations. Select a station to locate it on
+the canvas and open its definition. The stars in the minimap represent actual graph nodes.
+Drag the minimap viewport to pan. Use its chevron to fold the Map, or drag the separator to
+give it more room. The station inspector has its own fold control and separator. **Swap Map
+and station inspector** changes their sides while keeping the Bridge conversation open.
+
+### Compare it with a Run
+
+Follow a Run from Orb into Loom to inspect the exact revision it used. For **Return to Run
+in Orb**, Loom checks the Run’s pinned manifest against the registered score and verifies
+the displayed score’s digest. The return link restores the same attempt and its selected
+event or delegated-job hint. Loom reports stale or mismatched bindings. Choosing another
+Pattern clears the Run context. [Verified handoff and delivery status](../../state-of-the-work.md#loom-workflow-views).
+
+### Explore an affect policy {#affect-policy}
+
+Open **Affect** on an exact revision. **Revision coverage** lets you inspect a station and its
+declared exits. The current score format supplies neither an affect policy nor a binding from
+a signal to any of those exits. Alongside it, **Import retry** is a worked policy you can vary
+in this tab. Its question is whether a read-only receipt lookup could resolve an uncertain write.
+
+Change **Evidence returned**. A new receipt key makes one specific lookup worth considering.
+Repeated observations leave the decision unchanged. A conflicting receipt calls for review.
+Then change the remaining allowance or the lookup permission. Exhausting the allowance stops
+further probes. A probe that needs permission goes to review. The proposed positive baseline
+stays present in every case, including when work stops. It supplies orientation across eligible
+stations, while the evidence-gain signal applies only to the question the observation could settle.
+[The software-change example](loom-sdlc.md#affect-in-exploration) ·
+[Ecstatic Harmonizer](../transcendence/illumination.md#ananda).
+
+The worked graph marks the appraisal with **Curiosity**, **Frustration**, **Concern** or
+**Satisfaction** as the evidence changes. Select a node in the graph or use **Inspect a worked
+node**. **Read · receipts.log** shows the illustrative source line. **+ Advocate** and
+**− Challenger** make independent claims about the repair. **Reconciler** retains the
+lost-acknowledgement objection. **Edit · retry.py** opens the candidate diff and its open
+verification finding. The proposed links show where the claims go. A recorded claim exchange
+would need an admitted workflow and an actual attempt. [Crucible](../../sepulcher/aspects/weaver/crucible.md).
+
+Follow **Inspect affect routing in Nexus** to inspect the scope and ownership of a proposed network default.
+Each consuming station would need a declared input and an authorized route. That includes
+separate authorization for sending anything to a peer. Changes in this example stay in the
+open page. To inspect a Run, use [Orb's appraisal at the cursor](orb.md#appraise-a-record).
+
+??? info "Source and context for this revision"
+
+    The exact source endpoint is `/api/v1/loom/source/patterns/{pattern_id}/{revision}`.
+    The current-revision shortcut is `/api/v1/loom/source/workflows/{workflow}`. A detail
+    link requires a revision. Orb may supply `?run={run_id}` alongside it. The separate
+    source namespace also permits an exact score such as `/loom/source/1`.
+
+    A station definition can declare the context policy and evaluation criteria it uses.
+    Archive governs eligibility. Context assembly determines which inputs reach an Invocation.
+    [Archive](../../adr/27-memory.md), [Context assembly](../../adr/21-context.md#explicit-archive-projection)
+    and [the shared station inspector](index.md#shared-workflow-station-inspector).
+
+## Review a retained output
+
+Open **Evaluation → Manual output review** on an exact revision to judge a historical answer.
+
+1. Enter your reviewer name, goal, bounded scope and criteria. Freeze them before loading
+   the output so the record shows which terms you set in advance.
+2. Choose a Run whose full pinned manifest and inspection binding match the displayed score.
+   Loom reads the retained agent turn from its exact Session. Start each verdict at
+   `UNKNOWN`, record a reason for changing it and quote the supporting text or identify
+   what evidence is missing. A claimed file write needs evidence of the write itself.
+3. Finish to freeze the review. Regrading creates a new revision. Export JSON or Markdown
+   before leaving the page. The review lives in the open browser document and records the
+   self-declared reviewer, source, judgments and limitations. If access is refused, Loom
+   clears protected captures and prevents a late response from restoring them.
+
+To test a proposed workflow improvement on the same cases and criteria, open the
+[worked Eval example](loom-sdlc.md#evaluate-the-workflow). [Drift](../../adr/34-drift.md)
+owns the comparison and revision contracts.

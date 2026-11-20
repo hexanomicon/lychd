@@ -12,6 +12,7 @@ import sys
 from contextlib import closing
 from functools import partial
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING
 
 from lychd.domain.animation.conflicts import build_conflict_topology
@@ -24,14 +25,13 @@ from lychd.domain.orchestration.actuator import (
 from lychd.extensions.builtin.animator.llamacpp.parser_models import LlamaCppRuntimeInference
 from lychd.extensions.builtin.animator.llamacpp.runtime import LlamaCppRuntimePlanner
 from lychd.extensions.builtin.animator.soulstones.llamacpp import LlamaCppMode, LlamaCppSoulstoneConfig
-from lychd.system.path_safety import path_has_symlink_component
+from lychd.system.desktop.private import check_native_inputs, verify_private_directory
 
 if TYPE_CHECKING:
     from lychd.config.settings.orchestration import SwitchingSettings
     from lychd.domain.animation.protocols import CapabilityRegistry
     from lychd.domain.orchestration.containment import SoftActivationRecord
 
-_PRIVATE_MODE = 0o700
 _WINDOWS_TCP_COLUMNS = 5
 _UNSETTLED = (
     "Native runtime ownership is unresolved. Stop Core, inspect the private native.sqlite3 journal, "
@@ -64,20 +64,31 @@ class NativeRuntimeActuator:
     def __init__(self, registry: CapabilityRegistry, settings: SwitchingSettings) -> None:
         """Open the installation journal before accepting native work."""
         directory = settings.native_state_dir
-        if directory is None or not directory.is_dir() or path_has_symlink_component(directory) is not None:
+        if directory is None or not directory.is_dir():
             msg = "Native runtime requires an existing private native_state_dir."
             raise RuntimePreconditionError(msg)
-        if os.name == "posix" and (
-            directory.stat().st_uid != os.getuid() or stat.S_IMODE(directory.stat().st_mode) != _PRIVATE_MODE
-        ):
-            msg = "Native state directory must be current-user owned with permissions 0700."
-            raise RuntimePreconditionError(msg)
+        try:
+            verify_private_directory(directory)
+        except (OSError, ValueError, subprocess.SubprocessError) as exc:
+            msg = "Native runtime requires a verified owner-only state directory."
+            raise RuntimePreconditionError(msg) from exc
         self._journal = directory / "native.sqlite3"
-        if self._journal.is_symlink() or self._journal.is_junction():
-            msg = "Native journal cannot be redirected."
-            raise RuntimePreconditionError(msg)
+        for suffix in ("", "-journal", "-wal", "-shm"):
+            journal_file = directory / f"native.sqlite3{suffix}"
+            try:
+                info = journal_file.lstat()
+            except FileNotFoundError:
+                continue
+            if (
+                not stat.S_ISREG(info.st_mode)
+                or info.st_nlink != 1
+                or getattr(info, "st_file_attributes", 0) & stat.FILE_ATTRIBUTE_REPARSE_POINT
+            ):
+                msg = "Native journal files must be regular, singly linked files."
+                raise RuntimePreconditionError(msg)
         self._registry = registry
         self._settings = settings
+        self._scratch: dict[str, TemporaryDirectory[str]] = {}
         self._children: dict[str, subprocess.Popen[bytes]] = {}
         self._lock = asyncio.Lock()
         self._endpoints: dict[str, asyncio.Server] = {}
@@ -117,6 +128,7 @@ class NativeRuntimeActuator:
             or rune.models_preset
             or rune.chat_template
             or rune.devices
+            or rune.security_label_disable
             or rune.volumes
             or "quadlet" in rune.model_fields_set
         ):
@@ -136,12 +148,16 @@ class NativeRuntimeActuator:
         if (
             not model.is_absolute()
             or not root.is_dir()
-            or not model.resolve().is_relative_to(root.resolve())
+            or not model.is_relative_to(root)
             or model.suffix.lower() != ".gguf"
             or not model.is_file()
         ):
             msg = "Native model must be an existing absolute GGUF file inside native_model_root."
             raise RuntimePreconditionError(msg)
+        try:
+            check_native_inputs(engine, model)
+        except (OSError, ValueError) as exc:
+            raise RuntimePreconditionError(str(exc)) from exc
         planner = LlamaCppRuntimePlanner()
         args = planner.plan_exec_args(
             soulstone=rune, inferred=LlamaCppRuntimeInference(), mode="single", listen_host="127.0.0.1"
@@ -224,29 +240,45 @@ class NativeRuntimeActuator:
                         probe.bind(("127.0.0.1", 0))
                         port = int(probe.getsockname()[1])
                     args[args.index("--port") + 1] = str(port)
-                    child = self._launch(args)
+                    scratch = TemporaryDirectory(prefix="engine-", dir=self._journal.parent)
+                    try:
+                        child = self._launch(args, Path(scratch.name))
+                    except BaseException:
+                        scratch.cleanup()
+                        raise
+                    self._scratch[name] = scratch
                     self._children[name] = child
                     with db:
                         db.execute("INSERT INTO child VALUES (?, ?)", (name, child.pid))
-                    await self._await_listener(child, port)
+                    try:
+                        await self._await_listener(child, port)
+                    except BaseException as exc:
+                        try:
+                            await self._stop(db, name)
+                        except (OSError, RuntimeError, sqlite3.Error, subprocess.SubprocessError) as cleanup_error:
+                            exc.add_note(f"Native child cleanup failed for {name!r}: {cleanup_error!r}")
+                        raise
                     self._upstreams[name] = port
                 with db:
                     db.execute("UPDATE transition SET done=1 WHERE id=?", (intent.transition_id,))
 
     @staticmethod
-    def _launch(args: list[str]) -> subprocess.Popen[bytes]:
-        env = {
-            key: value
-            for key, value in os.environ.items()
-            if key.upper() in {"SYSTEMROOT", "WINDIR", "HOME", "TEMP", "TMP", "TMPDIR", "USERPROFILE"}
-        }
+    def _launch(args: list[str], scratch: Path) -> subprocess.Popen[bytes]:
+        """Start the configured engine with private home, cache and temporary paths."""
+        env: dict[str, str] = dict.fromkeys(
+            ("HOME", "USERPROFILE", "TMPDIR", "TMP", "TEMP", "XDG_CACHE_HOME"), str(scratch)
+        )
+        if os.name == "nt":
+            env.update({key: os.environ[key] for key in ("SYSTEMROOT", "WINDIR") if key in os.environ})
+            env.update(APPDATA=str(scratch), LOCALAPPDATA=str(scratch))
         return subprocess.Popen(  # noqa: S603 - fixed executable and typed extension planner
             args,
             stdin=subprocess.DEVNULL,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             env=env,
-            cwd=Path(args[0]).parent,
+            cwd=scratch,
+            close_fds=True,
         )
 
     async def _await_listener(self, child: subprocess.Popen[bytes], port: int) -> None:
@@ -339,6 +371,7 @@ class NativeRuntimeActuator:
             db.execute("DELETE FROM child WHERE name=? AND pid=?", (name, child.pid))
         self._upstreams.pop(name, None)
         del self._children[name]
+        self._scratch.pop(name).cleanup()
 
     async def aclose(self) -> None:
         """Stop only children of this instance before releasing its installation lock."""

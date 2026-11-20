@@ -20,7 +20,7 @@ const gapSchema = z.object({
 const workflowSchema = z.object({
   schema_version: z.number().int(), pattern_id: z.string(), revision: z.string(), digest: z.string(), title: z.string(), description: z.string(),
   entry_node: z.string(), checkpoint_schema: z.string(), implementation_revision: z.string(), mermaid_source: z.string(), trigger_hint: z.string(), publication: z.literal("published"),
-  nodes: z.array(z.object({ key: z.string(), label: z.string(), kind: z.string() })),
+  nodes: z.array(z.object({ key: z.string(), label: z.string(), kind: z.string(), output_schema: z.string().nullish() })),
   edges: z.array(z.object({ key: z.string(), source: z.string(), target: z.string(), relation: z.string() }))
 });
 const creationSummarySchema = z.object({

@@ -123,7 +123,8 @@ class LoomController(Controller):
                 generation=None,
                 profile_id=None,
                 profile_revision=None,
-            )
+            ),
+            workflows=workflows,
         )
 
     @get(
@@ -154,7 +155,8 @@ class LoomController(Controller):
                 generation=generation,
                 profile_id=profile_id,
                 profile_revision=profile_revision,
-            )
+            ),
+            workflows=workflows,
         )
 
     @get(

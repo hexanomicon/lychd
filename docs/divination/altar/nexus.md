@@ -13,6 +13,134 @@ changes no lifecycle state.
 Complete [Altar’s startup and local-access steps](index.md#bring-one-intent), then open
 `http://127.0.0.1:7134/nexus` within the same-host browser boundary.
 
+![Instance overview with the local snapshot, Scroll disclosure, connected offers and human checkpoint review.](../../assets/altar-design/nexus-overview-built.webp)
+
+![Users and Principals showing the authenticated operator and the installed account boundary.](../../assets/altar-design/nexus-access-built.webp)
+
+This first design opens on **Instance overview**. Its captured time, capability counts, latest transition and request identity come from the local snapshot. Select a row or use the operations directory to open its owner. Choose **Orchestration** to inspect the effective queues and priorities. The broader [operations design study](nexus-design.md) uses fictional people and access records.
+
+## Choose an operation
+
+Use the directory on the left to select an area. **Capability board** opens the ownership map,
+list, transition preview and recent observations. **Installation** and **Orchestration** read the
+effective configuration captured when this Vessel started. **Animator fallback** shows the Bridge
+casting and lets you order a candidate list for review. **Animator inventory** groups the served
+capabilities by owner, Coven membership, capability family or connector. Select a model row to see
+its exact capability key, Animator, runtime, registration and declared groups. An icon choice
+changes the glyph for that Animator in the current inventory view.
+
+In **Orchestration**, read the source, queue and priority together. A Bridge default of 70 on the
+runs queue says how an intent is admitted. It does not establish the current queue order.
+**Installation** accepts proposed worker limits. Each exported file includes its operation and
+the values you entered. The running startup generation remains authoritative.
+
+In **Animator fallback**, enter the exact key or choose one of the observed managed capabilities.
+Add candidates in preferred order, then move a row up or down. Review JSON to see the complete
+sequence. Bridge revision 2 currently supports exactly two eligible local Chat declarations with
+tool support. At admission, the highest-weight eligible route wins and the Run retains its exact
+key. A rank in this worksheet cannot trigger an automatic retry or switch a running model.
+[Bridge admission preference](../../sepulcher/aspects/weaver/index.md#prefer-a-ready-route-at-admission).
+
+**Affect routing** prepares a design for a signal producer, receiver and local weighting.
+**Exploration** prepares the question, evidence criterion, probe ceiling and stopping rule for a
+proposed investigation. In **Affect routing**, choose a producer, receiver and influence, then
+**Add signal route**. Re-select that pair to update its weight. The
+[Ecstatic Harmonizer](../transcendence/illumination.md#ananda) proposes a positive baseline.
+Its weight cannot establish a successful outcome. **Exploration** records the evidence that
+would change a decision and stops on saturation or a finite probe ceiling. Edits stay in this page until exported or the page closes. Their JSON
+files are review documents. The Vessel has no endpoint that applies these designs.
+
+### Review Scrolls, offers and checkpoints
+
+In **Advertised skills**, select a registered Scroll revision. The title, entry station, routing
+state and **View in Loom** link refer to that exact local definition. This build serves zero
+public Agent Cards. Prepare the skill, task schema and intended audience to review a disclosure.
+The exported JSON keeps the private target and digest in the local review envelope. Only the
+explicit public fields are candidates for the [advertised contract](../../adr/26-a2a.md#advertised-expertise-and-reusable-knowledge).
+
+**Connected offers** shows the availability of peer-offer inventory. The installed web API
+provides no discovery or connected-offer feed. To review an offer obtained separately, enter
+its workload identity, exact contract revision and task schema, select the receiving Scroll and
+choose how the receiver should handle an unknown Spell. An exported review creates no enrollment
+or binding. **Peer enrollment** describes the operator-managed Intercom task binding.
+
+![Nexus reading the exact consent station and its outgoing routes from the registered Bridge Scroll.](../../assets/altar-design/nexus-checkpoints-built.webp)
+
+**Human checkpoints** reads the selected revision’s immutable manifest. Each declared gate lists
+its outgoing station and relation. A revision with no gates has an explicit empty state. **Review
+pending Run decisions in Bridge** opens the operator’s live decision surface. A gate declaration
+alone says nothing about whether an executing Run is waiting.
+
+**Users and Principals** and **Access policy** show
+the authenticated local subject and Sigil. A policy review can describe a proposed group, role and
+time-limited elevation for an exact action and object. Applying that authority belongs to Ward.
+
+## See which colleagues welcome requests
+
+Open **Colleagues** in Nexus. **Ready** means the other operator welcomes a request. **Busy**
+means they have asked colleagues to hold off. **Availability unknown** means there is no
+current authenticated report. A stopped Vessel and a delayed replica can look the same.
+
+For a disposable local walkthrough, run this from the checkout on a POSIX host:
+
+```bash
+uv run --locked python scripts/nexus_colleagues_demo.py
+```
+
+Two presence services exchange real encrypted reports in a temporary local folder. Alice shares
+Ready, Bob shares Busy, and Alice withdraws. Bob then stops reporting and his last lease expires. The demo uses
+generated keys and cleans up on exit. Two computers need a private, bidirectionally replicated folder that both operators control.
+
+### Pair two installations
+
+1. Give this pair its own local replica directory and a separate local directory for its key.
+   On a default Linux installation the Vessel can already read and write its Lab. For example,
+   run the following as the installation owner on each machine. Substitute your actual Lab path
+   if you use a different data root. The profile requires private POSIX directories.
+
+    ```bash
+    install -d -m 700 ~/.local/share/lychd/lab/nexus/ada-lin ~/.local/share/lychd/lab/nexus/keys
+    ```
+
+2. Generate **one** dedicated secret for the pair. On the first machine, run the following
+   once. Copy the resulting file to the second operator through an independently trusted
+   private channel and set its mode to `0600` there. Keep both key copies outside all replicas.
+
+    ```bash
+    (umask 077; set -C; openssl rand -hex 32 > ~/.local/share/lychd/lab/nexus/keys/ada-lin.key)
+    ```
+
+3. Use your private file replication tool to synchronize the contents of **ada-lin** between
+   the two machines. Only `a.lease` and `b.lease` need to travel. Use real local directories
+   on both ends so the service can pin them across refreshes. Synchronize both clocks. A report more than three seconds ahead is refused. The key authenticates and encrypts the choice. Someone with
+   access to the replica can still see when its files change.
+
+4. Add this pair to `lychd.toml` on each installation. Use absolute paths visible to its Vessel.
+   In Ada's configuration, `name` identifies Lin locally and `slot` is `a`. In Lin's
+   configuration use the name `Ada`, slot `b`, and Lin's own absolute paths. Each additional
+   colleague needs another pair, directory and key. Restart the Vessels to load the roster.
+
+    ```toml
+    [[server.web.presence.pairs]]
+    name = "Lin"
+    slot = "a"
+    directory = "/home/ada/.local/share/lychd/lab/nexus/ada-lin"
+    key_file = "/home/ada/.local/share/lychd/lab/nexus/keys/ada-lin.key"
+    ```
+
+5. In Nexus, check the listed audience and choose **Share ready** or **Share busy**. Sharing
+   lasts one hour and continues with the browser closed. Lin should see Ada's choice and report
+   time after replication and the next refresh. Change to Busy and check again. **Stop sharing**
+   writes a withdrawal. If the process or replication stops abruptly, the previous report
+   expires within 30 seconds of issue. Each startup begins hidden. A publication failure is
+   shown for its pair. Remove the pair and restart to revoke local access.
+
+To send actual work, ask the other operator for a separate Intercom invitation. The receiver
+starts a private listener for one enrolled sender and one task schema. The operators can then
+send a public request and review it using the Intercom commands. Keep the task ID from
+your sender's `submit` command to poll and read the acknowledged task after reconnecting.
+**Ready** in Nexus is a presence report. [Receive a public brief](../../sepulcher/intercom.md#receive-a-public-brief)
+
 ## Read the observation before planning
 
 Choose **Map** to explore supplied capability ownership, or **List** for the equivalent grouped
@@ -132,7 +260,7 @@ Keep the original request identity while reconciling the physical outcome. A con
 unresolved result needs operator recovery; another transition request cannot clear that uncertainty.
 Reconcile a unit/probe mismatch before retrying.
 
-The current surface is an ownership map and grouped list, selected properties, preview, request
+The capability board offers an ownership map and grouped list, selected properties, preview, request
 ticket, and latest-observation inspector. Narrow screens place details in the reading flow.
 It shows no queue order, leases,
 GPU/VRAM/topology/thermal pressure, durable history, configuration editing, provider accounts,
@@ -143,6 +271,14 @@ Its map is a read-only lens over validated observations within the semantic boar
 its admission gates.
 
 ## Reading direction
+
+In an earlier standalone study, follow a model from a nonbinding preview to its sample
+transition, or follow a local account to its scoped grant. Six views of the same screen
+show the separate observation times, record identities and return paths. The study uses
+fictional data. [Open the interactive design](../../assets/altar-design/nexus-board.html)
+or [walk through the illustrated Nexus guide](nexus-design.md).
+
+[![An early Nexus overview groups Capabilities and Transitions under Operations, with Colleagues, Users and IAM under People and access.](../../assets/altar-design/nexus-overview.webp){ loading="lazy" }](../../assets/altar-design/nexus-overview.webp)
 
 The current layout keeps snapshot time and containment first, then the ownership map or grouped
 list, selected properties, one selected preview and its explicit request. Exact plan overlays and

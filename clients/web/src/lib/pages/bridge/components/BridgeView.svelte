@@ -26,13 +26,17 @@
   import { getMemoryPanel, hasMemoryPanel } from "$lib/memory/panel.svelte";
   import { getSeancesWorkspace, hasSeancesWorkspace } from "$lib/seances/workspace.svelte";
   import ConsentCard from "$lib/components/shared/ConsentCard.svelte";
-  import CircleRun from "$lib/pages/bridge/components/CircleRun.svelte";
+  import PaneGrip from "$lib/components/layout/PaneGrip.svelte";
+  import BridgeConversationFiling from "./BridgeConversationFiling.svelte";
+  import BridgeExchangeRail from "./BridgeExchangeRail.svelte";
+  import TurnRunMenu from "$lib/pages/bridge/components/TurnRunMenu.svelte";
   import DelegateMark from "$lib/components/shared/DelegateMark.svelte";
   import GenUI from "$lib/pages/bridge/components/GenUI.svelte";
   import AtlasLinks from "$lib/components/atlas/AtlasLinks.svelte";
   import AltarWelcome from "$lib/pages/bridge/components/AltarWelcome.svelte";
   import NamingCeremony from "$lib/pages/bridge/components/NamingCeremony.svelte";
-  import { atlasHref } from "$lib/atlas/navigation";
+  import { atlasHref, atlasMapHref } from "$lib/atlas/navigation";
+  import { matchSource } from "$lib/atlas/brain-map";
   import { bridgeWorkspaceKey, createBridgeWorkspace, type BridgeWorkspace } from "$lib/shell/state/bridge-workspace.svelte";
   import { delegationStatusLabel } from "$lib/delegation/presentation";
   import { bridgePinsLimit, bridgePinsStorageKey, parsePinnedConversations, togglePinnedConversation } from "$lib/navigation/pins";
@@ -68,6 +72,8 @@
   let pins = $state.raw<readonly string[]>([]);
   let pinNotice = $state("");
   let compactHistory = $state(false);
+  let historyFolded = $state(false);
+  let historyWidth = $state(208);
   onMount(() => {
     try { pins = parsePinnedConversations(localStorage.getItem(bridgePinsStorageKey)); }
     catch { /* Pinning remains available for this tab when storage is unavailable. */ }
@@ -98,6 +104,9 @@
   let choosing = $derived(!sessionId && (attentionOnly || bridgeParams.get("choose") === "conversation" || !!projectHint));
   let hintedProject = $state<{ id: string; title: string } | null>(null);
   let projectError = $state("");
+  const sourceHint = $derived(bridgeParams.get("source"));
+  let sourceFailure = $state("");
+  let focusedSource = "";
   let focusRun = $derived(navigationId(bridgeParams.get("run")));
   let focusConsent = $derived(bridgeParams.has("consent")
     ? navigationId(bridgeParams.get("consent")) : undefined);
@@ -192,7 +201,7 @@
   let hasUnsettledRun = $derived(selectedLiveTurns.some(
     (turn) => !["done", "failed", "cancelled"].includes(turn.runStatus)
   ));
-  let runFocusKey = $derived(selected && focusRun ? `${selected.id}:${focusRun}` : null);
+  let runFocusKey = $derived(selected && (focusRun || sourceHint) ? JSON.stringify([selected.id, focusRun, sourceHint]) : null);
   let readingFocusedRun = $derived(!!runFocusKey && releasedRunFocus !== runFocusKey);
   let selectedPendingCount = $derived(
     snapshot?.pending_consents.filter((card) => card.state === "pending_consent").length ?? 0
@@ -503,6 +512,7 @@
   $effect(() => {
     const routeSessionId = sessionId;
     choosing;
+    sourceHint; // An explicit source return requires a fresh retained read, even in the open dock.
     untrack(() => void load(routeSessionId));
   });
 
@@ -561,6 +571,33 @@
     });
   });
 
+  // Re-identify the exact retained text inside this read before resolving its current DOM position.
+  $effect(() => {
+    const hint = sourceHint, view = selected, id = sessionId;
+    if (!hint || view?.id !== id || !visible || focusRun) {
+      focusedSource = "";
+      return;
+    }
+    if (!view || loading) return;
+    const key = JSON.stringify([id, hint]);
+    if (focusedSource === key) return;
+    const turns = view.turns ?? [];
+    let cancelled = false;
+    void matchSource(turns, hint).then(async (turn) => {
+      await tick();
+      if (cancelled || destroyed || selected !== view || sessionId !== id || sourceHint !== hint) return;
+      const index = turn ? turns.indexOf(turn) : -1;
+      const target = index >= 0 ? thread?.querySelector<HTMLElement>(`[data-source-position="${index}"]`) : null;
+      if (!target) { sourceFailure = key; return; }
+      sourceFailure = "";
+      focusedSource = key;
+      stickToTail = false;
+      target.focus({ preventScroll: true });
+      target.scrollIntoView?.({ block: "center" });
+    }).catch(() => { if (!cancelled) sourceFailure = key; });
+    return () => { cancelled = true; };
+  });
+
   $effect.pre(() => {
     renderVersion;
     const target = thread;
@@ -572,6 +609,16 @@
       });
     }
   });
+
+  function jumpToExchange(position: number | null, run: string | null) {
+    const target = position !== null
+      ? thread?.querySelector<HTMLElement>(`[data-source-position="${position}"]`)
+      : Array.from(thread?.querySelectorAll<HTMLElement>("[data-run-id]") ?? []).find(node => node.dataset.runId === run);
+    if (!target) return;
+    stickToTail = false;
+    target.focus({ preventScroll: true });
+    target.scrollIntoView?.({ block: "center" });
+  }
 
   function captureThread(node: HTMLDivElement) {
     thread = node;
@@ -1059,26 +1106,23 @@
     <button id={`bridge-pin-${id}`} class="pin-conversation" type="button" aria-label={`${pins.includes(id) ? "Unpin" : "Pin"} conversation: ${session?.title ?? id}`} aria-pressed={pins.includes(id)} onclick={() => togglePin(id)} title={pins.includes(id) ? "Unpin conversation" : "Pin conversation"}><AltarIcon name="pin" size={16} /></button>
   </div>
 {/snippet}
-<div class="instrument-deck instrument-deck--bridge" class:instrument-deck--welcome={firstVisit && pins.length === 0} class:bridge-embedded={embedded}>
+<div class="instrument-deck instrument-deck--bridge" class:instrument-deck--welcome={firstVisit && pins.length === 0} class:bridge-embedded={embedded} class:history-folded={historyFolded && !embedded} style:--history-width={historyWidth+"px"}>
   {#if !firstVisit || pins.length > 0}
-  <aside class="bridge-rail" aria-label="Conversation history">
+  <aside class="bridge-rail" aria-label="Conversation history" hidden={historyFolded && !embedded}>
+    {#if !embedded && !compactHistory}<PaneGrip name="Séance list width" side="left" min={160} max={380} bind:width={historyWidth}/><button class="fold-history" type="button" aria-label="Hide séances" title="Hide séances" onclick={()=>historyFolded = true}><AltarIcon name="panel" size={15}/></button>{/if}
     <details class="conversation-list" open={!embedded && !compactHistory}>
-      <summary>Conversations</summary>
+      <summary>{embedded ? "Conversations" : "Séances"}</summary>
     <button class="rune-btn new-seance" type="button" disabled={creatingSession} aria-busy={creatingSession} onclick={createSession}>✦ &nbsp;{creatingSession ? "Opening…" : "New Séance"}</button>
     <nav aria-label="Conversations">
-    <h2 class="archive-label">Pinned</h2>
-    {#each visiblePins as id (id)}{@render conversationEntry(id)}{:else}<p class="rail-empty">No pinned conversations.</p>{/each}
-    {#if selected && !pins.includes(selected.id) && !snapshot?.sessions.some((session) => session.id === selected.id)}
-      <h2 class="archive-label">Selected conversation</h2>
-      {@render conversationEntry(selected.id)}
-    {/if}
-    <h2 class="archive-label">Recent conversations</h2>
-    <p class="archive-order">Newest created first</p>
-    {#if snapshot?.sessions.length}
-      {#each recentSessions as session (session.id)}{@render conversationEntry(session.id)}{/each}
-    {:else if !loading && !error}
-      <p class="glyph rail-empty">No séance yet — open one to speak.</p>
-    {/if}
+      <BridgeConversationFiling
+        pinned={visiblePins}
+        recent={recentSessions.map(session => session.id)}
+        selected={selected?.id ?? null}
+        selectedIsOffPage={!!selected && !snapshot?.sessions.some(session => session.id === selected.id)}
+        attention={attentionOnly}
+        ready={!!snapshot && !loading}
+        row={conversationEntry}
+      />
     {#if snapshot?.sessions_next_cursor}
       <button class="rune-btn" type="button" disabled={loading || sessionsLoading} aria-busy={sessionsLoading} onclick={loadMoreSessions}>
         {sessionsLoading ? "Loading conversations…" : "Load more conversations"}
@@ -1093,6 +1137,7 @@
 
   <div class="bridge-thread">
     <header class="bridge-heading">
+      {#if historyFolded && !embedded}<button class="unfold-history" type="button" aria-label="Show séances" onclick={()=>historyFolded=false}><AltarIcon name="panel" size={16}/></button>{/if}
       <div>
         {#if !firstVisit}
           <h1>Bridge</h1>
@@ -1111,6 +1156,7 @@
         <div class="bridge-tools" role="group" aria-label="Conversation tools">
           <button class="rune-btn" type="button" onclick={openNaming}>Naming ceremony</button>
           {#if selected}
+            <a class="rune-btn" href={atlasMapHref(null, selected.id)}>Open map in Atlas</a>
             <details class="seance-details">
               <summary>Séance details{#if selectedPendingCount}<span class="chip">{selectedPendingCount} awaiting consent</span>{/if}</summary>
               <dl class="kv">
@@ -1141,6 +1187,9 @@
         <span>Project context is not sent automatically.</span>
       </nav>
     {:else if projectError}<p class="turn__fault" role="status">{projectError}</p>{/if}
+    {#if sourceHint && selected && !loading && sourceFailure === JSON.stringify([sessionId, sourceHint])}
+      <p class="turn__fault" role="status">This source turn could not be matched uniquely in the retained conversation.</p>
+    {/if}
     {#if focusConsent !== undefined && !loading && !focusedConsent}
       <p class="turn__fault" role="status">The requested consent is unavailable in this conversation at this read.</p>
     {/if}
@@ -1156,6 +1205,10 @@
       <div hidden={!namingOpen}>
         <NamingCeremony bind:this={namingCeremony} onclose={closeNaming} onask={askForName} />
       </div>
+    {/if}
+    <div class="thread-stage" class:has-exchanges={selected && ((selected.turns?.length ?? 0) > 0 || selectedLiveTurns.length > 0)}>
+    {#if selected}
+      {#key selected.id}<BridgeExchangeRail session={selected.id} turns={selected.turns ?? []} live={selectedLiveTurns} onjump={jumpToExchange} />{/key}
     {/if}
     <!-- This named overflow region needs native keyboard scrolling. -->
     <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
@@ -1202,18 +1255,19 @@
             <p>Offer a question, an idea, or a piece of work.</p>
           </div>
         {/if}
-        {#each selected.turns ?? [] as turn (turn.run_id ? JSON.stringify([selected.id, turn.role, turn.run_id]) : turn)}
+        {#each selected.turns ?? [] as turn, sourcePosition (turn.run_id ? JSON.stringify([selected.id, turn.role, turn.run_id]) : turn)}
           <article
             class:turn--user={turn.role === "user"}
             class:turn--agent={turn.role === "agent"}
             class="turn"
+            data-source-position={sourcePosition}
             data-run-id={turn.role === "agent" ? turn.run_id : undefined}
             tabindex="-1"
             data-state={turn.state === "failed" ? "failed" : "done"}
           >
             <div class="turn__meta"><span class="who">{turn.role === "agent" ? "LychD" : "You"}</span></div>
             {#if turn.role === "agent" && turn.run_id}
-              <CircleRun runId={turn.run_id} />
+              <TurnRunMenu runId={turn.run_id} />
             {/if}
             <div class="turn__body">{turn.content}</div>
             {#if turn.role === "agent" && (turn.fragments?.length ?? 0) > 0}
@@ -1228,7 +1282,7 @@
             <div class="turn__meta">
               <span class="who">LychD</span>
             </div>
-            <CircleRun runId={turn.runId} {turn} cancelling={cancellingRuns.has(turn.runId)} oncancel={() => void cancelRun(turn)} />
+            <TurnRunMenu runId={turn.runId} {turn} cancelling={cancellingRuns.has(turn.runId)} oncancel={() => void cancelRun(turn)} />
             <div class="turn__body">{turn.content || (turnIsTerminal(turn) ? "No reply text was retained for this Run." : "")}</div>
             {#if turn.runStatus === "failed" && turn.content}
               <p class="turn__fault" role="status">This Run failed. The text shown here is not a completed answer.</p>
@@ -1280,6 +1334,8 @@
       {/if}
     </div>
 
+    </div>
+
     {#if selected && (!stickToTail || readingFocusedRun)}
       <div class="latest-turn"><button type="button" onclick={showLatest}>Latest turn ↓</button></div>
     {/if}
@@ -1306,13 +1362,14 @@
       {/if}
       <div class="composer-area" role="region" aria-label="Bridge composer">
         <div class="composer-shell">
-          <div class="composer-destination">
+          <details class="compose-settings"><summary aria-label="Message destination" title="Message destination"><span aria-hidden="true">＋</span></summary><div class="composer-destination">
             <label for="bridge-destination">Send to</label>
             <select id="bridge-destination" value={composerMode} onchange={changeMode}>
               <option value="chat">Conversation</option>
               <option value="work">{destination}</option>
             </select>
           </div>
+          </details>
           {#if composerMode === "work"}
             <div class="command-help">
               <p>English commands · {destination}</p>
@@ -1334,8 +1391,8 @@
               bind:value={() => prompt, setPrompt}
               {@attach focusCreatedComposer}
               required
-              rows="2"
-              placeholder="What would you like to explore?"
+              rows="1"
+              placeholder={composerMode === "work" ? "Write a command…" : "Message Bridge…"}
               onkeydown={keydown}
               oncompositionstart={() => changeComposition(true)}
               oncompositionend={() => changeComposition(false)}
@@ -1346,7 +1403,7 @@
           <div class="composer-actions" class:composer-actions--work={composerMode === "work"}>
             <div class="composer-voice">
               {#key selected.id}
-                <BridgeVoiceInput bind:this={voice} snapshot={voiceSnapshot} target={commandTarget}
+                <BridgeVoiceInput compact bind:this={voice} snapshot={voiceSnapshot} target={commandTarget}
                   readSnapshot={readVoiceSnapshot} onadopt={adoptVoice} onsubmit={submitVoice}
                   isTargetCurrent={(target) => workCommands?.isCurrent(target) === true}>
                   {#snippet feedback(context)}<DictationFeedback {...context} />{/snippet}
@@ -1354,19 +1411,19 @@
               {/key}
             </div>
             <button
-              class="rune-btn composer-send"
+              class="rune-btn composer-send" title={composerMode === "work" ? "Send command" : "Offer"}
               disabled={voiceSnapshot.busy || composing || !prompt.trim()}
               type="button"
               onclick={sendComposer}
             >
-              {composerMode === "work" ? "Send command" : "Offer"}
+              <span aria-hidden="true">↑</span><span class="visually-hidden">{composerMode === "work" ? "Send command" : "Offer"}</span>
             </button>
           </div>
         </div>
         {#if commandPending}<p class="command-result" role="status">Preparing command…</p>{/if}
         {#if commandResult}<p class="command-result" role="status">{commandResult.status}: {commandResult.summary}</p>{/if}
         <div class="composer-footer">
-          <p id="composer-shortcuts">Enter to {composerMode === "work" ? "send command" : "offer"} · Shift + Enter for a new line</p>
+          <p id="composer-shortcuts" class="visually-hidden">Enter to {composerMode === "work" ? "send command" : "offer"} · Shift + Enter for a new line</p>
           <p id="composer-guidance" class:visually-hidden={!loading && !pendingOffering && !hasUnsettledRun} role="status">{loading ? "Refreshing this conversation before another offering." : pendingOffering ? "Resolve the original offering first. This later draft is kept and is not queued." : hasUnsettledRun ? "Wait for this Run to settle before offering again. You can keep writing; this draft is not queued." : "Draft stays in this open tab."}</p>
         </div>
         {#if error}<div class="turn__fault" role="alert">{error}</div>{/if}
@@ -1377,16 +1434,14 @@
 </div>
 
 <style>
-  .instrument-deck--bridge { display: grid; grid-template-columns: 17rem minmax(0, 1fr); gap: 0; padding: 0; min-height: 0; height: 100%; overflow: hidden; background: var(--color-void); }
+  .instrument-deck--bridge { display: grid; grid-template-columns: minmax(0,min(var(--history-width),35%)) minmax(0,1fr); gap: 0; padding: 0; min-height: 0; height: 100%; overflow: hidden; background: var(--color-void); }
   .instrument-deck--welcome { grid-template-columns: minmax(0, 1fr); }
   .bridge-rail { width: auto; min-width: 0; padding: 1.25rem .85rem; border-right: 1px solid var(--color-engraving); overflow-y: auto; background: var(--color-obsidian); }
   .conversation-list { width: 100%; }
   /* Native details keeps history reachable without making it the dock's first reading task. */
   .conversation-list > summary { min-height: 2.75rem; margin-bottom: .65rem; color: var(--color-bone); font: 600 var(--text-sm)/1.5 var(--font-body); cursor: pointer; }
   .conversation-list nav { display: flex; flex-direction: column; gap: .15rem; margin-top: 1rem; }
-  .archive-label { margin: 1.25rem .5rem .35rem; font: 600 var(--text-xs)/1.4 var(--font-body); color: var(--color-parchment); }
-  .archive-order, .rail-empty { color: var(--color-ash); font-size: var(--text-xs); line-height: 1.6; }
-  .archive-order { margin: 0 .5rem .5rem; }
+  .rail-empty { color: var(--color-ash); font-size: var(--text-xs); line-height: 1.6; }
   .conversation-row { display: grid; grid-template-columns: minmax(0, 1fr) 2.75rem; align-items: center; gap: .15rem; }
   .pin-conversation { display: grid; place-items: center; min-height: 2.75rem; border: 0; border-radius: var(--radius-glyph); color: var(--color-ash); background: transparent; cursor: pointer; }
   .pin-conversation:hover { color: var(--color-bone); background: var(--color-obsidian-2); }
@@ -1421,6 +1476,8 @@
   .bridge-tools > details[open] { flex-basis: 100%; }
   .bridge-tools summary { min-height: 2.75rem; align-content: center; cursor: pointer; color: var(--color-parchment); }
   .thread-scroll { min-height: 4rem; padding: 1.5rem max(1rem, calc((100% - 48rem) / 2)); gap: 1.75rem; scrollbar-gutter: stable; }
+  .thread-stage { position: relative; display: flex; flex: 1 1 0; min-height: 4rem; min-width: 0; }
+  .thread-stage.has-exchanges .thread-scroll { padding-inline-start: max(2.35rem, calc((100% - 48rem) / 2)); }
   .thread-scroll:focus-visible { outline: 1px solid var(--color-rune); outline-offset: -3px; }
   .turn { max-width: 100%; overflow-wrap: anywhere; }
   .turn--user { max-width: min(42rem, 92%); }
@@ -1518,4 +1575,42 @@
     .composer-footer { gap: .2rem .5rem; }
     .turn--user { max-width: 95%; }
   }
+  .bridge-rail { position:relative; padding:.55rem .65rem; }
+  .bridge-rail[hidden] { display:none; }
+  .history-folded:not(.bridge-embedded) { grid-template-columns:minmax(0,1fr); grid-template-rows:minmax(0,1fr); }
+  .conversation-list > summary { padding-inline-end:2rem; min-height:2.45rem; margin:0; font:600 1.12rem/1.5 var(--font-rune); }
+  .fold-history,.unfold-history { display:grid; place-items:center; border:0; background:transparent; color:var(--color-ash); cursor:pointer; width:1.9rem; height:1.9rem; }
+  .fold-history { position:absolute; inset:.48rem .35rem auto auto; }
+  .bridge-heading:has(.unfold-history) { grid-template-columns:auto minmax(0,1fr) auto; }
+  .new-seance { min-height:2rem; text-align:left; padding:.25rem .6rem; color:var(--color-parchment); background:transparent; border-color:var(--color-engraving); }
+  .new-seance:hover:not(:disabled) { background:var(--color-obsidian-2); color:var(--color-bone); border-color:var(--color-accent); }
+  .conversation-list nav { margin-top:.55rem; }
+  .conversation-row { grid-template-columns:minmax(0,1fr) 1.65rem; }
+  .pin-conversation { min-height:1.9rem; }
+  .seance { min-height:2.1rem; padding:.35rem .45rem; }
+  .seance.current { border-color:var(--color-accent); background:color-mix(in srgb,var(--color-accent) 14%,var(--color-obsidian)); }
+  .bridge-heading { padding:.4rem 1.1rem .55rem; }
+  .conversation-title { margin-top:.2rem; font:600 clamp(1.1rem,1.6vw,1.6rem)/1.35 var(--font-rune); }
+  .bridge-heading h1 { text-transform:none; letter-spacing:0; font:500 .76rem var(--font-body); }
+  .conversation-controls > button,.conversation-tools > summary { min-height:1.95rem; font-size:.76rem; }
+  .turn--agent .who::before { content:""; display:inline-block; width:.78rem; height:.78rem; margin-right:.44rem; border:1px solid var(--color-ash); border-radius:50%; vertical-align:-.03rem; }
+  .turn--user .turn__body { background:color-mix(in srgb,var(--color-accent) 19%,var(--color-obsidian)); }
+  .composer-shell { display:grid; position:relative; grid-template-columns:2rem minmax(0,1fr) auto; align-items:center; column-gap:.45rem; padding:.4rem .5rem; border-color:var(--color-engraving); }
+  .composer { grid-column:2; grid-row:3; }
+  .composer textarea { min-height:2.1rem; max-height:12rem; resize:vertical; align-content:center; padding:.3rem 0; }
+  .compose-settings { grid-column:1; grid-row:3; }
+  .compose-settings > summary { list-style:none; display:grid; place-items:center; min-height:1.9rem; border:1px solid var(--color-engraving); border-radius:5px; color:var(--color-parchment); cursor:pointer; }
+  .compose-settings > summary::-webkit-details-marker { display:none; }
+  .compose-settings[open] > summary { color:var(--color-bone); border-color:var(--color-accent); }
+  .composer-destination { position:absolute; z-index:6; inset:auto auto calc(100% + .4rem) 0; width:min(18rem,100%); padding:.75rem; border:1px solid var(--color-engraving); border-radius:7px; background:var(--color-obsidian); }
+  .composer-shell .composer-actions { grid-area:3/3; position:static; display:flex; align-items:center; gap:.2rem; padding:0; border:0; --voice-action-reserve:0px; --voice-label-display:none; }
+  .composer-shell .composer-send { position:static; min-width:1.95rem; min-height:1.95rem; padding:.16rem; font:600 1.1rem var(--font-body); color:var(--color-void); background:var(--color-primary); border-color:transparent; }
+  .composer-shell .composer-send:disabled { opacity:.5; }
+  .command-help,.composer-instructions { grid-column:1/-1; }
+  .composer-shell:has(:global(.voice-input.expanded)) .composer-actions { grid-column:1/-1; grid-row:4; align-items:flex-start; }
+  .composer-shell:has(:global(.voice-input.expanded)) .composer-voice { flex:1; }
+  .composer-shell:has(:global(.voice-input.expanded)) .composer-send { margin-left:auto; }
+  .composer-footer:has(> :last-child.visually-hidden) { margin:0; }
+  .bridge-embedded .composer-shell { padding:.3rem .4rem; }
+  @media(max-width:48rem) { .bridge-rail { padding:0 .65rem; } .conversation-list > summary { min-height:2.1rem; } }
 </style>

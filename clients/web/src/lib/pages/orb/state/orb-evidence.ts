@@ -48,3 +48,30 @@ export function conflictingStationAttempts(evidence: readonly Evidence[]): strin
   }
   return [...stations].filter(([, subjects]) => subjects.size > 1).map(([id]) => id);
 }
+
+/** Each completed station attempt contributes only its own recorded interval. */
+export function stationDurations(evidence: readonly Evidence[]) {
+  const groups = new Map<string, Evidence[]>();
+  const conflicts = new Set(conflictingStationAttempts(evidence));
+  for (const item of evidence) {
+    if (item.kind !== "node" || !item.subject_key || !item.occurrence_id || conflicts.has(item.occurrence_id)) continue;
+    const group = groups.get(item.occurrence_id) ?? [];
+    group.push(item);
+    groups.set(item.occurrence_id, group);
+  }
+  const totals = new Map<string, number>();
+  for (const records of groups.values()) {
+    const starts = records.filter(item => item.phase === "entered");
+    const ends = records.filter(item => item.phase === "settled" || item.phase === "failed");
+    if (starts.length !== 1 || ends.length !== 1) continue;
+    const start = starts[0]!, end = ends[0]!;
+    const elapsed = Date.parse(end.occurred_at) - Date.parse(start.occurred_at);
+    if (end.seq <= start.seq || !Number.isFinite(elapsed) || elapsed < 0) continue;
+    totals.set(start.subject_key!, (totals.get(start.subject_key!) ?? 0) + elapsed);
+  }
+  return totals;
+}
+
+export function durationLabel(ms: number): string {
+  return ms < 1000 ? `${Math.round(ms)}ms` : `${+(ms / 1000).toFixed(2)}s`;
+}

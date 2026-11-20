@@ -81,9 +81,10 @@ An application can use a speaking voice while continuing to own the work that vo
 [Riffmaw](../../compositions/riffmaw/index.md) owns sung and otherwise musical performance;
 [Language Edition](../../compositions/language-edition/index.md) owns casting, linguistic adaptation,
 timing, captions, and acceptance for one timed-language edition; [Avatar](../../compositions/avatar/index.md)
-may reference an exact eligible acoustic voice inside a presentation profile; and
-[Broadcast](../../compositions/broadcast/index.md) owns canonical source words, editorial relation,
-and publication. Echo supplies the speech contracts and lifecycle facts each work needs. The
+may reference an exact eligible acoustic voice inside a presentation profile.
+[Atelier](../../compositions/atelier/index.md) places accepted narration against picture and
+mixes the video master. [Broadcast](../../compositions/broadcast/index.md) owns source words,
+claims and editorial release. Echo supplies the speech contracts and lifecycle facts each work needs. The
 application references exact Echo attempts and artifacts, so its account can follow capture,
 synthesis, delivery, and playback without maintaining a second version of that chronology.
 

@@ -3,6 +3,15 @@ description: Install PostgreSQL 18 and matching pgvector on the disposable nativ
 runs:
   using: composite
   steps:
+    - name: Install PostgreSQL and pgvector for the Linux trial
+      if: runner.os == 'Linux'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y postgresql-common
+        sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+        sudo apt-get install -y postgresql-18 postgresql-18-pgvector
+        echo "LYCHD_PG_BIN=/usr/lib/postgresql/18/bin" >> "$GITHUB_ENV"
     - name: Install PostgreSQL and pgvector for the macOS trial
       if: runner.os == 'macOS'
       shell: bash

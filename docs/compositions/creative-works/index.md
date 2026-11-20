@@ -10,12 +10,12 @@ use the same file format.
 
 | Composition | Outcome |
 | --- | --- |
-| [Atelier](../atelier/index.md) | A still image, moving sequence, or visual/VFX package ready for its next use. |
+| [Atelier](../atelier/index.md) | A still image, moving sequence, visual/VFX package, or finished local video master with picture and sound. |
 | [Canvas](../canvas/index.md) | A revisable visual board with original ink, reviewed transformations and a portable document. |
 | [Riffmaw](../riffmaw/index.md) | A composed or performed musical work, a production package, and cues when needed. |
 | [Language Edition](../language-edition/index.md) | Replacement dialogue, narration, translation, or captions aligned to a locked source. |
 | [Foundry](../foundry/index.md) | A playtested local game build that another person can reproduce. |
-| [Broadcast](../broadcast/index.md) | An article or audiovisual publication candidate whose claims lead back to their sources. |
+| [Broadcast](../broadcast/index.md) | An editorial publication or a distribution package for an accepted master, with a named audience, outlet and separate release decision. |
 
 When the needed contributions already exist, pass their settled bundles between these
 Compositions. If the result instead promises to commission and await changes jointly, it requires

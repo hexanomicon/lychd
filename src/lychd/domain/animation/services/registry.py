@@ -258,6 +258,12 @@ class AnimatorRegistry:
         self.ensure_loaded()
         return self._capabilities.get(key)
 
+    def get_connector_name(self, animator_name: str) -> str | None:
+        """Identify the bound connector implementation without requesting a grant or probing it."""
+        self.ensure_loaded()
+        runtime = self._animators.get(animator_name)
+        return type(runtime.connector).__name__ if runtime else None
+
     def get_capability_state(self, key: str) -> CapabilityState | None:
         """Return the last observed capability state by stable capability key."""
         self.ensure_loaded()

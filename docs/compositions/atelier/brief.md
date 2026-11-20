@@ -11,6 +11,11 @@ Before a generator opens, the director must be able to say what the image is for
 
 Start with purpose and audience, then name the target profile, budget, requested visual roles, and acceptance criteria. Each image, model, texture, animation, or sequence needs concrete spatial, temporal, and format constraints. Where the director has not decided, leave a question for review rather than accepting a provider default.
 
+For a video master, name the cut's audience and duration, frame and audio timebase, aspect,
+channel layout, accessibility and delivery profile. State who may review the storyboard and
+final render. Record whether the requested finish is local acceptance or also includes a
+separately authorized private return. A public release needs a destination decision from Broadcast.
+
 The references need an equally clear boundary. Admit a finite set by snapshot and digest, retaining classification, permitted purpose, retention, and known provenance. A URL helps locate the material but cannot freeze it; possessing a copy cannot grant its use. Before dependent production, resolve the likeness, consent, disclosure, and use boundaries for recognizable people, protected marks, confidential material, and disputed origin.
 
 Those choices continue to matter after generation. Attach prompts, control images, masks, adapters, fine-tunes, and selected examples to each candidate so the influence remains inspectable. “AI-generated” names a production method; it cannot erase lineage or certify a use.

@@ -1,0 +1,35 @@
+name: Portable container Vessel
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/portable-vessel.yml"
+      - "Containerfile"
+      - "deployments/portable-container/**"
+      - "scripts/check_portable_vessel.py"
+      - "src/**"
+      - "pyproject.toml"
+      - "uv.lock"
+  push:
+    branches: [dev]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compose:
+    name: Compose install, authentication and persistent restart
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Build the production image and verify the portable deployment
+        run: |
+          docker build -t localhost/lychd:portable-base -f Containerfile .
+          cd deployments/portable-container
+          python3 -m unittest discover -s . -p test_provision.py
+          docker compose build vessel
+          python3 ../../scripts/check_portable_vessel.py

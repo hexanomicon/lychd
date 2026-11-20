@@ -31,6 +31,7 @@ async function mountField() {
   await fireEvent.click(view.container.querySelector("details.run-list > summary")!);
   await fireEvent.click(view.container.querySelector("details.view-options > summary")!);
   await fireEvent.click(screen.getByRole("button", { name: "Show evidence" }));
+  if (screen.queryByRole("button", { name: "Tab history" })) await fireEvent.click(screen.getByRole("button", { name: "Tab history" }));
   return view;
 }
 
@@ -384,5 +385,29 @@ it("displays runtime topology and background attempts when no Run exists", async
   expect(within(inspector).getByText("No Run correlation supplied")).toBeTruthy();
   expect(getOrbRun).not.toHaveBeenCalled();
   expect(listenToOrb).not.toHaveBeenCalled();
+  view.unmount();
+});
+
+it("opens the Run field at recorded time and reveals its matching evidence and Map on request", async () => {
+  const trace = fixtureRun("trace");
+  trace.evidence.push({ ...trace.evidence[0]!, event_id: "finish", seq: 1, phase: "settled", summary: "Recorded finish", occurred_at: "2026-09-22T00:00:08Z" });
+  trace.ledger_head_seq = 1;
+  trace.page_end_seq = 1;
+  vi.mocked(getOrbCatalogue).mockResolvedValue({ ...page, runs: [trace.run] });
+  vi.mocked(getOrbRun).mockResolvedValue(trace);
+  const view = render(OrbField);
+  const timeline = await screen.findByRole("region", { name: "Recorded Run timeline" });
+  expect(screen.queryByRole("complementary", { name: "Orb Map" })).toBeNull();
+  expect(screen.queryByRole("complementary", { name: "Run evidence" })).toBeNull();
+  const map = screen.getByRole("button", { name: "Show Map" });
+  await fireEvent.click(map);
+  expect(map.getAttribute("aria-expanded")).toBe("true");
+  await fireEvent.input(within(timeline).getByRole("slider"), { target: { value: "0" } });
+  expect(within(timeline).getByRole("slider").getAttribute("aria-valuetext")).toBe("00:00");
+  await fireEvent.click(within(timeline).getByRole("button", { name: "Inspect · 8s" }));
+  expect(within(screen.getByRole("complementary", { name: "Run evidence" })).getByRole("heading", { name: "Recorded finish" })).toBeTruthy();
+  await fireEvent.click(within(timeline).getByRole("button", { name: "Live" }));
+  await fireEvent.click(within(timeline).getByRole("button", { name: "Tab history" }));
+  expect(screen.getByRole("slider", { name: "Seek tab observation time" })).toBeTruthy();
   view.unmount();
 });

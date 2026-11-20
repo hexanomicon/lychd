@@ -2,14 +2,22 @@
   import { onMount, tick, type Snippet } from "svelte";
   import { boundedDockWidth, bridgeDockStorageKey, defaultDockLayout, dockMaximumWidth, dockMinimumWidth, parseDockLayout } from "$lib/pages/bridge/state/dock";
 
-  let { open = $bindable(true), narrow = $bindable(false), forceOpen = false, focused = false, suspended = false, focusHref = "/seances", focusLabel = "Open Séance", browseHref = "/seances", workHref = "/orb", available = true, viewing = "Altar", onconnect, onexpand, onsuspend, children }: {
-    open?: boolean; narrow?: boolean; forceOpen?: boolean; available?: boolean;
+  import WorkTools from "$lib/shell/components/WorkTools.svelte";
+  import { createLocalFiles } from "$lib/shell/state/local-files.svelte";
+  import PaneGrip from "$lib/components/layout/PaneGrip.svelte";
+
+  let { tool = $bindable("bridge"), open = $bindable(true), narrow = $bindable(false), forceOpen = false, canvasFirst = false, focused = false, suspended = false, focusHref = "/seances", focusLabel = "Open Séance", browseHref = "/seances", workHref = "/orb", available = true, viewing = "Altar", onconnect, onexpand, onsuspend, children }: {
+    tool?: string; open?: boolean; narrow?: boolean; forceOpen?: boolean; canvasFirst?: boolean; available?: boolean;
     focused?: boolean; suspended?: boolean; focusHref?: string; focusLabel?: string; browseHref?: string; workHref?: string;
     viewing?: string; onconnect?: () => void; onexpand?: () => void; onsuspend?: () => void; children: Snippet;
   } = $props();
+  const files = createLocalFiles();
+  let webPages = $state<string[]>([]);
+  let focusedTool=$state("files"), workOpen=$state(false), workWidth=$state(480);
   let width = $state(defaultDockLayout.width);
   let side = $state(defaultDockLayout.side);
   let preferredOpen = $state(defaultDockLayout.open);
+  let savedPreference = $state(false);
   let viewportWidth = $state(1280);
   const maximumWidth = $derived(Math.max(dockMinimumWidth, Math.min(dockMaximumWidth, Math.floor(viewportWidth * .6))));
   const effectiveWidth = $derived(Math.min(width, maximumWidth));
@@ -35,14 +43,17 @@
   onMount(() => {
     const media = window.matchMedia?.("(max-width: 56rem)");
     narrow = media?.matches ?? false;
+    workOpen = !narrow && (window.matchMedia?.("(min-width: 76rem)").matches ?? false);
+    if (workOpen) workWidth = Math.min(620, Math.round(window.innerWidth * .34));
     let stored: string | null = null;
     try {
       stored = localStorage.getItem(bridgeDockStorageKey);
       const saved = parseDockLayout(stored);
       width = saved.width;
-      side = saved.side;
-      preferredOpen = stored === null && narrow ? false : saved.open;
-      if (!forceOpen) setOpen(stored === null && narrow ? false : saved.open);
+      savedPreference = stored !== null;
+      side = stored === null && canvasFirst ? "right" : saved.side;
+      preferredOpen = stored === null && (narrow || canvasFirst) ? false : saved.open;
+      if (!forceOpen) setOpen(preferredOpen);
     } catch {
       if (narrow) { preferredOpen = false; if (!forceOpen) setOpen(false); }
     }
@@ -53,7 +64,7 @@
   });
 
   $effect(() => {
-    if (!mounted) return;
+    if (!mounted || !savedPreference) return;
     try { localStorage.setItem(bridgeDockStorageKey, JSON.stringify({ width, side, open: preferredOpen })); }
     catch { /* Layout preferences are optional. */ }
   });
@@ -96,7 +107,14 @@
     }
   }
 
+  // Navigation can request the open canvas until an operator chooses a dock layout.
+  export function applyCanvasDefault() {
+    if (savedPreference || forceOpen) return;
+    side = "right";
+    setOpen(false);
+  }
   function toggle() {
+    savedPreference = true;
     if (open) collapse();
     else {
       preferredOpen = true;
@@ -106,6 +124,7 @@
   }
 
   function collapse() {
+    savedPreference = true;
     preferredOpen = false;
     setOpen(false);
     void tick().then(() => document.getElementById("bridge-toggle")?.focus({ preventScroll: true }));
@@ -113,6 +132,7 @@
 
   function resizeStart(event: PointerEvent) {
     if (event.button !== 0 || narrow) return;
+    savedPreference = true;
     dragging = { x: event.clientX, width: effectiveWidth, pointer: event.pointerId };
     (event.currentTarget as HTMLElement).setPointerCapture?.(event.pointerId);
     event.preventDefault();
@@ -131,13 +151,14 @@
     else if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
       width = Math.min(maximumWidth, boundedDockWidth(effectiveWidth + (event.key === "ArrowRight" ? 24 : -24) * (side === "left" ? 1 : -1)));
     } else return;
+    savedPreference = true;
     event.preventDefault();
   }
 </script>
 
 <svelte:window bind:innerWidth={viewportWidth} onkeydown={keydown} />
-<div id={focused ? "altar-main" : undefined} class={["dock-shell", { "dock-left": side === "left", "dock-modal": narrow && !focused && !suspended, "dock-collapsed": !visible, "dock-focused": focused }]} role={focused ? "main" : modal ? "dialog" : undefined} aria-label={focused ? "Bridge workspace" : undefined} aria-modal={modal ? true : undefined} aria-labelledby={modal ? "bridge-dock-title" : undefined} inert={suspended} tabindex="-1" style:--dock-width={`${effectiveWidth}px`} {@attach capturePanel}>
-  {#if !focused}<button id="bridge-toggle" class="dock-toggle" type="button" data-dock-close aria-label={open ? "Collapse Bridge" : "Expand Bridge"} aria-expanded={open} aria-controls="bridge-dock" title={open ? "Collapse Bridge" : "Expand Bridge"} onclick={toggle}><span aria-hidden="true">{(side === "left") === open ? "<<" : ">>"}</span>{#if !open}<span class="edge-label">Bridge</span>{/if}</button>{/if}
+<div id={focused ? "altar-main" : undefined} class={["dock-shell", { "dock-left": side === "left", "dock-modal": narrow && !focused && !suspended, "dock-collapsed": !visible, "dock-focused": focused, "canvas-dock": canvasFirst }]} role={focused ? "main" : modal ? "dialog" : undefined} aria-label={focused ? "Bridge workspace" : undefined} aria-modal={modal ? true : undefined} aria-labelledby={modal ? "bridge-dock-title" : undefined} inert={suspended} tabindex="-1" style:--dock-width={`${effectiveWidth}px`} {@attach capturePanel}>
+  {#if !focused}<button id="bridge-toggle" class="dock-toggle" type="button" data-dock-close aria-label={open ? "Collapse Bridge" : "Expand Bridge"} aria-expanded={open} aria-controls="bridge-dock" title={open ? "Collapse Bridge" : "Expand Bridge"} onclick={toggle}><span aria-hidden="true">{(side === "left") === open ? "<<" : ">>"}</span>{#if !open && !canvasFirst}<span class="edge-label">Bridge</span>{/if}</button>{/if}
   <div class="dock-frame" hidden={!visible}>
     {#if modal}<button class="dock-backdrop" type="button" tabindex="-1" aria-label="Close Bridge overlay" onclick={collapse}></button>{/if}
     <section id="bridge-dock" class="bridge-dock" role={narrow || focused ? undefined : "complementary"} aria-labelledby={!focused ? "bridge-dock-title" : undefined}>
@@ -145,26 +166,28 @@
         <nav class="focus-heading" aria-label="Bridge workspace">
           <a href={workHref}>← Back to workspace</a>
           <a href={browseHref}>Browse séances</a>
+          <button class="open-work" type="button" aria-expanded={workOpen} onclick={()=>workOpen=!workOpen}>{workOpen?"Hide tools":"Open tools"}</button>
         </nav>
       {:else}
       <header class="dock-heading">
         <div class="dock-location"><h2 id="bridge-dock-title">Bridge</h2><span class="dock-view"><span class="visually-hidden">Viewing: </span>{viewing}</span></div>
         <div class="dock-actions">
           <a href={focusHref} aria-label={focusLabel} title={focusLabel}><span aria-hidden="true">↗</span><span class="visually-hidden">{focusLabel}</span></a>
-          <button type="button" onclick={() => { side = side === "left" ? "right" : "left"; }} aria-label={`Dock Bridge ${side === "left" ? "right" : "left"}`} title={`Dock Bridge ${side === "left" ? "right" : "left"}`}><span aria-hidden="true">⇄</span></button>
+          <button type="button" onclick={() => { savedPreference = true; side = side === "left" ? "right" : "left"; }} aria-label={`Dock Bridge ${side === "left" ? "right" : "left"}`} title={`Dock Bridge ${side === "left" ? "right" : "left"}`}><span aria-hidden="true">⇄</span></button>
         </div>
       </header>
-      <p class="dock-context">Page content is not attached to messages.</p>
+      <WorkTools bind:pages={webPages} {files} bind:active={() => tool, (next) => { if(tool==="bridge" && next!=="bridge")onsuspend?.();tool=next; }}/>
       {/if}
-      {#if !available}
+      {#if !available && (focused || tool==="bridge")}
         <div class="dock-offline">
           <h3>Bridge is offline</h3>
           <p>This development workbench has not connected to LychD. Conversations and consent status are unavailable.</p>
           <button type="button" onclick={onconnect}>Connect to LychD</button>
         </div>
       {/if}
-      <div class="dock-conversation" hidden={!available}>{@render children()}</div>
+      <div class="dock-conversation" hidden={!available || (!focused && tool!=="bridge")}>{@render children()}</div>
     </section>
+    {#if focused && workOpen}<aside class="focus-work" style:--work-width={workWidth+"px"} aria-label="Local work tools"><PaneGrip bind:width={workWidth} name="Work tools width"/><button type="button" class="work-close" aria-label="Close work tools" title="Close work tools" onclick={()=>workOpen=false}>»</button><WorkTools focused bind:pages={webPages} {files} bind:active={focusedTool}/></aside>{/if}
     {#if !narrow && !focused}
       <!-- The focusable separator owns width only; it never changes conversation state. -->
       <!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions -->
@@ -174,9 +197,15 @@
 </div>
 
 <style>
+  .open-work {margin-left:auto}
+  .focus-work{position:relative;display:flex;flex-direction:column;width:min(var(--work-width),58%);min-width:0;flex:none;background:var(--color-obsidian);border-left:1px solid var(--color-engraving)}
+  .focus-work :global(.work-tabs){padding-inline-start:3rem}
+  .work-close{position:absolute;top:.35rem;left:.5rem;z-index:2;min-height:2rem}
+  @media(max-width:42rem){.focus-work{position:absolute;inset:0 0 0 auto;width:min(100%,25rem);z-index:22;box-shadow:-.5rem 0 1rem #0005}}
   .dock-shell { order: 1; position: relative; z-index:20; display: flex; flex: 0 0 min(var(--dock-width), 60vw); width: min(var(--dock-width), 60vw); min-width: 0; min-height: 0; }
   .dock-shell.dock-left { order: -1; }
   .dock-shell.dock-collapsed { flex-basis: 0; width: 0; }
+  .dock-focused .bridge-dock{flex:1;min-width:0}
   .dock-shell.dock-focused { flex: 1 1 0; width: 100%; order: 0; overflow: hidden; }
   .dock-focused .dock-frame { border: 0; }
   .focus-heading { display: flex; flex-wrap: wrap; gap: .25rem 1rem; padding: .35rem 1rem; border-bottom: 1px solid var(--color-engraving); }
@@ -193,7 +222,6 @@
   .dock-actions button, .dock-actions a { min-height:2rem; min-width:2rem; display:grid; place-items:center; border:0; background:transparent; border-radius:var(--radius-rune); text-decoration:none; font-size:1.15rem; }
   .dock-actions button:hover, .dock-actions a:hover { background:var(--color-obsidian-2); }
   .dock-actions { display: flex; gap: .125rem; }
-  .dock-context { margin: 0; padding: .15rem 1rem .65rem; border-bottom: 1px solid var(--color-engraving); color: var(--color-ash); font-size: var(--text-2xs); line-height:1.5; }
   button { min-height: 2.5rem; padding: .4rem .65rem; border: 1px solid var(--color-engraving); border-radius: var(--radius-glyph); background: var(--color-obsidian); color: var(--color-bone); font: inherit; font-size: var(--text-xs); cursor: pointer; }
   button:hover { border-color: var(--color-rune); }
   button:focus-visible, .dock-resizer:focus-visible { outline: 2px solid var(--color-rune); outline-offset: -2px; }
@@ -223,4 +251,17 @@
   .dock-modal.dock-left .dock-heading { padding-right: 2.5rem; }
   .dock-modal .bridge-dock { position: relative; z-index: 1; width: min(var(--dock-width), 100%); background: var(--color-obsidian); border: 1px solid var(--color-engraving); }
   .dock-backdrop { position: absolute; inset: 0; padding: 0; border: 0; border-radius: 0; background: color-mix(in srgb, var(--color-void) 75%, transparent); }
+  /* Keep the reopen handle reachable without covering the first canvas or form control. */
+  .dock-shell.dock-collapsed, .dock-shell.dock-modal.dock-collapsed {
+    position: relative;
+    inset: auto;
+    align-self: stretch;
+    flex: 0 0 1.55rem;
+    width: 1.55rem;
+  }
+  .dock-shell.dock-collapsed .dock-toggle { inset-inline: 0; width: 1.55rem; }
+  .dock-shell.canvas-dock.dock-collapsed { flex-basis:0; width:0; }
+  .canvas-dock.dock-collapsed .dock-toggle { inset:.6rem 0 auto auto; width:2rem; height:2rem; min-height:0; border-color:transparent; background:transparent; font-size:1.15rem; color:var(--color-parchment); }
+  .canvas-dock.dock-collapsed .dock-toggle:hover { background:var(--color-obsidian-2); }
+  .canvas-dock.dock-left.dock-collapsed .dock-toggle { inset:auto auto 1rem 0; background:var(--color-obsidian); }
 </style>

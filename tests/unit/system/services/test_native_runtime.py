@@ -1,5 +1,6 @@
 """Personal native runtime authority, process ownership and durable duplicate handling."""
 
+# pyright: reportPrivateUsage=false
 from __future__ import annotations
 
 import asyncio
@@ -26,8 +27,12 @@ from lychd.domain.orchestration.actuator import (
     capability_config_generation,
 )
 from lychd.extensions.builtin.animator.soulstones.llamacpp import LlamaCppSoulstoneConfig
+from lychd.system.desktop.private import private_directory
 from lychd.system.services.native_runtime import NativeRuntimeActuator
 from lychd.system.services.runtime import build_runtime_actuator
+
+# Virtual-environment redirectors on Windows give the listening process a different PID.
+_PYTHON = str(Path(sys.base_prefix) / "python.exe") if os.name == "nt" else sys.executable
 
 
 def _free_port() -> int:
@@ -37,8 +42,9 @@ def _free_port() -> int:
 
 
 def _profile(tmp_path: Path) -> tuple[Mock, SwitchingSettings, dict[str, LlamaCppSoulstoneConfig]]:
+    tmp_path = tmp_path.resolve(strict=True)
     root = tmp_path / "state"
-    root.mkdir(mode=0o700)
+    private_directory(root)
     engine = tmp_path / ("llama-server.exe" if os.name == "nt" else "llama-server")
     engine.touch(mode=0o700)
     model = tmp_path / "personal.gguf"
@@ -98,26 +104,37 @@ async def _assert_serving(port: int | None) -> None:
     await writer.wait_closed()
 
 
-@pytest.mark.asyncio
-async def test_switch_owned_foreground_listeners_and_replay(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    registry, settings, runes = _profile(tmp_path)
-    actuator = build_runtime_actuator(settings, registry)
-    assert isinstance(actuator, NativeRuntimeActuator)
+def _record_launches(
+    actuator: NativeRuntimeActuator, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> tuple[list[subprocess.Popen[bytes]], list[Path]]:
+    launch_engine = actuator._launch
+    scratch_dirs: list[Path] = []
     children: list[subprocess.Popen[bytes]] = []
 
-    def launch(args: list[str]) -> subprocess.Popen[bytes]:
+    def launch(args: list[str], scratch: Path) -> subprocess.Popen[bytes]:
         assert args[args.index("--host") + 1] == "127.0.0.1"
-        assert args[args.index("-m") + 1] == str(tmp_path / "personal.gguf")
+        assert args[args.index("-m") + 1] == str(tmp_path.resolve() / "personal.gguf")
         port = args[args.index("--port") + 1]
-        child = subprocess.Popen(  # noqa: S603 - fixed Python loopback listener fixture
-            [sys.executable, "-m", "http.server", port, "--bind", "127.0.0.1"],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
+        assert scratch.parent == tmp_path.resolve() / "state"
+        assert scratch not in scratch_dirs
+        scratch_dirs.append(scratch)
+        child = launch_engine(
+            [_PYTHON, "-m", "http.server", port, "--bind", "127.0.0.1"],
+            scratch,
         )
         children.append(child)
         return child
 
     monkeypatch.setattr(actuator, "_launch", launch)
+    return children, scratch_dirs
+
+
+@pytest.mark.asyncio
+async def test_switch_owned_foreground_listeners_and_replay(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    registry, settings, runes = _profile(tmp_path)
+    actuator = build_runtime_actuator(settings, registry)
+    assert isinstance(actuator, NativeRuntimeActuator)
+    children, scratch_dirs = _record_launches(actuator, tmp_path, monkeypatch)
     first = _intent(registry, "alpha")
     try:
         await actuator.verify_startup()
@@ -147,6 +164,7 @@ async def test_switch_owned_foreground_listeners_and_replay(tmp_path: Path, monk
             await actuator.apply(build_compensation_intent(second))
     finally:
         await actuator.aclose()
+    assert all(not directory.exists() for directory in scratch_dirs)
     assert all(child.poll() is not None for child in children)
     next_owner = NativeRuntimeActuator(registry, settings)
     await next_owner.verify_startup()
@@ -169,9 +187,11 @@ async def test_foreign_listener_and_untrusted_command_refused_before_claim(tmp_p
             await actuator.apply(_intent(registry, "alpha"))
         with pytest.raises(RuntimePreconditionError, match="occupied"):
             await actuator.verify_startup()
-    runes["alpha"] = runes["alpha"].model_copy(update={"extra_args": ("--port", "99")})
-    with pytest.raises(RuntimePreconditionError, match="overrides"):
-        await actuator.apply(_intent(registry, "alpha"))
+    original = runes["alpha"]
+    for override in ({"extra_args": ("--port", "99")}, {"security_label_disable": True}):
+        runes["alpha"] = original.model_copy(update=override)
+        with pytest.raises(RuntimePreconditionError, match="overrides"):
+            await actuator.apply(_intent(registry, "alpha"))
     assert settings.native_state_dir is not None
     with closing(sqlite3.connect(settings.native_state_dir / "native.sqlite3")) as db:
         assert db.execute("SELECT count(*) FROM transition").fetchone() == (0,)
@@ -205,10 +225,10 @@ time.sleep(60)
 """
     upstream_ports: list[int] = []
 
-    def launch(args: list[str]) -> subprocess.Popen[bytes]:
+    def launch(args: list[str], _scratch: Path) -> subprocess.Popen[bytes]:
         port = args[args.index("--port") + 1]
         upstream_ports.append(int(port))
-        return subprocess.Popen([sys.executable, "-c", script, port, str(stop_file), str(released)])  # noqa: S603
+        return subprocess.Popen([_PYTHON, "-c", script, port, str(stop_file), str(released)])  # noqa: S603
 
     async def post_prompt() -> None:
         reader, writer = await asyncio.open_connection("127.0.0.1", public)
@@ -244,3 +264,121 @@ time.sleep(60)
             assert await asyncio.wait_for(received, 5) == b""
     finally:
         await actuator.aclose()
+
+
+def test_native_child_environment_and_working_directory(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    scratch = tmp_path.resolve() / "scratch"
+    scratch.mkdir(mode=0o700)
+    monkeypatch.setenv("LYCHD_TEST_CREDENTIAL", "private")
+    monkeypatch.setenv("TMPDIR", str(tmp_path))
+    script = """
+import os, pathlib, sys
+cwd = pathlib.Path.cwd()
+for key in ("HOME", "USERPROFILE", "TMPDIR", "TEMP", "TMP", "XDG_CACHE_HOME"):
+    assert pathlib.Path(os.environ[key]) == cwd
+assert "LYCHD_TEST_CREDENTIAL" not in os.environ
+if os.name == "posix":
+    try:
+        descriptor = os.fstat(int(sys.argv[1]))
+    except OSError:
+        pass
+    else:
+        assert not os.path.samestat(descriptor, os.stat(sys.argv[2]))
+pathlib.Path("receipt").touch()
+"""
+    handle_path = tmp_path / "core-only"
+    with handle_path.open("wb") as handle:
+        os.set_inheritable(handle.fileno(), True)  # noqa: FBT003 - positional-only OS interface
+        child = NativeRuntimeActuator._launch([_PYTHON, "-c", script, str(handle.fileno()), str(handle_path)], scratch)
+        assert child.wait(5) == 0
+    assert (scratch / "receipt").is_file()
+
+
+@pytest.mark.parametrize("binding", ["engine", "root", "model"])
+def test_redirected_native_binding_fails_preflight(tmp_path: Path, binding: str) -> None:
+    registry, settings, runes = _profile(tmp_path)
+    target = tmp_path / "indirect"
+    if os.name == "nt":
+        # Windows symlink creation can require administrator privileges.
+        target.mkdir()
+        parent = target / ".."
+    else:
+        target.symlink_to(tmp_path, target_is_directory=True)
+        parent = target
+    if binding == "engine":
+        assert settings.native_llama_server
+        settings = settings.model_copy(update={"native_llama_server": parent / settings.native_llama_server.name})
+    elif binding == "root":
+        settings = settings.model_copy(update={"native_model_root": parent})
+    else:
+        runes["alpha"] = runes["alpha"].model_copy(update={"model_path": str(parent / "personal.gguf")})
+    with pytest.raises(RuntimePreconditionError, match=r"redirected|canonical local path|inside native_model_root"):
+        NativeRuntimeActuator(registry, settings)._command("alpha")
+
+
+@pytest.mark.parametrize("failure", ["spawn", "early-exit", "timeout", "cancel"])
+@pytest.mark.asyncio
+async def test_failed_child_cleans_scratch_and_fences_journal(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, failure: str
+) -> None:
+    registry, settings, _ = _profile(tmp_path)
+    actuator = NativeRuntimeActuator(registry, settings)
+    if failure == "timeout":
+        settings.warmup_timeout_s = 0.1
+    spawn = actuator._launch
+    children: list[subprocess.Popen[bytes]] = []
+    directories: list[Path] = []
+    started = asyncio.Event()
+
+    def launch(_args: list[str], scratch: Path) -> subprocess.Popen[bytes]:
+        directories.append(scratch)
+        if failure == "spawn":
+            return spawn([str(tmp_path / "missing-executable")], scratch)
+        script = "raise SystemExit(1)" if failure == "early-exit" else "import time; time.sleep(60)"
+        child = spawn([_PYTHON, "-c", script], scratch)
+        children.append(child)
+        started.set()
+        return child
+
+    monkeypatch.setattr(actuator, "_launch", launch)
+    try:
+        await actuator.verify_startup()
+        task = asyncio.create_task(actuator.apply(_intent(registry, "alpha")))
+        if failure == "cancel":
+            await asyncio.wait_for(started.wait(), 5)
+            task.cancel()
+        errors = {
+            "spawn": FileNotFoundError,
+            "early-exit": RuntimeError,
+            "timeout": TimeoutError,
+            "cancel": asyncio.CancelledError,
+        }
+        with pytest.raises(errors[failure]):
+            await task
+        assert all(child.poll() is not None for child in children)
+        assert not directories[0].exists()
+    finally:
+        await actuator.aclose()
+    assert len(directories) == 1
+    assert not directories[0].exists()
+    with pytest.raises(RuntimeError, match="unresolved"):
+        NativeRuntimeActuator(registry, settings)
+
+
+def test_native_binding_accepts_packaged_hard_links(tmp_path: Path) -> None:
+    registry, settings, _ = _profile(tmp_path)
+    assert settings.native_llama_server is not None
+    (tmp_path / "packaged-engine").hardlink_to(settings.native_llama_server)
+    (tmp_path / "packaged-model").hardlink_to(tmp_path / "personal.gguf")
+    args, _ = NativeRuntimeActuator(registry, settings)._command("alpha")
+    assert args[0] == str(settings.native_llama_server)
+
+
+@pytest.mark.skipif(os.name != "posix", reason="POSIX public write bits")
+@pytest.mark.parametrize("mode", [0o707, 0o770])
+def test_publicly_writable_engine_rejected(tmp_path: Path, mode: int) -> None:
+    registry, settings, _ = _profile(tmp_path)
+    assert settings.native_llama_server is not None
+    settings.native_llama_server.chmod(mode)
+    with pytest.raises(RuntimePreconditionError, match="publicly writable"):
+        NativeRuntimeActuator(registry, settings)._command("alpha")

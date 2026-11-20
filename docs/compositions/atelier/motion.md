@@ -7,7 +7,9 @@ icon: material/movie-open-outline
 
 The first frame has been chosen. Motion asks what should change, over which timebase, and how the director will recognize a finished sequence. Its material includes animation, transitions, camera movement, loops, and generated or authored visual sequences.
 
-Prism's [Video](../../sepulcher/aspects/prism/video.md) supplies pixel effects; [Kinesis](../../sepulcher/aspects/prism/kinesis.md) supplies structured motion recovery, generation, retargeting, cleanup, synchronization, and conversion. Atelier keeps choreography, visual direction, review, and acceptance across those replaceable tools. Music, sound design, final audiovisual editing, and public rendering retain separate owners.
+Prism's [Video](../../sepulcher/aspects/prism/video.md) supplies pixel effects; [Kinesis](../../sepulcher/aspects/prism/kinesis.md) supplies structured motion recovery, generation, retargeting, cleanup, synchronization, and conversion. Atelier keeps choreography, visual direction, review, and acceptance across those replaceable tools. The [video master](master.md) owns the full audiovisual edit and picture-bound sound.
+Riffmaw retains musical judgment, Language Edition retains timed-language judgment, and
+Broadcast decides channel distribution and release.
 
 ## Progressive visual depth
 
@@ -35,9 +37,13 @@ The Scroll names Image and Video Spell contracts. Its exact Resolution Lock may 
 
 A [Riffmaw](../riffmaw/sync.md) `MusicCueMap@1` offers musical events, windows, intensity, and transitions. The director chooses their visual answer without editing the musical map. Audio conditioning likewise requires an exact admitted reference.
 
-A video attempt may also produce sound, so its owners must be known before execution. Before a `VideoJob@2`, `MediaFacetAuthoritySet@1` must declare the visual role, `atelier.studio` revision `5`, and exact commission request digest. Any sound role needs separate authority.
+A video attempt may also produce sound, so its owners must be known before execution. For a `VideoJob@2` in the visual-only `@3` score,
+`MediaFacetAuthoritySet@1` must declare the visual role, `atelier.studio` revision `5`, and
+the exact commission request digest. The new master score binds revision `6` and its own request. Any sound role needs separate authority.
 
-After production, Atelier issues its own `SemanticFacetAdmissionReceipt@1` for the visual facet, keeping the compound Prism parent attached. Riffmaw, Language Edition, Broadcast, or Foundry separately admits declared music, timed-language, picture-sound, or world-sound facets. Undeclared sound is quarantined/deleted. When streams are inseparable, refusal by any required owner prevents use of the compound.
+After production, Atelier issues its own `SemanticFacetAdmissionReceipt@1` for the visual facet, keeping the compound Prism parent attached. Riffmaw, Language Edition and Foundry separately admit declared music, timed-language or
+world-sound facets. For new video masters, Atelier admits [picture-bound sound](master.md#picture-bound-sound)
+against its own picture-sound brief. A facet produced for an earlier owner retains its original receipt. Undeclared sound is quarantined/deleted. When streams are inseparable, refusal by any required owner prevents use of the compound.
 
 Those judgments may concern one joint model attempt with a shared timebase. They require neither
 duplicate generation nor a separate screen for each role; [Vision](../../adr/36-vision.md#compound-media-and-application-acceptance)
@@ -47,7 +53,10 @@ keeps the single technical parent and each facet's admission explicit.
 
 Check the sequence duration against the target, then review across that full duration: seams, ordering, camera continuity, clipping, flicker/accessibility hazards, and export stability can fail between otherwise acceptable frames. A bounded correction makes a successor revision. A wrong timebase, stale assets, unsupported profile, or ambiguous synchronization returns findings or refusal.
 
-[Package](package.md) receives accepted motion as visual material. Broadcast owns its final placement, trim, retime, transitions, captions, sound relation, and claims. Foundry owns engine import/runtime behavior. A pinned FFmpeg or other deterministic renderer may serve either office without deciding the creative sequence or final cut.
+[Package](package.md) receives accepted motion as visual material. In a [finished video](master.md),
+Atelier owns placement, trim, retiming, transitions, caption integration and the mix. Broadcast
+owns editorial claims about what the sequence depicts and its use in a channel publication.
+Foundry owns engine import and runtime behavior. Each owner judges its own use of the same input.
 
 ## Procedural rendering study
 

@@ -5,7 +5,7 @@ from typing import cast
 
 import pytest
 
-from lychd.domain.intercom.codec import decode_response, encode_request, send_params, task_params
+from lychd.domain.intercom.codec import decode_request, decode_response, encode_request, send_params, task_params
 from lychd.domain.intercom.transport import IntercomError, IntercomRemoteError, TaskMethod, TaskObservation
 
 
@@ -147,3 +147,18 @@ def test_request_forbids_push_followup_unknown_fields_and_boolean_history() -> N
     cast("dict[str, object]", params["message"])["taskId"] = "pretend-new-task"
     with pytest.raises(IntercomError):
         encode_request("SendMessage", "local-1", params)
+
+
+@pytest.mark.parametrize(
+    "raw",
+    [
+        b'{"jsonrpc":"2.0","id":"other","method":"CancelTask","params":{"id":"a"}}',
+        b'{"jsonrpc":"2.0","id":"local-1","method":"GetTask","params":{"id":"a","historyLength":false}}',
+        b'{"jsonrpc":"2.0","id":"local-1","method":"CancelTask","params":{"id":"a","id":"b"}}',
+        b'{"jsonrpc":"2.0","id":"local-1","method":"CancelTask","params":null}',
+        b'{"jsonrpc":"2.0","id":"local-1","method":"ListTasks","params":{}}',
+    ],
+)
+def test_receiver_refuses_unknown_or_ambiguous_operation(raw: bytes) -> None:
+    with pytest.raises(IntercomError):
+        decode_request(raw, local_task_id="local-1")

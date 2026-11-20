@@ -9,6 +9,15 @@ icon: material/cog-box
     The Codex holds declared operator intent. A single typed Settings root and anchored Rune
     instances are read, validated, attributed, and assembled before they can project infrastructure.
 
+## Vessel placement before Settings
+
+`LYCHD_VESSEL_MODE` selects the deployment before resolving the settings file, credentials or CLI
+commands. Accepted values are `auto` (default), `native` and `container`. Auto selects the managed
+container on Linux and the personal native profile on macOS and Windows. A misspelling stops CLI
+startup. Apply the same value in each operator terminal and service environment for this installation.
+A Rune selects a model within the installation. Editing one cannot change where Vessel itself runs.
+[Platform comparison](../deployments/platform-differences.md#vessel)
+
 ## Settings: one immutable generation
 
 `lychd.toml` is the global Settings document under the Codex. Its only top-level sections are

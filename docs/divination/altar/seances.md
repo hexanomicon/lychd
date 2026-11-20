@@ -67,10 +67,8 @@ working material to a model request.
 
 ## Map a séance
 
-In the future design, Bridge would show each séance as a scoped map in the
-[shared Atlas ontology](atlas.md#the-shared-memory-map). Proposed concepts and links can follow
-the conversation and point back to exact turns. The map can open beside the chat or fill the work
-area. The séance list and conversation can fold independently while the selected conversation and
-draft stay in place. **Open in Atlas** would widen the view around those same identities. A Circle
-would focus one Invocation within that scope. The retained transcript and document-local
-working-material collection are the current tools. The scoped map and durable curation are future work.
+In the proposed design, choose **Open map in Atlas** from the séance title menu in Bridge.
+[Atlas](atlas.md#the-shared-memory-map) opens its semantic map scoped to that séance. Concepts
+and relationships cite exact turns. Following a citation returns to its passage in Bridge
+with the draft preserved. Widening the scope stays in Atlas. The retained transcript and
+document-local working-material collection are the current tools.

@@ -1,0 +1,11 @@
+FROM localhost/lychd:portable-base
+USER root
+RUN install -d -o lich -g lich -m 0700 \
+    /home/lich/.local/share/lychd/runtime-guard \
+    /home/lich/.local/share/lychd/triggers/inbox \
+    /home/lich/.local/share/lychd/triggers/journal \
+    /home/lich/.local/share/lychd/lab
+COPY provision.py /opt/lychd/provision.py
+COPY chat-settings.toml /opt/lychd/chat/lychd/lychd.toml
+COPY personal.toml /opt/lychd/chat/lychd/runes/animator/soulstones/llamacpp/personal.toml
+USER lich

@@ -204,15 +204,16 @@ def comfy() -> None:
 @click.option("--profile", required=True, type=click.Path(path_type=Path, dir_okay=False))
 @click.option("--request", required=True, type=click.Path(path_type=Path, dir_okay=False))
 @click.option("--workspace", required=True, type=click.Path(path_type=Path, file_okay=False))
-def prepare(profile: Path, request: Path, workspace: Path) -> None:
-    """Seal one external-engine probe before any submission."""
+@click.option("--occurrence", type=click.UUID, help="Reuse this UUID to recover the same prepared request.")
+def prepare(profile: Path, request: Path, workspace: Path, occurrence: UUID | None) -> None:
+    """Seal a new probe or recover the current receipt for an exact occurrence."""
     from lychd.domain.comfy_probe import ComfyProfile, ComfyRequest
     from lychd.system.services.comfy_probe import ComfyProbe
 
     selected = ComfyProfile.model_validate_json(read_json_file(profile))
     inputs = ComfyRequest.model_validate_json(read_json_file(request))
     probe = ComfyProbe(selected, external_path(workspace), checkout_roots=(CHECKOUT_ROOT,))
-    click.echo(probe.prepare(inputs).model_dump_json())
+    click.echo(probe.prepare(inputs, occurrence_id=occurrence).model_dump_json())
 
 
 @comfy.command()

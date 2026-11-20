@@ -8,10 +8,10 @@ icon: material/shape-outline
 A publication needs sources, editorial judgment, and a release decision. A musical work needs its own acceptance, credits, and production records. Combining them should preserve what each contribution means and who answers for it.
 
 A **Composition** gives each application a durable home. For the publication, Broadcast keeps
-the source words and evidence alongside editorial decisions and candidate revisions. Riffmaw
-keeps the musical work's production history and acceptance. When the editor uses that music,
-Broadcast judges its place in the final cut without taking over Riffmaw's judgment of the music.
-Putting the accepted cut before an external audience still needs a separate release decision.
+the source words and evidence alongside editorial decisions and publication candidates. Riffmaw
+keeps the musical work's production history and acceptance. Atelier's editor places the accepted
+music against the picture, judges the final mix, and finishes the local video master. Broadcast
+can prepare that master for a named audience. Release requires a separate decision.
 
 More generally, a Composition keeps the application's records, judges its results, and governs
 the effects it may request. Its policies, projections, and catalogue of Patterns belong to the
@@ -49,14 +49,15 @@ and combine applications.
 ## Follow a shared work
 
 [Canvas](canvas/index.md) keeps visual boards, original ink and reviewed transformations.
-[Atelier](atelier/index.md) produces accepted visuals, [Riffmaw](riffmaw/index.md) music, and
-[Language Edition](language-edition/index.md) aligned dialogue and captions.
-[Broadcast](broadcast/edit.md) admits their exact settled bundles into its timeline and judges
-the resulting editorial work. Its [release](broadcast/release.md) is a separate external act.
+[Atelier](atelier/index.md) produces accepted visuals and can finish a local video. An editor
+places settled [Riffmaw music](riffmaw/index.md) and [Language Edition dialogue and captions](language-edition/index.md)
+on Atelier's timeline, adds picture sound, and renders an accepted `VideoMaster@1`. The work
+can end there. [Broadcast](broadcast/index.md) packages the exact master for an audience and
+outlet. Its [release](broadcast/release.md) is a separate external act.
 
-The direction can change without erasing earlier work. A locked Broadcast master and script can
-enter Language Edition; the returned language bundle enters a new Broadcast Invocation for a
-new edition. Each owner preserves its records, acceptance, and recovery.
+The direction can change without erasing earlier work. A locked Atelier master and a commissioned
+Broadcast script can enter Language Edition. If the new performance needs a longer shot, Atelier
+accepts the timing change in a successor master. Each owner preserves its records and approvals.
 
 Settled artifacts connect these applications directly. A result that must coordinate several
 owners' live Invocations—commissioning work, awaiting revisions, or recovering their execution—

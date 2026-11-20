@@ -32,6 +32,7 @@ from lychd.db.models.intercom import (
     IntercomTask,
     IntercomTransmission,
 )
+from lychd.db.models.intercom_inbox import IntercomInboxAttempt, IntercomInboxTask
 from lychd.db.models.karma import Karma
 from lychd.db.models.naming import NamingRecord
 from lychd.db.models.nexus import NexusSwapRequest
@@ -74,6 +75,8 @@ __all__ = [
     "IntercomCapacity",
     "IntercomCredential",
     "IntercomDeclaration",
+    "IntercomInboxAttempt",
+    "IntercomInboxTask",
     "IntercomOutbox",
     "IntercomPeer",
     "IntercomTask",

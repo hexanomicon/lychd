@@ -84,22 +84,18 @@ The joint result must preserve what each member actually did. A refused water al
 
 ### Atelier, Riffmaw, Language Edition, and Broadcast
 
-A broader **Atelier studio** is proposed as one workspace for music, visuals, and their shared
-timeline. This operator experience is distinct from the accepted visual Composition
-`atelier.studio` revision `5`; this example publishes no studio Product or Suite revision.
-Riffmaw remains independently usable for musical work and live jam.
+A filmmaker can finish a local video entirely within [Atelier](atelier/index.md) using already
+accepted material. In `atelier.studio` revision `6`, `atelier.finish_video_master@1` owns the
+cut, timeline, caption placement, picture sound, final mix and render. The result is a
+`VideoMaster@1`. Riffmaw still judges the musical work and supports an independent live jam.
+Language Edition judges the words, spoken performance, caption cues and fit to the source.
 
-A transient audition can present the parts together without accepting their final relation.
-For a Broadcast editorial project, authoritative cuts, timing, selected asset revisions, and
-audiovisual acceptance belong to [Broadcast](broadcast/edit.md), even when its finished candidate
-stays local. Atelier retains visual judgment, Riffmaw musical judgment, and Language Edition its
-aligned language contribution.
-The shared controls project those records and their declared timebase relations. Another Composition
-can interpret technical visual evidence, such as a Sight observation, under its own domain judgment
-without opening an Atelier commission. This does not relax [VideoJob@2](atelier/motion.md) or
-[compound-media facet admission](../adr/36-vision.md#compound-media-and-application-acceptance):
-their declared owner authority and Atelier visual acceptance remain required. A separate Atelier
-commission retains its visual acceptance and provenance.
+A broader **Atelier studio** is proposed as one workspace for several crafts. A shared audition
+can show the selected revisions against their timebases while each craft keeps its own judgment.
+Other Compositions can interpret technical evidence, such as a Sight observation, without opening
+a visual commission. A [VideoJob@2](atelier/motion.md) still needs the declared role authorities
+and [compound-media facet admissions](../adr/36-vision.md#compound-media-and-application-acceptance).
+Atelier retains the visual acceptance and provenance of its commissions.
 
 A joint audio/video generator performs one technical attempt with shared provenance and
 attributable cost. Declared role owners admit their facets without requiring duplicate generation
@@ -108,23 +104,29 @@ refusal of a required inseparable facet blocks the compound use. A missing effec
 remains unknown and must be reconciled before another attempt.
 
 Changing a drop's position within the musical work creates successor music and cue revisions.
-Moving unchanged music on Broadcast's timeline instead revises the editorial arrangement without
-changing Riffmaw's master. Timing changes stale dependent synchronization approvals; changes to
-source revisions, consent, or use boundaries still follow each owner's invalidation rules. The
-earlier pairing remains attributable history, with no guarantee that its approval is still valid.
+Moving the same recording earlier in the scene changes Atelier's timeline and calls for a
+successor video master. Riffmaw's recording keeps its revision. Timing changes invalidate
+dependent synchronization approvals. Changes to source revisions, consent, or use boundaries
+still follow each owner's invalidation rules. The earlier pairing retains its historical approval.
+The revised pairing needs a current decision.
 A Suite coordinates changes, dependencies, cancellation, and partial completion when the result
 coordinates multiple owners' live Invocations. A shared timeline or compound model alone requires
 no Suite.
 
-Language Edition can use a settled Broadcast script/locked master, Atelier visual reference, and
-Riffmaw music master without live coordination. Broadcast can later admit the settled language
-bundle in another Invocation. The diagram follows those contributions into their target work.
+Language Edition can use a locked Atelier master and, when commissioned, a settled Broadcast
+script. The returned language bundle can enter a successor Atelier master. For distribution,
+[Broadcast](broadcast/index.md) revision `5` packages the exact accepted master for an audience
+and outlet under `broadcast.prepare_distribution@1`. An outlet request for a new crop, timing
+or mix returns to Atelier. Release through Reach requires separate authorization. A private
+return to the requesting peer uses its separately admitted [Intercom](../sepulcher/intercom.md)
+result path.
 
 ```mermaid
 flowchart TD
     B["Creative brief"] --> V["Atelier · visual/VFX"]
     B --> R["Riffmaw · music"]
-    BS["Broadcast script + locked master"] --> D["Language Edition · language edition"]
+    BS["Commissioned Broadcast script"] --> D["Language Edition"]
+    LM["Locked source master"] --> D
     R --> S["MusicAssetBundle@1"]
     R --> C["MusicCueMap@1"]
     C --> V
@@ -132,12 +134,12 @@ flowchart TD
     D --> L["TimedLanguageAssetBundle@2"]
     A --> G["Foundry"]
     S --> G
-    A --> P["Broadcast"]
-    S --> P
-    L --> P
-    P --> PS["Picture sound + editorial timeline"]
+    A --> T["Atelier · cut and mix"]
+    S --> T
+    L --> T
+    T --> M["VideoMaster@1"]
     G --> GB["Playable build"]
-    PS --> PC["Publication candidate"]
+    M --> PC["Broadcast · distribution candidate"]
 ```
 
 Each arrow can remain a settled reference. A compound video model does not create a Suite; independent semantic owners must admit its facets. [Workflow](../adr/28-workflow.md#compositions-products-suites-and-schedules) owns the Suite execution contract; [State](../state-of-the-work.md#composition-portfolio-delivery) records delivery.

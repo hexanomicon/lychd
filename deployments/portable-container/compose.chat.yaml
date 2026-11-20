@@ -1,0 +1,50 @@
+services:
+  model:
+    image: ghcr.io/ggml-org/llama.cpp:server@sha256:5b43086e3ba7ea5794d72904654f6cd41224a9b1c6ac0398f4940ee380d30f23
+    network_mode: service:database
+    depends_on:
+      database:
+        condition: service_healthy
+    read_only: true
+    user: "1001:1001"
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 1024
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,noexec,size=128m,mode=1777
+    command:
+      - --model
+      - /models/personal-model.gguf
+      - --alias
+      - personal-model
+      - --host
+      - 127.0.0.1
+      - --port
+      - "8080"
+      - --n-gpu-layers
+      - "0"
+      - --ctx-size
+      - "4096"
+      - --cache-type-k
+      - f16
+      - --cache-type-v
+      - f16
+      - --jinja
+    healthcheck:
+      test: [CMD, curl, --fail, --silent, --output, /dev/null, http://127.0.0.1:8080/health]
+      interval: 3s
+      timeout: 3s
+      retries: 100
+    volumes:
+      - type: bind
+        source: ${LYCHD_GGUF:?Set LYCHD_GGUF to an absolute readable GGUF file}
+        target: /models/personal-model.gguf
+        read_only: true
+        bind:
+          create_host_path: false
+  vessel:
+    depends_on:
+      model:
+        condition: service_healthy
+    environment:
+      XDG_CONFIG_HOME: /opt/lychd/chat
