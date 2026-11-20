@@ -87,7 +87,7 @@ def test_every_reported_mode_has_bounded_localized_feedback(mode: str, language:
     assert text != reply_text("applied", language)
 
 
-@pytest.mark.parametrize("instruction", ["goto 1 64 0", f"follow {uuid4()}"])
+@pytest.mark.parametrize("instruction", ["goto 1 64 0", "follow 7d3f5a2e-4b1c-4e8f-9a6d-2c5b8e1f4a37"])
 def test_navigation_receipt_does_not_claim_observed_movement_or_arrival(instruction: str) -> None:
     command = request(instruction)
     result = CompanionResult(request_id=command.request_id, kind="applied", detail="navigation inactive")
@@ -368,7 +368,9 @@ def test_matching_native_and_session_dispositions_keep_localized_feedback(langua
 
 
 @pytest.mark.parametrize("language", ["sk", "cs", "en"])
-@pytest.mark.parametrize("instruction", ["idle", "look 1 64 0", "goto 1 64 0", f"follow {uuid4()}"])
+@pytest.mark.parametrize(
+    "instruction", ["idle", "look 1 64 0", "goto 1 64 0", "follow 7d3f5a2e-4b1c-4e8f-9a6d-2c5b8e1f4a37"]
+)
 def test_applied_controller_explains_finite_upper_bound_without_progress_claim(language: str, instruction: str) -> None:
     command = request(instruction)
     result = CompanionResult(

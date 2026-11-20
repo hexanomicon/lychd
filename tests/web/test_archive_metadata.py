@@ -130,7 +130,9 @@ async def test_invalid_metadata_query_never_reaches_storage(params: dict[str, An
     assert store.mock_calls == []
 
 
-@pytest.mark.parametrize("path", ["/profile", "/bridge-default", "/notes", f"/notes/{uuid4()}"])
+@pytest.mark.parametrize(
+    "path", ["/profile", "/bridge-default", "/notes", "/notes/3a9e6c1d-8f2b-4d7a-b5e0-6c1f9a2d8e43"]
+)
 async def test_metadata_unconfigured_and_wrong_caller_refuse(path: str) -> None:
     store = AsyncMock()
     async with client(store, configured=False) as http:

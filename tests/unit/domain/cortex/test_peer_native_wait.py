@@ -193,7 +193,7 @@ async def test_peer_park_and_exact_terminal_cas_create_one_successor() -> None:
         ("native_enqueue_seq", 1),
         ("adoption_closed", True),
         ("source_digest", "d" * 64),
-        ("declaration_id", str(uuid4())),
+        ("declaration_id", "9c4e1a7b-3d2f-4b8e-a5c6-1f0d7e2b9a84"),
     ],
 )
 @pytest.mark.asyncio
