@@ -1,0 +1,51 @@
+/* LychD Dark — the canonical Altar appearance and the default (ADR 15).
+   Black work plane · graphite frame · light neutral actions · icy-blue manipulation ·
+   matrix-green activity · cloth-purple identity · readable quiet context.
+
+   Bare :root carries these values, so the Altar is complete without a data-theme attribute and
+   every other theme starts from this palette. Each theme defines the same closed role set; the
+   roles are documented in styles/README.md. */
+:root,
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* ── surfaces ──────────────────────────────────────────── */
+  --color-surface-page:      #000000;  /* page base */
+  --color-surface-plane:     #000000;  /* spatial work planes: Canvas, Orb, Loom graphs */
+  --color-surface-panel:     #0d0f12;  /* panels, sidebar, cards */
+  --color-surface-raised:    #171a1f;  /* raised controls and hover */
+  --color-surface-context:   #0d0f12;  /* quiet contextual surface: popovers, side context */
+  --color-surface-user-turn: #171a1f;  /* readable user-turn separation */
+
+  /* ── text ──────────────────────────────────────────────── */
+  --color-text-strong: #f2f3f5;  /* headings, values, primary text */
+  --color-text-body:   #ced1d8;  /* reading text */
+  --color-text-muted:  #a0a5b1;  /* secondary text and dormant state */
+
+  /* ── borders ───────────────────────────────────────────── */
+  --color-border-subtle:  #24272e;  /* passive separators */
+  --color-border-control: #4c5663;  /* required control boundaries */
+  --color-border-context: #24272e;  /* contextual surface edges */
+
+  /* ── interaction: icy blue identifies manipulation, links and focus ─────── */
+  --color-interactive:        #9edbe8;
+  --color-interactive-muted:  #6095a6;  /* inactive chrome, graph edges */
+
+  /* ── primary action: light neutral fill establishes hierarchy ───────────── */
+  --color-action:       #f2f3f5;
+  --color-action-hover: #ffffff;
+  --color-on-action:    #000000;  /* text on action and status fills */
+
+  /* ── status: always paired with text, icon or shape (never colour alone) ─ */
+  --color-status-active:        #38df91;  /* live activity and confirmation — sparingly */
+  --color-status-ready:         #b7efff;  /* ready, awaiting the Magus */
+  --color-status-fault:         #ff8f9e;  /* fault and refusal — matte, never glows */
+  --color-status-threshold:     #f0b379;  /* banked threshold and transition heat */
+
+  /* ── identity: cloth purple ties navigation to the altar mark; no runtime state ── */
+  --color-identity: #b8a1d0;
+
+  /* ── effects and content ───────────────────────────────── */
+  --color-shadow:      #000000;  /* shadow and scrim tone, mixed with transparency */
+  --color-ink-default: #eef1f4;  /* Canvas default ink, mapped at render time */
+}

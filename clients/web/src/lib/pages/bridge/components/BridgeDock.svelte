@@ -172,36 +172,36 @@
   .dock-shell.dock-collapsed { flex-basis: 0; width: 0; }
   .dock-shell.dock-focused { flex: 1 1 0; width: 100%; order: 0; overflow: hidden; }
   .dock-focused .dock-frame { border: 0; }
-  .dock-actions a { display: inline-flex; align-items: center; min-height: 2rem; font-size: var(--text-xs); color: var(--color-parchment); }
-  a:focus-visible { outline: 2px solid var(--color-rune); outline-offset: 2px; }
-  .dock-frame { position: relative; display: flex; width: 100%; min-width: 0; min-height: 0; background: var(--color-obsidian); border-left: 1px solid var(--color-engraving); }
+  .dock-actions a { display: inline-flex; align-items: center; min-height: 2rem; font-size: var(--text-xs); color: var(--color-text-body); }
+  a:focus-visible { outline: 2px solid var(--color-interactive); outline-offset: 2px; }
+  .dock-frame { position: relative; display: flex; width: 100%; min-width: 0; min-height: 0; background: var(--color-surface-panel); border-left: 1px solid var(--color-border-subtle); }
   .dock-frame[hidden] { display: none; }
-  .dock-left .dock-frame { border-left: 0; border-right: 1px solid var(--color-engraving); }
+  .dock-left .dock-frame { border-left: 0; border-right: 1px solid var(--color-border-subtle); }
   .bridge-dock { display: flex; flex-direction: column; width: 100%; min-width: 0; min-height: 0; }
-  .dock-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .35rem; min-height:3.5rem; padding: .6rem 1rem .35rem; border-bottom: 0; background: var(--color-obsidian); }
-  .dock-heading h2 { font: 600 var(--text-lg)/1.4 var(--font-body); letter-spacing:-.025em; color: var(--color-bone); }
+  .dock-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .35rem; min-height:3.5rem; padding: .6rem 1rem .35rem; border-bottom: 0; background: var(--color-surface-panel); }
+  .dock-heading h2 { font: 600 var(--text-lg)/1.4 var(--font-body); letter-spacing:-.025em; color: var(--color-text-strong); }
   .dock-location { display: flex; align-items: baseline; flex-wrap: wrap; gap: .35rem .6rem; min-width: 0; }
-  .dock-view { font-size: var(--text-xs); color: var(--color-ash); overflow-wrap: anywhere; }
+  .dock-view { font-size: var(--text-xs); color: var(--color-text-muted); overflow-wrap: anywhere; }
   .dock-actions button, .dock-actions a { min-height:2rem; min-width:2rem; display:grid; place-items:center; border:0; background:transparent; border-radius:var(--radius-rune); text-decoration:none; font-size:1.15rem; }
-  .dock-actions button:hover, .dock-actions a:hover { background:var(--color-obsidian-2); }
+  .dock-actions button:hover, .dock-actions a:hover { background:var(--color-surface-raised); }
   .dock-actions { display: flex; gap: .125rem; }
-  .dock-context { margin: 0; padding: .15rem 1rem .65rem; border-bottom: 1px solid var(--color-engraving); color: var(--color-ash); font-size: var(--text-2xs); line-height:1.5; }
-  button { min-height: 2.5rem; padding: .4rem .65rem; border: 1px solid var(--color-engraving); border-radius: var(--radius-glyph); background: var(--color-obsidian); color: var(--color-bone); font: inherit; font-size: var(--text-xs); cursor: pointer; }
-  button:hover { border-color: var(--color-rune); }
-  button:focus-visible, .dock-resizer:focus-visible { outline: 2px solid var(--color-rune); outline-offset: -2px; }
+  .dock-context { margin: 0; padding: .15rem 1rem .65rem; border-bottom: 1px solid var(--color-border-subtle); color: var(--color-text-muted); font-size: var(--text-2xs); line-height:1.5; }
+  button { min-height: 2.5rem; padding: .4rem .65rem; border: 1px solid var(--color-border-subtle); border-radius: var(--radius-glyph); background: var(--color-surface-panel); color: var(--color-text-strong); font: inherit; font-size: var(--text-xs); cursor: pointer; }
+  button:hover { border-color: var(--color-interactive); }
+  button:focus-visible, .dock-resizer:focus-visible { outline: 2px solid var(--color-interactive); outline-offset: -2px; }
   .dock-toggle { position: absolute; inset-block-start: calc(50% - 1.375rem); right: 100%; z-index: 3; display: grid; place-items: center; width: 2rem; min-height: 2.75rem; padding: .25rem; border-radius: var(--radius-glyph) 0 0 var(--radius-glyph); font: 600 var(--text-sm)/1 var(--font-body); }
   .dock-toggle:has(.edge-label) { width: 2rem; padding-block: .5rem; gap: .35rem; }
   .edge-label { writing-mode: vertical-rl; font-size: var(--text-xs); }
   .dock-left .dock-toggle { right: auto; left: 100%; border-radius: 0 var(--radius-glyph) var(--radius-glyph) 0; }
   .dock-conversation { flex: 1; display: flex; min-height: 0; min-width: 0; overflow: hidden; }
   .dock-conversation[hidden] { display: none; }
-  .dock-offline { padding: 1.5rem; color: var(--color-parchment); }
-  .dock-offline h3 { color: var(--color-bone); margin-bottom: .75rem; }
+  .dock-offline { padding: 1.5rem; color: var(--color-text-body); }
+  .dock-offline h3 { color: var(--color-text-strong); margin-bottom: .75rem; }
   .dock-offline p { line-height: 1.7; margin-bottom: 1rem; }
   .dock-resizer { position: absolute; inset-block: 0; left: -5px; z-index: 2; width: 10px; cursor: col-resize; touch-action: none; display: grid; place-items: center; }
   .dock-left .dock-resizer { left: auto; right: -5px; }
   .dock-resizer span { visibility:hidden; }
-  .dock-resizer:hover, .dock-resizer:focus-visible { background: color-mix(in srgb, var(--color-rune) 25%, transparent); }
+  .dock-resizer:hover, .dock-resizer:focus-visible { background: color-mix(in srgb, var(--color-interactive) 25%, transparent); }
   .dock-shell.dock-modal { position: absolute; inset: 0; z-index: 30; width: auto; }
   .dock-modal .dock-frame { border: 0; background: transparent; justify-content: flex-end; }
   .dock-modal .dock-toggle { inset-block-start:.75rem; }
@@ -213,6 +213,6 @@
   .dock-modal.dock-left:not(.dock-collapsed) .dock-toggle { right: auto; left: calc(min(var(--dock-width), 100%) - 2rem); }
   .dock-modal:not(.dock-left) .dock-heading { padding-left: 2.5rem; }
   .dock-modal.dock-left .dock-heading { padding-right: 2.5rem; }
-  .dock-modal .bridge-dock { position: relative; z-index: 1; width: min(var(--dock-width), 100%); background: var(--color-obsidian); border: 1px solid var(--color-engraving); }
-  .dock-backdrop { position: absolute; inset: 0; padding: 0; border: 0; border-radius: 0; background: color-mix(in srgb, var(--color-void) 75%, transparent); }
+  .dock-modal .bridge-dock { position: relative; z-index: 1; width: min(var(--dock-width), 100%); background: var(--color-surface-panel); border: 1px solid var(--color-border-subtle); }
+  .dock-backdrop { position: absolute; inset: 0; padding: 0; border: 0; border-radius: 0; background: color-mix(in srgb, var(--color-shadow) 75%, transparent); }
 </style>

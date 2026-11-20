@@ -51,22 +51,22 @@
 {/if}
 
 <style>
-  .creation-summary { min-width: 0; padding: 1rem; border: 1px solid var(--color-engraving); border-radius: var(--radius-panel); background: var(--color-obsidian); }
+  .creation-summary { min-width: 0; padding: 1rem; border: 1px solid var(--color-border-subtle); border-radius: var(--radius-panel); background: var(--color-surface-panel); }
   header { display: flex; flex-wrap: wrap; align-items: baseline; gap: .5rem 1rem; }
-  h2 { color: var(--color-bone); font: 500 var(--text-lg)/1.4 var(--font-body); }
-  .native-status { color: var(--color-bone); font-size: var(--text-base); text-transform: capitalize; }
+  h2 { color: var(--color-text-strong); font: 500 var(--text-lg)/1.4 var(--font-body); }
+  .native-status { color: var(--color-text-strong); font-size: var(--text-base); text-transform: capitalize; }
   p, dl, details { font-size: var(--text-sm); line-height: 1.6; }
-  p { margin-top: .6rem; color: var(--color-parchment); }
-  .historical-admission { border-inline-start: 2px solid var(--color-rune); padding-inline-start: .75rem; }
+  p { margin-top: .6rem; color: var(--color-text-body); }
+  .historical-admission { border-inline-start: 2px solid var(--color-interactive); padding-inline-start: .75rem; }
   dl { display: grid; gap: .75rem; margin-top: 1rem; }
   .judgments { grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr)); }
   .custody { grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); }
   dl > div { min-width: 0; }
-  dt { color: var(--color-parchment); }
-  dd { margin: .2rem 0 0; color: var(--color-bone); overflow-wrap: anywhere; }
+  dt { color: var(--color-text-body); }
+  dd { margin: .2rem 0 0; color: var(--color-text-strong); overflow-wrap: anywhere; }
   .judgments dd { font-weight: 600; }
-  details { margin-top: .8rem; color: var(--color-parchment); }
+  details { margin-top: .8rem; color: var(--color-text-body); }
   summary { cursor: pointer; padding-block: .35rem; }
-  summary:focus-visible { outline: 2px solid var(--color-rune); outline-offset: 3px; }
+  summary:focus-visible { outline: 2px solid var(--color-interactive); outline-offset: 3px; }
   .identities { font-family: var(--font-glyph); }
 </style>

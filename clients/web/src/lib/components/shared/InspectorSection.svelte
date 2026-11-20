@@ -34,7 +34,7 @@
 </section>
 
 <style>
-  .inspector-section { display: flex; flex-direction: column; gap: 0.65rem; min-width: 0; padding-block: 0.9rem; border-top: 1px solid var(--color-engraving); }
-  .inspector-section:focus-visible { outline: 2px solid var(--color-rune); outline-offset: -2px; }
+  .inspector-section { display: flex; flex-direction: column; gap: 0.65rem; min-width: 0; padding-block: 0.9rem; border-top: 1px solid var(--color-border-subtle); }
+  .inspector-section:focus-visible { outline: 2px solid var(--color-interactive); outline-offset: -2px; }
   .inspector-section :global(.section-heading__title) { font-size: var(--text-sm); }
 </style>

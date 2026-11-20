@@ -36,11 +36,11 @@
     justify-content: space-between;
     gap: 1rem;
     min-height: 2.75rem;
-    color: var(--color-bone);
+    color: var(--color-text-strong);
     font-size: var(--text-sm);
     text-decoration: none;
   }
-  a:hover { color: var(--color-rune); }
-  a span { color: var(--color-ash); }
-  a:focus-visible { outline: 2px solid var(--color-rune); outline-offset: 2px; }
+  a:hover { color: var(--color-interactive); }
+  a span { color: var(--color-text-muted); }
+  a:focus-visible { outline: 2px solid var(--color-interactive); outline-offset: 2px; }
 </style>

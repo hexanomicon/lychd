@@ -68,24 +68,24 @@
 {/if}
 
 <style>
-  .routing-preference { min-width: 0; padding: 1rem; border: 1px solid var(--color-engraving); border-radius: var(--radius-panel); background: var(--color-obsidian); }
-  h2 { color: var(--color-bone); font: 500 var(--text-lg)/1.4 var(--font-body); }
+  .routing-preference { min-width: 0; padding: 1rem; border: 1px solid var(--color-border-subtle); border-radius: var(--radius-panel); background: var(--color-surface-panel); }
+  h2 { color: var(--color-text-strong); font: 500 var(--text-lg)/1.4 var(--font-body); }
   p, table, details { font-size: var(--text-sm); line-height: 1.6; }
-  p { margin-top: .6rem; color: var(--color-parchment); }
+  p { margin-top: .6rem; color: var(--color-text-body); }
   code { font-family: var(--font-glyph); overflow-wrap: anywhere; }
   .route-table { overflow-x: auto; margin-top: .8rem; }
   table { width: 100%; min-width: 22rem; table-layout: fixed; border-collapse: collapse; }
-  caption { text-align: start; color: var(--color-parchment); padding-bottom: .5rem; }
-  th, td { text-align: start; vertical-align: top; padding: .6rem .4rem; border-bottom: 1px solid var(--color-engraving); overflow-wrap: anywhere; }
-  th { color: var(--color-bone); font-weight: 500; }
-  td { color: var(--color-parchment); }
+  caption { text-align: start; color: var(--color-text-body); padding-bottom: .5rem; }
+  th, td { text-align: start; vertical-align: top; padding: .6rem .4rem; border-bottom: 1px solid var(--color-border-subtle); overflow-wrap: anywhere; }
+  th { color: var(--color-text-strong); font-weight: 500; }
+  td { color: var(--color-text-body); }
   th:first-child { width: 36%; }
   th:nth-child(2) { width: 22%; }
   td span, td time, .selected-label { display: block; }
-  .selected-label { margin-top: .4rem; color: var(--color-bone); font: 600 var(--text-sm)/1.5 var(--font-body); }
-  details { margin-top: .8rem; color: var(--color-parchment); }
+  .selected-label { margin-top: .4rem; color: var(--color-text-strong); font: 600 var(--text-sm)/1.5 var(--font-body); }
+  details { margin-top: .8rem; color: var(--color-text-body); }
   summary { cursor: pointer; padding-block: .35rem; }
-  summary:focus-visible, .route-table:focus-visible { outline: 2px solid var(--color-rune); outline-offset: 3px; }
+  summary:focus-visible, .route-table:focus-visible { outline: 2px solid var(--color-interactive); outline-offset: 3px; }
   dl { display: grid; gap: .75rem; margin-top: .6rem; }
-  dd { margin: .2rem 0 0; color: var(--color-bone); overflow-wrap: anywhere; }
+  dd { margin: .2rem 0 0; color: var(--color-text-strong); overflow-wrap: anywhere; }
 </style>

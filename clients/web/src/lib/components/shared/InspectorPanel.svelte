@@ -81,16 +81,16 @@
     flex-direction: column;
     min-width: 0;
     min-height: 0;
-    color: var(--color-parchment);
+    color: var(--color-text-body);
     font-size: var(--text-sm);
     container-type: inline-size;
   }
-  .inspector-panel--framed { padding: 1rem 1.25rem; overflow-y: auto; border-inline-start: 1px solid var(--color-engraving); background: var(--color-obsidian); }
+  .inspector-panel--framed { padding: 1rem 1.25rem; overflow-y: auto; border-inline-start: 1px solid var(--color-border-subtle); background: var(--color-surface-panel); }
   .inspector-panel--sticky { position: sticky; inset-block-start: 0; max-height: 100dvh; }
   .inspector-panel__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; padding-bottom: 0.85rem; }
   .inspector-panel__identity { display: flex; flex-direction: column; gap: 0.35rem; min-width: 0; }
-  .inspector-panel__title { margin: 0; color: var(--color-bone); font: 600 var(--text-base)/1.4 var(--font-body); overflow-wrap: anywhere; }
-  .inspector-panel__title:focus-visible { outline: 2px solid var(--color-rune); outline-offset: 3px; }
+  .inspector-panel__title { margin: 0; color: var(--color-text-strong); font: 600 var(--text-base)/1.4 var(--font-body); overflow-wrap: anywhere; }
+  .inspector-panel__title:focus-visible { outline: 2px solid var(--color-interactive); outline-offset: 3px; }
   .inspector-panel__dismiss {
     display: grid;
     place-items: center;
@@ -101,10 +101,10 @@
     border: 0;
     border-radius: var(--radius-rune);
     background: transparent;
-    color: var(--color-ash);
+    color: var(--color-text-muted);
     font-size: 1.25rem;
     cursor: pointer;
   }
-  .inspector-panel__dismiss:hover { background: var(--color-obsidian-2); color: var(--color-bone); }
-  .inspector-panel__dismiss:focus-visible { outline: 2px solid var(--color-rune); outline-offset: 2px; }
+  .inspector-panel__dismiss:hover { background: var(--color-surface-raised); color: var(--color-text-strong); }
+  .inspector-panel__dismiss:focus-visible { outline: 2px solid var(--color-interactive); outline-offset: 2px; }
 </style>

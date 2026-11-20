@@ -1,0 +1,46 @@
+/* Document substrate: body, links, unclassed controls, selection, scrollbars and focus. */
+@layer base {
+  body {
+    background: var(--color-surface-page);
+    background-attachment: fixed;
+    color: var(--color-text-body);
+    font: var(--text-base)/1.55 var(--font-body);
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  a, a:visited { color: var(--color-interactive); text-underline-offset: .2em; }
+  button:not([class]) {
+    align-self: start;
+    min-height: 2.5rem;
+    padding: .45rem .75rem;
+    border: 1px solid var(--color-border-control);
+    border-radius: var(--radius-rune);
+    background: var(--color-surface-raised);
+    color: var(--color-text-strong);
+    font-size: var(--text-sm);
+    cursor: pointer;
+  }
+  button:not([class]):hover { border-color: var(--color-interactive); }
+  button:not([class]):disabled { opacity: .5; cursor: default; }
+  select, input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), textarea {
+    background: var(--color-surface-raised);
+    color: var(--color-text-strong);
+    accent-color: var(--color-interactive);
+  }
+
+  ::selection { background: color-mix(in srgb, var(--color-interactive) 40%, transparent); color: var(--color-text-strong); }
+
+  /* scrollbars in-theme */
+  ::-webkit-scrollbar { width: 9px; height: 9px; }
+  ::-webkit-scrollbar-thumb { background: var(--color-border-subtle); border-radius: 5px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--color-interactive-muted); }
+
+  /* Visible focus remains separate from selection and state borders. */
+  :focus-visible {
+    outline: 2px solid var(--color-interactive);
+    outline-offset: 3px;
+    box-shadow: var(--shadow-glow-rune);
+  }
+}

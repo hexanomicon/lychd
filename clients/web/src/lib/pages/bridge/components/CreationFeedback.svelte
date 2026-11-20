@@ -264,35 +264,35 @@
 <style>
   .creation-feedback {
     display: block;
-    border: 1px solid var(--color-engraving, currentcolor);
+    border: 1px solid var(--color-border-subtle, currentcolor);
     border-radius: var(--radius-panel, 0.5rem);
     padding: var(--text-sm, 0.75rem);
-    background: var(--color-obsidian, transparent);
-    color: var(--color-parchment, currentcolor);
+    background: var(--color-surface-panel, transparent);
+    color: var(--color-text-body, currentcolor);
   }
   .creation-feedback h2 {
     font-size: var(--text-lg, 1.125rem);
     margin: 0 0 var(--text-sm, 0.75rem);
-    color: var(--color-bone, currentcolor);
+    color: var(--color-text-strong, currentcolor);
   }
   .state {
     margin: 0 0 var(--text-sm, 0.75rem);
   }
   .state.refused,
   .state.unavailable {
-    color: var(--color-ember, currentcolor);
+    color: var(--color-status-fault, currentcolor);
   }
   .load-btn {
     font: inherit;
     padding: 0.25rem 0.75rem;
     border-radius: var(--radius-rune, 0.25rem);
-    border: 1px solid var(--color-engraving, currentcolor);
-    background: var(--color-obsidian, transparent);
-    color: var(--color-bone, currentcolor);
+    border: 1px solid var(--color-border-subtle, currentcolor);
+    background: var(--color-surface-panel, transparent);
+    color: var(--color-text-strong, currentcolor);
     cursor: pointer;
   }
   .load-btn:focus-visible {
-    outline: 2px solid var(--color-rune, currentcolor);
+    outline: 2px solid var(--color-interactive, currentcolor);
     outline-offset: 2px;
   }
   .load-btn:disabled {

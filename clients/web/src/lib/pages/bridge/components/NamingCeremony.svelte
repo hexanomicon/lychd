@@ -230,21 +230,21 @@
 </section>
 
 <style>
-  .naming { max-height: 65dvh; overflow: auto; padding: 1.1rem; margin: .75rem; border: 1px solid var(--color-engraving); border-radius: var(--radius-panel); background: var(--color-obsidian); color: var(--color-parchment); font-size: var(--text-sm); }
+  .naming { max-height: 65dvh; overflow: auto; padding: 1.1rem; margin: .75rem; border: 1px solid var(--color-border-subtle); border-radius: var(--radius-panel); background: var(--color-surface-panel); color: var(--color-text-body); font-size: var(--text-sm); }
   header { display: flex; gap: 1rem; align-items: start; justify-content: space-between; }
-  .eyebrow { color: var(--color-rune); font-size: var(--text-xs); margin: 0 0 .3rem; }
-  h2, h3 { color: var(--color-bone); margin: 0; }
+  .eyebrow { color: var(--color-interactive); font-size: var(--text-xs); margin: 0 0 .3rem; }
+  h2, h3 { color: var(--color-text-strong); margin: 0; }
   p { line-height: 1.55; }
   fieldset { display: grid; gap: .6rem; border: 0; padding: 0; margin: 1rem 0; min-width: 0; }
-  label { color: var(--color-bone); margin-top: .6rem; }
-  .method, .hint { color: var(--color-ash); font-size: var(--text-xs); }
-  input, select, textarea { width: 100%; box-sizing: border-box; padding: .65rem; color: var(--color-bone); background: var(--color-void); border: 1px solid var(--color-engraving); border-radius: var(--radius-rune); font: inherit; }
+  label { color: var(--color-text-strong); margin-top: .6rem; }
+  .method, .hint { color: var(--color-text-muted); font-size: var(--text-xs); }
+  input, select, textarea { width: 100%; box-sizing: border-box; padding: .65rem; color: var(--color-text-strong); background: var(--color-surface-page); border: 1px solid var(--color-border-subtle); border-radius: var(--radius-rune); font: inherit; }
   textarea { resize: vertical; }
   .rune-btn { white-space: normal; min-height: 2.75rem; padding: .6rem .8rem; justify-self: start; }
   .actions, .suggestions { display: flex; flex-wrap: wrap; gap: .5rem; }
-  .assistance, .review { padding: .8rem; border: 1px solid var(--color-engraving); border-radius: var(--radius-rune); }
-  summary { cursor: pointer; min-height: 2rem; color: var(--color-bone); }
-  .fault { color: var(--color-bone); border-inline-start: 3px solid var(--color-rune); padding-inline-start: .7rem; }
-  :focus-visible { outline: 2px solid var(--color-rune); outline-offset: 3px; }
+  .assistance, .review { padding: .8rem; border: 1px solid var(--color-border-subtle); border-radius: var(--radius-rune); }
+  summary { cursor: pointer; min-height: 2rem; color: var(--color-text-strong); }
+  .fault { color: var(--color-text-strong); border-inline-start: 3px solid var(--color-interactive); padding-inline-start: .7rem; }
+  :focus-visible { outline: 2px solid var(--color-interactive); outline-offset: 3px; }
   button:disabled { opacity: .65; }
 </style>

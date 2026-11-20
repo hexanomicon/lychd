@@ -166,7 +166,44 @@
 </section>
 
 <style>
-  .consent-card:focus-visible { outline: 2px solid var(--color-rune); outline-offset: 3px; }
+  /* Seat of Consent: inline card and verdict states. Resolved verdicts keep text and distinct borders. */
+  .consent-card {
+    margin-top: 11px;
+    border: 1px solid color-mix(in srgb, var(--color-status-ready) 35%, var(--color-border-subtle));
+    border-radius: var(--radius-panel);
+    background: var(--color-surface-panel);
+    box-shadow: var(--shadow-glow-frost);
+    overflow: hidden;
+  }
+  .head {
+    display: flex; align-items: center; gap: 9px;
+    padding: 11px 16px;
+    border-bottom: 1px solid color-mix(in srgb, var(--color-status-ready) 18%, var(--color-border-subtle));
+    color: var(--color-status-ready);
+    font-size: var(--text-sm);
+  }
+  .head .rune-head { color: var(--color-status-ready); font-size: var(--text-base); }
+  .vision { padding: 12px 16px 4px; color: var(--color-text-body); font-size: var(--text-sm); }
+  .vision em { color: var(--color-text-strong); font-style: normal; }
+  .consent-card dl,
+  .args {
+    display: grid; grid-template-columns: fit-content(35%) minmax(0, 1fr); gap: 4px 16px;
+    padding: 10px 16px;
+    font-size: var(--text-sm);
+  }
+  .consent-card dt { color: var(--color-text-muted); }
+  .consent-card dd { font-family: var(--font-glyph); font-size: var(--text-xs); color: var(--color-text-strong); }
+  .args > * { min-width: 0; overflow-wrap: anywhere; }
+  .verdicts { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 12px 16px 14px; }
+  .verdicts .note { margin-left: auto; font-size: var(--text-xs); color: var(--color-text-muted); }
+  .consent-card[data-state="consented"] { border-color: color-mix(in srgb, var(--color-status-active) 35%, var(--color-border-subtle)); box-shadow: var(--shadow-glow-lich); }
+  .consent-card[data-state="consented"] .head,
+  .consent-card[data-state="consented"] .head .rune-head { color: var(--color-status-active); }
+  .consent-card[data-state="refused"] { border-color: color-mix(in srgb, var(--color-status-fault) 35%, var(--color-border-subtle)); box-shadow: none; }
+  .consent-card[data-state="refused"] .head,
+  .consent-card[data-state="refused"] .head .rune-head { color: var(--color-status-fault); }
+
+  .consent-card:focus-visible { outline: 2px solid var(--color-interactive); outline-offset: 3px; }
 
   .native-review {
     min-width: 0;

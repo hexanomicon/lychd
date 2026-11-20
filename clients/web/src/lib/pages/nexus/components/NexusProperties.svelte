@@ -90,26 +90,26 @@
 </div>
 
 <style>
-  .nexus-properties { min-width: 0; padding: 0 1.25rem 1.5rem; color: var(--color-parchment); font-size: var(--text-sm); }
-  .object-kind { color: var(--color-ash); margin: 0 0 .5rem; }
-  .property-identity { display: grid; gap: .35rem; margin: 0 0 1.5rem; padding-bottom: 1.25rem; border-bottom: 1px solid var(--color-engraving); }
-  .property-identity dt { color: var(--color-ash); font-size: var(--text-sm); }
-  .property-identity dd { margin: 0; color: var(--color-accent); font-size: 1.125rem; line-height: 1.5; overflow-wrap: anywhere; }
+  .nexus-properties { min-width: 0; padding: 0 1.25rem 1.5rem; color: var(--color-text-body); font-size: var(--text-sm); }
+  .object-kind { color: var(--color-text-muted); margin: 0 0 .5rem; }
+  .property-identity { display: grid; gap: .35rem; margin: 0 0 1.5rem; padding-bottom: 1.25rem; border-bottom: 1px solid var(--color-border-subtle); }
+  .property-identity dt { color: var(--color-text-muted); font-size: var(--text-sm); }
+  .property-identity dd { margin: 0; color: var(--color-identity); font-size: 1.125rem; line-height: 1.5; overflow-wrap: anywhere; }
   .property-identity code { font-size: inherit; }
   code, time, li { min-width: 0; overflow-wrap: anywhere; white-space: normal; }
 
   code { font-family: var(--font-glyph); font-size: var(--text-sm); }
-  h3 { color: var(--color-bone); margin: 1.25rem 0 0.65rem; font: 500 var(--text-sm)/1.4 var(--font-body); }
-  .property-note { color: var(--color-ash); margin: 1rem 0 0; line-height: 1.5; }
+  h3 { color: var(--color-text-strong); margin: 1.25rem 0 0.65rem; font: 500 var(--text-sm)/1.4 var(--font-body); }
+  .property-note { color: var(--color-text-muted); margin: 1rem 0 0; line-height: 1.5; }
   .nexus-properties > :global(.btn) { margin-top: 1.25rem; }
-  .more-properties { margin-top: 1.25rem; border-top: 1px solid var(--color-engraving); padding-top: .5rem; }
+  .more-properties { margin-top: 1.25rem; border-top: 1px solid var(--color-border-subtle); padding-top: .5rem; }
   .property-list { margin: 0; padding-inline-start: 1.1rem; line-height: 1.5; }
   .property-list li + li { margin-top: 0.4rem; }
   .owned-capabilities { display: grid; gap: 0.5rem; margin: 0; padding: 0; list-style: none; }
   .owned-capabilities button { display: grid; gap: 0.35rem; width: 100%; text-align: start; }
-  .owned-capabilities button span { color: var(--color-ash); font-size: var(--text-xs); }
-  button { min-height: 2.75rem; border: 1px solid var(--color-control-border); border-radius: var(--radius-rune); background: var(--color-obsidian-2); color: var(--color-rune); padding: 0.65rem 0.8rem; font: inherit; overflow-wrap: anywhere; }
-  button:hover:not(:disabled) { border-color: var(--color-rune); }
-  button:disabled { color: var(--color-ash); cursor: wait; }
-  button:focus-visible { outline: 2px solid var(--color-rune); outline-offset: 3px; }
+  .owned-capabilities button span { color: var(--color-text-muted); font-size: var(--text-xs); }
+  button { min-height: 2.75rem; border: 1px solid var(--color-border-control); border-radius: var(--radius-rune); background: var(--color-surface-raised); color: var(--color-interactive); padding: 0.65rem 0.8rem; font: inherit; overflow-wrap: anywhere; }
+  button:hover:not(:disabled) { border-color: var(--color-interactive); }
+  button:disabled { color: var(--color-text-muted); cursor: wait; }
+  button:focus-visible { outline: 2px solid var(--color-interactive); outline-offset: 3px; }
 </style>

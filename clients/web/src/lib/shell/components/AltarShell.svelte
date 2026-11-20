@@ -395,62 +395,100 @@
   .altar-frame { position: relative; display: flex; height: 100dvh; min-height: 0; }
   .altar-sidebar { --sidebar-expanded: 17rem; --sidebar-rail: 3.75rem; position: relative; z-index: 40; flex: 0 0 var(--sidebar-expanded); min-width: 0; transition: flex-basis var(--duration-drift, 160ms) ease; }
   .altar-sidebar[data-expanded="false"] { flex-basis: var(--sidebar-rail); }
-  .sidebar-inner { display: flex; flex-direction: column; gap: .5rem; width: 100%; height: 100%; padding: .75rem .625rem; background: var(--color-obsidian); border-inline-end: 1px solid var(--color-engraving); }
+  .sidebar-inner { display: flex; flex-direction: column; gap: .5rem; width: 100%; height: 100%; padding: .75rem .625rem; background: var(--color-surface-panel); border-inline-end: 1px solid var(--color-border-subtle); }
   /* Visually hidden but still announced, so links keep their names in the rail. */
   .altar-sidebar[data-expanded="false"] .label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .sidebar-head { display: flex; align-items: center; gap: .25rem; }
   .altar-sidebar[data-expanded="false"] .sidebar-head { flex-direction: column; }
-  .wordmark { flex: 1 1 auto; min-width: 0; margin-inline-start: .25rem; color: var(--color-bone); font: 600 var(--text-base)/1.4 var(--font-body); white-space: nowrap; }
-  .wordmark span { color: var(--color-ash); font-weight: 400; }
-  .sidebar-icon { display: grid; place-items: center; flex: 0 0 auto; width: 2.5rem; height: 2.5rem; padding: 0; border: 0; border-radius: var(--radius-rune); background: transparent; color: var(--color-ash); cursor: pointer; }
-  .sidebar-icon:hover { color: var(--color-bone); background: var(--color-obsidian-2); }
-  .new-seance { display: flex; align-items: center; gap: .75rem; min-height: 2.75rem; padding: .55rem .7rem; border: 1px solid var(--color-engraving); border-radius: var(--radius-glyph); background: var(--color-obsidian-2); color: var(--color-bone); font: inherit; font-size: var(--text-sm); cursor: pointer; }
-  .new-seance:hover:not(:disabled) { border-color: var(--color-rune); }
+  .wordmark { flex: 1 1 auto; min-width: 0; margin-inline-start: .25rem; color: var(--color-text-strong); font: 600 var(--text-base)/1.4 var(--font-body); white-space: nowrap; }
+  .wordmark span { color: var(--color-text-muted); font-weight: 400; }
+  .sidebar-icon { display: grid; place-items: center; flex: 0 0 auto; width: 2.5rem; height: 2.5rem; padding: 0; border: 0; border-radius: var(--radius-rune); background: transparent; color: var(--color-text-muted); cursor: pointer; }
+  .sidebar-icon:hover { color: var(--color-text-strong); background: var(--color-surface-raised); }
+  .new-seance { display: flex; align-items: center; gap: .75rem; min-height: 2.75rem; padding: .55rem .7rem; border: 1px solid var(--color-border-subtle); border-radius: var(--radius-glyph); background: var(--color-surface-raised); color: var(--color-text-strong); font: inherit; font-size: var(--text-sm); cursor: pointer; }
+  .new-seance:hover:not(:disabled) { border-color: var(--color-interactive); }
   .altar-sidebar[data-expanded="false"] .new-seance { justify-content: center; padding-inline: 0; }
-  .sidebar-history { flex: 1 1 auto; min-height: 0; margin-inline: -.625rem; padding: .5rem .625rem; overflow-y: auto; border-top: 1px solid var(--color-engraving); }
-  .sidebar-foot { display: flex; flex-direction: column; gap: .5rem; margin-top: auto; padding-top: .5rem; border-top: 1px solid var(--color-engraving); }
+  .sidebar-history { flex: 1 1 auto; min-height: 0; margin-inline: -.625rem; padding: .5rem .625rem; overflow-y: auto; border-top: 1px solid var(--color-border-subtle); }
+  .sidebar-foot { display: flex; flex-direction: column; gap: .5rem; margin-top: auto; padding-top: .5rem; border-top: 1px solid var(--color-border-subtle); }
   /* Narrow screens: the rail stays in flow and the expanded panel floats over the work area. */
   .altar-sidebar[data-overlay="true"] { flex-basis: var(--sidebar-rail); }
-  .altar-sidebar[data-overlay="true"] .sidebar-inner { position: absolute; inset-block: 0; inset-inline-start: 0; width: var(--sidebar-expanded); box-shadow: 0 0 2rem color-mix(in srgb, var(--color-void) 70%, transparent); }
-  .sidebar-scrim { position: absolute; inset: 0; z-index: 39; padding: 0; border: 0; background: color-mix(in srgb, var(--color-void) 55%, transparent); cursor: default; }
-  .brand { justify-content: center; width: 3rem; min-height: 3rem; padding: .125rem; }
-  .brand:hover { background: var(--color-tertiary); }
-  .altar-product { margin-top: .35rem; color: var(--color-parchment); font-size: var(--text-sm); }
+  .altar-sidebar[data-overlay="true"] .sidebar-inner { position: absolute; inset-block: 0; inset-inline-start: 0; width: var(--sidebar-expanded); box-shadow: 0 0 2rem color-mix(in srgb, var(--color-shadow) 70%, transparent); }
+  .sidebar-scrim { position: absolute; inset: 0; z-index: 39; padding: 0; border: 0; background: color-mix(in srgb, var(--color-shadow) 55%, transparent); cursor: default; }
+  .altar-about { position: relative; flex-shrink: 0; }
+  .altar-about > summary { border-radius: var(--radius-rune); list-style: none; cursor: pointer; }
+  .altar-about > summary::-webkit-details-marker { display: none; }
+  .brand { display: flex; align-items: center; justify-content: center; gap: 10px; flex-shrink: 0; width: 3rem; min-height: 3rem; padding: .125rem; }
+  .brand .mark { display: block; width: 2.75rem; height: 2.75rem; flex-shrink: 0; }
+  .altar-about__panel {
+    position: absolute;
+    inset-block-start: calc(100% + 0.35rem);
+    inset-inline-start: 0;
+    z-index: 1;
+    width: min(18rem, calc(100vw - 1.5rem));
+    max-height: calc(100dvh - 6rem);
+    overflow: auto;
+    padding: 1rem;
+    border: 1px solid var(--color-border-context);
+    border-radius: var(--radius-panel);
+    background: var(--color-surface-context);
+    box-shadow: 0 0.75rem 2rem color-mix(in srgb, var(--color-shadow) 80%, transparent);
+  }
+  .altar-about__panel h2 { margin: 0; color: var(--color-text-strong); font: 400 var(--text-lg)/1.4 var(--font-rune); }
+  .altar-about__version { margin: 0.35rem 0 0.65rem; color: var(--color-text-body); font: var(--text-xs)/1.5 var(--font-glyph); overflow-wrap: anywhere; }
+  .altar-about__links { display: flex; flex-direction: column; gap: 0.125rem; }
+  .altar-about__links a { display: flex; align-items: center; min-height: 2.75rem; padding-block: 0.375rem; color: var(--color-interactive); font-size: var(--text-sm); line-height: 1.5; text-decoration: underline; text-underline-offset: 0.2em; overflow-wrap: anywhere; }
+  .brand:hover { background: var(--color-surface-context); }
+  .altar-product { margin-top: .35rem; color: var(--color-text-body); font-size: var(--text-sm); }
   nav.instruments { display: flex; flex-direction: column; gap: .25rem; }
-  nav.instruments > a .hint { margin-inline-start: auto; color: var(--color-ash); font-size: var(--text-xs); }
-  nav.instruments > a { display: flex; align-items: center; gap: .75rem; padding: .55rem .7rem; color: var(--color-ash); font-size: var(--text-sm); text-decoration: none; min-height: 2.75rem; border: 1px solid transparent; border-radius: var(--radius-rune); transition: color var(--duration-drift), background var(--duration-drift); }
+  nav.instruments > a .hint { margin-inline-start: auto; color: var(--color-text-muted); font-size: var(--text-xs); }
+  nav.instruments > a { display: flex; align-items: center; gap: .75rem; padding: .55rem .7rem; color: var(--color-text-muted); font-size: var(--text-sm); text-decoration: none; min-height: 2.75rem; border: 1px solid transparent; border-radius: var(--radius-rune); transition: color var(--duration-drift), background var(--duration-drift); }
   nav.instruments > a :global(svg), .application-menu :global(svg) { color: currentColor; flex: 0 0 auto; }
-  nav.instruments > a:hover { color: var(--color-bone); background: var(--color-obsidian-2); }
-  nav.instruments > a[aria-current] { color: var(--color-accent); text-shadow: none; border-color: color-mix(in srgb,var(--color-accent) 25%,var(--color-engraving)); background: color-mix(in srgb,var(--color-accent) 10%,var(--color-obsidian)); }
+  nav.instruments > a:hover { color: var(--color-text-strong); background: var(--color-surface-raised); }
+  nav.instruments > a[aria-current] { color: var(--color-identity); text-shadow: none; border-color: color-mix(in srgb,var(--color-identity) 25%,var(--color-border-subtle)); background: color-mix(in srgb,var(--color-identity) 10%,var(--color-surface-panel)); }
   .altar-sidebar[data-expanded="false"] nav.instruments > a, .altar-sidebar[data-expanded="false"] .application-menu > summary { justify-content: center; padding-inline: 0; }
-  .sigil { position: relative; display: flex; align-items: center; gap: .6rem; min-height: 2.5rem; border-radius: var(--radius-glyph); padding: .5rem .7rem; box-shadow: none; animation: none; border-color: transparent; }
-  .sigil[data-state="lit"] { border: 1px solid color-mix(in srgb, var(--color-accent) 40%, transparent); background: color-mix(in srgb, var(--color-accent) 10%, transparent); color: var(--color-accent); }
+  .sigil { position: relative; display: flex; align-items: center; gap: .6rem; min-height: 2.5rem; padding: .5rem .7rem; border: 1px solid transparent; border-radius: var(--radius-glyph); color: var(--color-text-muted); font-size: var(--text-xs); text-decoration: none; cursor: pointer; }
+  .sigil[data-state="lit"] { border: 1px solid color-mix(in srgb, var(--color-identity) 40%, transparent); background: color-mix(in srgb, var(--color-identity) 10%, transparent); color: var(--color-identity); }
   .altar-sidebar[data-expanded="false"] .sigil[data-state="lit"] { border-color: transparent; background: transparent; }
-  .sigil-count { display: none; position: absolute; inset-block-start: .1rem; inset-inline-end: .1rem; min-width: 1.1rem; padding: 0 .25rem; border-radius: 999px; background: var(--color-frost); color: var(--color-void); font-size: var(--text-2xs); line-height: 1.1rem; text-align: center; }
+  .sigil-count { display: none; position: absolute; inset-block-start: .1rem; inset-inline-end: .1rem; min-width: 1.1rem; padding: 0 .25rem; border-radius: 999px; background: var(--color-status-ready); color: var(--color-on-action); font-size: var(--text-2xs); line-height: 1.1rem; text-align: center; }
   .altar-sidebar[data-expanded="false"] .sigil { justify-content: center; padding-inline: 0; }
   .altar-sidebar[data-expanded="false"] .sigil-count { display: block; }
-  .sigil-identity { display: flex; align-items: center; gap: .65rem; padding: .35rem .5rem; }
+  .sigil-identity { display: flex; align-items: center; gap: .65rem; padding: .35rem .5rem; color: var(--color-text-muted); font-size: var(--text-xs); }
   .altar-sidebar[data-expanded="false"] .sigil-identity { justify-content: center; padding-inline: 0; }
-  .avatar { display: grid; place-items: center; flex: 0 0 auto; width: 2rem; height: 2rem; border: 1px solid var(--color-engraving); border-radius: 50%; color: var(--color-bone); font-size: var(--text-xs); font-weight: 600; }
-  .sigil-identity b { display: block; color: var(--color-bone); font-size: var(--text-sm); }
-  .sigil-identity small { display: block; color: var(--color-ash); font: var(--text-2xs)/1.4 var(--font-glyph); }
-  .offline-status { display: flex; align-items: center; gap: .6rem; color: var(--color-ash); font-size: var(--text-xs); }
+  .avatar { display: grid; place-items: center; flex: 0 0 auto; width: 2rem; height: 2rem; border: 1px solid var(--color-border-subtle); border-radius: 50%; color: var(--color-text-strong); font-size: var(--text-xs); font-weight: 600; }
+  .sigil-identity b { display: block; color: var(--color-text-strong); font-size: var(--text-sm); font-weight: 500; letter-spacing: 0.06em; }
+  .sigil-identity small { display: block; color: var(--color-text-muted); font: var(--text-2xs)/1.4 var(--font-glyph); }
+  .offline-status { display: flex; align-items: center; gap: .6rem; color: var(--color-text-muted); font-size: var(--text-xs); }
   .altar-sidebar[data-expanded="false"] .offline-status { justify-content: center; }
-  .application-menu > summary { display: flex; align-items: center; gap: .75rem; list-style: none; min-height: 2.75rem; padding: .55rem .7rem; border-radius:var(--radius-rune); color: var(--color-ash); cursor: pointer; font-size: var(--text-sm); }
-  .application-menu > summary:hover { color:var(--color-bone); background:var(--color-obsidian-2); }
+  .application-menu > summary { display: flex; align-items: center; gap: .75rem; list-style: none; min-height: 2.75rem; padding: .55rem .7rem; border-radius:var(--radius-rune); color: var(--color-text-muted); cursor: pointer; font-size: var(--text-sm); }
+  .application-menu > summary:hover { color:var(--color-text-strong); background:var(--color-surface-raised); }
   .application-menu > summary::-webkit-details-marker { display: none; }
   .application-menu .caret { display: grid; margin-inline-start: auto; transition: transform var(--duration-drift, 160ms) ease; }
   .application-menu[open] .caret { transform: rotate(180deg); }
   .altar-sidebar[data-expanded="false"] .application-menu .caret { display: none; }
   .application-menu nav { display: flex; flex-direction: column; gap: .15rem; padding-inline-start: 1.25rem; }
   .altar-sidebar[data-expanded="false"] .application-menu nav { padding-inline-start: 0; }
-  .application-menu a { display: flex; align-items: center; gap: .75rem; min-height: 2.5rem; padding: .45rem .7rem; border-radius: var(--radius-rune); font-size: var(--text-sm); letter-spacing: 0; text-transform: none; text-decoration: none; color: var(--color-ash); }
+  .application-menu a { display: flex; align-items: center; gap: .75rem; min-height: 2.5rem; padding: .45rem .7rem; border-radius: var(--radius-rune); font-size: var(--text-sm); letter-spacing: 0; text-transform: none; text-decoration: none; color: var(--color-text-muted); }
   .altar-sidebar[data-expanded="false"] .application-menu a { justify-content: center; padding-inline: 0; }
-  .application-menu a:hover, .application-menu a[aria-current="page"] { color: var(--color-bone); background: var(--color-obsidian-2); }
-  .altar-workbench { position: relative; display: flex; flex: 1 1 0; height: 100%; min-width: 0; min-height: 0; overflow: hidden; background: var(--color-void); }
-  #altar-main { flex: 1 1 0; min-width: 0; min-height: 0; overflow: auto; background: var(--color-void); container-type: inline-size; container-name: work-area; }
+  .application-menu a:hover, .application-menu a[aria-current="page"] { color: var(--color-text-strong); background: var(--color-surface-raised); }
+  .altar-workbench { position: relative; display: flex; flex: 1 1 0; height: 100%; min-width: 0; min-height: 0; overflow: hidden; background: var(--color-surface-page); }
+  #altar-main { position: relative; isolation: isolate; display: flex; flex: 1 1 0; min-width: 0; min-height: 0; overflow: auto; background: var(--color-surface-page); container-type: inline-size; container-name: work-area; }
+  #altar-main > :global(*) { position: relative; z-index: 1; }
   #altar-main::before, #altar-main::after { display: none; }
   main[hidden] { display: none; }
-  :focus-visible { outline: 2px solid var(--color-rune); outline-offset: 3px; }
-  @media (prefers-reduced-motion: reduce) { .altar-sidebar, nav.instruments > a, .application-menu .caret { transition: none; } }
+  :focus-visible { outline: 2px solid var(--color-interactive); outline-offset: 3px; }
+  /* Omen toasts: disconnect and error feedback. */
+  .omen-stack { position: fixed; bottom: 18px; right: 18px; z-index: 40; display: flex; flex-direction: column; gap: 8px; max-width: 320px; }
+  .omen {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 13px;
+    border-radius: var(--radius-block);
+    border-left: 2px solid var(--color-status-ready);
+    background: var(--color-surface-panel);
+    color: var(--color-text-body); font-size: var(--text-sm);
+    animation: omen-rise var(--duration-rise) var(--ease-settle) both;
+  }
+  .omen[data-state="fault"] { border-left-color: var(--color-status-fault); color: var(--color-text-strong); }
+  .omen .dismiss { margin-left: auto; color: var(--color-text-muted); background: none; border: none; cursor: pointer; }
+  @media (forced-colors: active) { .altar-about__panel { border-color: CanvasText; } }
+  @keyframes omen-rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .altar-sidebar, nav.instruments > a, .application-menu .caret { transition: none; } .omen { animation: none; } }
 </style>

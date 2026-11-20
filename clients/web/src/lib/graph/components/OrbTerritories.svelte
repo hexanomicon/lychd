@@ -18,8 +18,8 @@
 <style>
   :global(.orb-territories) { pointer-events:none; }
   .territory-plane { overflow:visible; }
-  g { --territory-tint:var(--color-primary); }
-  g[data-tone="purple"] { --territory-tint:var(--color-tertiary-edge); }
+  g { --territory-tint:var(--color-interactive); }
+  g[data-tone="purple"] { --territory-tint:var(--color-border-context); }
   path { fill:color-mix(in srgb,var(--territory-tint) 7%,transparent); stroke:color-mix(in srgb,var(--territory-tint) 9%,transparent); stroke-width:14px; stroke-linejoin:round; filter:blur(5px); }
-  text { fill:var(--color-ash); font:11px var(--font-body); letter-spacing:.065em; }
+  text { fill:var(--color-text-muted); font:11px var(--font-body); letter-spacing:.065em; }
 </style>

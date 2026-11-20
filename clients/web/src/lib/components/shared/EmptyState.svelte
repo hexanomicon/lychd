@@ -29,9 +29,9 @@
 </div>
 
 <style>
-  .empty-state { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; margin: auto; padding: 2.5rem 1rem; text-align: center; color: var(--color-parchment); }
-  .empty-state__glyph { color: var(--color-accent); font-size: 1.6rem; }
-  .empty-state__title { margin: 0; color: var(--color-bone); font: 600 var(--text-lg)/1.35 var(--font-body); }
+  .empty-state { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; margin: auto; padding: 2.5rem 1rem; text-align: center; color: var(--color-text-body); }
+  .empty-state__glyph { color: var(--color-identity); font-size: 1.6rem; }
+  .empty-state__title { margin: 0; color: var(--color-text-strong); font: 600 var(--text-lg)/1.35 var(--font-body); }
   .empty-state__body { max-width: 36rem; font-size: var(--text-sm); line-height: 1.65; }
   .empty-state__body :global(p) { margin: 0; }
   .empty-state__body :global(p + p) { margin-top: 0.5rem; }

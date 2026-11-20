@@ -20,5 +20,7 @@
 
 <style>
   .loading-state { display: flex; flex-direction: column; gap: 0.6rem; min-width: 0; }
-  .loading-state__label { margin: 0; color: var(--color-parchment); font-size: var(--text-sm); }
+  .loading-state__label { margin: 0; color: var(--color-text-body); font-size: var(--text-sm); }
+  .mist { min-height: 14px; border-radius: var(--radius-block); background: var(--color-surface-raised); animation: var(--animate-think-pulse); }
+  @media (prefers-reduced-motion: reduce) { .mist { animation: none; } }
 </style>

@@ -1,3 +1,4 @@
+import type { GraphAccent } from "$lib/graph/accent";
 import type { LoomView, OrbRunSnapshot } from "$lib/api/models";
 
 /** Immutable semantic input shared by the Loom and Orb renderer adapters.
@@ -17,7 +18,7 @@ export interface GraphNode {
   readonly attention?: "latest" | "cursor" | "received";
   /** Resolved build-owned asset URL, never a source-supplied URL. */
   readonly icon?: string;
-  readonly accent?: "rune" | "frost" | "heat" | "lich" | "primary";
+  readonly accent?: GraphAccent;
 }
 
 export interface GraphEdge {

@@ -202,45 +202,45 @@
 </div>
 
 <style>
-  .seances-workspace { color: var(--color-parchment); min-height: 100%; padding: 1.5rem; }
+  .seances-workspace { color: var(--color-text-body); min-height: 100%; padding: 1.5rem; }
   .detail-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap; }
-  h2 { font: 600 var(--text-lg)/1.4 var(--font-body); color: var(--color-bone); }
-  h3 { color: var(--color-bone); font-size: var(--text-base); }
+  h2 { font: 600 var(--text-lg)/1.4 var(--font-body); color: var(--color-text-strong); }
+  h3 { color: var(--color-text-strong); font-size: var(--text-base); }
   p { line-height: 1.6; margin: .5rem 0; }
-  .muted, .read-status, time { color: var(--color-ash); font-size: var(--text-xs); }
+  .muted, .read-status, time { color: var(--color-text-muted); font-size: var(--text-xs); }
   .workspace-body { display: grid; grid-template-columns: minmax(12rem, 15rem) minmax(0, 1fr); gap: 1.5rem; margin-top: 1.5rem; }
-  .catalogue { border-right: 1px solid var(--color-engraving); padding-right: 1rem; min-width: 0; }
+  .catalogue { border-right: 1px solid var(--color-border-subtle); padding-right: 1rem; min-width: 0; }
   .catalogue h2 { margin-top: 1.5rem; font-size: var(--text-sm); }
   .catalogue-row { display: flex; align-items: center; gap: .25rem; margin-top: .3rem; }
-  .catalogue-row a { flex: 1; min-width: 0; display: block; padding: .65rem; color: var(--color-parchment); text-decoration: none; overflow-wrap: anywhere; border-radius: var(--radius-rune); font-size: var(--text-sm); }
-  .catalogue-row a[aria-current="page"] { color: var(--color-bone); background: var(--color-obsidian-2); box-shadow: inset 2px 0 var(--color-accent); }
-  small { display: block; margin-top: .35rem; color: var(--color-ash); font-size: var(--text-2xs); }
-  .new-seance { padding: .65rem .8rem; color: var(--color-bone); border: 1px solid var(--color-engraving); border-radius: var(--radius-rune); font-size: var(--text-sm); }
+  .catalogue-row a { flex: 1; min-width: 0; display: block; padding: .65rem; color: var(--color-text-body); text-decoration: none; overflow-wrap: anywhere; border-radius: var(--radius-rune); font-size: var(--text-sm); }
+  .catalogue-row a[aria-current="page"] { color: var(--color-text-strong); background: var(--color-surface-raised); box-shadow: inset 2px 0 var(--color-identity); }
+  small { display: block; margin-top: .35rem; color: var(--color-text-muted); font-size: var(--text-2xs); }
+  .new-seance { padding: .65rem .8rem; color: var(--color-text-strong); border: 1px solid var(--color-border-subtle); border-radius: var(--radius-rune); font-size: var(--text-sm); }
   .detail { min-width: 0; }
-  .identity { font-family: var(--font-mono); font-size: var(--text-2xs); color: var(--color-ash); overflow-wrap: anywhere; }
+  .identity { font-family: var(--font-mono); font-size: var(--text-2xs); color: var(--color-text-muted); overflow-wrap: anywhere; }
   .read-status { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
-  .view-switch { display: flex; gap: .5rem; margin: 1rem 0; padding-bottom: .75rem; border-bottom: 1px solid var(--color-engraving); }
-  button, select, input, textarea { font: inherit; font-size: var(--text-sm); color: var(--color-parchment); background: var(--color-obsidian); border: 1px solid var(--color-engraving); border-radius: var(--radius-rune); }
+  .view-switch { display: flex; gap: .5rem; margin: 1rem 0; padding-bottom: .75rem; border-bottom: 1px solid var(--color-border-subtle); }
+  button, select, input, textarea { font: inherit; font-size: var(--text-sm); color: var(--color-text-body); background: var(--color-surface-panel); border: 1px solid var(--color-border-subtle); border-radius: var(--radius-rune); }
   button { cursor: pointer; min-height: 2.5rem; padding: .45rem .75rem; }
-  button:hover, a:hover { color: var(--color-bone); border-color: var(--color-rune); }
-  button[aria-pressed="true"] { color: var(--color-bone); border-color: var(--color-accent); }
-  button.primary { color: var(--color-void); background: var(--color-bone); border-color: var(--color-bone); }
+  button:hover, a:hover { color: var(--color-text-strong); border-color: var(--color-interactive); }
+  button[aria-pressed="true"] { color: var(--color-text-strong); border-color: var(--color-identity); }
+  button.primary { color: var(--color-on-action); background: var(--color-action); border-color: var(--color-action); }
   button:disabled { opacity: .5; cursor: default; }
-  label { display: block; font-size: var(--text-xs); color: var(--color-ash); }
+  label { display: block; font-size: var(--text-xs); color: var(--color-text-muted); }
   input, textarea { display: block; width: 100%; padding: .65rem; margin-top: .4rem; box-sizing: border-box; }
   select { margin-left: .5rem; padding: .5rem; }
   textarea { resize: vertical; }
-  .retained-turn, .material-card { padding: 1.25rem 0; border-bottom: 1px solid var(--color-engraving); }
+  .retained-turn, .material-card { padding: 1.25rem 0; border-bottom: 1px solid var(--color-border-subtle); }
   .retained-turn header { display: flex; flex-wrap: wrap; align-items: baseline; gap: .75rem; font-size: var(--text-xs); }
-  .retained-turn strong { color: var(--color-bone); }
-  .user-turn { padding-inline: 1rem; background: var(--color-obsidian); border-radius: var(--radius-glyph); }
+  .retained-turn strong { color: var(--color-text-strong); }
+  .user-turn { padding-inline: 1rem; background: var(--color-surface-panel); border-radius: var(--radius-glyph); }
   .quotation, blockquote { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.75; font-size: var(--text-sm); }
-  blockquote { margin: 1rem 0; padding-left: 1rem; border-left: 2px solid var(--color-accent); }
+  blockquote { margin: 1rem 0; padding-left: 1rem; border-left: 2px solid var(--color-identity); }
   footer, .actions { display: flex; align-items: center; flex-wrap: wrap; gap: .75rem; margin-top: .75rem; }
-  footer a { font-size: var(--text-xs); color: var(--color-rune); }
-  .material-heading { font-size: var(--text-xs); color: var(--color-ash); }
-  .empty { max-width: 40rem; padding: 3rem 1rem; color: var(--color-ash); }
-  .notice { font-size: var(--text-xs); padding: .65rem .8rem; background: var(--color-obsidian); border-left: 2px solid var(--color-rune); }
-  :focus-visible, article:focus { outline: 2px solid var(--color-rune); outline-offset: 3px; }
-  @container work-area (max-width: 48rem) { .workspace-body { grid-template-columns: 1fr; } .catalogue { border-right: 0; border-bottom: 1px solid var(--color-engraving); padding: 0 0 1rem; } .seances-workspace { padding: 1rem; } }
+  footer a { font-size: var(--text-xs); color: var(--color-interactive); }
+  .material-heading { font-size: var(--text-xs); color: var(--color-text-muted); }
+  .empty { max-width: 40rem; padding: 3rem 1rem; color: var(--color-text-muted); }
+  .notice { font-size: var(--text-xs); padding: .65rem .8rem; background: var(--color-surface-panel); border-left: 2px solid var(--color-interactive); }
+  :focus-visible, article:focus { outline: 2px solid var(--color-interactive); outline-offset: 3px; }
+  @container work-area (max-width: 48rem) { .workspace-body { grid-template-columns: 1fr; } .catalogue { border-right: 0; border-bottom: 1px solid var(--color-border-subtle); padding: 0 0 1rem; } .seances-workspace { padding: 1rem; } }
 </style>

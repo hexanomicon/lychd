@@ -81,3 +81,37 @@
     <div class="genui-body">The Vessel named no admitted component.</div>
   </div>
 {/if}
+
+<style>
+  /* Generative-UI descriptor: Vessel-validated, client-projected. */
+  .genui {
+    margin-top: 11px;
+    overflow: hidden;
+    border: 1px solid var(--color-border-subtle);
+    border-left: 2px solid var(--color-interactive-muted);
+    border-radius: var(--radius-block);
+    background: var(--color-surface-raised);
+    animation: genui-rise var(--duration-rise) var(--ease-settle) both;
+  }
+  .genui-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 13px;
+    border-bottom: 1px solid var(--color-border-subtle);
+    color: var(--color-text-muted);
+    font-size: var(--text-xs); letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  .genui-body { padding: 11px 16px; color: var(--color-text-body); font-size: var(--text-sm); }
+  .genui-body.checklist { padding: 10px 16px 12px 30px; }
+  .genui-body.checklist li { padding: 3px 0; }
+  .genui table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+  .genui th {
+    padding: 7px 13px;
+    border-bottom: 1px solid var(--color-border-subtle);
+    color: var(--color-text-muted);
+    font-size: var(--text-xs); font-weight: 500; letter-spacing: 0.07em; text-align: left; text-transform: uppercase;
+  }
+  .genui td { padding: 7px 13px; border-bottom: 1px solid color-mix(in srgb, var(--color-border-subtle) 55%, transparent); }
+  .genui tr:last-child td { border-bottom: none; }
+  @keyframes genui-rise { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .genui { animation: none; } }
+</style>

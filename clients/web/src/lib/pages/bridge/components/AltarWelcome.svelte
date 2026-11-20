@@ -49,9 +49,9 @@
     width: 100%;
     max-width: 58rem;
     margin: auto;
-    border: 1px solid var(--color-engraving);
+    border: 1px solid var(--color-border-subtle);
     border-radius: var(--radius-panel);
-    background: var(--color-obsidian);
+    background: var(--color-surface-panel);
   }
 
   .altar-welcome__body {
@@ -68,7 +68,7 @@
 
   .altar-welcome__eyebrow {
     margin: 0 0 0.75rem;
-    color: var(--color-rune);
+    color: var(--color-interactive);
     font: var(--text-2xs)/1.5 var(--font-glyph);
     letter-spacing: 0.14em;
     text-transform: uppercase;
@@ -77,7 +77,7 @@
   h2 {
     max-width: 15ch;
     margin: 0;
-    color: var(--color-bone);
+    color: var(--color-text-strong);
     font: 400 1.875rem/1.12 var(--font-rune);
     letter-spacing: -0.02em;
     text-wrap: balance;
@@ -86,7 +86,7 @@
   .altar-welcome__intro {
     max-width: 35ch;
     margin: 0.8rem 0 1.125rem;
-    color: var(--color-parchment);
+    color: var(--color-text-body);
     font-size: var(--text-sm);
     line-height: 1.6;
   }
@@ -98,8 +98,8 @@
     gap: 0.7rem;
     min-height: 2.75rem;
     padding: 0.7rem 1.1rem;
-    border-color: color-mix(in srgb, var(--color-rune) 60%, var(--color-engraving));
-    color: var(--color-frost);
+    border-color: color-mix(in srgb, var(--color-interactive) 60%, var(--color-border-subtle));
+    color: var(--color-status-ready);
     line-height: 1.4;
     letter-spacing: 0.035em;
   }
@@ -111,13 +111,13 @@
   .altar-welcome__continuity {
     margin-top: 1.25rem;
     padding-top: 0.75rem;
-    border-top: 1px solid var(--color-engraving);
+    border-top: 1px solid var(--color-border-subtle);
     font-size: var(--text-xs);
   }
 
   .altar-welcome__continuity p {
     margin: 0 0 0.25rem;
-    color: var(--color-parchment);
+    color: var(--color-text-body);
     line-height: 1.5;
   }
 
@@ -126,7 +126,7 @@
     align-items: center;
     gap: 0.45rem;
     min-height: 2.25rem;
-    color: var(--color-rune);
+    color: var(--color-interactive);
     text-decoration: underline;
     text-decoration-thickness: 1px;
     text-underline-offset: 0.25em;
@@ -135,8 +135,8 @@
   .altar-welcome__art {
     height: 60cqw;
     overflow: hidden;
-    border-top: 1px solid var(--color-engraving);
-    background: var(--color-void);
+    border-top: 1px solid var(--color-border-subtle);
+    background: var(--color-surface-page);
   }
 
   .altar-welcome__art img {
@@ -163,7 +163,7 @@
       height: auto;
       min-height: 22rem;
       border-top: 0;
-      border-left: 1px solid var(--color-engraving);
+      border-left: 1px solid var(--color-border-subtle);
     }
 
     .altar-welcome__art img {

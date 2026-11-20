@@ -61,20 +61,20 @@
 <style>
   .runtime-evidence { font-size:12px; min-width:0; }
   header { display:flex; justify-content:space-between; align-items:start; gap:.5rem; }
-  h3,h4 { font:500 14px/1.4 var(--font-body); color:var(--color-bone); }
+  h3,h4 { font:500 14px/1.4 var(--font-body); color:var(--color-text-strong); }
   h5 { font:500 12px/1.5 var(--font-body); }
-  p { color:var(--color-parchment); margin:.65rem 0; line-height:1.5; }
-  details,section,article { border-top:1px solid var(--color-engraving); padding-top:.6rem; margin-top:.75rem; }
-  summary { cursor:pointer; padding:.3rem 0; color:var(--color-bone); }
+  p { color:var(--color-text-body); margin:.65rem 0; line-height:1.5; }
+  details,section,article { border-top:1px solid var(--color-border-subtle); padding-top:.6rem; margin-top:.75rem; }
+  summary { cursor:pointer; padding:.3rem 0; color:var(--color-text-strong); }
   ul { padding-left:1rem; }
   li { margin:.6rem 0; overflow-wrap:anywhere; }
   dl { display:grid; grid-template-columns:minmax(5rem,1fr) minmax(0,2fr); gap:.3rem .5rem; margin:.6rem 0; }
-  dt { color:var(--color-parchment); } dd { margin:0; overflow-wrap:anywhere; }
+  dt { color:var(--color-text-body); } dd { margin:0; overflow-wrap:anywhere; }
   .nodes,.sources { list-style:none; padding:0; }
-  button { border:1px solid var(--color-engraving); border-radius:var(--radius-glyph); background:var(--color-obsidian); color:var(--color-bone); padding:.5rem; cursor:pointer; font:inherit; }
+  button { border:1px solid var(--color-border-subtle); border-radius:var(--radius-glyph); background:var(--color-surface-panel); color:var(--color-text-strong); padding:.5rem; cursor:pointer; font:inherit; }
   .nodes button { display:flex; flex-wrap:wrap; align-items:center; gap:.35rem; width:100%; text-align:left; }
-  .nodes button small { flex-basis:100%; color:var(--color-parchment); }
+  .nodes button small { flex-basis:100%; color:var(--color-text-body); }
   img { filter:invert(1); }
-  a { color:var(--color-rune); }
-  :is(button,a,summary):focus-visible { outline:2px solid var(--color-rune); outline-offset:3px; }
+  a { color:var(--color-interactive); }
+  :is(button,a,summary):focus-visible { outline:2px solid var(--color-interactive); outline-offset:3px; }
 </style>

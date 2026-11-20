@@ -44,10 +44,10 @@
 </header>
 
 <style>
-  .conversation-heading { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 1.25rem; min-height: 3.5rem; padding: 0.35rem clamp(1rem, 2vw, 1.5rem); border-bottom: 1px solid var(--color-engraving); }
+  .conversation-heading { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 1.25rem; min-height: 3.5rem; padding: 0.35rem clamp(1rem, 2vw, 1.5rem); border-bottom: 1px solid var(--color-border-subtle); }
   .conversation-heading__identity { display: flex; align-items: center; flex: 1 1 12rem; gap: 0.65rem; min-width: 0; }
-  .conversation-heading__h1 { margin: 0; color: var(--color-bone); font: 600 var(--text-base)/1.5 var(--font-body); }
-  .conversation-title { min-width: 0; margin: 0; color: var(--color-bone); font: 600 var(--text-base)/1.5 var(--font-body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .conversation-heading__h1 { margin: 0; color: var(--color-text-strong); font: 600 var(--text-base)/1.5 var(--font-body); }
+  .conversation-title { min-width: 0; margin: 0; color: var(--color-text-strong); font: 600 var(--text-base)/1.5 var(--font-body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .conversation-heading__pin {
     display: grid;
     place-items: center;
@@ -55,15 +55,15 @@
     width: 2.25rem;
     height: 2.25rem;
     padding: 0;
-    border: 1px solid var(--color-engraving);
+    border: 1px solid var(--color-border-subtle);
     border-radius: var(--radius-glyph);
     background: transparent;
-    color: var(--color-ash);
+    color: var(--color-text-muted);
     cursor: pointer;
   }
-  .conversation-heading__pin:hover { background: var(--color-obsidian-2); color: var(--color-bone); }
-  .conversation-heading__pin[aria-pressed="true"] { color: var(--color-accent); }
-  .conversation-heading__browse { display: inline-flex; align-items: center; gap: 0.45rem; min-height: 2.75rem; color: var(--color-parchment); font-size: var(--text-sm); text-decoration: none; }
-  .conversation-heading__browse:hover { color: var(--color-bone); }
-  .conversation-heading :is(a, button):focus-visible { outline: 2px solid var(--color-rune); outline-offset: 2px; }
+  .conversation-heading__pin:hover { background: var(--color-surface-raised); color: var(--color-text-strong); }
+  .conversation-heading__pin[aria-pressed="true"] { color: var(--color-identity); }
+  .conversation-heading__browse { display: inline-flex; align-items: center; gap: 0.45rem; min-height: 2.75rem; color: var(--color-text-body); font-size: var(--text-sm); text-decoration: none; }
+  .conversation-heading__browse:hover { color: var(--color-text-strong); }
+  .conversation-heading :is(a, button):focus-visible { outline: 2px solid var(--color-interactive); outline-offset: 2px; }
 </style>

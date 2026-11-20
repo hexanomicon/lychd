@@ -55,9 +55,9 @@
     gap: 0.25rem;
     min-width: 0;
     padding: 0.25rem;
-    border: 1px solid var(--color-engraving);
+    border: 1px solid var(--color-border-subtle);
     border-radius: var(--radius-glyph);
-    background: var(--color-obsidian-2);
+    background: var(--color-surface-raised);
   }
   button {
     display: inline-flex;
@@ -68,15 +68,15 @@
     border: 0;
     border-radius: var(--radius-rune);
     background: transparent;
-    color: var(--color-parchment);
+    color: var(--color-text-body);
     font: 500 var(--text-sm)/1.2 var(--font-body);
     cursor: pointer;
   }
-  button:hover:not(:disabled) { color: var(--color-bone); }
-  button[aria-pressed="true"] { background: var(--color-bone); color: var(--color-void); }
+  button:hover:not(:disabled) { color: var(--color-text-strong); }
+  button[aria-pressed="true"] { background: var(--color-action); color: var(--color-on-action); }
   button:disabled { opacity: 0.45; cursor: default; }
-  button:focus-visible { outline: 2px solid var(--color-rune); outline-offset: 2px; }
+  button:focus-visible { outline: 2px solid var(--color-interactive); outline-offset: 2px; }
   .segmented__count { font-weight: 600; }
-  .segmented__separator { color: var(--color-ash); }
-  .segmented__hint { margin-inline-start: auto; padding-inline: 0.5rem; color: var(--color-ash); font-size: var(--text-xs); }
+  .segmented__separator { color: var(--color-text-muted); }
+  .segmented__hint { margin-inline-start: auto; padding-inline: 0.5rem; color: var(--color-text-muted); font-size: var(--text-xs); }
 </style>

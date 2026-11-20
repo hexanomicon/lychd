@@ -1,0 +1,11 @@
+/* Shared animations referenced by the --animate-* tokens. Keyframe names are global, so
+   component-local animations stay inside their component's scoped style. */
+@keyframes sigil-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.72; }
+}
+@keyframes think-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.78; }
+}
+@keyframes caret-blink { 50% { opacity: 0; } }

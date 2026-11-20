@@ -1384,42 +1384,93 @@
 </div>
 
 <style>
-  .instrument-deck--bridge { display: grid; grid-template-columns: 17rem minmax(0, 1fr); gap: 0; padding: 0; min-height: 0; height: 100%; overflow: hidden; background: var(--color-void); }
+  /* Thread flow and turn grammar. Instrument-specific sizing follows below. */
+  .bridge-rail { display: flex; flex-direction: column; gap: 8px; }
+  .bridge-thread { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+  .thread-scroll { display: flex; flex-direction: column; flex: 1; overflow-y: auto; }
+  .turn--user { align-self: flex-end; }
+  .turn--user .turn__body { color: var(--color-text-strong); }
+  .turn--agent { align-self: flex-start; width: 100%; }
+  .turn--agent .turn__body { transition: border-color var(--duration-rise) var(--ease-settle); }
+  .turn__extras:empty { display: none; }
+  /* The streaming caret blinks only while a turn is streaming. */
+  .turn--agent[data-state="streaming"] .turn__body::after {
+    content: "";
+    display: inline-block;
+    width: 8px;
+    height: 15px;
+    margin-left: 2px;
+    vertical-align: text-bottom;
+    background: var(--color-status-active);
+    animation: var(--animate-caret-blink);
+  }
+
+  /* Body crossings: capability transitions and delegated work inside an agent turn. */
+  .body-crossing {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.65rem;
+    align-items: center;
+    margin-top: 0.45rem;
+    padding: 0.65rem 0.75rem;
+    border: 1px solid color-mix(in srgb, var(--color-status-ready) 40%, var(--color-border-subtle));
+    border-radius: var(--radius-block);
+    background: color-mix(in srgb, var(--color-status-ready) 6%, var(--color-surface-panel));
+    color: var(--color-status-ready);
+    font-size: var(--text-xs);
+  }
+  .body-crossing__title { font-family: var(--font-body); font-variant: normal; letter-spacing: normal; }
+  .delegate-crossing {
+    border-color: color-mix(in srgb, var(--color-interactive) 45%, var(--color-border-subtle));
+    border-left-width: 3px;
+    background: var(--color-surface-panel);
+  }
+  .delegate-crossing[data-state="running"] { color: var(--color-status-active); }
+  .delegate-crossing:is([data-state="failed"], [data-state="cancelled"], [data-state="timed_out"], [data-state="lost"]) { color: var(--color-status-fault); }
+
+  .composer { gap: 10px; align-items: flex-end; transition: border-color var(--duration-drift), box-shadow var(--duration-drift); }
+  .composer textarea { flex: 1; border: none; outline: none; color: var(--color-text-strong); font-family: var(--font-body); }
+  .composer textarea::placeholder { color: var(--color-text-muted); }
+  @media (prefers-reduced-motion: reduce) { .turn--agent[data-state="streaming"] .turn__body::after { animation: none; } }
+  @media (max-width: 48rem) { .body-crossing { grid-template-columns: 1fr; } }
+  @media (forced-colors: active) { .body-crossing { border-color: CanvasText; } }
+
+  .instrument-deck--bridge { display: grid; grid-template-columns: 17rem minmax(0, 1fr); gap: 0; padding: 0; min-height: 0; height: 100%; overflow: hidden; background: var(--color-surface-page); }
   .instrument-deck--welcome { grid-template-columns: minmax(0, 1fr); }
   /* In the Altar shell the sidebar owns history; the optional third column is the Circle inspector. */
   .bridge-shell-history { grid-template-columns: minmax(0, 1fr); }
   .bridge-with-inspector { grid-template-columns: 17rem minmax(0, 1fr) 20rem; }
   .bridge-shell-history.bridge-with-inspector { grid-template-columns: minmax(0, 1fr) 20rem; }
-  .bridge-rail { width: auto; min-width: 0; padding: 1.25rem .85rem; border-right: 1px solid var(--color-engraving); overflow-y: auto; background: var(--color-obsidian); }
+  .bridge-rail { width: auto; min-width: 0; padding: 1.25rem .85rem; border-right: 1px solid var(--color-border-subtle); overflow-y: auto; background: var(--color-surface-panel); }
   /* Native details keeps history reachable without making it the dock's first reading task. */
   .bridge-thread { min-height: 0; overflow: hidden; }
   .bridge-tools { display: flex; flex-direction: column; align-items: stretch; gap: .25rem; min-width: 16rem; font-size: var(--text-sm); }
   .thread-notice { padding: .5rem clamp(1rem, 3vw, 2rem); }
   .thread-scroll { min-height: 4rem; padding: 1.5rem max(1rem, calc((100% - 48rem) / 2)); gap: 1.75rem; scrollbar-gutter: stable; }
-  .thread-scroll:focus-visible { outline: 1px solid var(--color-rune); outline-offset: -3px; }
+  .thread-scroll:focus-visible { outline: 1px solid var(--color-interactive); outline-offset: -3px; }
   .turn { max-width: 100%; overflow-wrap: anywhere; }
   .turn--user { max-width: min(42rem, 92%); }
   .turn__body { white-space: pre-wrap; font-size: 1rem; line-height: 1.75; box-shadow: none; }
-  .turn--user .turn__body { padding: .85rem 1rem; background: var(--color-obsidian-2); border: 1px solid var(--color-engraving); border-radius: var(--radius-panel); }
-  .turn--agent .turn__body { padding: .25rem 0; color: var(--color-bone); background: transparent; border: 0; border-radius: 0; }
-  .turn--agent[data-state="stale"] .turn__body { padding-left: .85rem; border-left: 2px solid var(--color-control-border); }
-  .turn--agent[data-state="failed"] .turn__body { padding-left: .85rem; border-left: 2px solid var(--color-ember); }
-  .turn--agent[data-state="cancelled"] .turn__body { padding-left: .85rem; border-left: 2px solid var(--color-ash); }
+  .turn--user .turn__body { padding: .85rem 1rem; background: var(--color-surface-raised); border: 1px solid var(--color-border-subtle); border-radius: var(--radius-panel); }
+  .turn--agent .turn__body { padding: .25rem 0; color: var(--color-text-strong); background: transparent; border: 0; border-radius: 0; }
+  .turn--agent[data-state="stale"] .turn__body { padding-left: .85rem; border-left: 2px solid var(--color-border-control); }
+  .turn--agent[data-state="failed"] .turn__body { padding-left: .85rem; border-left: 2px solid var(--color-status-fault); }
+  .turn--agent[data-state="cancelled"] .turn__body { padding-left: .85rem; border-left: 2px solid var(--color-text-muted); }
   .latest-turn { display: flex; justify-content: center; padding: .25rem 1rem .5rem; }
-  .latest-turn button { min-height: 2.75rem; padding: .4rem 1rem; border: 1px solid var(--color-control-border); border-radius: var(--radius-glyph); color: var(--color-rune); background: var(--color-obsidian); cursor: pointer; }
-  .composer-area { flex: 0 1 auto; min-height: 0; max-height: min(36rem, 65dvh); overflow-y: auto; overscroll-behavior: contain; padding: .8rem clamp(1rem, 3vw, 2rem) 1rem; border-top: 1px solid var(--color-engraving); }
-  .composer-area:focus-visible { outline: 2px solid var(--color-rune); outline-offset: -2px; }
-  .composer-shell { display: flex; flex-direction: column; max-width: 52rem; margin-inline: auto; padding: .85rem 1rem .6rem; border: 1px solid var(--color-control-border); border-radius: 1.25rem; background: var(--color-obsidian); }
-  .composer-shell:focus-within { border-color: var(--color-rune); }
+  .latest-turn button { min-height: 2.75rem; padding: .4rem 1rem; border: 1px solid var(--color-border-control); border-radius: var(--radius-glyph); color: var(--color-interactive); background: var(--color-surface-panel); cursor: pointer; }
+  .composer-area { flex: 0 1 auto; min-height: 0; max-height: min(36rem, 65dvh); overflow-y: auto; overscroll-behavior: contain; padding: .8rem clamp(1rem, 3vw, 2rem) 1rem; border-top: 1px solid var(--color-border-subtle); }
+  .composer-area:focus-visible { outline: 2px solid var(--color-interactive); outline-offset: -2px; }
+  .composer-shell { display: flex; flex-direction: column; max-width: 52rem; margin-inline: auto; padding: .85rem 1rem .6rem; border: 1px solid var(--color-border-control); border-radius: 1.25rem; background: var(--color-surface-panel); }
+  .composer-shell:focus-within { border-color: var(--color-interactive); }
   .command-help, .command-result { font-size: var(--text-sm); line-height: 1.6; overflow-wrap: anywhere; }
-  .command-help { padding: 0 0 .75rem; margin: 0 0 .75rem; border-bottom: 1px solid var(--color-engraving); }
+  .command-help { padding: 0 0 .75rem; margin: 0 0 .75rem; border-bottom: 1px solid var(--color-border-subtle); }
   .command-help p + p { margin-top: .35rem; }
   .command-help summary { min-height: 2.75rem; align-content: center; cursor: pointer; }
   .command-help ul { padding-left: 1.4rem; }
   .command-help code { white-space: pre-wrap; overflow-wrap: anywhere; }
-  .command-result { margin: .65rem 0 0; color: var(--color-parchment); }
+  .command-result { margin: .65rem 0 0; color: var(--color-text-body); }
   .composer-label { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
-  .composer-instructions { margin: .25rem 0 .75rem; color: var(--color-parchment); font-size: var(--text-sm); line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .composer-instructions { margin: .25rem 0 .75rem; color: var(--color-text-body); font-size: var(--text-sm); line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
   .composer { display: flex; margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
   .composer:focus-within { box-shadow: none; border: 0; }
   .composer textarea { display: block; width: 100%; min-width: 0; min-height: 3rem; max-height: 16rem; padding: 0; resize: vertical; font-size: 1rem; line-height: 1.5; background: transparent; }
@@ -1427,21 +1478,21 @@
   .composer-actions--work { --voice-action-reserve: 18rem; }
   /* Destination and send sit at the row's end; the voice toolbar reserves their width. */
   .composer-trail { position: absolute; inset-block-start: .35rem; inset-inline-end: 0; display: flex; align-items: center; gap: .6rem; max-width: var(--voice-action-reserve); }
-  #bridge-destination { min-width: 0; max-width: 11rem; min-height: 2.25rem; margin: 0; padding: .25rem 1.75rem .25rem .75rem; border: 1px solid var(--color-engraving); border-radius: 999px; background-color: var(--color-obsidian-2); color: var(--color-bone); font: 500 var(--text-xs)/1.2 var(--font-body); }
-  .composer-send { display: grid; place-items: center; flex: 0 0 auto; width: 2.75rem; height: 2.75rem; padding: 0; border: 1px solid var(--color-bone); border-radius: 50%; background: var(--color-bone); color: var(--color-void); font: 600 1.1rem/1 var(--font-body); cursor: pointer; }
-  .composer-send:hover:not(:disabled) { background: var(--color-parchment); border-color: var(--color-parchment); }
+  #bridge-destination { min-width: 0; max-width: 11rem; min-height: 2.25rem; margin: 0; padding: .25rem 1.75rem .25rem .75rem; border: 1px solid var(--color-border-subtle); border-radius: 999px; background-color: var(--color-surface-raised); color: var(--color-text-strong); font: 500 var(--text-xs)/1.2 var(--font-body); }
+  .composer-send { display: grid; place-items: center; flex: 0 0 auto; width: 2.75rem; height: 2.75rem; padding: 0; border: 1px solid var(--color-action); border-radius: 50%; background: var(--color-action); color: var(--color-on-action); font: 600 1.1rem/1 var(--font-body); cursor: pointer; }
+  .composer-send:hover:not(:disabled) { background: var(--color-action-hover); border-color: var(--color-action-hover); }
   .composer-send:disabled { opacity: .35; cursor: default; }
-  .composer-send:focus-visible, #bridge-destination:focus-visible { outline: 2px solid var(--color-rune); outline-offset: 2px; }
+  .composer-send:focus-visible, #bridge-destination:focus-visible { outline: 2px solid var(--color-interactive); outline-offset: 2px; }
   .composer-voice { min-width: 0; }
-  .composer-footer { display: flex; max-width: 52rem; justify-content: space-between; gap: .3rem 1.5rem; flex-wrap: wrap; margin: .35rem auto 0; color: var(--color-ash); font-size: var(--text-xs); line-height: 1.6; }
+  .composer-footer { display: flex; max-width: 52rem; justify-content: space-between; gap: .3rem 1.5rem; flex-wrap: wrap; margin: .35rem auto 0; color: var(--color-text-muted); font-size: var(--text-xs); line-height: 1.6; }
   .composer-footer p { max-width: 38rem; }
-  .offering-recovery { flex: 0 1 auto; min-height: 4rem; margin: .75rem 1rem; padding: .8rem 1rem; border: 0; border-left: 2px solid var(--color-rune); border-radius: 0; background: var(--color-obsidian); max-height: min(22rem, 45dvh); overflow-y: auto; overscroll-behavior: contain; }
-  .offering-recovery p { margin: .5rem 0; color: var(--color-parchment); line-height: 1.6; }
-  .offering-recovery .offering-recovery__text { color: var(--color-bone); white-space: pre-wrap; max-height: 12rem; overflow: auto; overflow-wrap: anywhere; }
+  .offering-recovery { flex: 0 1 auto; min-height: 4rem; margin: .75rem 1rem; padding: .8rem 1rem; border: 0; border-left: 2px solid var(--color-interactive); border-radius: 0; background: var(--color-surface-panel); max-height: min(22rem, 45dvh); overflow-y: auto; overscroll-behavior: contain; }
+  .offering-recovery p { margin: .5rem 0; color: var(--color-text-body); line-height: 1.6; }
+  .offering-recovery .offering-recovery__text { color: var(--color-text-strong); white-space: pre-wrap; max-height: 12rem; overflow: auto; overflow-wrap: anywhere; }
   .offering-recovery__actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .5rem; }
-  .atlas-links { display: flex; flex-wrap: wrap; gap: .35rem 1rem; align-items: center; padding: .5rem clamp(1rem, 3vw, 2rem); color: var(--color-parchment); font-size: var(--text-sm); }
-  .atlas-links a { color: var(--color-rune); min-height: 2.75rem; display: inline-flex; align-items: center; }
-  .turn:focus-visible { outline: 2px solid var(--color-rune); outline-offset: 3px; }
+  .atlas-links { display: flex; flex-wrap: wrap; gap: .35rem 1rem; align-items: center; padding: .5rem clamp(1rem, 3vw, 2rem); color: var(--color-text-body); font-size: var(--text-sm); }
+  .atlas-links a { color: var(--color-interactive); min-height: 2.75rem; display: inline-flex; align-items: center; }
+  .turn:focus-visible { outline: 2px solid var(--color-interactive); outline-offset: 3px; }
   .bridge-embedded { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); height: 100%; overflow: hidden; }
   .bridge-embedded.instrument-deck--welcome { grid-template-rows: minmax(0, 1fr); }
   .bridge-embedded .bridge-rail { padding: 0 .95rem; border: 0; max-height: min(18rem, 35dvh); overflow: auto; background: transparent; }
@@ -1460,7 +1511,7 @@
   }
   @media (max-width: 48rem) {
     .instrument-deck--bridge, .bridge-with-inspector, .bridge-shell-history.bridge-with-inspector { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
-    .bridge-rail { display: block; max-height: 35dvh; padding: 0 .95rem; border-right: 0; border-bottom: 1px solid var(--color-engraving); overflow: auto; }
+    .bridge-rail { display: block; max-height: 35dvh; padding: 0 .95rem; border-right: 0; border-bottom: 1px solid var(--color-border-subtle); overflow: auto; }
     .thread-scroll { padding: 1rem .95rem; }
     .composer-area { padding: .4rem .65rem .45rem; }
     .composer-shell { padding: .3rem .6rem .4rem; }

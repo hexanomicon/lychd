@@ -61,8 +61,8 @@
 
 <style>
   .atlas-links { display: flex; flex-wrap: wrap; gap: .6rem 1rem; align-items: center; padding: .75rem 1rem; overflow-wrap: anywhere; }
-  .atlas-links > span { color: var(--color-ash); font-size: .85rem; }
-  .atlas-links a { display: inline-flex; align-items: center; min-height: 2.75rem; color: var(--color-rune); text-underline-offset: .2em; }
-  .atlas-links button { min-height: 2.75rem; padding: .45rem .7rem; border: 1px solid var(--color-engraving); border-radius: var(--radius-rune); background: var(--color-obsidian-2); color: var(--color-bone); font: inherit; cursor: pointer; }
-  .atlas-links :is(a, button):focus-visible { outline: 2px solid var(--color-rune); outline-offset: 3px; }
+  .atlas-links > span { color: var(--color-text-muted); font-size: .85rem; }
+  .atlas-links a { display: inline-flex; align-items: center; min-height: 2.75rem; color: var(--color-interactive); text-underline-offset: .2em; }
+  .atlas-links button { min-height: 2.75rem; padding: .45rem .7rem; border: 1px solid var(--color-border-subtle); border-radius: var(--radius-rune); background: var(--color-surface-raised); color: var(--color-text-strong); font: inherit; cursor: pointer; }
+  .atlas-links :is(a, button):focus-visible { outline: 2px solid var(--color-interactive); outline-offset: 3px; }
 </style>

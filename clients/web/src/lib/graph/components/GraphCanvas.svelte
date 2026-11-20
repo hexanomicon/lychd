@@ -31,16 +31,16 @@
 </div>
 
 <style>
-.graph-canvas { width:100%; min-width:0; height:var(--graph-height,clamp(460px,68vh,900px)); position:relative; overflow:hidden; border:0; border-radius:0; background:#000; --xy-background-color:#000; --xy-node-color:var(--color-bone); --xy-minimap-background-color:var(--color-obsidian); --xy-minimap-mask-background-color:color-mix(in srgb,var(--color-void) 72%,transparent); --xy-edge-label-background-color:var(--color-void); --xy-edge-label-color:var(--color-parchment); }
-  .graph-canvas.orb-canvas { height:100%; min-height:0; border:0; border-radius:0; background:#000; --xy-background-color:#000; }
+.graph-canvas { width:100%; min-width:0; height:var(--graph-height,clamp(460px,68vh,900px)); position:relative; overflow:hidden; border:0; border-radius:0; background:var(--color-surface-plane); --xy-background-color:var(--color-surface-plane); --xy-node-color:var(--color-text-strong); --xy-minimap-background-color:var(--color-surface-panel); --xy-minimap-mask-background-color:color-mix(in srgb, var(--color-shadow) 72%,transparent); --xy-edge-label-background-color:var(--color-surface-page); --xy-edge-label-color:var(--color-text-body); }
+  .graph-canvas.orb-canvas { height:100%; min-height:0; border:0; border-radius:0; background:var(--color-surface-plane); --xy-background-color:var(--color-surface-plane); }
   .orb-canvas :global(.svelte-flow__handle) { opacity:0; }
-  .graph-failure { padding:2rem; color:var(--color-ember); font:14px/1.6 var(--font-body); }
-  .graph-canvas :global(.svelte-flow__edge-textbg) { fill:var(--color-void); }
+  .graph-failure { padding:2rem; color:var(--color-status-fault); font:14px/1.6 var(--font-body); }
+  .graph-canvas :global(.svelte-flow__edge-textbg) { fill:var(--color-surface-page); }
   /* The media reset's max-width:100% collapses these SVGs against XYFlow's
      zero-sized edge layer. Their paths deliberately overflow their viewport. */
   .graph-canvas :global(.svelte-flow__edges svg) { max-width:none; }
-  .graph-canvas :global(.svelte-flow__attribution) { background:var(--color-obsidian); }
-  .graph-canvas :global(.svelte-flow__attribution a) { color:var(--color-parchment); }
-  .graph-canvas :global(.svelte-flow__handle) { width:7px; height:7px; background:var(--color-rune-dim); border:1px solid var(--color-void); pointer-events:none; }
+  .graph-canvas :global(.svelte-flow__attribution) { background:var(--color-surface-panel); }
+  .graph-canvas :global(.svelte-flow__attribution a) { color:var(--color-text-body); }
+  .graph-canvas :global(.svelte-flow__handle) { width:7px; height:7px; background:var(--color-interactive-muted); border:1px solid var(--color-surface-plane); pointer-events:none; }
   @media(max-width:600px) { .graph-canvas:not(.orb-canvas) { height:480px; } }
 </style>

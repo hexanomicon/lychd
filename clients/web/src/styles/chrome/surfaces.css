@@ -1,0 +1,36 @@
+/* Instrument page scaffolding and panel surfaces. */
+@layer components {
+  /* One page wrapper per instrument; each instrument refines its own --modifier. */
+  .instrument-deck { flex: 1; display: flex; gap: 14px; padding: 14px 16px; min-width: 0; }
+
+  .panel {
+    background: var(--color-surface-panel);
+    border: 1px solid transparent;
+    border-radius: var(--radius-panel);
+    box-shadow: none;
+  }
+  .panel-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 16px;
+    border-bottom: 1px solid var(--color-border-subtle);
+    font-size: var(--text-sm);
+  }
+  .panel-head .rune-head { font-size: var(--text-base); }
+
+  /* Close control for inspectors that become bottom sheets on narrow screens. */
+  .sheet-dismiss {
+    display: inline-block;
+    margin-left: auto;
+    border: 0;
+    background: transparent;
+    color: var(--color-interactive);
+    cursor: pointer;
+    font-size: var(--text-xs);
+  }
+
+  @media (max-width: 48rem) {
+    .instrument-deck { flex-direction: column; padding: 0.75rem; }
+  }
+}

@@ -139,7 +139,7 @@
         type:"semantic", sourceHandle:edge.source === edge.target ? "loop-out" : "out",
         targetHandle:edge.source === edge.target ? "loop-in" : "in", label:edge.label, ariaLabel:edge.label,
         data:{ relation:edge.relation, attention:edge.attention, presentation:mode }, selectable:false, deletable:false, reconnectable:false,
-        markerEnd:mode === "orb" && edge.relation !== "activity" ? undefined : { type:MarkerType.ArrowClosed, color:"var(--color-rune-dim)" } }));
+        markerEnd:mode === "orb" && edge.relation !== "activity" ? undefined : { type:MarkerType.ArrowClosed, color:"var(--color-interactive-muted)" } }));
       nodes = reconcileNodes(changedIdentity ? [] : nodes, nextNodes);
       edges = reconcileEdges(changedIdentity ? [] : edges, nextEdges);
       const version = ++generation;
@@ -176,7 +176,7 @@
       <button type="button" onclick={() => { onviewportinteraction?.(); void fit(); }}>Fit graph</button>
     </div>
   </Panel>
-  {#if !hideMinimap}<MiniMap nodeColor="var(--color-rune-dim)" maskColor="color-mix(in srgb,var(--color-void) 72%,transparent)" />{/if}
+  {#if !hideMinimap}<MiniMap nodeColor="var(--color-interactive-muted)" maskColor="color-mix(in srgb, var(--color-shadow) 72%,transparent)" />{/if}
 </SvelteFlow>
 </div>
 
@@ -184,10 +184,10 @@
 .flow-surface { width:100%; height:100%; min-width:0; min-height:0; position:relative; }
   .flow-surface[data-density="far"] { --orb-name-visibility:hidden; --orb-caption-visibility:hidden; }
   .flow-surface[data-density="middle"] { --orb-caption-visibility:hidden; }
-  .canvas-controls { display:flex; border:1px solid var(--color-control-border); border-radius:6px; overflow:hidden; background:var(--color-obsidian); box-shadow:0 6px 24px #0005; }
-  .orb-controls { background:var(--color-obsidian); }
-  button { border:0; border-inline-end:1px solid var(--color-engraving); background:transparent; color:var(--color-bone); padding:.55rem .8rem; min-width:38px; min-height:38px; cursor:pointer; font:500 13px/1.4 var(--font-body); }
+  .canvas-controls { display:flex; border:1px solid var(--color-border-control); border-radius:6px; overflow:hidden; background:var(--color-surface-panel); box-shadow:0 6px 24px color-mix(in srgb,var(--color-shadow) 33.3%,transparent); }
+  .orb-controls { background:var(--color-surface-panel); }
+  button { border:0; border-inline-end:1px solid var(--color-border-subtle); background:transparent; color:var(--color-text-strong); padding:.55rem .8rem; min-width:38px; min-height:38px; cursor:pointer; font:500 13px/1.4 var(--font-body); }
   button:last-child { border-inline-end:0; }
-  button:hover { background:var(--color-obsidian-2); color:var(--color-rune); }
-  button:focus-visible { outline:2px solid var(--color-rune); outline-offset:-3px; }
+  button:hover { background:var(--color-surface-raised); color:var(--color-interactive); }
+  button:focus-visible { outline:2px solid var(--color-interactive); outline-offset:-3px; }
 </style>

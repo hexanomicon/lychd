@@ -1,0 +1,45 @@
+/* Shared reading voices: labels, headings, identifiers, inspector copy and the fault line. */
+@layer components {
+  /* Small uppercase label. <Eyebrow> and <PageHeader> render it. */
+  .eyebrow,
+  .instrument-kicker {
+    display: block;
+    color: var(--color-text-muted);
+    font-size: var(--text-xs);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
+  /* Operational heading. */
+  .rune-head {
+    font-family: var(--font-body);
+    font-variant: normal;
+    letter-spacing: normal;
+    color: var(--color-text-strong);
+    font-weight: 600;
+  }
+
+  /* Machine identifiers: run ids, capability keys, digests. */
+  .glyph { font-family: var(--font-glyph); font-size: var(--text-xs); }
+
+  .inspector-copy { padding: 0.85rem 1rem; color: var(--color-text-muted); font-size: var(--text-sm); }
+  .inspector-link {
+    display: inline-block;
+    margin: 0 1rem 1rem;
+    color: var(--color-interactive);
+    font-size: var(--text-xs);
+    text-decoration: none;
+  }
+  .limits-list { padding: 0.75rem 1rem 0.9rem 2rem; color: var(--color-text-muted); font-size: var(--text-xs); list-style: square; }
+
+  /* The fault line: machine truth in glyph, ember, matte (law §1.5). */
+  .turn__fault {
+    margin-top: 9px;
+    padding-top: 8px;
+    border-top: 1px solid color-mix(in srgb, var(--color-status-fault) 30%, transparent);
+    font-family: var(--font-glyph);
+    font-size: var(--text-xs);
+    color: var(--color-status-fault);
+  }
+  .turn__fault::before { content: "✕ "; }
+}

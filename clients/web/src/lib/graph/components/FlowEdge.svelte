@@ -27,9 +27,9 @@
 <BaseEdge {id} path={geometry[0]} labelX={geometry[1]} labelY={geometry[2]}
   label={orb ? undefined : loop ? `${label ?? ""} · return` : label} {markerEnd}
   style={orb
-    ? `vector-effect:non-scaling-stroke;stroke:color-mix(in srgb,var(--color-${data?.attention === "received" ? "rune" : data?.relation === "activity" ? "frost" : data?.relation === "selection" ? "tertiary-edge" : "rune-dim"}) ${data?.relation === "contains" ? "40" : "65"}%,transparent);stroke-width:${data?.relation === "contains" ? "0.8" : "1.1"};${data?.relation === "permission" || data?.relation === "selection" || data?.relation === "declared" ? "stroke-dasharray:3 6;" : ""}`
-    : `stroke:var(--color-rune-dim);stroke-width:1.6;${data?.relation === "order" ? "stroke-dasharray:5 5;" : ""}`}
-  labelStyle="fill:var(--color-parchment);font-size:11px" />
+    ? `vector-effect:non-scaling-stroke;stroke:color-mix(in srgb,var(${data?.attention === "received" ? "--color-interactive" : data?.relation === "activity" ? "--color-status-ready" : data?.relation === "selection" ? "--color-border-context" : "--color-interactive-muted"}) ${data?.relation === "contains" ? "40" : "65"}%,transparent);stroke-width:${data?.relation === "contains" ? "0.8" : "1.1"};${data?.relation === "permission" || data?.relation === "selection" || data?.relation === "declared" ? "stroke-dasharray:3 6;" : ""}`
+    : `stroke:var(--color-interactive-muted);stroke-width:1.6;${data?.relation === "order" ? "stroke-dasharray:5 5;" : ""}`}
+  labelStyle="fill:var(--color-text-body);font-size:11px" />
 </g>
 
 <style>

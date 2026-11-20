@@ -1,0 +1,40 @@
+/* Theme-independent design tokens: type, radius, effect hooks and motion.
+   Colour lives in styles/themes/; nothing here may name a colour. */
+:root {
+  /* ── type ──────────────────────────────────────────────── */
+  --font-rune:  Georgia, 'Times New Roman', serif;              /* ceremonial small-caps */
+  --font-body:  system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-glyph: ui-monospace, 'Cascadia Mono', 'SF Mono', Menlo, monospace;
+
+  /* type scale honors the operator's browser font-size preference */
+  --text-2xs: 0.75rem;   --text-2xs--line-height: 1.4;
+  --text-xs:  0.8125rem; --text-xs--line-height: 1.45;
+  --text-sm:  0.875rem; --text-sm--line-height: 1.5;
+  --text-base: 0.9375rem; --text-base--line-height: 1.55;
+  --text-lg:  1.125rem;  --text-lg--line-height: 1.4;
+  --text-xl:  1.375rem;  --text-xl--line-height: 1.35;
+  --text-3xl: 1.75rem;   --text-3xl--line-height: 1.2;
+
+  /* ── radius (semantic, thematic) ───────────────────────── */
+  --radius-glyph: 5px;   /* kbd keys, layer badges */
+  --radius-rune:  7px;   /* buttons, inspector blocks */
+  --radius-block: 8px;   /* genui, pattern items, tickets, plan rows */
+  --radius-panel: 10px;  /* panels, cards, consent card, composer */
+  --radius-turn:  10px;  /* conversation turns */
+
+  /* ── legacy effect hooks: no diffuse glow ──────────────── */
+  --shadow-glow-rune:  none;
+  --shadow-glow-lich:  none;
+  --shadow-glow-frost: none;
+  /* NOTE: deliberately no --shadow-glow-ember. Law §1.5 — failure is inert. */
+
+  /* ── motion ────────────────────────────────────────────── */
+  --ease-settle: cubic-bezier(0.4, 0, 0.2, 1);
+  --duration-whisper: 150ms;   /* hover feedback */
+  --duration-drift:   200ms;   /* focus rings, state transitions */
+  --duration-rise:    300ms;   /* fragment entry, card settle */
+
+  --animate-sigil-pulse: sigil-pulse 2.6s ease-in-out infinite;
+  --animate-think-pulse: think-pulse 2.4s ease-in-out infinite;
+  --animate-caret-blink: caret-blink 1.05s steps(1) infinite;
+}

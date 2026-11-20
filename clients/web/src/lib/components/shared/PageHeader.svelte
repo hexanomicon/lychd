@@ -66,22 +66,22 @@
     gap: 1rem 2rem;
     min-width: 0;
     padding-bottom: 1.25rem;
-    border-bottom: 1px solid var(--color-engraving);
+    border-bottom: 1px solid var(--color-border-subtle);
   }
   .page-header__identity { flex: 1 1 24rem; min-width: 0; }
   .page-header__back {
     display: inline-block;
     margin-bottom: 0.6rem;
     padding-block: 0.2rem;
-    color: var(--color-ash);
+    color: var(--color-text-muted);
     font-size: var(--text-xs);
     text-underline-offset: 0.2em;
   }
-  .page-header__back:hover { color: var(--color-rune); }
+  .page-header__back:hover { color: var(--color-interactive); }
   .instrument-kicker { margin-bottom: 0.35rem; }
   .page-header__title {
     margin: 0;
-    color: var(--color-bone);
+    color: var(--color-text-strong);
     font: 600 clamp(1.5rem, 2.4vw, 2rem)/1.2 var(--font-body);
     font-variant: normal;
     letter-spacing: -0.03em;
@@ -90,7 +90,7 @@
   .page-header__description {
     max-width: 48rem;
     margin: 0.6rem 0 0;
-    color: var(--color-parchment);
+    color: var(--color-text-body);
     font-size: var(--text-sm);
     line-height: 1.6;
   }
@@ -101,5 +101,5 @@
     gap: 0.5rem;
     min-width: 0;
   }
-  .page-header :is(a, h1):focus-visible { outline: 2px solid var(--color-rune); outline-offset: 3px; }
+  .page-header :is(a, h1):focus-visible { outline: 2px solid var(--color-interactive); outline-offset: 3px; }
 </style>

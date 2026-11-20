@@ -34,8 +34,8 @@
 
 <style>
   .section-heading { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 1rem; min-width: 0; }
-  .section-heading__title { flex: 1 1 auto; min-width: 0; margin: 0; color: var(--color-bone); font: 600 var(--text-base)/1.4 var(--font-body); }
-  .section-heading__meta { color: var(--color-ash); font-size: var(--text-xs); white-space: nowrap; }
+  .section-heading__title { flex: 1 1 auto; min-width: 0; margin: 0; color: var(--color-text-strong); font: 600 var(--text-base)/1.4 var(--font-body); }
+  .section-heading__meta { color: var(--color-text-muted); font-size: var(--text-xs); white-space: nowrap; }
   .section-heading__actions { display: flex; align-items: center; gap: 0.5rem; }
-  .section-heading__title:focus-visible { outline: 2px solid var(--color-rune); outline-offset: 3px; }
+  .section-heading__title:focus-visible { outline: 2px solid var(--color-interactive); outline-offset: 3px; }
 </style>

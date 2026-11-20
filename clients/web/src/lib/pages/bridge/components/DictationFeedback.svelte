@@ -473,28 +473,28 @@
 </section>
 
 <style>
-  .dictation-feedback { min-width: 0; font: var(--text-sm)/1.6 var(--font-body); color: var(--color-parchment); }
-  details { min-width: 0; border-top: 1px solid var(--color-engraving); }
-  summary { min-height: 2.75rem; padding-block: .45rem; align-content: center; color: var(--color-bone); cursor: pointer; overflow-wrap: anywhere; }
+  .dictation-feedback { min-width: 0; font: var(--text-sm)/1.6 var(--font-body); color: var(--color-text-body); }
+  details { min-width: 0; border-top: 1px solid var(--color-border-subtle); }
+  summary { min-height: 2.75rem; padding-block: .45rem; align-content: center; color: var(--color-text-strong); cursor: pointer; overflow-wrap: anywhere; }
   p { margin: .6rem 0; line-height: 1.6; overflow-wrap: anywhere; }
-  label { display: block; margin-block: .5rem .35rem; color: var(--color-parchment); }
+  label { display: block; margin-block: .5rem .35rem; color: var(--color-text-body); }
   fieldset { min-width: 0; margin: .75rem 0; padding: 0; border: 0; border-radius: 0; }
-  legend { margin-bottom: .25rem; padding: 0; color: var(--color-bone); font-weight: 600; }
-  input:not([type="checkbox"]), textarea { box-sizing: border-box; display: block; width: 100%; min-width: 0; min-height: 2.75rem; padding: .6rem; font: inherit; color: var(--color-bone); background: var(--color-obsidian-2); border: 1px solid var(--color-control-border); border-radius: var(--radius-glyph); }
+  legend { margin-bottom: .25rem; padding: 0; color: var(--color-text-strong); font-weight: 600; }
+  input:not([type="checkbox"]), textarea { box-sizing: border-box; display: block; width: 100%; min-width: 0; min-height: 2.75rem; padding: .6rem; font: inherit; color: var(--color-text-strong); background: var(--color-surface-raised); border: 1px solid var(--color-border-control); border-radius: var(--radius-glyph); }
   textarea { resize: vertical; max-height: 12rem; }
   .check { display: flex; align-items: flex-start; gap: .6rem; min-height: 2.75rem; padding-block: .4rem; }
   .check input { flex: 0 0 auto; margin-top: .3rem; }
-  button { max-width: 100%; min-height: 2.75rem; margin: .25rem .35rem .25rem 0; padding: .45rem .7rem; font: inherit; overflow-wrap: anywhere; color: var(--color-bone); background: var(--color-obsidian); border: 1px solid var(--color-control-border); border-radius: var(--radius-glyph); cursor: pointer; }
-  button:hover:not(:disabled) { border-color: var(--color-rune); background: var(--color-obsidian-2); }
-  button[type="submit"] { background: var(--color-bone); border-color: var(--color-bone); color: var(--color-void); }
-  button[type="submit"]:hover:not(:disabled) { background: var(--color-parchment); border-color: var(--color-parchment); color: var(--color-void); }
+  button { max-width: 100%; min-height: 2.75rem; margin: .25rem .35rem .25rem 0; padding: .45rem .7rem; font: inherit; overflow-wrap: anywhere; color: var(--color-text-strong); background: var(--color-surface-panel); border: 1px solid var(--color-border-control); border-radius: var(--radius-glyph); cursor: pointer; }
+  button:hover:not(:disabled) { border-color: var(--color-interactive); background: var(--color-surface-raised); }
+  button[type="submit"] { background: var(--color-action); border-color: var(--color-action); color: var(--color-on-action); }
+  button[type="submit"]:hover:not(:disabled) { background: var(--color-action-hover); border-color: var(--color-action-hover); color: var(--color-on-action); }
   button:disabled { opacity: .55; cursor: default; }
   .bounded { max-height: 20rem; overflow-y: auto; padding: .25rem .35rem .25rem 1.3rem; overflow-wrap: anywhere; scrollbar-gutter: stable; }
   .records { list-style: none; padding-left: 0; }
-  .records > li { padding-block: .85rem; border-bottom: 1px solid var(--color-engraving); }
+  .records > li { padding-block: .85rem; border-bottom: 1px solid var(--color-border-subtle); }
   dl { margin: .6rem 0; }
-  dt { color: var(--color-bone); font-weight: 600; }
+  dt { color: var(--color-text-strong); font-weight: 600; }
   dd { margin: .25rem 0 1rem; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 10rem; overflow-y: auto; }
   span { white-space: pre-wrap; }
-  button:focus-visible, input:focus-visible, textarea:focus-visible, summary:focus-visible { outline: 2px solid var(--color-rune); outline-offset: 2px; }
+  button:focus-visible, input:focus-visible, textarea:focus-visible, summary:focus-visible { outline: 2px solid var(--color-interactive); outline-offset: 2px; }
 </style>

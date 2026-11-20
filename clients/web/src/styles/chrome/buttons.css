@@ -1,0 +1,30 @@
+/* Legacy rune buttons. New controls use <Button>; these remain for existing consumers. */
+@layer components {
+  .rune-btn {
+    min-height: 2.75rem;
+    padding: 8px 16px;
+    border: 1px solid var(--color-border-control);
+    border-radius: var(--radius-rune);
+    background: var(--color-surface-raised);
+    color: var(--color-text-strong);
+    font: var(--text-sm)/1 var(--font-body);
+    letter-spacing: normal;
+    cursor: pointer;
+    transition: background-color var(--duration-whisper), border-color var(--duration-whisper);
+  }
+  .rune-btn:hover { border-color: var(--color-interactive); background: color-mix(in srgb, var(--color-interactive) 8%, var(--color-surface-raised)); }
+  .rune-btn:disabled { opacity: .4; cursor: default; box-shadow: none; }
+
+  /* Primary: light neutral action. */
+  .rune-btn--frost {
+    border-color: var(--color-action);
+    background: var(--color-action);
+    color: var(--color-on-action);
+    font-weight: 600;
+  }
+  .rune-btn--frost:hover { border-color: var(--color-action-hover); background: var(--color-action-hover); }
+
+  /* Quiet: secondary action. */
+  .rune-btn--ash { border-color: var(--color-border-control); background: transparent; color: var(--color-text-muted); }
+  .rune-btn--ash:hover { color: var(--color-text-strong); border-color: var(--color-interactive); box-shadow: none; }
+}

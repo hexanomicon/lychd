@@ -76,25 +76,25 @@
 </div>
 
 <style>
-  .circle-run { min-width: 0; margin: .3rem 0 .75rem; border-block: 1px solid var(--color-engraving); color: var(--color-parchment); font: .875rem/1.5 var(--font-body); }
+  .circle-run { min-width: 0; margin: .3rem 0 .75rem; border-block: 1px solid var(--color-border-subtle); color: var(--color-text-body); font: .875rem/1.5 var(--font-body); }
   .circle-overview { display: flex; align-items: center; flex-wrap: wrap; gap: .15rem .8rem; padding: .35rem 0; }
-  .circle-toggle { display: inline-flex; align-items: center; flex: 0 0 auto; gap: .5rem; min-height: 2.75rem; padding: .25rem .15rem; border: 0; background: none; color: var(--color-bone); font: inherit; cursor: pointer; }
+  .circle-toggle { display: inline-flex; align-items: center; flex: 0 0 auto; gap: .5rem; min-height: 2.75rem; padding: .25rem .15rem; border: 0; background: none; color: var(--color-text-strong); font: inherit; cursor: pointer; }
   .circle-mark { width: .8rem; height: .8rem; border: 1px solid currentColor; border-radius: 50%; }
-  .circle-chevron { margin-left: .2rem; color: var(--color-parchment); }
+  .circle-chevron { margin-left: .2rem; color: var(--color-text-body); }
   .circle-status { display: flex; flex: 1 1 9rem; align-items: baseline; flex-wrap: wrap; gap: .1rem .75rem; min-width: 0; overflow-wrap: anywhere; }
-  .circle-status > span:first-child { color: var(--color-bone); }
-  .circle-status[data-active="true"] > span:first-child::before { content: ""; display: inline-block; width: .35rem; height: .35rem; margin: 0 .4rem .1rem 0; border-radius: 50%; background: var(--color-lich); }
-  .circle-status[data-status="failed"] > span:first-child { color: var(--color-ember); }
+  .circle-status > span:first-child { color: var(--color-text-strong); }
+  .circle-status[data-active="true"] > span:first-child::before { content: ""; display: inline-block; width: .35rem; height: .35rem; margin: 0 .4rem .1rem 0; border-radius: 50%; background: var(--color-status-active); }
+  .circle-status[data-status="failed"] > span:first-child { color: var(--color-status-fault); }
   .circle-actions { display: flex; align-items: center; flex-wrap: wrap; gap: .3rem 1rem; margin-left: auto; }
-  .circle-run a { display: inline-flex; align-items: center; gap: .3rem; min-height: 2.75rem; color: var(--color-rune); text-decoration: underline; text-underline-offset: .2em; }
-  .circle-cancel { min-height: 2.75rem; padding: .35rem .75rem; border: 1px solid var(--color-engraving); border-radius: var(--radius-rune); background: transparent; color: var(--color-bone); font: inherit; cursor: pointer; }
-  .circle-cancel:hover:not(:disabled) { border-color: var(--color-ember); }
-  .circle-cancel:disabled { cursor: wait; color: var(--color-parchment); }
-  .circle-identity { padding: .8rem 0; border-top: 1px solid var(--color-engraving); }
+  .circle-run a { display: inline-flex; align-items: center; gap: .3rem; min-height: 2.75rem; color: var(--color-interactive); text-decoration: underline; text-underline-offset: .2em; }
+  .circle-cancel { min-height: 2.75rem; padding: .35rem .75rem; border: 1px solid var(--color-border-subtle); border-radius: var(--radius-rune); background: transparent; color: var(--color-text-strong); font: inherit; cursor: pointer; }
+  .circle-cancel:hover:not(:disabled) { border-color: var(--color-status-fault); }
+  .circle-cancel:disabled { cursor: wait; color: var(--color-text-body); }
+  .circle-identity { padding: .8rem 0; border-top: 1px solid var(--color-border-subtle); }
   .circle-score { margin-top: .45rem; }
-  .circle-unavailable { color: var(--color-parchment); }
+  .circle-unavailable { color: var(--color-text-body); }
   p.circle-unavailable { margin: .65rem 0 0; }
-  button:focus-visible, a:focus-visible { outline: 2px solid var(--color-rune); outline-offset: 3px; }
+  button:focus-visible, a:focus-visible { outline: 2px solid var(--color-interactive); outline-offset: 3px; }
   @media (max-width: 40rem) {
     .circle-status { flex-basis: 8rem; }
     .circle-actions { flex-basis: 100%; margin-left: 0; justify-content: space-between; }

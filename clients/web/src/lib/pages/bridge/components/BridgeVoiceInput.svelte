@@ -374,30 +374,30 @@
 </section>
 
 <style>
-  .voice-input { min-width: 0; margin: 0; color: var(--color-parchment); font: var(--text-sm)/1.5 var(--font-body); }
+  .voice-input { min-width: 0; margin: 0; color: var(--color-text-body); font: var(--text-sm)/1.5 var(--font-body); }
   .voice-toolbar { display: flex; align-items: flex-start; flex-wrap: wrap; gap: .15rem .5rem; min-width: 0; min-height: 2.75rem; padding-inline-end: var(--voice-action-reserve, 0px); }
   .voice-row { display: flex; align-items: center; flex-wrap: wrap; gap: .35rem .5rem; min-width: 0; }
   .voice-settings { flex: 1 1 auto; min-width: 0; }
   .voice-settings[open] { flex-basis: 100%; }
   .voice-mic-label { display: var(--voice-label-display, inline); }
   .voice-status-row { display: flex; align-items: center; flex-wrap: wrap; gap: .15rem .5rem; min-width: 0; margin-top: .2rem; }
-  .voice-status { flex: 1 1 7rem; min-width: 0; margin: 0; color: var(--color-ash); }
+  .voice-status { flex: 1 1 7rem; min-width: 0; margin: 0; color: var(--color-text-muted); }
   .voice-status-row button { flex: 0 0 auto; font-size: var(--text-xs); }
   p { margin: .4rem 0 0; overflow-wrap: anywhere; line-height: 1.6; }
-  button, select { min-height: 2.75rem; padding: .4rem .65rem; color: var(--color-bone); border: 1px solid var(--color-control-border); border-radius: var(--radius-glyph); background: var(--color-obsidian); font: inherit; }
+  button, select { min-height: 2.75rem; padding: .4rem .65rem; color: var(--color-text-strong); border: 1px solid var(--color-border-control); border-radius: var(--radius-glyph); background: var(--color-surface-panel); font: inherit; }
   button { cursor: pointer; }
-  button:hover:not(:disabled) { border-color: var(--color-rune); background: var(--color-obsidian-2); }
+  button:hover:not(:disabled) { border-color: var(--color-interactive); background: var(--color-surface-raised); }
   button:disabled { opacity: .55; cursor: default; }
   .mic { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; min-width: 2.75rem; border-color: transparent; padding-inline: .35rem; background: transparent; }
   .mic svg { flex: 0 0 auto; }
-  summary { min-height: 2.75rem; padding-block: .4rem; align-content: center; cursor: pointer; color: var(--color-parchment); }
-  .voice-options { display: grid; box-sizing: border-box; width: calc(100% + var(--voice-action-reserve, 0px)); gap: .5rem; margin-top: .35rem; padding: .75rem 0 .25rem; max-height: min(22rem, 42dvh); overflow: auto; overscroll-behavior: contain; min-width: 0; scrollbar-gutter: stable; border-top: 1px solid var(--color-engraving); }
+  summary { min-height: 2.75rem; padding-block: .4rem; align-content: center; cursor: pointer; color: var(--color-text-body); }
+  .voice-options { display: grid; box-sizing: border-box; width: calc(100% + var(--voice-action-reserve, 0px)); gap: .5rem; margin-top: .35rem; padding: .75rem 0 .25rem; max-height: min(22rem, 42dvh); overflow: auto; overscroll-behavior: contain; min-width: 0; scrollbar-gutter: stable; border-top: 1px solid var(--color-border-subtle); }
   label { display: block; line-height: 1.5; }
   .check { display: flex; gap: .6rem; align-items: flex-start; min-height: 2.75rem; padding-block: .5rem; }
   .check input { flex: 0 0 auto; margin-top: .15rem; }
-  textarea { display: block; width: 100%; min-height: 3rem; max-height: 12rem; resize: vertical; color: var(--color-bone); background: var(--color-obsidian-2); border: 1px solid var(--color-control-border); border-radius: var(--radius-glyph); padding: .6rem; font: inherit; line-height: 1.6; }
-  select { width: 100%; background: var(--color-obsidian-2); }
-  .countdown { margin-top: .5rem; padding-left: .65rem; border-left: 2px solid var(--color-rune); }
-  .countdown p { margin: 0; color: var(--color-bone); }
-  button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible, summary:focus-visible, .voice-options:focus-visible { outline: 2px solid var(--color-rune); outline-offset: 2px; }
+  textarea { display: block; width: 100%; min-height: 3rem; max-height: 12rem; resize: vertical; color: var(--color-text-strong); background: var(--color-surface-raised); border: 1px solid var(--color-border-control); border-radius: var(--radius-glyph); padding: .6rem; font: inherit; line-height: 1.6; }
+  select { width: 100%; background: var(--color-surface-raised); }
+  .countdown { margin-top: .5rem; padding-left: .65rem; border-left: 2px solid var(--color-interactive); }
+  .countdown p { margin: 0; color: var(--color-text-strong); }
+  button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible, summary:focus-visible, .voice-options:focus-visible { outline: 2px solid var(--color-interactive); outline-offset: 2px; }
 </style>

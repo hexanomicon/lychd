@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { boundsOfSelection, moveSelection, selectInBounds } from "$lib/pages/canvas/state/engine";
+  import { DEFAULT_INK } from "$lib/pages/canvas/state/ink";
   import { LASSO_POINT_LIMIT, selectInLasso } from "$lib/pages/canvas/state/selection";
   import type { Bounds, CanvasNode, Packet, Point, Scene, Tool } from "$lib/pages/canvas/state/types";
   import CanvasScene from "./CanvasScene.svelte";
@@ -134,7 +135,7 @@
     const current = gesture;
     if (current.mode === "draw" && ink.length) {
       const points = ink.length === 1 ? [...ink, { x: ink[0]!.x + .1, y: ink[0]!.y + .1 }] : ink;
-      onchange({ ...current.base, strokes: [...current.base.strokes, { id: crypto.randomUUID(), points, color: "#eef1f4", width: 2.5, archived: false }] }, "Stroke drawn.");
+      onchange({ ...current.base, strokes: [...current.base.strokes, { id: crypto.randomUUID(), points, color: DEFAULT_INK, width: 2.5, archived: false }] }, "Stroke drawn.");
     } else if (current.mode === "move" && draft && Math.hypot(event.clientX - svg.getBoundingClientRect().left - current.client.x, event.clientY - svg.getBoundingClientRect().top - current.client.y) > 2) onchange(draft, "Selection moved.");
     else if (current.mode === "box" && marquee) {
       const node: CanvasNode = { id: crypto.randomUUID(), x: marquee.x, y: marquee.y, width: Math.max(160, Math.min(1600, marquee.width)), height: Math.max(90, Math.min(1600, marquee.height)), label: `Node ${scene.nodes.length + 1}`, kind: "box", pinned: false, source_stroke_ids: [], artwork: null };
@@ -201,10 +202,10 @@
   <svg class={["board", `mode-${activeMode}`]} viewBox={`0 0 ${width || 1000} ${height || 570}`} aria-label="Canvas drawing surface" role="application" tabindex="0" aria-describedby="canvas-gestures" onpointerdown={start} onpointermove={move} onpointerup={finish} onpointercancel={(event) => { delete pointers[event.pointerId]; pinch = null; cancelGesture(); }} onlostpointercapture={() => { if (gesture) cancelGesture(); }} onkeydown={keydown} ondblclick={(event) => { const id = (event.target as Element).closest("[data-object-id]")?.getAttribute("data-object-id"); if (id && !locked) onedit(id); }} {@attach attachWheel}>
     <g data-scene transform={`translate(${camera.x} ${camera.y}) scale(${camera.zoom})`}><CanvasScene scene={rendered} selected={selected} /></g>
     <g data-overlay transform={`translate(${camera.x} ${camera.y}) scale(${camera.zoom})`} pointer-events="none">
-      {#if selectionBounds}<rect x={selectionBounds.x - 6} y={selectionBounds.y - 6} width={selectionBounds.width + 12} height={selectionBounds.height + 12} fill="none" stroke="var(--color-rune)" stroke-width={1 / camera.zoom} stroke-dasharray="5 4" />{/if}
-      {#if ink.length}<polyline points={ink.map((point) => `${point.x},${point.y}`).join(" ")} fill="none" stroke="var(--color-frost)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />{/if}
-      {#if lasso.length}<polygon points={lasso.map((point) => `${point.x},${point.y}`).join(" ")} fill="var(--color-rune)" fill-opacity=".04" stroke="var(--color-rune)" stroke-width={1.5 / camera.zoom} stroke-linejoin="round" />{/if}
-      {#if marquee}<rect x={marquee.x} y={marquee.y} width={marquee.width} height={marquee.height} rx={tool === "box" ? 12 : 0} fill="var(--color-rune)" fill-opacity=".07" stroke="var(--color-rune)" stroke-width={1 / camera.zoom} stroke-dasharray={tool === "box" ? undefined : "5 4"} />{/if}
+      {#if selectionBounds}<rect x={selectionBounds.x - 6} y={selectionBounds.y - 6} width={selectionBounds.width + 12} height={selectionBounds.height + 12} fill="none" stroke="var(--color-interactive)" stroke-width={1 / camera.zoom} stroke-dasharray="5 4" />{/if}
+      {#if ink.length}<polyline points={ink.map((point) => `${point.x},${point.y}`).join(" ")} fill="none" stroke="var(--color-status-ready)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />{/if}
+      {#if lasso.length}<polygon points={lasso.map((point) => `${point.x},${point.y}`).join(" ")} fill="var(--color-interactive)" fill-opacity=".04" stroke="var(--color-interactive)" stroke-width={1.5 / camera.zoom} stroke-linejoin="round" />{/if}
+      {#if marquee}<rect x={marquee.x} y={marquee.y} width={marquee.width} height={marquee.height} rx={tool === "box" ? 12 : 0} fill="var(--color-interactive)" fill-opacity=".07" stroke="var(--color-interactive)" stroke-width={1 / camera.zoom} stroke-dasharray={tool === "box" ? undefined : "5 4"} />{/if}
     </g>
   </svg>
   <div class="surface-note" aria-hidden="true">{connectSource ? "Choose the target node · Esc to cancel" : locked ? "Preview · pan and zoom to inspect" : activeMode === "draw" ? "Draw freely · your ink stays where you leave it" : activeMode === "lasso" ? "Circle drawings to select whole objects · Shift adds to selection" : activeMode === "box" ? "Drag to add an editable node" : activeMode === "connect" ? "Choose a source node, then a target" : activeMode === "pan" ? "Drag to move the view" : "Drag empty space to select whole objects"}</div>
@@ -212,14 +213,14 @@
 </div>
 
 <style>
-  .surface { position:relative; width:100%; height:100%; min-height:420px; overflow:hidden; background:#000; }
+  .surface { position:relative; width:100%; height:100%; min-height:420px; overflow:hidden; background:var(--color-surface-plane); }
   .board { display:block; width:100%; height:100%; min-height:420px; touch-action:none; outline:none; }
-  .board:focus-visible { box-shadow:inset 0 0 0 2px var(--color-rune); }
+  .board:focus-visible { box-shadow:inset 0 0 0 2px var(--color-interactive); }
   .mode-draw,.mode-lasso,.mode-box,.mode-connect { cursor:crosshair; }.mode-pan { cursor:grab; }.mode-pan:active { cursor:grabbing; }
-  .surface-note { position:absolute; left:20px; bottom:18px; max-width:calc(100% - 230px); pointer-events:none; font-size:11px; color:var(--color-ash); }
-  .zoom { position:absolute; bottom:12px; right:14px; display:flex; align-items:center; gap:3px; padding:4px; background:var(--color-obsidian); border:1px solid var(--color-engraving); border-radius:var(--radius-rune); }
-  button { border:0; min-width:32px; min-height:32px; padding:4px 8px; background:transparent; color:var(--color-parchment); border-radius:4px; cursor:pointer; font:12px var(--font-body); } button:hover { background:var(--color-obsidian-2); color:var(--color-rune); } button:focus-visible { outline:2px solid var(--color-rune); outline-offset:2px; }
-  output { min-width:42px; text-align:center; color:var(--color-ash); font:11px var(--font-glyph); }
+  .surface-note { position:absolute; left:20px; bottom:18px; max-width:calc(100% - 230px); pointer-events:none; font-size:11px; color:var(--color-text-muted); }
+  .zoom { position:absolute; bottom:12px; right:14px; display:flex; align-items:center; gap:3px; padding:4px; background:var(--color-surface-panel); border:1px solid var(--color-border-subtle); border-radius:var(--radius-rune); }
+  button { border:0; min-width:32px; min-height:32px; padding:4px 8px; background:transparent; color:var(--color-text-body); border-radius:4px; cursor:pointer; font:12px var(--font-body); } button:hover { background:var(--color-surface-raised); color:var(--color-interactive); } button:focus-visible { outline:2px solid var(--color-interactive); outline-offset:2px; }
+  output { min-width:42px; text-align:center; color:var(--color-text-muted); font:11px var(--font-glyph); }
   @media(max-width:650px) { .surface-note { bottom:58px; max-width:calc(100% - 40px); }.surface,.board { min-height:400px; } }
   @media(forced-colors:active) { .board { border:1px solid CanvasText; }.zoom { border-color:ButtonText; } }
 </style>

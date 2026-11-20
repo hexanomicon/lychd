@@ -65,13 +65,13 @@
     flex: 1 1 16rem;
     min-width: 0;
     padding-inline-start: 0.75rem;
-    border-inline-start: 2px solid var(--color-ember);
-    color: var(--color-ember);
+    border-inline-start: 2px solid var(--color-status-fault);
+    color: var(--color-status-fault);
     font: var(--text-sm)/1.6 var(--font-body);
     overflow-wrap: anywhere;
   }
   .fault-notice__message, .fault-notice__message p { margin: 0; }
   .fault-notice__message :global(p + p) { margin-top: 0.35rem; }
   .fault-notice__title { display: block; margin-bottom: 0.2rem; font-weight: 600; }
-  .fault-notice[data-titled="true"] .fault-notice__message :global(p) { color: var(--color-parchment); }
+  .fault-notice[data-titled="true"] .fault-notice__message :global(p) { color: var(--color-text-body); }
 </style>

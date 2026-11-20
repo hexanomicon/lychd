@@ -493,17 +493,17 @@
 
 <style>
 .loom-workspace { display:block; min-width:0; }
-  .loom-workspace :is(a,button,h3):focus-visible { outline:2px solid var(--color-rune); outline-offset:4px; }
+  .loom-workspace :is(a,button,h3):focus-visible { outline:2px solid var(--color-interactive); outline-offset:4px; }
   .loom-workspace :is(p,h2,h3,code,strong,span,dd) { overflow-wrap:anywhere; }
   .loom-workspace button { cursor:pointer; font:inherit; }
-  .loom-workspace a { color:var(--color-rune); }
+  .loom-workspace a { color:var(--color-interactive); }
   .loom-workspace > :global(.page-header) { margin-bottom:1.25rem; }
-  .loom-catalogue { width:min(25rem,80vw); display:grid; gap:.2rem; padding:.5rem; background:var(--color-obsidian); border:1px solid var(--color-control-border); border-radius:7px; box-shadow:0 16px 48px #0008; }
+  .loom-catalogue { width:min(25rem,80vw); display:grid; gap:.2rem; padding:.5rem; background:var(--color-surface-panel); border:1px solid var(--color-border-control); border-radius:7px; box-shadow:0 16px 48px color-mix(in srgb,var(--color-shadow) 53.3%,transparent); }
   .loom-pattern { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:baseline; gap:.35rem .7rem; min-width:0; padding:.8rem; border:1px solid transparent; border-radius:4px; text-decoration:none; }
-  .loom-pattern strong { grid-column:1/-1; color:var(--color-bone); font-size:14px; font-weight:500; }
-  .loom-pattern code,.loom-pattern span { color:var(--color-ash); font-size:12px; }
-  .loom-pattern:hover { background:var(--color-obsidian-2); }
-  .loom-pattern[aria-current="page"] { background:var(--color-obsidian-2); border-color:var(--color-engraving); box-shadow:inset 2px 0 var(--color-rune); }
+  .loom-pattern strong { grid-column:1/-1; color:var(--color-text-strong); font-size:14px; font-weight:500; }
+  .loom-pattern code,.loom-pattern span { color:var(--color-text-muted); font-size:12px; }
+  .loom-pattern:hover { background:var(--color-surface-raised); }
+  .loom-pattern[aria-current="page"] { background:var(--color-surface-raised); border-color:var(--color-border-subtle); box-shadow:inset 2px 0 var(--color-interactive); }
   .loom-reading,.loom-graph-column,.loom-detail-column { min-width:0; }
   .loom-identity { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:baseline; gap:.5rem 1.5rem; padding:0 0 1.25rem; }
   .loom-identity > :global(.eyebrow-label) { grid-column:1/-1; }
@@ -513,58 +513,58 @@
   .loom-identity .loom-entry-row { grid-column:2; grid-row:3; margin:0; justify-content:flex-end; }
   .loom-identity .loom-context-error { grid-column:1/-1; }
   .loom-title-row { display:flex; align-items:center; flex-wrap:wrap; gap:.8rem; margin:.45rem 0 .6rem; }
-  .loom-title-row h2 { color:var(--color-bone); font:600 clamp(1.4rem,2.5vw,2rem)/1.2 var(--font-body); letter-spacing:-.035em; }
-  .loom-description { max-width:58rem; color:var(--color-parchment); font-size:14px; line-height:1.7; }
-  .loom-exact-identity { display:flex; align-items:baseline; flex-wrap:wrap; gap:.5rem 1rem; margin-top:.85rem; color:var(--color-ash); font-size:12px; }
-  .loom-exact-identity strong { color:var(--color-bone); font-weight:500; }
+  .loom-title-row h2 { color:var(--color-text-strong); font:600 clamp(1.4rem,2.5vw,2rem)/1.2 var(--font-body); letter-spacing:-.035em; }
+  .loom-description { max-width:58rem; color:var(--color-text-body); font-size:14px; line-height:1.7; }
+  .loom-exact-identity { display:flex; align-items:baseline; flex-wrap:wrap; gap:.5rem 1rem; margin-top:.85rem; color:var(--color-text-muted); font-size:12px; }
+  .loom-exact-identity strong { color:var(--color-text-strong); font-weight:500; }
   .loom-entry-row { display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:.6rem; margin-top:.55rem; font-size:12px; }
-  .loom-entry-row p { color:var(--color-ash); }
-  .loom-entry-row code { margin-left:.45rem; color:var(--color-bone); }
-  .loom-context-error { margin-top:.85rem; color:var(--color-parchment); border-left:2px solid var(--color-heat); padding-left:.8rem; font-size:13px; line-height:1.6; }
+  .loom-entry-row p { color:var(--color-text-muted); }
+  .loom-entry-row code { margin-left:.45rem; color:var(--color-text-strong); }
+  .loom-context-error { margin-top:.85rem; color:var(--color-text-body); border-left:2px solid var(--color-status-threshold); padding-left:.8rem; font-size:13px; line-height:1.6; }
   .loom-score-layout { display:grid; grid-template-columns:minmax(0,1fr) 20rem; align-items:start; gap:1.75rem; }
   .loom-graph-column,.loom-detail-column { display:grid; gap:1.25rem; }
   .loom-canvas-panel,.loom-outline,.loom-source { min-width:0; border:0; border-radius:0; background:transparent; }
-  .loom-canvas-panel { overflow:hidden; background:#000; }
+  .loom-canvas-panel { overflow:hidden; background:var(--color-surface-plane); }
   .loom-section-head { display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:.4rem 1rem; padding:0 0 .75rem; }
-  .loom-score-guide,.loom-canvas-note { color:var(--color-ash); font-size:12px; line-height:1.7; }
+  .loom-score-guide,.loom-canvas-note { color:var(--color-text-muted); font-size:12px; line-height:1.7; }
   .loom-flow-mount { min-width:0; }
-  .loom-empty-graph { display:grid; place-content:center; min-height:29rem; padding:2rem; text-align:center; color:var(--color-parchment); }
-  .loom-canvas-note { padding:.75rem 0; border-top:1px solid var(--color-engraving); }
-  .loom-outline { border-block:1px solid var(--color-engraving); }
-  .loom-count { float:right; margin-left:.6rem; color:var(--color-ash); font-size:12px; }
+  .loom-empty-graph { display:grid; place-content:center; min-height:29rem; padding:2rem; text-align:center; color:var(--color-text-body); }
+  .loom-canvas-note { padding:.75rem 0; border-top:1px solid var(--color-border-subtle); }
+  .loom-outline { border-block:1px solid var(--color-border-subtle); }
+  .loom-count { float:right; margin-left:.6rem; color:var(--color-text-muted); font-size:12px; }
   .loom-score-guide { padding:.2rem 0 1rem; }
   .loom-stations { margin:0; padding:0; list-style:none; }
-  .loom-station { padding:0 .75rem 1rem; border-top:1px solid var(--color-engraving); }
-  .loom-station[data-selected="true"] { background:color-mix(in srgb,var(--color-rune) 5%,var(--color-void)); box-shadow:inset 2px 0 var(--color-rune); }
-  .loom-station-select { display:flex; width:100%; text-align:left; align-items:flex-start; gap:.8rem; padding:1rem 0 .75rem; border:0; background:transparent; color:var(--color-bone); }
-  .loom-station-select:hover .loom-station-identity strong { color:var(--color-rune); }
-  .loom-station-number { padding-top:.15rem; color:var(--color-ash); font:11px/1.6 var(--font-glyph); }
+  .loom-station { padding:0 .75rem 1rem; border-top:1px solid var(--color-border-subtle); }
+  .loom-station[data-selected="true"] { background:color-mix(in srgb,var(--color-interactive) 5%,var(--color-surface-page)); box-shadow:inset 2px 0 var(--color-interactive); }
+  .loom-station-select { display:flex; width:100%; text-align:left; align-items:flex-start; gap:.8rem; padding:1rem 0 .75rem; border:0; background:transparent; color:var(--color-text-strong); }
+  .loom-station-select:hover .loom-station-identity strong { color:var(--color-interactive); }
+  .loom-station-number { padding-top:.15rem; color:var(--color-text-muted); font:11px/1.6 var(--font-glyph); }
   .loom-station-identity { flex:1; min-width:0; }
   .loom-station-identity strong { display:block; font-size:14px; font-weight:500; }
-  .loom-station-identity code { display:block; margin-top:.3rem; color:var(--color-ash); font-size:12px; }
-  .loom-station-tags { display:flex; flex-direction:column; align-items:flex-end; gap:.4rem; max-width:35%; color:var(--color-ash); font-size:11px; }
-  .loom-selection-mark { color:var(--color-rune); }
-  .loom-successors { margin-left:1.8rem; font-size:13px; color:var(--color-parchment); }
-  .loom-field-label { display:block; margin-bottom:.4rem; color:var(--color-ash); font-size:11px; }
+  .loom-station-identity code { display:block; margin-top:.3rem; color:var(--color-text-muted); font-size:12px; }
+  .loom-station-tags { display:flex; flex-direction:column; align-items:flex-end; gap:.4rem; max-width:35%; color:var(--color-text-muted); font-size:11px; }
+  .loom-selection-mark { color:var(--color-interactive); }
+  .loom-successors { margin-left:1.8rem; font-size:13px; color:var(--color-text-body); }
+  .loom-field-label { display:block; margin-bottom:.4rem; color:var(--color-text-muted); font-size:11px; }
   .loom-successors ul { display:flex; flex-wrap:wrap; gap:.4rem 1rem; list-style:none; padding:0; }
   .loom-successors li { display:flex; flex-wrap:wrap; align-items:baseline; gap:.4rem; }
-  .loom-detail-column { padding-inline-start:1.4rem; border-inline-start:1px solid var(--color-engraving); }
+  .loom-detail-column { padding-inline-start:1.4rem; border-inline-start:1px solid var(--color-border-subtle); }
   .loom-inspector-identity { display:flex; align-items:center; flex-wrap:wrap; gap:.5rem; margin-bottom:1.25rem; font-size:12px; }
   .loom-permission-list { display:grid; gap:1rem; margin:0; padding:0; list-style:none; }
   .loom-permission-list li { min-width:0; }
-  .loom-no-permission { color:var(--color-ash); font-size:13px; }
-  .loom-permission-route { display:flex; flex-wrap:wrap; align-items:baseline; gap:.3rem .5rem; color:var(--color-bone); font-size:13px; line-height:1.6; }
-  .loom-permission-route button { padding:.2rem 0; border:0; background:none; color:var(--color-rune); text-align:left; text-decoration:underline; text-underline-offset:.2em; overflow-wrap:anywhere; }
-  .loom-permission-identity { display:flex; flex-wrap:wrap; gap:.35rem .65rem; color:var(--color-ash); font-size:11px; line-height:1.7; }
-  .loom-inspector-note { border-top:1px solid var(--color-engraving); padding-top:1rem; color:var(--color-parchment); font-size:12px; line-height:1.7; }
-  .loom-source { border-top:1px solid var(--color-engraving); }
+  .loom-no-permission { color:var(--color-text-muted); font-size:13px; }
+  .loom-permission-route { display:flex; flex-wrap:wrap; align-items:baseline; gap:.3rem .5rem; color:var(--color-text-strong); font-size:13px; line-height:1.6; }
+  .loom-permission-route button { padding:.2rem 0; border:0; background:none; color:var(--color-interactive); text-align:left; text-decoration:underline; text-underline-offset:.2em; overflow-wrap:anywhere; }
+  .loom-permission-identity { display:flex; flex-wrap:wrap; gap:.35rem .65rem; color:var(--color-text-muted); font-size:11px; line-height:1.7; }
+  .loom-inspector-note { border-top:1px solid var(--color-border-subtle); padding-top:1rem; color:var(--color-text-body); font-size:12px; line-height:1.7; }
+  .loom-source { border-top:1px solid var(--color-border-subtle); }
   .loom-source > h3 { padding:1rem 0 0; font:500 13px var(--font-body); }
   .loom-read-state { padding:clamp(1.5rem,4vw,3.5rem) 0; border:0; background:transparent; }
   .loom-read-state h2 { margin:.65rem 0 1rem; font:600 clamp(1.5rem,3vw,2.5rem)/1.2 var(--font-body); letter-spacing:-.035em; }
-  .loom-empty-score { padding:1.25rem 0; color:var(--color-parchment); }
+  .loom-empty-score { padding:1.25rem 0; color:var(--color-text-body); }
   @container work-area (max-width:42rem) { .loom-identity { grid-template-columns:minmax(0,1fr); gap:.65rem; } .loom-identity :is(.loom-title-row,.loom-exact-identity,.loom-description,.loom-entry-row) { grid-column:1; grid-row:auto; justify-content:flex-start; } }
-  @media(max-width:65rem) { .loom-score-layout { grid-template-columns:minmax(0,1fr); } .loom-detail-column { grid-template-columns:minmax(0,1.5fr) minmax(0,1fr); align-items:start; padding-inline-start:0; border-inline-start:0; border-top:1px solid var(--color-engraving); padding-top:1rem; } }
+  @media(max-width:65rem) { .loom-score-layout { grid-template-columns:minmax(0,1fr); } .loom-detail-column { grid-template-columns:minmax(0,1.5fr) minmax(0,1fr); align-items:start; padding-inline-start:0; border-inline-start:0; border-top:1px solid var(--color-border-subtle); padding-top:1rem; } }
   @media(max-width:48rem) { .loom-graph-column { display:flex; flex-direction:column; } .loom-outline { order:-1; } .loom-detail-column { grid-template-columns:minmax(0,1fr); } .loom-count { float:none; display:block; margin:.35rem 0 0; } .loom-station { padding-inline:.65rem; } .loom-station-tags { max-width:30%; }}
-  @container work-area (max-width:65rem) { .loom-score-layout { grid-template-columns:minmax(0,1fr); } .loom-detail-column { grid-template-columns:minmax(0,1.5fr) minmax(0,1fr); align-items:start; padding-inline-start:0; border-inline-start:0; border-top:1px solid var(--color-engraving); padding-top:1rem; } }
+  @container work-area (max-width:65rem) { .loom-score-layout { grid-template-columns:minmax(0,1fr); } .loom-detail-column { grid-template-columns:minmax(0,1.5fr) minmax(0,1fr); align-items:start; padding-inline-start:0; border-inline-start:0; border-top:1px solid var(--color-border-subtle); padding-top:1rem; } }
   @container work-area (max-width:48rem) { .loom-catalogue { width:min(25rem,calc(100cqw - 2rem)); } .loom-graph-column { display:flex; flex-direction:column; } .loom-outline { order:-1; } .loom-detail-column { grid-template-columns:minmax(0,1fr); } .loom-count { float:none; display:block; margin:.35rem 0 0; } .loom-station { padding-inline:.65rem; } .loom-station-tags { max-width:30%; }}
 </style>

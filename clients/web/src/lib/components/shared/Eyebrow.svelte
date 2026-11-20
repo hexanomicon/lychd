@@ -23,7 +23,7 @@
   .eyebrow-label {
     display: block;
     margin: 0;
-    color: var(--color-ash);
+    color: var(--color-text-muted);
     font: 600 var(--text-2xs)/1.5 var(--font-body);
     letter-spacing: 0.08em;
     text-transform: uppercase;

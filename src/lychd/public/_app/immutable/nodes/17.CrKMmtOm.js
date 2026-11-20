@@ -1,0 +1,1 @@
+import{Ot as e,i as t,kt as n}from"../chunks/CLHxgsMC.js";import{t as r}from"../chunks/BvfMBtUh.js";import"../chunks/0BA02Shd.js";import"../chunks/dNyFiUgi.js";import{t as i}from"../chunks/BfDsyk-P.js";function a(a,o){n(o,!1),t(),i(a,{get sessionId(){return r.params.session_id}}),e()}export{a as component};

@@ -49,10 +49,10 @@
     gap: 0.45rem;
     min-height: 2.75rem;
     padding: 0.45rem 1rem;
-    border: 1px solid var(--color-control-border);
+    border: 1px solid var(--color-border-control);
     border-radius: var(--radius-glyph);
-    background: var(--color-obsidian-2);
-    color: var(--color-bone);
+    background: var(--color-surface-raised);
+    color: var(--color-text-strong);
     font: 500 var(--text-sm)/1.2 var(--font-body);
     text-decoration: none;
     white-space: nowrap;
@@ -60,13 +60,13 @@
     transition: background-color var(--duration-whisper), border-color var(--duration-whisper), color var(--duration-whisper);
   }
   .btn[data-size="sm"] { min-height: 2.25rem; padding: 0.3rem 0.75rem; font-size: var(--text-xs); }
-  .btn:hover:not(:disabled) { border-color: var(--color-rune); }
-  .btn[data-variant="primary"] { border-color: var(--color-bone); background: var(--color-bone); color: var(--color-void); font-weight: 600; }
-  .btn[data-variant="primary"]:hover:not(:disabled) { border-color: var(--color-parchment); background: var(--color-parchment); }
-  .btn[data-variant="ghost"] { border-color: transparent; background: transparent; color: var(--color-parchment); }
-  .btn[data-variant="ghost"]:hover:not(:disabled) { border-color: transparent; background: var(--color-obsidian-2); color: var(--color-bone); }
+  .btn:hover:not(:disabled) { border-color: var(--color-interactive); }
+  .btn[data-variant="primary"] { border-color: var(--color-action); background: var(--color-action); color: var(--color-on-action); font-weight: 600; }
+  .btn[data-variant="primary"]:hover:not(:disabled) { border-color: var(--color-action-hover); background: var(--color-action-hover); }
+  .btn[data-variant="ghost"] { border-color: transparent; background: transparent; color: var(--color-text-body); }
+  .btn[data-variant="ghost"]:hover:not(:disabled) { border-color: transparent; background: var(--color-surface-raised); color: var(--color-text-strong); }
   .btn:disabled { opacity: 0.45; cursor: default; }
   .btn[aria-busy="true"] { cursor: progress; }
-  .btn:focus-visible { outline: 2px solid var(--color-rune); outline-offset: 2px; }
+  .btn:focus-visible { outline: 2px solid var(--color-interactive); outline-offset: 2px; }
   @media (prefers-reduced-motion: reduce) { .btn { transition: none; } }
 </style>

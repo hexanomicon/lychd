@@ -262,62 +262,62 @@
 <style>
   .scavenger { width: min(100%, 88rem); margin-inline: auto; padding: clamp(1.25rem, 3vw, 2.5rem); display: grid; align-content: start; gap: 1.75rem; min-width: 0; }
   .limits { margin-top: .4rem; font-size: var(--text-xs); }
-  .limits, caption { color: var(--color-ash); }
+  .limits, caption { color: var(--color-text-muted); }
   h2 { font-size: 1.25rem; font-weight: 550; margin-block: .25rem .75rem; }
   p { max-width: 80ch; line-height: 1.65; margin-block: .5rem; }
   .filter, .preference { display: flex; flex-wrap: wrap; align-items: end; gap: .75rem; }
   .heading-link { padding-block: .35rem; font-size: var(--text-sm); }
-  .notice { padding: 1.25rem; border: 1px solid var(--color-control-border); border-inline-start: 3px solid var(--color-heat); background: var(--color-obsidian); }
-  .retained-observation { padding: 1.25rem 1.5rem; border-inline-start: 2px solid var(--color-engraving); background: var(--color-obsidian); }
+  .notice { padding: 1.25rem; border: 1px solid var(--color-border-control); border-inline-start: 3px solid var(--color-status-threshold); background: var(--color-surface-panel); }
+  .retained-observation { padding: 1.25rem 1.5rem; border-inline-start: 2px solid var(--color-border-subtle); background: var(--color-surface-panel); }
   .retained-observation h2 { font-size: 1rem; }
   .whole-field { padding-block: .5rem; }
-  .whole-field > .identity { padding: 1rem 0; border-bottom: 1px solid var(--color-engraving); }
-  .cancel-work, .deletion { border-top: 1px solid var(--color-engraving); padding-top: 1.5rem; margin-top: .5rem; }
+  .whole-field > .identity { padding: 1rem 0; border-bottom: 1px solid var(--color-border-subtle); }
+  .cancel-work, .deletion { border-top: 1px solid var(--color-border-subtle); padding-top: 1.5rem; margin-top: .5rem; }
   .cancel-work h2, .deletion h2 { font-size: 1rem; }
-  .cancel-work p, .deletion p { color: var(--color-parchment); font-size: var(--text-sm); }
+  .cancel-work p, .deletion p { color: var(--color-text-body); font-size: var(--text-sm); }
   label { display: grid; gap: .5rem; margin-block: .5rem; min-width: 0; font-size: var(--text-sm); }
   .confirm { display: flex; align-items: center; gap: .75rem; }
-  input:not([type="checkbox"]), textarea, select { width: 100%; min-width: 0; min-height: 2.75rem; padding: .75rem; color: var(--color-bone); background: var(--color-obsidian); border: 1px solid var(--color-control-border); border-radius: var(--radius-rune); font: inherit; font-size: 1rem; }
-  input[type="checkbox"] { width: 1.125rem; height: 1.125rem; flex-shrink: 0; accent-color: var(--color-rune); }
+  input:not([type="checkbox"]), textarea, select { width: 100%; min-width: 0; min-height: 2.75rem; padding: .75rem; color: var(--color-text-strong); background: var(--color-surface-panel); border: 1px solid var(--color-border-control); border-radius: var(--radius-rune); font: inherit; font-size: 1rem; }
+  input[type="checkbox"] { width: 1.125rem; height: 1.125rem; flex-shrink: 0; accent-color: var(--color-interactive); }
   button { align-self: start; justify-self: start; min-height: 2.75rem; max-width: 100%; white-space: normal; }
-  .rune-btn { color: var(--color-parchment); background: var(--color-obsidian-2); border-color: var(--color-control-border); font-size: var(--text-sm); }
-  .rune-btn--frost { background: var(--color-bone); color: var(--color-void); border-color: var(--color-bone); font-weight: 600; }
-  .rune-btn--ash { color: var(--color-parchment); background: transparent; }
+  .rune-btn { color: var(--color-text-body); background: var(--color-surface-raised); border-color: var(--color-border-control); font-size: var(--text-sm); }
+  .rune-btn--frost { background: var(--color-action); color: var(--color-on-action); border-color: var(--color-action); font-weight: 600; }
+  .rune-btn--ash { color: var(--color-text-body); background: transparent; }
   button:disabled { opacity: .5; }
   textarea { resize: vertical; line-height: 1.65; }
   .observation-form { display: grid; gap: 1.25rem; max-width: 72rem; padding-top: 1rem; }
-  .observation-form > p { margin-top: -.5rem; color: var(--color-parchment); }
-  fieldset { min-width: 0; border: 0; border-top: 1px solid var(--color-engraving); padding: 1.25rem 0 0; margin: .5rem 0 0; }
-  legend { padding: 0 .75rem 0 0; color: var(--color-bone); font-size: var(--text-sm); font-weight: 550; }
+  .observation-form > p { margin-top: -.5rem; color: var(--color-text-body); }
+  fieldset { min-width: 0; border: 0; border-top: 1px solid var(--color-border-subtle); padding: 1.25rem 0 0; margin: .5rem 0 0; }
+  legend { padding: 0 .75rem 0 0; color: var(--color-text-strong); font-size: var(--text-sm); font-weight: 550; }
   .campaign-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem 1.5rem; }
   .campaign-facts > p, .campaign-facts > fieldset, .campaign-facts > .form-grid, .campaign-facts > label:nth-of-type(2), .campaign-facts > label:last-child { grid-column: 1 / -1; }
-  .campaign-facts > p { margin: 0; color: var(--color-ash); font-size: var(--text-sm); }
-  .soft-preferences { padding: 1.25rem; background: var(--color-tertiary); border: 0; margin-block: .75rem; }
+  .campaign-facts > p { margin: 0; color: var(--color-text-muted); font-size: var(--text-sm); }
+  .soft-preferences { padding: 1.25rem; background: var(--color-surface-context); border: 0; margin-block: .75rem; }
   .soft-preferences legend { padding-inline: .5rem; }
-  .soft-preferences > p { color: var(--color-ash); font-size: var(--text-sm); }
+  .soft-preferences > p { color: var(--color-text-muted); font-size: var(--text-sm); }
   .campaign-facts > label:first-of-type { grid-column: 1 / -1; max-width: 24rem; }
   .preference label:first-child { flex: 1 1 16rem; }
   .preference label:nth-child(2) { flex: 0 1 8rem; }
   .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); gap: 1rem; }
   .identity { display: grid; grid-template-columns: minmax(8rem, 1fr) minmax(0, 4fr); gap: .65rem 1rem; font-size: var(--text-sm); line-height: 1.6; }
-  dt { color: var(--color-ash); }
+  dt { color: var(--color-text-muted); }
   dd { margin: 0; min-width: 0; }
   code, td, dd, pre { overflow-wrap: anywhere; }
-  pre { white-space: pre-wrap; padding: 1rem; background: var(--color-obsidian); }
+  pre { white-space: pre-wrap; padding: 1rem; background: var(--color-surface-panel); }
   details { margin-block: .75rem; }
-  summary { cursor: pointer; min-height: 2.75rem; padding-block: .6rem; color: var(--color-parchment); font-size: var(--text-sm); }
+  summary { cursor: pointer; min-height: 2.75rem; padding-block: .6rem; color: var(--color-text-body); font-size: var(--text-sm); }
   .filter { padding: 1rem 0; }
   .filter label { flex: 1 1 20rem; }
-  .field-table { overflow-x: auto; margin-top: 1.25rem; border-block: 1px solid var(--color-engraving); }
+  .field-table { overflow-x: auto; margin-top: 1.25rem; border-block: 1px solid var(--color-border-subtle); }
   table { border-collapse: collapse; width: 100%; table-layout: fixed; font-size: var(--text-sm); }
   caption { text-align: start; padding-block: 1rem; line-height: 1.6; }
-  td, th { padding: 1rem; text-align: start; vertical-align: top; border-block-end: 1px solid var(--color-engraving); }
-  thead { background: var(--color-obsidian); }
-  thead th { color: var(--color-ash); font-weight: 500; }
-  tbody th { color: var(--color-ash); font: var(--text-sm)/1.6 var(--font-glyph); }
+  td, th { padding: 1rem; text-align: start; vertical-align: top; border-block-end: 1px solid var(--color-border-subtle); }
+  thead { background: var(--color-surface-panel); }
+  thead th { color: var(--color-text-muted); font-weight: 500; }
+  tbody th { color: var(--color-text-muted); font: var(--text-sm)/1.6 var(--font-glyph); }
   tbody td { line-height: 1.65; }
   th:first-child { width: 7rem; }
-  :focus-visible { outline: 2px solid var(--color-rune); outline-offset: 3px; }
+  :focus-visible { outline: 2px solid var(--color-interactive); outline-offset: 3px; }
   @container work-area (max-width: 48rem) {
     .campaign-facts { grid-template-columns: minmax(0, 1fr); }
     .identity { grid-template-columns: minmax(0, 1fr); }

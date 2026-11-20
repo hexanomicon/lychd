@@ -1,0 +1,65 @@
+/* Run and capability chips: one pill system driven by data-state (§5). Static badges use
+   <StatusPill>; animated run and capability states keep this vocabulary. */
+@layer components {
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 9px;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: 999px;
+    color: var(--color-text-muted);
+    font-size: var(--text-xs);
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+  }
+  .chip::before { content: "●"; font-size: 7px; }
+
+  /* Capability vocabulary */
+  .chip[data-state="active"]  { color: var(--color-status-active);  border-color: color-mix(in srgb, var(--color-status-active) 40%, transparent); }
+  .chip[data-state="warm"]    { color: var(--color-status-ready); border-color: color-mix(in srgb, var(--color-status-ready) 38%, transparent); }
+  .chip[data-state="awaited"] { color: var(--color-text-muted);   border-color: color-mix(in srgb, var(--color-status-ready) 26%, var(--color-border-subtle)); border-style: dashed; }
+  .chip[data-state="warming"] {
+    color: var(--color-status-ready);
+    border-color: color-mix(in srgb, var(--color-status-ready) 45%, transparent);
+    animation: var(--animate-think-pulse);
+  }
+  .chip[data-state="cold"]    { color: var(--color-text-muted); }
+  .chip[data-state="fault"]   { color: var(--color-status-fault); border-color: color-mix(in srgb, var(--color-status-fault) 40%, transparent); }
+
+  /* Run vocabulary: chips that mirror a turn's run state */
+  .chip[data-state="queued"]  { color: var(--color-status-ready); border-color: color-mix(in srgb, var(--color-status-ready) 30%, transparent); }
+  .chip[data-state="queued"]::before { animation: var(--animate-sigil-pulse); }
+  .chip[data-state="streaming"],
+  .chip[data-state="running"] {
+    color: var(--color-status-active);
+    border-color: color-mix(in srgb, var(--color-status-active) 45%, transparent);
+    animation: var(--animate-think-pulse);
+  }
+  .chip[data-state="consent"],
+  .chip[data-state="awaiting_hardware"],
+  .chip[data-state="awaiting_consent"],
+  .chip[data-state="awaiting_delegate"],
+  .chip[data-state="awaiting_peer"],
+  .chip[data-state="admitted"],
+  .chip[data-state="preparing"] {
+    color: var(--color-status-ready);
+    border-color: color-mix(in srgb, var(--color-status-ready) 38%, transparent);
+  }
+  .chip[data-state="done"],
+  .chip[data-state="succeeded"] { color: var(--color-status-active); border-color: transparent; }
+  .chip[data-state="failed"],
+  .chip[data-state="cancelled"],
+  .chip[data-state="timed_out"],
+  .chip[data-state="lost"] {
+    color: var(--color-status-fault);
+    border-color: color-mix(in srgb, var(--color-status-fault) 35%, transparent);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .chip[data-state="queued"]::before,
+    .chip[data-state="streaming"],
+    .chip[data-state="running"],
+    .chip[data-state="warming"] { animation: none !important; }
+  }
+}

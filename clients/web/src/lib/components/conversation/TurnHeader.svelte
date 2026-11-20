@@ -19,7 +19,7 @@
 </div>
 
 <style>
-  .turn-header { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.6rem; }
+  .turn-header { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.6rem; margin-bottom: 6px; color: var(--color-text-muted); font-size: var(--text-xs); }
   .turn-header[data-role="user"] { justify-content: flex-end; }
   .turn-header__avatar {
     display: grid;
@@ -28,10 +28,10 @@
     width: 1.75rem;
     height: 1.75rem;
     border-radius: 50%;
-    background: var(--color-lich);
-    color: var(--color-void);
+    background: var(--color-status-active);
+    color: var(--color-on-action);
     font: 600 var(--text-2xs)/1 var(--font-body);
   }
-  .who { color: var(--color-parchment); font: 600 var(--text-sm)/1.5 var(--font-body); font-variant: normal; letter-spacing: 0; }
-  .turn-header[data-role="user"] .who { color: var(--color-ash); font-size: var(--text-xs); font-weight: 500; }
+  .who { color: var(--color-text-body); font: 600 var(--text-sm)/1.5 var(--font-body); font-variant: normal; letter-spacing: 0; }
+  .turn-header[data-role="user"] .who { color: var(--color-text-muted); font-size: var(--text-xs); font-weight: 500; }
 </style>

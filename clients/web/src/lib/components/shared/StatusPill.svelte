@@ -35,22 +35,22 @@
     gap: 0.4rem;
     max-width: 100%;
     padding: 0.05rem 0.55rem;
-    border: 1px solid var(--color-engraving);
+    border: 1px solid var(--color-border-subtle);
     border-radius: 999px;
-    color: var(--color-parchment);
+    color: var(--color-text-body);
     font-size: var(--text-xs);
     font-weight: 500;
     line-height: 1.6;
     white-space: nowrap;
   }
   .status-pill[data-tone="attention"] {
-    border-color: color-mix(in srgb, var(--color-accent) 40%, transparent);
-    background: color-mix(in srgb, var(--color-accent) 10%, transparent);
-    color: var(--color-accent);
+    border-color: color-mix(in srgb, var(--color-identity) 40%, transparent);
+    background: color-mix(in srgb, var(--color-identity) 10%, transparent);
+    color: var(--color-identity);
   }
-  .status-pill[data-tone="info"] { border-color: color-mix(in srgb, var(--color-frost) 38%, transparent); color: var(--color-frost); }
-  .status-pill[data-tone="success"] { border-color: color-mix(in srgb, var(--color-lich) 40%, transparent); color: var(--color-lich); }
-  .status-pill[data-tone="fault"] { border-color: color-mix(in srgb, var(--color-ember) 40%, transparent); color: var(--color-ember); }
-  .status-pill[data-tone="muted"] { border-style: dashed; color: var(--color-ash); }
+  .status-pill[data-tone="info"] { border-color: color-mix(in srgb, var(--color-status-ready) 38%, transparent); color: var(--color-status-ready); }
+  .status-pill[data-tone="success"] { border-color: color-mix(in srgb, var(--color-status-active) 40%, transparent); color: var(--color-status-active); }
+  .status-pill[data-tone="fault"] { border-color: color-mix(in srgb, var(--color-status-fault) 40%, transparent); color: var(--color-status-fault); }
+  .status-pill[data-tone="muted"] { border-style: dashed; color: var(--color-text-muted); }
   .status-pill__dot { flex: 0 0 auto; width: 0.4rem; height: 0.4rem; border-radius: 50%; background: currentColor; }
 </style>

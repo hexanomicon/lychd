@@ -53,11 +53,11 @@
   .kv-list[data-layout="stacked"] { grid-template-columns: minmax(0, 1fr); gap: 0.75rem; }
   .kv-list > :global(div) { display: contents; }
   .kv-list[data-layout="stacked"] > :global(div) { display: block; }
-  .kv-list :global(dt) { color: var(--color-ash); }
+  .kv-list :global(dt) { color: var(--color-text-muted); }
   .kv-list[data-layout="stacked"] :global(dt) { margin-bottom: 0.15rem; font-size: var(--text-xs); }
-  .kv-list :global(dd) { min-width: 0; margin: 0; color: var(--color-bone); overflow-wrap: anywhere; }
+  .kv-list :global(dd) { min-width: 0; margin: 0; color: var(--color-text-strong); overflow-wrap: anywhere; }
   .kv-list :global(:is(dd.glyph, code)) { font-family: var(--font-glyph); font-size: var(--text-sm); }
-  .kv-list :global(dd.glyph) { color: var(--color-frost); }
+  .kv-list :global(dd.glyph) { color: var(--color-status-ready); }
   @container (max-width: 22rem) {
     .kv-list[data-layout="columns"] { grid-template-columns: minmax(0, 1fr); gap: 0.15rem; }
     .kv-list[data-layout="columns"] :global(dd) { margin-bottom: 0.4rem; }

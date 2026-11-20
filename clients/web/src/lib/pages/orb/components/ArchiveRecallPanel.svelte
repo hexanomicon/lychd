@@ -143,26 +143,26 @@
 </section>
 
 <style>
-  .archive-recall { min-width: 0; padding: 1.25rem 0; border-top: 1px solid var(--color-engraving); color: var(--color-parchment); overflow-wrap: anywhere; font-size: var(--text-sm); line-height: 1.65; }
-  h2 { margin: 0; color: var(--color-bone); font: 600 var(--text-lg)/1.4 var(--font-body); }
-  h3 { margin: 0; color: var(--color-bone); font: 600 var(--text-base)/1.5 var(--font-body); }
+  .archive-recall { min-width: 0; padding: 1.25rem 0; border-top: 1px solid var(--color-border-subtle); color: var(--color-text-body); overflow-wrap: anywhere; font-size: var(--text-sm); line-height: 1.65; }
+  h2 { margin: 0; color: var(--color-text-strong); font: 600 var(--text-lg)/1.4 var(--font-body); }
+  h3 { margin: 0; color: var(--color-text-strong); font: 600 var(--text-base)/1.5 var(--font-body); }
   p, dl, ol, details { margin-top: 1rem; }
-  p, dt { color: var(--color-parchment); }
+  p, dt { color: var(--color-text-body); }
   .run, dd { overflow-wrap: anywhere; }
-  .run { color: var(--color-ash); font: var(--text-sm)/1.6 var(--font-glyph); }
+  .run { color: var(--color-text-muted); font: var(--text-sm)/1.6 var(--font-glyph); }
   dl { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.3rem; }
-  dt { font-size: var(--text-sm); color: var(--color-ash); }
+  dt { font-size: var(--text-sm); color: var(--color-text-muted); }
   dd + dt { margin-top: 0.65rem; }
   dd { margin: 0; min-width: 0; }
   ol { padding-left: 1.4rem; }
-  li { padding-top: 1rem; border-top: 1px solid var(--color-engraving); }
+  li { padding-top: 1rem; border-top: 1px solid var(--color-border-subtle); }
   li + li { margin-top: 1.5rem; }
-  button { margin-top: 1rem; min-height: 2.75rem; max-width: 100%; padding: 0.65rem 1rem; border: 1px solid var(--color-control-border); border-radius: var(--radius-rune); background: var(--color-obsidian-2); color: var(--color-bone); white-space: normal; line-height: 1.4; cursor: pointer; }
-  button:hover { border-color: var(--color-rune); }
+  button { margin-top: 1rem; min-height: 2.75rem; max-width: 100%; padding: 0.65rem 1rem; border: 1px solid var(--color-border-control); border-radius: var(--radius-rune); background: var(--color-surface-raised); color: var(--color-text-strong); white-space: normal; line-height: 1.4; cursor: pointer; }
+  button:hover { border-color: var(--color-interactive); }
   button:disabled { opacity: 0.5; cursor: default; }
-  details { border-top: 1px solid var(--color-engraving); padding-top: 0.5rem; }
-  summary { cursor: pointer; padding-block: 0.5rem; color: var(--color-parchment); }
-  button:focus-visible, summary:focus-visible { outline: 2px solid var(--color-rune); outline-offset: 3px; }
-  [role="alert"] { color: var(--color-ember); }
-  .status { color: var(--color-bone); font-weight: 600; }
+  details { border-top: 1px solid var(--color-border-subtle); padding-top: 0.5rem; }
+  summary { cursor: pointer; padding-block: 0.5rem; color: var(--color-text-body); }
+  button:focus-visible, summary:focus-visible { outline: 2px solid var(--color-interactive); outline-offset: 3px; }
+  [role="alert"] { color: var(--color-status-fault); }
+  .status { display: inline-flex; align-items: center; gap: 6px; color: var(--color-text-strong); font-size: var(--text-xs); font-weight: 600; letter-spacing: 0.05em; }
 </style>
