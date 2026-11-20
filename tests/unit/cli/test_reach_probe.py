@@ -74,6 +74,8 @@ def turn(tmp_path: Path) -> Any:
     scenario = probe.Scenario(question="What is Graph?")
     policy, request = probe.make_request(scenario, datetime.now(UTC))
     profile = OperatorConversationProfile(
+        animator_id="night-qwen38",
+        model_id="Qwen3.8-27B",
         persona_name="Fixture",
         persona_instructions=CANARY,
         adaptive_context=True,
@@ -1525,7 +1527,14 @@ async def test_timeout_retires_process_and_exact_owned_cid(
     cid = tmp_path / "core.cid"
     cid.write_text("a" * 64)
     with pytest.raises(TimeoutError):
-        await probe.supervise(turn, ["engine"], cid, engine="docker", model_transport="http", budget_seconds=0.01)
+        await probe.supervise(
+            turn,
+            ["engine"],
+            cid,
+            engine="docker",
+            model_route=probe.operator.ModelRoute("http://127.0.0.1:28000", None),
+            budget_seconds=0.01,
+        )
     retire.assert_awaited_once_with(process)
     remove.assert_awaited_once_with("docker", cid, read_identity=probe.operator.read_regular)
     assert turn.cleanup["container_id"] == "a" * 64
@@ -1588,7 +1597,14 @@ async def test_repeated_cancellation_joins_spawn_then_cleanup(
     cid = tmp_path / "core.cid"
     cid.write_text("a" * 64)
     task = asyncio.create_task(
-        probe.supervise(turn, ["engine"], cid, engine="docker", model_transport="http", budget_seconds=5)
+        probe.supervise(
+            turn,
+            ["engine"],
+            cid,
+            engine="docker",
+            model_route=probe.operator.ModelRoute("http://127.0.0.1:28000", None),
+            budget_seconds=5,
+        )
     )
     await spawn_started.wait()
     task.cancel()

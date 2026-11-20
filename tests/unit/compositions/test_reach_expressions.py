@@ -27,6 +27,8 @@ def expressions() -> ConversationExpressions:
 
 def binding() -> OperatorConversationProfile:
     return OperatorConversationProfile(
+        animator_id="night-qwen38",
+        model_id="Qwen3.8-27B",
         persona_name="Example Familiar",
         persona_instructions="Be helpful, with occasional warmth.",
         adaptive_context=True,
@@ -58,7 +60,13 @@ def test_catalogue_is_opt_in_unique_and_bound_to_the_model_profile() -> None:
     with pytest.raises(ValidationError, match="expression_catalogue"):
         ConversationExpressions(enabled=True, gifs=configured.gifs * 2)
     with pytest.raises(ValidationError, match="expressions_require_adaptive_context"):
-        OperatorConversationProfile(persona_name="Example", persona_instructions="Be helpful.", expressions=configured)
+        OperatorConversationProfile(
+            animator_id="night-qwen38",
+            model_id="Qwen3.8-27B",
+            persona_name="Example",
+            persona_instructions="Be helpful.",
+            expressions=configured,
+        )
     original = binding()
     assert original.digest != original.model_copy(update={"expressions": ConversationExpressions()}).digest
 

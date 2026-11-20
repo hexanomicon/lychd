@@ -52,7 +52,12 @@ def broker_case(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> BrokerCase:
         sources=(ResearchSource(id="jjk", title="Domain Expansion", url="https://public.example/domain/"),),
     )
     profile = OperatorConversationProfile(
-        persona_name="Nadir", persona_instructions="Be helpful.", adaptive_context=True, research=research
+        animator_id="night-qwen38",
+        model_id="Qwen3.8-27B",
+        persona_name="Nadir",
+        persona_instructions="Be helpful.",
+        adaptive_context=True,
+        research=research,
     )
     policy = make_policy(
         rules=(ReachRule(name="operator", subject_ids=("person:one",), actions=("converse",)),),

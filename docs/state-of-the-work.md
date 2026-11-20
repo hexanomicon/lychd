@@ -2343,23 +2343,28 @@ categories, channels and explicit-id patches. Single-attempt REST and content-fr
 records fence uncertainty across restarts. Source tests cover policy, protocol, native execution,
 SDK registration, plan ordering, concurrent custody, expiry, reconciliation and no blind retry.
 
-An explicit private conversation profile selects one static persona and exact local
-`Qwen3.8-27B` binding while document search remains the default. Each OCI-only
-`reach.operator_converse@9` Run obtains an exact Dispatcher Chat lease without tools. Its
+An explicit private conversation profile selects one static persona and requires exact
+`animator_id` and `model_id` values. The host resolves one declared static text-chat Soulstone
+capability in the operator's current XDG Codex. Document search remains the default when the
+profile is absent. Each OCI-only `reach.operator_converse@9` Run obtains an exact Dispatcher Chat
+lease without tools. Its
 [workflow test](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/test_reach_research.py)
 checks the corresponding `reach-operator-conversation-v9` checkpoint schema.
-The closed host relay performs fresh health/model observations against one fixed loopback
-endpoint and supplies no runtime lifecycle control. An opt-in
-private `enable_thinking` setting can select the same local model's supported separated-reasoning
-request mode under an exact hash-bound relay contract. Omitted/false preserves the old binding;
-an optional nonempty `thinking_phases` tuple can instead select reasoning for known structured
+The host and rootless Podman model transports derive their OpenAI-compatible HTTP loopback
+endpoint from the selected Rune and perform fresh health and exact model-inventory checks.
+Podman uses IPv4 loopback in the Soulstone's exact managed container. The relay requires an
+already running, warm service and refuses an unavailable binding without fallback. On a compatible
+vLLM Soulstone, the private `enable_thinking` option selects the model's separated-reasoning
+mode under the hash-bound relay contract. Omission or false preserves explicit false in the vLLM
+request. An optional nonempty `thinking_phases` tuple can select reasoning for known structured
 postures. Both boundaries derive per-call mode from the exact validated grammar carrier; empty
 phase selections preserve earlier digests. Each selected mode remains separately qualified under
 its declared completion allowance, capped at 4,096 tokens,
 and unchanged timeout and call ceilings. Known length
 finishes refuse and this opt-in requires a natural stop; reasoning bodies stay transient and out
 of checkpoints, settled history, trace and probe output. A separately bound adaptive
-`json_object_output` opt-in selects version 4 of a fixed twelve-member compact EBNF grammar bundle.
+`json_object_output` opt-in requires a compatible vLLM Soulstone and selects version 4 of a fixed
+twelve-member compact EBNF grammar bundle.
 The seven semantic phases retain their thinking policy; planning has document-only, web-only
 and mixed variants selected from the actual offered catalogue, while no sources select ordinary
 conversation. A separate goals-enabled checkback carrier requires coverage and nonnull excerpts
@@ -2593,8 +2598,9 @@ older events and loses its memory Runs; its transport journal is not Phylactery.
 local admin commands are separate from Discord chat and do not add native authority. Concurrent
 Discord changes can race non-atomic remote effects; observed mismatches stop further writes.
 
-The optional conversation path has no live-qualified Qwen/Discord dialogue, tools, Mirror
-lineage, general-purpose provider routing or runtime activation. Its local publication queue
+The optional conversation path still needs live model and Discord qualification. Tools, Mirror
+lineage and runtime activation remain outside this profile. Remote model access remains deferred
+to the [Egress Gate](#context-privatization-and-portal-egress). The local publication queue
 has no Ward producer enrollment, automatic coding-work integration, durable native outbox or
 application release judgment. Uncertain publications require inspection rather than a new ID
 or automatic resend. Learning, teaching, introspection and Comfy execution are not part of this
@@ -2626,7 +2632,7 @@ separately scoped.
 - **Verification:** [Archive restart, retention, corruption and query cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_reach_trace_archive.py), [explicit chain and producer-custody cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_reach_trace_capture.py), and [native observation/correlation cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/test_reach_operator_trace.py).
 - **Source:** [Native documents score](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/reach/documents_workflow.py), [OCI worker](https://github.com/hexanomicon/lychd/blob/main/scripts/reach_worker.py), [Discord edge](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/discord/live.py), [local administration](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/discord/admin.py), [REST effect journal](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/discord/rest.py), and [operator supervisor](https://github.com/hexanomicon/lychd/blob/main/scripts/reach_operator.py)
 - **Verification:** [Native search cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/test_reach_documents.py), [worker protocol](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_reach_worker.py), [supervisor custody](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_reach_operator.py), [SDK edge cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/interface/test_discord_live.py), [administration plans](https://github.com/hexanomicon/lychd/blob/main/tests/unit/interface/test_discord_admin.py), and [single-attempt effects](https://github.com/hexanomicon/lychd/blob/main/tests/unit/interface/test_discord_rest.py)
-- **Source:** [Native conversation score](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/reach/conversation_workflow.py), [frozen model contract](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/reach/operator_model_wire.py), [host model relay](https://github.com/hexanomicon/lychd/blob/main/scripts/reach_model_broker.py), and [local publication queue](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/discord/publications.py)
+- **Source:** [Native conversation score](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/reach/conversation_workflow.py), [frozen model contract](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/reach/operator_model_wire.py), [host model relay](https://github.com/hexanomicon/lychd/blob/main/scripts/reach_model_broker.py), [Podman model transport](https://github.com/hexanomicon/lychd/blob/main/scripts/reach_podman_model.py), and [local publication queue](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/discord/publications.py)
 - **Verification:** [Conversation Run and lease cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/test_reach_conversation.py), [model contract cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/test_reach_operator_model.py), [host HTTP and frame custody](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_reach_operator_model.py), and [publication custody and effects](https://github.com/hexanomicon/lychd/blob/main/tests/unit/interface/test_discord_publications.py)
 - **Source:** [Optional Discord onboarding](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/discord/onboarding.py) keeps private drafts separate from explicitly confirmed public introductions and harmless baseline-role assignment. It does not provide Ward enrollment or native Graph execution.
 - **Verification:** [Onboarding audience and actor binding](https://github.com/hexanomicon/lychd/blob/main/tests/unit/interface/test_discord_onboarding.py), [startup and member-event admission](https://github.com/hexanomicon/lychd/blob/main/tests/unit/interface/test_discord_onboarding_live.py), [role and introduction effect recovery](https://github.com/hexanomicon/lychd/blob/main/tests/unit/interface/test_discord_onboarding_rest.py), and [edge-only private profile custody](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_reach_operator_onboarding.py).

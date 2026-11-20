@@ -27,7 +27,11 @@ from tests.unit.compositions.test_reach_documents import NOW, make_corpus, make_
 
 def profile() -> OperatorConversationProfile:
     return OperatorConversationProfile(
-        persona_name="Example Familiar", persona_instructions="Be direct and helpful.", adaptive_context=True
+        animator_id="night-qwen38",
+        model_id="Qwen3.8-27B",
+        persona_name="Example Familiar",
+        persona_instructions="Be direct and helpful.",
+        adaptive_context=True,
     )
 
 
@@ -134,7 +138,12 @@ def test_adaptive_reply_anchor_survives_recent_history_trimming_with_attribution
 
 
 def test_plain_text_profile_remains_default_with_legacy_prompt() -> None:
-    binding = OperatorConversationProfile(persona_name="Example Familiar", persona_instructions="Be helpful.")
+    binding = OperatorConversationProfile(
+        animator_id="night-qwen38",
+        model_id="Qwen3.8-27B",
+        persona_name="Example Familiar",
+        persona_instructions="Be helpful.",
+    )
     assert binding.adaptive_context is False
     assert "Keep replies under 1800 characters." in persona_text(binding)
     assert "exactly one JSON object" not in persona_text(binding)
@@ -179,7 +188,11 @@ def test_current_question_language_precedes_persona_and_quoted_history(*, adapti
 
 def test_extended_generation_limit_remains_closed_and_bound_to_profile() -> None:
     binding = OperatorConversationProfile(
-        persona_name="Example Familiar", persona_instructions="Be helpful.", max_tokens=2048
+        animator_id="night-qwen38",
+        model_id="Qwen3.8-27B",
+        persona_name="Example Familiar",
+        persona_instructions="Be helpful.",
+        max_tokens=2048,
     )
     body = {
         "model": binding.model_id,
@@ -191,7 +204,13 @@ def test_extended_generation_limit_remains_closed_and_bound_to_profile() -> None
     }
     assert validate_generation_payload(binding, canonical_json(body))["max_tokens"] == 2048
     with pytest.raises(ValidationError):
-        OperatorConversationProfile(persona_name="Example", persona_instructions="Be useful.", max_tokens=4097)
+        OperatorConversationProfile(
+            animator_id="night-qwen38",
+            model_id="Qwen3.8-27B",
+            persona_name="Example",
+            persona_instructions="Be useful.",
+            max_tokens=4097,
+        )
     patches: tuple[dict[str, Any], ...] = (
         {"max_tokens": 2049},
         {"tools": []},

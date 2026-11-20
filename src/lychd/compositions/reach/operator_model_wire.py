@@ -1,4 +1,4 @@
-"""Closed values for one operator-selected local model and static voice, not Mirror."""
+"""Closed values for one operator-selected model and static voice, not Mirror."""
 
 from __future__ import annotations
 
@@ -26,6 +26,9 @@ from lychd.compositions.reach.schemas import PolicyDigest, Record
 
 MAX_MODEL_PAYLOAD_BYTES = 1_048_576
 DECISION_SCHEMA_VERSION = 4
+MAX_MODEL_ID_CHARS = 256
+_MODEL_ID_PATTERN = r"^[^\x00-\x1f\x7f]+$"
+ANIMATOR_ID_COMPONENT = r"[A-Za-z0-9_][A-Za-z0-9_.-]{0,229}"
 
 
 def canonical_json(value: Any) -> str:
@@ -57,8 +60,8 @@ class OperatorConversationProfile(Record):
     schema_version: Literal[1] = 1
     persona_name: str = Field(min_length=1, max_length=80)
     persona_instructions: str = Field(min_length=1, max_length=8000, repr=False)
-    animator_id: Literal["night-qwen38"] = "night-qwen38"
-    model_id: Literal["Qwen3.8-27B"] = "Qwen3.8-27B"
+    animator_id: str = Field(pattern=f"^{ANIMATOR_ID_COMPONENT}$")
+    model_id: str = Field(max_length=MAX_MODEL_ID_CHARS, pattern=_MODEL_ID_PATTERN)
     adaptive_context: bool = False
     enable_thinking: bool = False
     thinking_phases: tuple[DecisionPhase, ...] = Field(default=(), max_length=len(DECISION_PHASES))
@@ -196,7 +199,7 @@ class _Message(Record):
 
 
 class _Generation(Record):
-    model: Literal["Qwen3.8-27B"]
+    model: str = Field(max_length=MAX_MODEL_ID_CHARS, pattern=_MODEL_ID_PATTERN)
     messages: tuple[_Message, ...] = Field(min_length=1, max_length=60)
     max_tokens: int = Field(ge=1, le=4096)
     temperature: float = Field(ge=0, le=1)
