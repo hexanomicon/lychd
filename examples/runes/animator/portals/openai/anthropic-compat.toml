@@ -1,0 +1,10 @@
+# ~/.config/lychd/runes/animator/portals/openai/anthropic-compat.toml
+
+name = "anthropic-compat"
+provider_name = "openai-compatible"
+base_url = "https://api.anthropic.com/v1"
+api_key_secret_name = "portal_anthropic_api_key"
+probe = false
+
+[[models]]
+id = "claude-opus-5-5"  # Choose an exact model available to your Claude workspace.

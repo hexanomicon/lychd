@@ -1,0 +1,10 @@
+# ~/.config/lychd/runes/animator/portals/openai/openrouter.toml
+
+name = "openrouter-main"
+provider_name = "openrouter"
+base_url = "https://openrouter.ai/api/v1"
+api_key_secret_name = "portal_openrouter_api_key"
+probe = false
+
+[[models]]
+id = "openai/gpt-4o-mini"  # Choose an exact ID from the OpenRouter catalogue.

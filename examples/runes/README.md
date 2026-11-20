@@ -6,6 +6,7 @@ choose the concrete anchor for the declaration you want to add:
 - [Portals](animator/portals/README.md): remote/API-backed Animators.
 - [Soulstones](animator/soulstones/README.md): local/container-backed Animators.
 
-Adapt the retained fragment through its current owning guide before placing it in Codex. For a
-hardware-oriented comparison, use the [operator profiles](../profiles/README.md); for the first
-host procedure, follow [Summoning](../../docs/summoning.md).
+Each setup recipe names the file to copy, the values to choose, and the check to run. Adapt older
+fragments through their owning guides before placing them in Codex. For hardware-oriented profiles
+and first-host setup, see [Operator Profiles](../profiles/README.md) and
+[Summoning](../../docs/summoning.md).
