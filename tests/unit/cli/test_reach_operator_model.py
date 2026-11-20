@@ -389,9 +389,12 @@ def test_profile_is_frozen_worker_only_and_publication_mount_is_edge_only(
     from tests.unit.cli.test_reach_operator import files
 
     policy, token, images, state = files(tmp_path)
-    monkeypatch.setattr(
-        operator, "resolve_model_route", lambda *_args, **_kwargs: operator.ModelRoute("http://127.0.0.1:28000", None)
-    )
+
+    def resolve_route(_selected: OperatorConversationProfile, *, podman: bool) -> operator.ModelRoute:
+        assert not podman
+        return operator.ModelRoute("http://127.0.0.1:28000", None)
+
+    monkeypatch.setattr(operator, "resolve_model_route", resolve_route)
     selected = tmp_path / "conversation.json"
     operator.write_private(selected, profile().model_dump_json().encode())
     corpus = tmp_path / "corpus"
