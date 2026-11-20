@@ -1,0 +1,27 @@
+# ~/.config/lychd/runes/animator/soulstones/llamacpp/qwen-cpu.toml
+
+name = "qwen-local"
+description = "Local Qwen2.5 0.5B chat on CPU."
+port = 8082
+startup_mode = "single"
+structured_output = "json-schema"
+model_path = "/models/qwen2.5-0.5b-instruct-q4_k_m.gguf"
+served_model_id = "qwen2.5-0.5b-instruct"
+volumes = ["/absolute/path/to/model-shelf:/models:ro,Z"]
+n_gpu_layers = 0
+n_ctx = 4096
+flash_attn = false
+cache_type_k = "f16"
+cache_type_v = "f16"
+split_mode = "none"
+
+[[models]]
+id = "qwen2.5-0.5b-instruct"
+path = "/models/qwen2.5-0.5b-instruct-q4_k_m.gguf"
+
+[models.capabilities]
+families = ["chat"]
+supports_tools = true
+
+[quadlet]
+image = "ghcr.io/ggml-org/llama.cpp:server@sha256:5b43086e3ba7ea5794d72904654f6cd41224a9b1c6ac0398f4940ee380d30f23"
