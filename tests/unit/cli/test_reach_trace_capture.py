@@ -28,7 +28,9 @@ async def test_exact_run_query_joins_model_http_and_delivery_after_restart(tmp_p
     generation, run_id, request_id, other_request = (str(uuid4()) for _ in range(4))
     event_id, other_event = "1566390031717761145", "1566390031717761146"
     policy, corpus = make_policy(), make_corpus()
-    profile = OperatorConversationProfile(persona_name="Fixture", persona_instructions="Be concise.")
+    profile = OperatorConversationProfile(
+        animator_id="night-qwen38", model_id="Qwen3.8-27B", persona_name="Fixture", persona_instructions="Be concise."
+    )
     archive = TraceArchive(tmp_path / "trace")
     capture = TraceCapture(archive.emit)
     capture.ready(
@@ -57,7 +59,9 @@ async def test_exact_run_query_joins_model_http_and_delivery_after_restart(tmp_p
     def fail(_request: httpx2.Request) -> httpx2.Response:
         return httpx2.Response(403, text=CANARY, headers={"x-private": CANARY})
 
-    broker = OperatorModelBroker(profile, transport=httpx2.MockTransport(fail), trace=capture.host)
+    broker = OperatorModelBroker(
+        profile, endpoint="http://127.0.0.1:28000", transport=httpx2.MockTransport(fail), trace=capture.host
+    )
     call = OperatorModelRequest(
         call_id=str(uuid4()),
         binding_digest=profile.digest,

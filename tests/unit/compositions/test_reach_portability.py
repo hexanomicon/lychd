@@ -125,6 +125,8 @@ class NativeLoop:
             sources=(ResearchSource(id="guide", title="Public guide", url="https://public.example/guide"),),
         )
         self.binding = OperatorConversationProfile(
+            animator_id="night-qwen38",
+            model_id="Qwen3.8-27B",
             persona_name="Nadir",
             persona_instructions="Answer precisely from the supplied evidence.",
             adaptive_context=True,

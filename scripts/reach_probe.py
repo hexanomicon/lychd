@@ -95,14 +95,12 @@ if __package__:
     from scripts import reach_operator as operator
     from scripts import reach_operator_transport as transport
     from scripts.reach_model_broker import OperatorModelBroker
-    from scripts.reach_podman_model import PodmanModelTransport
     from scripts.reach_trace_archive import TraceArchive
     from scripts.reach_trace_capture import TraceCapture
 else:
     import reach_operator as operator
     import reach_operator_transport as transport
     from reach_model_broker import OperatorModelBroker
-    from reach_podman_model import PodmanModelTransport
     from reach_trace_archive import TraceArchive
     from reach_trace_capture import TraceCapture
 
@@ -1449,7 +1447,13 @@ async def cleanup_owned(
 
 
 async def supervise(
-    turn: Turn, arguments: list[str], cidfile: Path, *, engine: str, model_transport: str, budget_seconds: float
+    turn: Turn,
+    arguments: list[str],
+    cidfile: Path,
+    *,
+    engine: str,
+    model_route: operator.ModelRoute,
+    budget_seconds: float,
 ) -> None:
     """Retire the one owned process and exact CID on every terminal path, without retries."""
     process: asyncio.subprocess.Process | None = None
@@ -1481,8 +1485,10 @@ async def supervise(
                 refuse("probe_child_pipe")
             broker = OperatorModelBroker(
                 turn.profile,
-                transport=PodmanModelTransport() if model_transport == "podman" else None,
+                transport=model_route.transport,
                 trace=turn.capture.host,
+                endpoint=model_route.endpoint,
+                vllm_options=model_route.vllm_options,
             )
             tasks = [
                 asyncio.create_task(exchange(turn, spawned, broker)),
@@ -1582,8 +1588,8 @@ def execute(args: argparse.Namespace) -> int:
     if args.output.exists():
         refuse("probe_output_exists")
     profile_raw = operator.read_regular(args.conversation_profile, MAX_WIRE_BYTES, private=True)
-    strict_json(profile_raw)
-    profile = OperatorConversationProfile.model_validate_json(profile_raw)
+    profile = operator.load_conversation_profile(profile_raw)
+    model_route = operator.resolve_model_route(profile, podman=args.model_transport == "podman")
     scenario_raw = operator.read_regular(args.scenario, MAX_WIRE_BYTES, private=True)
     strict_json(scenario_raw)
     scenario = Scenario.model_validate_json(scenario_raw)
@@ -1621,12 +1627,17 @@ def execute(args: argparse.Namespace) -> int:
         turn = Turn(scenario, policy, request, profile, corpus, archive, capture_model_output=args.capture_model_output)
         cleanup.update({"process_retired": False, "container_removed": False})
         turn.cleanup = cleanup
-        health, failures = run_turn(turn, args, arguments, cidfile)
+        health, failures = run_turn(turn, args, arguments, cidfile, model_route=model_route)
         return publish_reports(args, turn, profile_raw, scenario_raw, health, failures)
 
 
 def run_turn(
-    turn: Turn, args: argparse.Namespace, arguments: list[str], cidfile: Path
+    turn: Turn,
+    args: argparse.Namespace,
+    arguments: list[str],
+    cidfile: Path,
+    *,
+    model_route: operator.ModelRoute,
 ) -> tuple[dict[str, int | bool], list[str]]:
     archive = turn.archive
     error: str | None = None
@@ -1637,7 +1648,7 @@ def run_turn(
                 arguments,
                 cidfile,
                 engine=args.engine,
-                model_transport=args.model_transport,
+                model_route=model_route,
                 budget_seconds=args.timeout_seconds,
             )
         )
@@ -1796,6 +1807,9 @@ def main(argv: list[str] | None = None) -> int:
     except (KeyboardInterrupt, asyncio.CancelledError):
         sys.stderr.write("reach_probe_cancelled\n")
         return 130
+    except operator.ModelSelectionError as exc:
+        sys.stderr.write(f"{exc}\n")
+        return 1
     except Exception:  # noqa: BLE001 - ordinary errors never render selected private input or provider bodies
         sys.stderr.write("reach_probe_refused\n")
         return 1
