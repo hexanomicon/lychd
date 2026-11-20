@@ -30,6 +30,20 @@ dashboard appearing there is a candidate classification, not a delivered connect
     local-before-paid, and x402 gates are not current enforcement. Declare only a credential, data
     boundary, and spend profile that could become eligible after those gates are delivered.
 
+!!! danger "Local opt-in: `allow_dispatch`"
+    A Rune with `probe = true` and `allow_dispatch = true` is exempt from the quarantine below:
+    once its authenticated `/models` probe lists the declared model, Dispatcher grants it like any
+    warm capability. None of the privatization, secure-mode, local-before-paid or spend gates
+    exist; the operator's flag is the only authority. Among equally ready candidates a local
+    Soulstone still outranks an admitted Portal. Archive, semantic, Scout and Creation workflows
+    remain local-only.
+
+    The flag is off by default and is intended for Bridge experiments on a developer instance
+    holding test data. Prompts and history reach the provider as-is, without redaction or
+    anonymization. The planned [Egress Gate](https://github.com/hexanomicon/lychd/issues/25) is
+    to authorize the exact destination and payload, and apply any required privacy
+    transformation, before either this path or the direct Reach model road may send.
+
 Three limits matter:
 
 1. **No automatic cloud replay.** A failed local call is not replayed through a Portal; no current
@@ -237,6 +251,7 @@ cannot serve as a Reach provider path, including in the public VPS profile.
 | `models` | `[]` | Explicit declarations; empty means zero capabilities. |
 | `generation` | `null` | Portal-wide generation overlay. |
 | `probe` | `false` | Opt in to the unauthenticated `/models` probe. |
+| `allow_dispatch` | `false` | Operator opt-in: Dispatcher may grant this Portal, sending prompts and history to `base_url`. Requires `probe = true`; the probe then sends the Portal secret as a bearer credential. |
 
 Each model requires provider-facing `id`; it may add capability hints and a per-model
 generation overlay. Operator description belongs to the Portal, not each model block. Capability hints default to chat with text admission. Verification

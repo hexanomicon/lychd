@@ -295,6 +295,13 @@ class PortalConfig(AnimatorConfig, ABC):
         default=False,
         description="Opt-in live reachability probe (no surprise egress by default).",
     )
+    allow_dispatch: bool = Field(
+        default=False,
+        description=(
+            "Operator opt-in: let Dispatcher grant this Portal, sending prompts and history to "
+            "base_url. Requires probe = true; the probe then authenticates with the Portal secret."
+        ),
+    )
 
     @field_validator("generation")
     @classmethod
@@ -316,6 +323,9 @@ class PortalConfig(AnimatorConfig, ABC):
     @model_validator(mode="after")
     def _validate_model_ids(self) -> PortalConfig:
         _require_unique_model_ids(self.models)
+        if self.allow_dispatch and not self.probe:
+            msg = "allow_dispatch requires probe = true; an unobserved Portal can never be granted"
+            raise ValueError(msg)
         return self
 
 

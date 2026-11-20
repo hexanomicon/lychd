@@ -2187,3 +2187,61 @@ def test_explicit_210000_input_bound_preserves_default_and_physical_limits() -> 
     payload["messages"] = [{"role": "system", "content": "\x00" * 180_000}]
     with pytest.raises(ValueError, match="model_payload"):
         validate_generation_payload(selected, canonical_json(payload))
+
+
+def test_model_binding_is_configurable_and_keeps_the_legacy_defaults() -> None:
+    legacy = profile()
+    assert (legacy.animator_id, legacy.model_id) == ("night-qwen38", "Qwen3.8-27B")
+    assert legacy.digest == LEGACY_PROFILE_DIGEST
+    routed = OperatorConversationProfile(
+        persona_name="Example",
+        persona_instructions="Be useful.",
+        animator_id="gateway",
+        model_id="vendor/small-model",
+    )
+    assert routed.capability_key == "gateway:chat:vendor/small-model"
+    assert routed.digest != legacy.digest
+    payload = canonical_json(body() | {"model": "vendor/small-model"})
+    assert validate_generation_payload(routed, payload)["model"] == "vendor/small-model"
+    with pytest.raises(ValueError, match="model_generation_binding"):
+        validate_generation_payload(routed, canonical_json(body()))
+
+
+@pytest.mark.parametrize(
+    ("observed", "accepted"),
+    [
+        ("vendor/small-model", True),
+        ("small-model", True),
+        ("model", False),
+        ("other/small-model", False),
+        ("", False),
+        (None, False),
+        (7, False),
+    ],
+)
+def test_served_model_accepts_only_the_exact_id_or_its_gateway_route_suffix(
+    observed: object, *, accepted: bool
+) -> None:
+    routed = OperatorConversationProfile(
+        persona_name="Example", persona_instructions="Be useful.", model_id="vendor/small-model"
+    )
+    assert routed.serves(observed) is accepted
+    assert profile().serves("Qwen3.8-27B")
+    assert not profile().serves("27B")
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("model_id", ""),
+        ("model_id", "has space"),
+        ("model_id", "/leading"),
+        ("animator_id", "Upper"),
+        ("animator_id", ""),
+    ],
+)
+def test_model_binding_identifiers_are_closed(field: str, value: str) -> None:
+    with pytest.raises(ValidationError):
+        OperatorConversationProfile.model_validate(
+            {"persona_name": "Example", "persona_instructions": "Be useful.", field: value}
+        )
