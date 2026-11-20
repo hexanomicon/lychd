@@ -11,7 +11,7 @@ acceptance procedure.
 
 ## Groups
 
-- [Rune snippets](runes/README.md): one declaration for an existing Codex.
+- [Rune snippets and setup recipes](runes/README.md): one declaration for an existing Codex.
 - [Operator profiles](profiles/README.md): runtime choices organized by hardware capacity class.
 - [llama.cpp support](llamacpp/README.md): router presets and their explicit file mounts.
 
