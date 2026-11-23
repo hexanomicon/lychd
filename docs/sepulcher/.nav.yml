@@ -12,6 +12,7 @@ nav:
       - lich/answer.md
   - Codex: codex.md
   - Crypt: crypt.md
+  - Host Reactor: reactor.md
   - Gateway: gateway.md
   - Intercom: intercom.md
   - Vessel:

@@ -129,7 +129,7 @@ startup. Portable Compose supports one optional fixed CPU model. [Set up two mod
 
 ### Linux {#animators-linux}
 
-Managed Vessel asks a host service, the **Host Reactor**, to switch the configured systemd
+Managed Vessel asks a host service, the [Host Reactor](../sepulcher/reactor.md), to switch the configured systemd
 units. systemd enforces their conflicts and start order. Native Vessel switches its own
 llama.cpp processes and checks port ownership through `/proc`. [Managed switching](../adr/08-containers.md#current-unit-graph)
 

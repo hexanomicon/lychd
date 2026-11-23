@@ -33,6 +33,7 @@ Then open the body:
 | [Codex](codex.md) | Settings, Runes, configuration precedence, and the binding rite: `lychd bind`. |
 | [Crypt](crypt.md) | Where persistent files belong and which external workspaces may be mounted. |
 | [Vessel](vessel/index.md) | What starts, serves, and stops inside one application process. |
+| [Host Reactor](reactor.md) | Who switches local Animators and when Vessel needs a separate host service. |
 | [Ghouls](vessel/ghouls.md) | How admitted work reaches a worker and settles. |
 | [Intercom](intercom.md) | Submit a bounded public task to an enrolled sovereign peer. |
 | [Phylactery](phylactery/index.md) | Committed state that can survive the process. |
