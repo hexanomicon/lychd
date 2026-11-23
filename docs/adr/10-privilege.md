@@ -6,7 +6,7 @@ icon: material/transfer-up
 # :material-transfer-up: 10. Privilege
 
 !!! abstract "Context"
-    The Vessel does not receive a shell, Podman socket, user-systemd bus, or general root authority.
+    The caged Vessel receives only the interfaces bound to its deployment. Engine sockets, the user-systemd bus, host commands and root authority stay outside it.
     The managed Vessel crosses the Host Reactor boundary for privileged effects. The typed direct
     systemd adapter remains a host-side mechanism exercised by explicit OCI tests, not a
     host-native Vessel deployment. Both accept the same closed transition word; trusted
@@ -15,8 +15,9 @@ icon: material/transfer-up
 ## Decision: authority before effect
 
 Effectful initialization refuses effective UID 0; root may inspect a zero-effect dry run but does
-not acquire initialization authority. Host mutation belongs to the invoking user, its user manager,
-and rootless Podman/Quadlet. Layout owns which paths may exist or be retired.
+not acquire initialization authority. On managed Linux, host mutation belongs to the invoking user, its user manager,
+and rootless Podman/Quadlet. A [personal host owner](08-containers.md#per-soulstone-placement)
+can supervise its own trusted child and inspect, start or stop an exact bound container. Layout owns which paths may exist or be retired.
 
 Host tools are never trusted from spelling alone. Discovery accepts only an executable regular
 file that is UID-0-owned or lies on a kernel-reported read-only filesystem. Neither the file nor
@@ -61,7 +62,7 @@ lifecycle lock. It submits only generated target identities and observes both ta
 and services. Cancellation and partial failure obtain one bounded inverse transaction. The prior
 world reopens admission only when exact readback proves it.
 
-The caged `host-reactor` default gives the Vessel a write-only owner-mode inbox and a read-only
+The caged `host-reactor` default gives the Vessel a writable owner-mode inbox and a read-only
 host journal. It publishes one bounded typed JSON intent; the host claims it before parsing through
 a no-follow descriptor, independently rechecks schema, ownership, topology, policy, digest, and
 world, then acts. The journal distinguishes no-effect decline, completed desired state, proved

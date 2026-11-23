@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import sys
 from dataclasses import dataclass, replace
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, cast
@@ -24,7 +25,10 @@ if TYPE_CHECKING:
 
     from pytest_mock import MockerFixture
 
+    from lychd.config.settings.root import Settings
     from lychd.domain.animation.protocols import CapabilityRegistry
+    from lychd.extensions.builtin.animator.soulstones.llamacpp import LlamaCppSoulstoneConfig
+    from lychd.system.services.scribe import ScribeService
 
 _SYSTEMCTL = "/usr/bin/systemctl"
 _SHOW_PROPERTIES = (
@@ -177,6 +181,21 @@ def _owned_bindings(
     quadlet = tmp_path / "quadlet"
     systemd = tmp_path / "systemd"
     quadlet_sources = tuple(quadlet / f"lychd-{name}.container" for name in animator_names)
+    from lychd.config.settings.root import get_settings
+    from lychd.domain.animation.services.adapters.registry import RuntimeAdapterRegistry
+    from lychd.domain.animation.transmute import Transmuter
+    from lychd.system.binding_sites import BindingSites
+    from lychd.system.constants import PATH_RUNE_TEMPLATES_DIR
+    from lychd.system.services.scribe.rendering import BindingRenderer
+
+    quadlet.mkdir(exist_ok=True)
+    compiler = Transmuter(settings=get_settings(), runtime_planner=RuntimeAdapterRegistry())
+    renderer = BindingRenderer(
+        templates_dir=PATH_RUNE_TEMPLATES_DIR, sites=BindingSites(quadlet=quadlet, systemd_user=systemd)
+    )
+    for name, path in zip(animator_names, quadlet_sources, strict=True):
+        path.write_text(renderer.render_container(compiler.container_service(_stone(name, conflict_domains=[]))))
+
     target_names = (*animator_names, *(("removed",) if stale_target else ()))
     systemd_sources = tuple(systemd / f"lychd-animator-{name}.target" for name in target_names)
     runtime_units = tuple(
@@ -698,3 +717,122 @@ async def test_recovery_attests_current_topology_without_fabricating_intent(
     ).attest_current_topology()
     assert observed_units == sorted(graph)
     assert subprocess.await_count == len(graph) + 2
+
+
+def _inscribe_mixed(tmp_path: Path) -> tuple[Settings, list[LlamaCppSoulstoneConfig], ScribeService]:
+    """Bind the two conflicting physical placements into real, temporary Scribe sites."""
+    from lychd.config.runes.registry import RuneRegistry
+    from lychd.config.settings.root import Settings
+    from lychd.extensions.builtin.animator.soulstones.llamacpp import LlamaCppSoulstoneConfig
+    from lychd.extensions.host import assemble_extensions
+    from lychd.system.services.bind_compilation import compile_bind_request
+    from lychd.system.services.scribe import ScribeService
+
+    executable = tmp_path / "llama-server"
+    executable.touch(mode=0o700)
+    model = tmp_path / 'model %i "$HOME".gguf'
+    model.touch()
+    settings = Settings.model_validate(
+        {
+            "extensions": {"builtins": ["animator/llamacpp"]},
+            "orchestration": {"switching": {"native_model_root": tmp_path, "native_llama_server": executable}},
+        }
+    )
+    declarations = [
+        LlamaCppSoulstoneConfig.model_validate(
+            {
+                "name": name,
+                "placement": placement,
+                "startup_mode": "single",
+                "model_path": path,
+                "port": port,
+                "base_url": f"http://127.0.0.1:{port}/v1",
+                "served_model_id": name,
+            }
+        )
+        for name, placement, path, port in (
+            ("alpha", "native", str(model), 8021),
+            ("beta", "container", "/models/beta.gguf", 8022),
+        )
+    ]
+    request = compile_bind_request(
+        settings=settings,
+        extensions=assemble_extensions(settings),
+        runes=RuneRegistry(tuple(declarations)),
+        soulstones=declarations,
+        portals=(),
+    )
+    quadlet, units = tmp_path / "quadlet", tmp_path / "systemd"
+    quadlet.mkdir()
+    units.mkdir()
+    scribe = ScribeService(output_dir=quadlet, systemd_dir=units)
+    scribe.reconcile_all(request.manifests, plain_units=request.plain_unit_mapping())
+    engine_path = units / "lychd-alpha.service"
+    relay_path = quadlet / "lychd-native-relay-alpha.container"
+    source = engine_path.read_text()
+    assert f'"{executable}"' in source
+    assert 'model %%i \\"$$HOME\\".gguf"' in source
+    assert '"--host" "server.sock"' in source
+    assert "RuntimeDirectoryMode=0700" in source
+    relay_source = relay_path.read_text()
+    assert "Volume=%t/lychd-native-alpha.endpoint:/run/lychd-native-engine:ro,Z" in relay_source
+    assert "native_socket_relay 8021" in relay_source
+    assert str(model) not in relay_source
+    assert not (quadlet / "lychd-alpha.container").exists()
+    assert (quadlet / "lychd-beta.container").is_file()
+    assert "Conflicts=lychd-animator-alpha.target" in (units / "lychd-animator-beta.target").read_text()
+
+    return settings, declarations, scribe
+
+
+@pytest.mark.skipif(sys.platform != "linux", reason="Linux managed systemd/Quadlet bindings")
+@pytest.mark.asyncio
+async def test_mixed_native_and_container_target_ownership(tmp_path: Path, mocker: MockerFixture) -> None:
+    """Reject modified engine or relay sources before a mixed-placement switch."""
+    settings, declarations, scribe = _inscribe_mixed(tmp_path)
+    engine_path = tmp_path / "systemd" / "lychd-alpha.service"
+    relay_path = tmp_path / "quadlet" / "lychd-native-relay-alpha.container"
+    graph = _exact_pair_graph()
+    _attach_owned_sources(graph, tmp_path, "alpha", "beta")
+    native, relay = "lychd-alpha.service", "lychd-native-relay-alpha.service"
+    graph[native].update(
+        FragmentPath=str(engine_path),
+        SourcePath="",
+        UnitFileState="static",
+        BindsTo=f"{_POD} lychd-animator-alpha.target {relay}",
+        Before=relay,
+        BoundBy=relay,
+    )
+    graph[relay] = {
+        **_blank_properties(relay),
+        "SourcePath": str(relay_path),
+        "FragmentPath": f"/run/user/1000/systemd/generator/{relay}",
+        "UnitFileState": "generated",
+        "After": f"{_POD} {native}",
+        "BindsTo": f"{_POD} {native}",
+        "BoundBy": native,
+    }
+    _mock_systemctl_show(mocker, graph)
+    registry = cast("CapabilityRegistry", SimpleNamespace(list_soulstone_runes=lambda: declarations))
+    attestor = RuntimeTopologyAttestor(
+        registry,
+        systemctl_bin=_SYSTEMCTL,
+        owned_bindings_provider=scribe.inspect_owned_bindings,
+        settings_provider=lambda: settings,
+    )
+    await attestor.attest(_intent())
+    original = declarations[1]
+    for update in ({"quadlet": QuadletConfig(image="example/changed:latest")}, {"n_ctx": 512}):
+        declarations[1] = original.model_copy(update=update)
+        with pytest.raises(RuntimePreconditionError, match=r"lychd-beta\.container differs from the current binding"):
+            await attestor.attest(_intent())
+    declarations[1] = original
+    graph[relay]["BindsTo"] = _POD
+    with pytest.raises(RuntimePreconditionError, match="BindsTo"):
+        await attestor.attest(_intent())
+    for path in (engine_path, relay_path):
+        previous = path.read_bytes()
+        path.write_bytes(previous + b"# changed\n")
+        with pytest.raises(RuntimePreconditionError, match="differs from the current binding"):
+            await attestor.attest(_intent())
+        path.write_bytes(previous)

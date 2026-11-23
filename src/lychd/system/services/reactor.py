@@ -265,7 +265,7 @@ class HostReactor:
         claimed = self._journal_dir / f"{transition_id}.processing.json"
         # Rename arbitrates against producer withdrawal, but cannot revoke an
         # already-open descriptor or hard link to the producer's inode.
-        pending.replace(acquiring)
+        self._move_record(pending, acquiring)
         try:
             self._fsync_directory(self._inbox_dir)
             self._fsync_directory(self._journal_dir)
@@ -427,9 +427,13 @@ class HostReactor:
     @staticmethod
     def _read_payload(path: Path) -> bytes:
         """Open without blocking on raced special files, then attest the descriptor."""
-        flags = os.O_RDONLY | os.O_NONBLOCK | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
         try:
-            descriptor = os.open(path, flags)
+            if os.name == "nt":
+                from lychd.system.desktop.private import open_windows_reactor_record
+
+                descriptor = open_windows_reactor_record(path)
+            else:
+                descriptor = os.open(path, os.O_RDONLY | os.O_NONBLOCK | os.O_CLOEXEC | os.O_NOFOLLOW)
         except OSError as exc:
             msg = "intent must be an available, non-symlink regular file"
             raise RuntimeError(msg) from exc
@@ -438,7 +442,7 @@ class HostReactor:
             if not stat.S_ISREG(metadata.st_mode):
                 msg = "intent must be a regular file"
                 raise RuntimeError(msg)
-            if metadata.st_uid != os.getuid() or stat.S_IMODE(metadata.st_mode) != _INTENT_MODE:
+            if os.name != "nt" and (metadata.st_uid != os.getuid() or stat.S_IMODE(metadata.st_mode) != _INTENT_MODE):
                 msg = "intent must be owner-only (0600) and owned by the Reactor uid"
                 raise RuntimeError(msg)
             if metadata.st_size > _MAX_INTENT_BYTES:
@@ -573,7 +577,7 @@ class HostReactor:
         if target.exists():
             msg = f"journal record already exists: {target.name}"
             raise RuntimeError(msg)
-        claimed.replace(target)
+        self._move_record(claimed, target)
         self._fsync_directory(self._journal_dir)
 
     def _reject_pending(self, pending: Path, *, reason: str) -> None:
@@ -620,13 +624,29 @@ class HostReactor:
                 stream.write(payload)
                 stream.flush()
                 os.fsync(stream.fileno())
-            os.link(temporary, target)
+            if os.name == "nt":
+                self._move_record(temporary, target)
+            else:
+                os.link(temporary, target)
         finally:
             temporary.unlink(missing_ok=True)
         self._fsync_directory(self._journal_dir)
 
     @staticmethod
+    def _move_record(source: Path, target: Path) -> None:
+        if os.name == "nt":
+            from lychd.system.desktop.private import commit_file
+
+            commit_file(source, target, replace=False)
+        else:
+            source.replace(target)
+
+    @staticmethod
     def _fsync_directory(path: Path) -> None:
+        if os.name == "nt":
+            # On Windows the claim and each effect-authorizing journal promotion
+            # use MoveFileExW with WRITE_THROUGH.
+            return
         descriptor = os.open(path, os.O_RDONLY)
         try:
             os.fsync(descriptor)

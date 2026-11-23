@@ -44,6 +44,9 @@ class CapabilityRegistry(Protocol):
     """
 
     # -- sync reads ------------------------------------------------------
+    @property
+    def lifecycle_binding_digest(self) -> str | None: ...
+
     def list_capabilities(self) -> list[CapabilitySpec]: ...
 
     def get_capability(self, key: str, /) -> CapabilitySpec | None: ...

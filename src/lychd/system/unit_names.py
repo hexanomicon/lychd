@@ -7,6 +7,7 @@ __all__ = [
     "animator_service_unit",
     "animator_target_unit",
     "coven_target_unit",
+    "native_relay_stem",
 ]
 
 
@@ -28,3 +29,8 @@ def animator_target_unit(animator_name: str) -> str:
 def coven_target_unit(coven_name: str) -> str:
     """Return the generated operator aggregate target for one Coven."""
     return f"lychd-coven-{coven_name}.target"
+
+
+def native_relay_stem(animator_name: str) -> str:
+    """Return the private Pod listener paired with a managed native service."""
+    return f"lychd-native-relay-{animator_name}"

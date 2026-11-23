@@ -48,13 +48,14 @@ from lychd.system.unit_names import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Mapping, Sequence
 
     from lychd.config.runes.registry import RuneRegistry
     from lychd.config.settings.root import Settings
     from lychd.domain.animation.conflicts import ConflictTopology
     from lychd.domain.animation.schemas import PortalConfig, SoulstoneConfig
     from lychd.domain.animation.services.adapters.contracts import RuntimePlan, SoulstoneRuntimePlanner
+    from lychd.system.schemas import NativeRelayContainer
 
 LYCHD_POD_QUADLET: Final[str] = "lychd.pod"
 LYCHD_POD_SERVICE: Final[str] = "lychd-pod.service"
@@ -210,12 +211,20 @@ class Transmuter:
         portals: Sequence[PortalConfig] | None = None,
         runes: RuneRegistry | None = None,
         runtime_plans: Sequence[RuntimePlan] | None = None,
+        native_relays: Mapping[str, NativeRelayContainer] | None = None,
     ) -> list[QuadletBase]:
-        """Compile declarations into the complete container service body."""
+        """Compile the Pod services and shared targets for the admitted Linux placement mix."""
         from lychd.config.runes.registry import RuneRegistry
 
         settings = self._settings
         resolved_soulstones = tuple(soulstones)
+        relays = native_relays or {}
+        native_names = {
+            stone.name for stone in resolved_soulstones if stone.resolved_placement("container") == "native"
+        }
+        if relays.keys() != native_names or (native_names and runtime_plans is None):
+            msg = "Each managed native Soulstone requires its host-validated systemd binding and private Pod relay."
+            raise ValueError(msg)
         resolved_portals = tuple(portals or ())
         resolved_runes = runes if runes is not None else RuneRegistry(())
         contributions = tuple(
@@ -278,7 +287,7 @@ class Transmuter:
         # 6. Transmute Extension Soulstones. A service always pulls its
         # conflict-bearing Animator target before it can start.
         manifests.extend(
-            self._transmute_soulstone(stone, settings, runtime_plan)
+            relays[stone.name] if stone.name in relays else self.container_service(stone, runtime_plan)
             for stone, runtime_plan in zip(
                 resolved_soulstones,
                 resolved_runtime_plans,
@@ -584,13 +593,14 @@ class Transmuter:
 
         return [vessel, phylactery, migrator]
 
-    def _transmute_soulstone(
-        self,
-        stone: SoulstoneConfig,
-        settings: Settings,
-        runtime_plan: RuntimePlan,
-    ) -> QuadletContainer:
-        """Convert a single Soulstone Rune into a Quadlet container manifest."""
+    def container_service(self, stone: SoulstoneConfig, runtime_plan: RuntimePlan | None = None) -> QuadletContainer:
+        """Compile the exact container source for inscription or host-side reattestation."""
+        if stone.resolved_placement("container") != "container":
+            msg = f"Native Soulstone {stone.name!r} cannot compile as a container service."
+            raise ValueError(msg)
+        settings = self._settings
+        if runtime_plan is None:
+            runtime_plan = self._runtime_planner.plan(stone)
         merged_env = {k: str(v) for k, v in stone.env_vars.items()}
         merged_env.update(runtime_plan.env_overrides)
         merged_env.update(

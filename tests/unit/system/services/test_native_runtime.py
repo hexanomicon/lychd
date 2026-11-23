@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import os
 import socket
 import sqlite3
@@ -76,6 +77,7 @@ def _profile(tmp_path: Path) -> tuple[Mock, SwitchingSettings, dict[str, LlamaCp
         for name in runes
     }
     registry = Mock(spec=CapabilityRegistry)
+    registry.lifecycle_binding_digest = None
     registry.get_soulstone_rune.side_effect = runes.get
     registry.list_soulstone_runes.side_effect = lambda: list(runes.values())
     registry.get_capability.side_effect = specs.get
@@ -187,11 +189,13 @@ async def test_foreign_listener_and_untrusted_command_refused_before_claim(tmp_p
             await actuator.apply(_intent(registry, "alpha"))
         with pytest.raises(RuntimePreconditionError, match="occupied"):
             await actuator.verify_startup()
+    actuator = NativeRuntimeActuator(registry, settings)
     original = runes["alpha"]
     for override in ({"extra_args": ("--port", "99")}, {"security_label_disable": True}):
         runes["alpha"] = original.model_copy(update=override)
         with pytest.raises(RuntimePreconditionError, match="overrides"):
             await actuator.apply(_intent(registry, "alpha"))
+    await actuator.aclose()
     assert settings.native_state_dir is not None
     with closing(sqlite3.connect(settings.native_state_dir / "native.sqlite3")) as db:
         assert db.execute("SELECT count(*) FROM transition").fetchone() == (0,)
@@ -382,3 +386,221 @@ def test_publicly_writable_engine_rejected(tmp_path: Path, mode: int) -> None:
     settings.native_llama_server.chmod(mode)
     with pytest.raises(RuntimePreconditionError, match="publicly writable"):
         NativeRuntimeActuator(registry, settings)._command("alpha")
+
+
+@pytest.mark.asyncio
+async def test_mixed_desktop_switch_restores_and_fences(  # noqa: PLR0915 - one serial failure and recovery history
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An inert engine fixture exercises real native child eviction, reconvergence and ambiguity."""
+    from lychd.config.settings.orchestration import DesktopContainerBinding
+    from lychd.domain.orchestration.actuator import RuntimeActuationRestoredError
+    from lychd.system.services.desktop_container import UnsettledContainerError
+
+    registry, settings, runes = _profile(tmp_path)
+    runes["beta"] = runes["beta"].model_copy(update={"placement": "container"})
+    binding = DesktopContainerBinding(
+        animator="beta",
+        engine="docker",
+        endpoint="unix:///local/engine.sock",
+        container_id="a" * 64,
+        host_port=_free_port(),
+        container_port=8443,
+        tls_sha256="b" * 64,
+    )
+    settings.containers = (binding,)
+    actuator = NativeRuntimeActuator(registry, settings)
+    container = actuator._containers["beta"]
+    calls: list[str] = []
+    incarnation: str | None = None
+
+    def change(verb: str, *, expected: str | None = None) -> str | None:
+        nonlocal incarnation
+        assert expected == incarnation
+        calls.append(verb)
+        incarnation = f"started-{len(calls)}" if verb == "start" else None
+        return incarnation
+
+    monkeypatch.setattr(container, "verify_engine", lambda: None)
+    monkeypatch.setattr(container, "observe", lambda: incarnation)
+    monkeypatch.setattr(container, "change", change)
+    children, _ = _record_launches(actuator, tmp_path, monkeypatch)
+    await actuator.verify_startup()
+    try:
+        await actuator.apply(_intent(registry, "alpha"))
+        to_container = _intent(registry, "beta", ("alpha",))
+        await actuator.apply(to_container)
+        await actuator.recover(to_container)
+        assert calls == ["start"]
+        assert children[0].poll() is not None
+        back = _intent(registry, "alpha", ("beta",))
+        with monkeypatch.context() as patch:
+            patch.setattr(actuator, "_launch", Mock(side_effect=OSError("fixture spawn failure")))
+            with pytest.raises(RuntimeActuationRestoredError):
+                await actuator.apply(back)
+        assert calls == ["start", "stop", "start"]
+        with pytest.raises(RuntimeActuationRestoredError):
+            await actuator.recover(back)
+        await actuator.apply(_intent(registry, "alpha", ("beta",)))
+        assert calls[-1] == "stop"
+        assert children[1].poll() is None
+        # Unsupported/changed ownership before eviction leaves alpha running.
+        with monkeypatch.context() as patch:
+            patch.setattr(container, "verify_engine", Mock(side_effect=RuntimePreconditionError("wrong owner")))
+            with pytest.raises(RuntimePreconditionError, match="wrong owner"):
+                await actuator.apply(_intent(registry, "beta", ("alpha",)))
+        assert children[1].poll() is None
+        monkeypatch.setattr(container, "change", Mock(side_effect=UnsettledContainerError("ambiguous start")))
+        with pytest.raises(UnsettledContainerError, match="ambiguous"):
+            await actuator.apply(_intent(registry, "beta", ("alpha",)))
+        assert children[1].poll() is not None
+        with pytest.raises(RuntimeError, match="unresolved"):
+            await actuator.apply(_intent(registry, "alpha"))
+    finally:
+        await actuator.aclose()
+    with pytest.raises(RuntimeError, match="unresolved"):
+        NativeRuntimeActuator(registry, settings)
+
+
+@pytest.mark.parametrize("engine", ["docker", "podman"])
+def test_desktop_container_attests_each_effect(engine: str, monkeypatch: pytest.MonkeyPatch) -> None:
+    from lychd.config.settings.orchestration import DesktopContainerBinding
+    from lychd.system.services.desktop_container import DesktopContainer, UnsettledContainerError
+
+    binding = DesktopContainerBinding.model_validate(
+        {
+            "animator": "fixture",
+            "engine": engine,
+            "endpoint": "unix:///run/user/2000/engine.sock",
+            "container_id": "a" * 64,
+            "container_port": 8443,
+            "host_port": 19999,
+            "tls_sha256": "b" * 64,
+        }
+    )
+    engine_info = (
+        {"OSType": "linux", "SecurityOptions": ["name=rootless"]}
+        if engine == "docker"
+        else {"host": {"security": {"rootless": True}}}
+    )
+    host = {
+        "PortBindings": {"8443/tcp": [{"HostIp": "127.0.0.1", "HostPort": "19999"}]},
+        "RestartPolicy": {"Name": "no"},
+        "AutoRemove": False,
+        "NetworkMode": "bridge",
+        "Privileged": False,
+    }
+    labels = {"io.lychd.soulstone": "fixture"}
+    state: dict[str, object] = {"Status": "exited", "Running": False}
+    commands: list[tuple[str, ...]] = []
+
+    def command(*args: str) -> str:
+        commands.append(args)
+        if args[0] == "info":
+            return json.dumps(engine_info)
+        assert args[0] == "container"
+        assert args[-1] == binding.container_id
+        if args[1] == "inspect":
+            return json.dumps(
+                [{"Id": binding.container_id, "Config": {"Labels": labels}, "HostConfig": host, "State": state}]
+            )
+        if args[1] == "start":
+            state.update(Status="running", Running=True, StartedAt="first")
+        else:
+            assert args[1] == "stop"
+            state.update(Status="exited", Running=False)
+        return ""
+
+    container = DesktopContainer(binding, timeout=3)
+    monkeypatch.setattr(container, "_command", command)
+    assert container.change("start") == "first"
+    with pytest.raises(RuntimePreconditionError, match="changed before"):
+        container.change("stop", expected="replaced")
+    assert container.change("stop", expected="first") is None
+    mutations = [command for command in commands if command[0:2] in (("container", "start"), ("container", "stop"))]
+    assert [c[1] for c in mutations] == ["start", "stop"]
+
+    # Another client can restart the same pinned ID after inspection but before our stop reaches the engine.
+    def competing_stop(*args: str) -> str:
+        if args[:2] == ("container", "stop"):
+            state["StartedAt"] = "second"
+        return command(*args)
+
+    monkeypatch.setattr(container, "_command", competing_stop)
+    assert container.change("start") == "first"
+    with pytest.raises(UnsettledContainerError, match="unresolved") as unsettled:
+        container.change("stop", expected="first")
+    assert "incarnation differs" in str(unsettled.value.__cause__)
+    labels.clear()
+    with pytest.raises(RuntimePreconditionError, match="identity"):
+        container.change("start")
+    assert commands[-1][1] == "inspect"
+    for forbidden in ("tcp://127.0.0.1:2375", "ssh://localhost", "unix:///a/../b", "npipe:////remote/pipe/engine"):
+        with pytest.raises(ValidationError, match="local"):
+            DesktopContainerBinding.model_validate({**binding.model_dump(), "endpoint": forbidden})
+
+
+@pytest.mark.asyncio
+async def test_native_state_has_one_owner_until_close(tmp_path: Path) -> None:
+    registry, settings, _ = _profile(tmp_path)
+    owner = NativeRuntimeActuator(registry, settings)
+    try:
+        with pytest.raises(RuntimePreconditionError, match="another host owner"):
+            NativeRuntimeActuator(registry, settings)
+    finally:
+        await owner.aclose()
+    fresh = NativeRuntimeActuator(registry, settings)
+    try:
+        with pytest.raises(RuntimePreconditionError, match="closed"):
+            await owner.apply(_intent(registry, "alpha"))
+    finally:
+        await fresh.aclose()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("peer", ["bound", "replacement", "new-incarnation"])
+async def test_container_tls_binds_connected_upstream(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, peer: str
+) -> None:
+    import hashlib
+    import ssl
+
+    from lychd.config.settings.orchestration import DesktopContainerBinding
+    from lychd.system.desktop.reactor_identity import create_identities
+    from lychd.system.services.desktop_container import DesktopContainer
+
+    await asyncio.to_thread(create_identities, tmp_path)
+    cert = tmp_path / "host/identity.pem"
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    context.load_cert_chain(cert, tmp_path / "host/identity.key")
+    received = asyncio.get_running_loop().create_future()
+
+    async def observe(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
+        try:
+            received.set_result(await reader.read(1024))
+        finally:
+            writer.close()
+
+    async with await asyncio.start_server(observe, "127.0.0.1", 0, ssl=context) as server:
+        pin = hashlib.sha256(ssl.PEM_cert_to_DER_cert(cert.read_text())).hexdigest()
+        binding = DesktopContainerBinding(
+            animator="beta",
+            engine="docker",
+            endpoint="unix:///local/engine.sock",
+            container_id="a" * 64,
+            host_port=server.sockets[0].getsockname()[1],
+            container_port=8443,
+            tls_sha256=pin if peer != "replacement" else "b" * 64,
+        )
+        container = DesktopContainer(binding, timeout=2)
+        monkeypatch.setattr(container, "observe", lambda: "second" if peer == "new-incarnation" else "first")
+        if peer == "bound":
+            _, writer = await container.connect("first")
+            writer.write(b"private prompt")
+            await writer.drain()
+            writer.close()
+            assert await asyncio.wait_for(received, 5) == b"private prompt"
+        else:
+            with pytest.raises(RuntimePreconditionError, match="binding"):
+                await container.connect("first")
+            assert await asyncio.wait_for(received, 5) == b""

@@ -9,29 +9,35 @@ When you select model B in Nexus, the Orchestrator in [Vessel](vessel/index.md) 
 whether the switch can proceed. Who actually stops A and starts B depends on who owns
 those processes.
 
-## When Vessel owns the model processes
+## Managed Linux
 
-On Linux, macOS and Windows, a native Vessel can launch its configured `llama.cpp` engines
-as child processes under your account. Its native process adapter waits for A to exit
-before starting B and checks that B owns the expected listening port. No separate Host
-Reactor service is needed for this switch. A server you started yourself has a different
-owner, even when Vessel can reach its address. [Native Animator ownership](../deployments/desktop.md#animator-ownership)
+Vessel writes a typed request to its mounted inbox. A systemd path unit starts the host user's
+Reactor, which checks the request against the bound generation, active Animators and loaded unit
+graph. A Quadlet-backed engine and a native llama.cpp user service can participate in the same
+target transaction. The host records the result in a journal that Vessel mounts read-only.
+For the native engine, a relay inside the pod forwards the Rune's loopback port to a private
+host Unix socket. Switching requires neither a network listener nor a container-engine socket
+inside Vessel. [Host authority and receipts](../adr/10-privilege.md) · [Managed native Rune](extensions/animators/soulstone/rune.md#choose-placement)
 
-## When the Linux host owns the services
+## Native Vessel on a personal host
 
-In the managed Linux installation, Vessel runs in a container and the host user's systemd
-manages the Animator units. Vessel writes a switch request to a mounted inbox. A systemd
-path unit notices the request and starts the **Host Reactor** to handle it. The Reactor
-checks that the request matches the configured units and the observed state, asks systemd
-to apply the switch, then records what actually happened in a journal Vessel can read.
-There is no need for a network listener or a container-engine socket inside Vessel.
-[Host authority and receipts](../adr/10-privilege.md) · [Runtime transitions](extensions/animators/runtime-transitions.md)
+Vessel holds the local lifecycle lock throughout the session. It can launch a trusted, fixed-model
+llama.cpp child or start a previously provisioned fixed-model container on its bound local engine.
+For a conflicting pair it waits for A to stop, starts B, and checks the selected service before
+Nexus reports it ready. The operator's running processes and containers cannot be adopted.
+[Desktop container binding](../deployments/desktop.md#animator-ownership)
 
-## What if A is in a container and B runs on the desktop?
+## Caged Vessel with desktop-owned engines
 
-The current installation selects one way to control Animators. The portable Compose
-profile serves one optional fixed model. Switching from a container in a Linux VM to a
-native desktop engine would require coordinating both owners, confirming A has stopped
-before asking the host to start B. Reaching B over the network only gives Vessel access
-to its inference API. Mixed switching is future work. [Proposed per-Soulstone placement](../adr/08-containers.md#proposed-per-soulstone-placement)
+Run the resident Reactor on the desktop and Vessel in the separate portable Reactor project.
+The host process holds the same lock, process handles and container bindings as a native Vessel.
+The guest receives a read-only configuration and identity bundle, a writable request inbox and
+a read-only host journal. On startup it checks the mounts, generation and live host session.
+Local model requests cross a mutually authenticated TLS connection on port 17134 for the named
+Animator. Lifecycle requests still travel through the inbox.
+
+Keep the host process running while the guest is in use. A lost acknowledgement can leave a
+switch in progress. Preserve the inbox, journal and private native state until the host can
+establish which child or container incarnation is active. Restarting with a fresh journal would
+discard that evidence. [Prepare and operate the desktop Reactor](../deployments/container-desktop.md#desktop-reactor)
 · [Platform differences](../deployments/platform-differences.md#animators)

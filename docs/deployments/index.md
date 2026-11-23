@@ -12,7 +12,7 @@ on each host, read [Platform differences across Linux, macOS and Windows](platfo
 | --- | --- |
 | Host on Linux (primary) | [Summoning](../summoning.md) takes one installation through configuration, model selection, Altar and Bridge. |
 | Run Vessel natively on Linux, macOS or Windows | [Personal native hosts](desktop.md) covers installation, a foreground session, local browser chat and PostgreSQL recovery. |
-| Run Vessel in a container on a Mac or Windows PC | [Portable container deployment](container-desktop.md) covers the local Compose stack, its database and the optional CPU engine. |
+| Run Vessel in a container on a Mac or Windows PC | [Portable container deployment](container-desktop.md) covers the local Compose stack, its database and fixed CPU model or host-managed Animators. |
 | Use an existing installation | Use its operator-approved [Altar access](../divination/altar/index.md). The client needs a browser and the access arrangements for that host. |
 
 ## Personal desktop operations

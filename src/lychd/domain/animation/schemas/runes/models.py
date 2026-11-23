@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -8,6 +8,14 @@ from lychd.domain.animation.schemas.capability_family import CapabilityFamily
 from lychd.domain.animation.schemas.generation import GenerationProfile
 from lychd.domain.animation.schemas.model_info import ModelSurface
 from lychd.domain.animation.schemas.shared import ModelFormat
+
+
+def model_path_stem(model_path: str) -> str:
+    """Infer the same model id from host and container views of a declared path."""
+    windows = PureWindowsPath(model_path)
+    if windows.is_absolute() and (windows.drive.endswith(":") or model_path.startswith("\\\\")):
+        return windows.stem
+    return PurePosixPath(model_path).stem
 
 
 class ModelCapabilityHints(BaseModel):

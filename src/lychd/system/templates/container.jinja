@@ -64,6 +64,9 @@ AddDevice={{ dev }}
 {% endfor %}
 
 # Volumes
+{% if socket_directory %}
+Volume=%t/{{ socket_directory }}:/run/lychd-native-engine:ro,Z
+{% endif %}
 {% for vol in volumes %}
 {% if vol.options %}
 Volume={{ vol.host_path }}:{{ vol.container_path }}:{{ vol.options | join(',') }}

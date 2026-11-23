@@ -316,18 +316,63 @@ responsibility for tunnel and service configuration.
 
 ## Animator ownership
 
-On managed Linux the Reactor applies the declared conflicts through systemd and generated Quadlets.
-In the personal profile the same orchestration contract selects the native process actuator.
-Vessel starts a configured executable using fixed arguments, verifies ownership of its loopback
-listener, and waits for the conflicting foreground process to exit before launching its replacement. Login registration starts
-Vessel under the desktop account. A request to Bridge grants no general host command execution.
+In the personal profile, one process owns all dedicated Animators in the installation. A native
+Vessel holds this role during its session. For the portable caged Vessel, run the
+[desktop Reactor](container-desktop.md#desktop-reactor) in its place. The same lock prevents both
+from adopting the same engines. Login registration starts the native Vessel.
 
-We considered llama-swap for its model routing and swap matrix. Adding it as another lifecycle
-owner would require coordinating its independent unload decisions with LychD's grants and
-observations. The personal profile uses the existing llama.cpp extension and the native process actuator. A future
-adapter for an externally managed server needs its own authority and readiness contract.
-[Upstream swap matrix](https://github.com/mostlygeek/llama-swap/blob/a109800cc5340e7722895b7baf78b3d16ef19311/docs/kb/guides/routing/groups-and-matrix.md)
-· [Containers and switching](../adr/08-containers.md).
+To add a container alongside the native `personal` model, provision one **stopped**, dedicated,
+fixed-model service on the local engine. Give it a TLS listener, the label
+`io.lychd.soulstone=alternate` and exactly one published TCP port, for example
+`127.0.0.1:18443:8443`. The host checks the full container ID, loopback mapping, running
+incarnation and server certificate before forwarding inference. The example uses a container
+listening on 8443 that serves the model ID `alternate-model` from `/models/alternate.gguf`.
+Choose and configure its image, model mount, certificate and private key when creating it.
+Use an unprivileged standalone container with automatic removal and restart disabled. Keep it
+outside a pod, linked services and shared network namespaces.
+
+Declare the service in a separate llama.cpp Rune. Port 8082 is the Animator port reserved by
+the host for clients. Choose a different host publication port for the TLS backend.
+
+```toml title="runes/animator/soulstones/llamacpp/alternate.toml"
+name = "alternate"
+placement = "container"
+startup_mode = "single"
+model_path = "/models/alternate.gguf"
+served_model_id = "alternate-model"
+structured_output = "json-schema"
+port = 8082
+base_url = "http://127.0.0.1:8082/v1"
+```
+
+Add its binding in the host's `lychd.toml`. Substitute the actual local endpoint, full
+lowercase container ID and the lowercase, unseparated SHA-256 digest of the server's DER leaf
+certificate. The two identity values below are placeholders. Retain the existing
+`[orchestration.switching]` settings, including `actuator = "native-process"` and the private
+absolute `native_state_dir`. Each container Rune requires exactly one matching binding.
+
+```toml title="lychd.toml"
+[[orchestration.switching.containers]]
+animator = "alternate"
+engine = "docker"
+endpoint = "unix:///run/user/1000/docker.sock"
+container_id = "<64 lowercase hexadecimal digits from container inspect>"
+container_port = 8443
+host_port = 18443
+tls_sha256 = "<64 lowercase hexadecimal digits from the server certificate>"
+```
+
+Linux and macOS accept the account's local Unix socket for rootless Podman, rootless Docker or
+Docker Desktop's Linux engine. Use `engine = "podman"` for a Podman socket. Windows requires
+`engine = "docker"` and `endpoint = "npipe:////./pipe/dockerDesktopLinuxEngine"` for Docker
+Desktop in Linux-container mode. A remote context, a running container or an unexpected
+port mapping fails validation. Container replacement requires an updated binding.
+
+Use the [two-model Nexus procedure](#choose-between-two-local-models-in-nexus) to select A,
+preview B's evictions, request B and check the model grant in Orb. If startup reports an
+unresolved native journal, reconcile the recorded process, port, container incarnation and
+pending request under the original installation before retiring any evidence.
+[Placement and switching](../adr/08-containers.md#per-soulstone-placement)
 
 ## Virtual machines
 
@@ -335,9 +380,9 @@ A separately selected Linux guest can bring its own Linux services and storage. 
 VM profile must prove guest lifecycle, private networking and access to the specific host engine.
 The guest sees its own loopback interface. Test any provider-supplied host address from the actual
 Vessel container. Outbound inference and inbound VPN traffic have different firewall and routing
-requirements. Guest root grants no authority on the outer host. Managing a host process would
-require an authenticated, narrowly scoped host helper, an allowlist of targets and recovery after
-lost acknowledgement. Keep unrestricted host commands, the container-engine socket and host
+requirements. Guest root grants no authority on the outer host. The [portable desktop Reactor](container-desktop.md#desktop-reactor) requires host-mounted private
+directories and a provider host alias. A separately provisioned VM needs its own qualification
+for that ownership, transport and recovery path. Keep unrestricted host commands, the container-engine socket and host
 credentials outside the guest. [Privilege](../adr/10-privilege.md) · [VPN](../adr/39-vpn.md).
 
 Follow implementation of [volume snapshots](https://github.com/hexanomicon/lychd/issues/182),

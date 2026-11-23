@@ -17,6 +17,7 @@ from lychd.domain.orchestration.actuator import (
     RuntimeCancellationRestoredError,
     RuntimePreconditionError,
     TransitionIntent,
+    capability_config_generation,
 )
 from lychd.lib.asyncio import complete_under_cancellation
 from lychd.system.path_safety import path_has_symlink_component
@@ -64,14 +65,24 @@ class _ObservedRuntimeWorld:
 
     reserved_animators: tuple[str, ...]
     running_animators: tuple[str, ...]
+    mismatched_native_relays: tuple[str, ...] = ()
 
     def is_exact(self, expected: tuple[str, ...]) -> bool:
         """Require both the conflict reservation and its service to converge."""
-        return self.reserved_animators == expected and self.running_animators == expected
+        return (
+            not self.mismatched_native_relays
+            and self.reserved_animators == expected
+            and self.running_animators == expected
+        )
 
 
 def _validate_reactor_directory(path: Path, *, label: str) -> None:
     """Require one owner-only, non-symlink Reactor boundary directory."""
+    if os.name == "nt":
+        from lychd.system.desktop.private import verify_private_directory
+
+        verify_private_directory(path)
+        return
     if path_has_symlink_component(path) is not None or not path.is_dir():
         msg = f"Host Reactor {label} directory does not exist safely: {path}"
         raise RuntimeError(msg)
@@ -128,9 +139,15 @@ class SystemdRuntimeActuator:
         with self._effect_authority(intent, operation="transition"):
             await self._apply_locked(intent)
 
+    def _validate_generation(self, intent: TransitionIntent) -> None:
+        if capability_config_generation(self._registry) != intent.config_generation:
+            msg = "Systemd transition differs from the installed configuration generation."
+            raise RuntimePreconditionError(msg)
+
     async def _apply_locked(self, intent: TransitionIntent) -> None:
         """Decline operational observation failures before submission begins."""
         try:
+            self._validate_generation(intent)
             await self._topology_attestor.attest(intent)
             pending = await self._pending_relevant_jobs(intent)
             if pending:
@@ -156,7 +173,7 @@ class SystemdRuntimeActuator:
             message = (
                 f"Stale transition '{intent.transition_id}': expected exact runtime world {expected}, "
                 f"observed target reservations {world.reserved_animators} and running services "
-                f"{world.running_animators}."
+                f"{world.running_animators}, mismatched native relays {world.mismatched_native_relays}."
             )
             raise RuntimePreconditionError(message)
         await self._execute_transaction(intent)
@@ -190,6 +207,7 @@ class SystemdRuntimeActuator:
 
     async def _recover_locked(self, intent: TransitionIntent) -> None:
         """Recover one transaction while its effect authority remains exclusive."""
+        self._validate_generation(intent)
         await self._await_relevant_jobs_quiescent(intent)
         await self._topology_attestor.attest(intent)
         world = await self._observe_runtime_world()
@@ -422,9 +440,8 @@ class SystemdRuntimeActuator:
                 pending.add(columns[_LIST_JOBS_UNIT_COLUMN])
         return tuple(sorted(pending))
 
-    @staticmethod
-    def _relevant_units(intent: TransitionIntent) -> frozenset[str]:
-        from lychd.system.unit_names import animator_service_unit, animator_target_unit
+    def _relevant_units(self, intent: TransitionIntent) -> frozenset[str]:
+        from lychd.system.unit_names import animator_service_unit, animator_target_unit, native_relay_stem
 
         names = {
             *intent.expected_active_animators,
@@ -435,23 +452,33 @@ class SystemdRuntimeActuator:
             {
                 *(animator_target_unit(name) for name in names),
                 *(animator_service_unit(name) for name in names),
+                *(
+                    f"{native_relay_stem(rune.name)}.service"
+                    for rune in self._registry.list_soulstone_runes()
+                    if rune.placement == "native"
+                ),
             }
         )
 
     async def _observe_runtime_world(self) -> _ObservedRuntimeWorld:
         reserved: list[str] = []
         running: list[str] = []
-        from lychd.system.unit_names import animator_service_unit, animator_target_unit
+        mismatched_relays: list[str] = []
+        from lychd.system.unit_names import animator_service_unit, animator_target_unit, native_relay_stem
 
         for soulstone in sorted(self._registry.list_soulstone_runes(), key=lambda item: item.name):
             animator_name = soulstone.name
             target_active = await self._unit_is_active(animator_target_unit(animator_name))
             service_active = await self._unit_is_active(animator_service_unit(animator_name))
+            if soulstone.placement == "native":
+                relay_active = await self._unit_is_active(f"{native_relay_stem(animator_name)}.service")
+                if relay_active != service_active:
+                    mismatched_relays.append(animator_name)
             if target_active:
                 reserved.append(animator_name)
             if service_active:
                 running.append(animator_name)
-        return _ObservedRuntimeWorld(tuple(reserved), tuple(running))
+        return _ObservedRuntimeWorld(tuple(reserved), tuple(running), tuple(mismatched_relays))
 
     async def _unit_is_active(self, unit_name: str) -> bool:
         process = await asyncio.create_subprocess_exec(
@@ -487,7 +514,9 @@ class SystemdRuntimeActuator:
 class HostReactorRuntimeActuator:
     """Publish one typed transition and await its host-owned terminal journal."""
 
-    def __init__(self, intents_dir: Path, journal_dir: Path, *, ack_timeout_s: float) -> None:
+    def __init__(
+        self, intents_dir: Path, journal_dir: Path, *, ack_timeout_s: float, desktop_host: str | None = None
+    ) -> None:
         """Bind the gateway to its writable inbox and read-only host journal."""
         if ack_timeout_s <= 0:
             msg = "Host Reactor acknowledgement timeout must be positive."
@@ -495,10 +524,33 @@ class HostReactorRuntimeActuator:
         self._intents_dir = intents_dir
         self._journal_dir = journal_dir
         self._ack_timeout_s = ack_timeout_s
+        self._desktop_host = desktop_host
+
+    def _check_directories(self) -> None:
+        if self._desktop_host is None:
+            validate_reactor_boundaries(self._intents_dir, self._journal_dir)
+        else:
+            from lychd.system.desktop.reactor_link import verify_guest_mounts
+
+            verify_guest_mounts(self._intents_dir, self._journal_dir)
 
     async def apply(self, intent: TransitionIntent) -> None:  # noqa: C901 - keep publication and cancellation fences together
         """Hold the manager barrier through settlement or proven durable withdrawal."""
-        await asyncio.to_thread(validate_reactor_boundaries, self._intents_dir, self._journal_dir)
+        await asyncio.to_thread(self._check_directories)
+        if self._desktop_host is not None:
+            from lychd.system.desktop.reactor_link import (
+                GUEST_ROOT,
+                mailbox_session,
+                read_guest_projection,
+                verify_guest_link,
+            )
+
+            try:
+                session = await asyncio.to_thread(mailbox_session, self._intents_dir, self._journal_dir)
+                await verify_guest_link(self._desktop_host, read_guest_projection(), GUEST_ROOT, session=session)
+            except (OSError, TimeoutError, ValueError) as exc:
+                msg = "Desktop Reactor inference route unavailable before publication."
+                raise RuntimePreconditionError(msg) from exc
         terminal = self._terminal_status(intent.transition_id)
         if self._resolve_terminal(terminal, intent.transition_id):
             return
@@ -567,7 +619,7 @@ class HostReactorRuntimeActuator:
         raise cancellation
 
     def _write_atomic(self, intent: TransitionIntent) -> None:
-        validate_reactor_boundaries(self._intents_dir, self._journal_dir)
+        self._check_directories()
         target = self._intents_dir / f"{intent.transition_id}.json"
         temporary = self._intents_dir / f".{intent.transition_id}.tmp"
         payload = json.dumps(intent.model_dump(mode="json"), sort_keys=True, separators=(",", ":")) + "\n"
@@ -702,7 +754,10 @@ async def wait_for_host_reactor_idle(settings: SwitchingSettings) -> None:
     deadline = asyncio.get_running_loop().time() + settings.reactor_ack_timeout_s
     inbox = settings.host_reactor_dir
     journal = settings.host_reactor_journal_dir
-    await asyncio.to_thread(validate_reactor_boundaries, inbox, journal)
+    from lychd.system.desktop.reactor_link import guest_host, verify_guest_mounts
+
+    validator = verify_guest_mounts if guest_host() is not None else validate_reactor_boundaries
+    await asyncio.to_thread(lambda: validator(inbox, journal))
     while any(inbox.glob("*.json")) or any(
         any(journal.glob(f"*.{status}.json")) for status in ("acquiring", "processing", "contained")
     ):
@@ -739,10 +794,13 @@ def build_runtime_actuator(
             lock_factory=lock_factory,
         )
     if settings.actuator == "host-reactor":
+        from lychd.system.desktop.reactor_link import guest_host
+
         return HostReactorRuntimeActuator(
             settings.host_reactor_dir,
             settings.host_reactor_journal_dir,
             ack_timeout_s=settings.reactor_ack_timeout_s,
+            desktop_host=guest_host(),
         )
     message = f"Unknown runtime actuator: {settings.actuator}"
     raise ValueError(message)

@@ -160,6 +160,25 @@ desktop.command_class = _DesktopCommand
 desktop.add_command(volume)
 
 
+@desktop.command("reactor-prepare")
+def reactor_prepare() -> None:
+    """Prepare a private, read-only guest configuration and shared Animator inbox."""
+    from lychd.system.desktop.reactor import prepare
+
+    prepare()
+
+
+@desktop.command("reactor-serve")
+@click.option(
+    "--listen", default="127.0.0.1", show_default=True, help="Host interface for authenticated model traffic."
+)
+def reactor_serve(listen: str) -> None:
+    """Run the desktop host's Animator owner in the foreground."""
+    from lychd.system.desktop.reactor import serve
+
+    serve(listen)
+
+
 def _prepare_installation() -> Settings:
     """Initialize native settings and the protected journal before starting any services."""
     check_path(PATH_LYCHD_TOML)

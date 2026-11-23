@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import os
+import posixpath
+import re
 from pathlib import Path
 from typing import Literal, cast
 
-from pydantic import Field, field_validator, model_validator
+from pydantic import ConfigDict, Field, field_validator, model_validator
 
 from lychd.config.settings.section import SettingsSection
 from lychd.config.settings.server import QUEUE_NAMES
@@ -22,6 +24,39 @@ class RoutingRule(SettingsSection):
     """Default urgency from 0 (background) through 100 (most urgent)."""
 
 
+class DesktopContainerBinding(SettingsSection):
+    """Operator-owned identity of a pre-provisioned fixed-model desktop container."""
+
+    model_config = ConfigDict(frozen=True)
+
+    animator: str = Field(min_length=1)
+    engine: Literal["docker", "podman"]
+    endpoint: str
+    container_id: str = Field(pattern=r"^[0-9a-f]{64}$")
+    container_port: int = Field(ge=1, le=65535)
+    host_port: int = Field(ge=1, le=65535)
+    tls_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+    @field_validator("endpoint")
+    @classmethod
+    def local_engine_endpoint(cls, value: str) -> str:
+        """Admit only an absolute local Unix socket or a local named pipe."""
+        if re.fullmatch(r"npipe:////[.]/pipe/[a-zA-Z0-9_.-]+", value):
+            return value
+        if value.startswith("unix:///"):
+            path = value.removeprefix("unix://")
+            if (
+                not path.startswith("//")
+                and not any(char in path for char in ("%", "?", "#", chr(92)))
+                and path.isprintable()
+                and posixpath.normpath(path) == path
+                and ".." not in path.split("/")
+            ):
+                return value
+        message = "Container endpoint must name one local Unix socket or named pipe."
+        raise ValueError(message)
+
+
 class SwitchingSettings(SettingsSection):
     """Hard-swap and Host Reactor policy."""
 
@@ -35,6 +70,8 @@ class SwitchingSettings(SettingsSection):
     """Trusted absolute llama-server executable for locally owned single-model processes."""
     native_model_root: Path | None = None
     """Local directory containing the operator's native GGUF files."""
+    containers: tuple[DesktopContainerBinding, ...] = ()
+    """Locally provisioned fixed containers authorized for desktop lifecycle operations."""
     host_reactor_dir: Path = PATH_REACTOR_INBOX_DIR
     """Owner-only Host Reactor inbox; its sibling journal is derived automatically."""
     min_priority_for_hard_swap: int = Field(default=40, ge=0, le=100)
@@ -52,6 +89,10 @@ class SwitchingSettings(SettingsSection):
 
     @model_validator(mode="after")
     def validate_native_profile(self) -> SwitchingSettings:
+        for field in ("animator", "container_id", "host_port"):
+            if len({getattr(binding, field) for binding in self.containers}) != len(self.containers):
+                message = f"Duplicate desktop container {field}."
+                raise ValueError(message)
         if self.actuator == "native-process":
             if self.native_state_dir is None or not self.native_state_dir.is_absolute():
                 msg = "native-process requires an absolute native_state_dir"

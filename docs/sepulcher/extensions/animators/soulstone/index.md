@@ -8,9 +8,8 @@ icon: material/hexagon-slice-6
 > _A daemon in a bottle, with its fire in your keeping._
 
 A **Soulstone** is a local [Animator](../index.md). Its Rune describes a service on your
-machine and the capabilities it provides. Managed Linux runs the service in a rootless
-Podman container supervised by systemd. In the native profile, Vessel can start its own
-configured llama.cpp process. In both cases the Animator adapter declares capabilities,
+machine and the capabilities it provides. The Rune can place the service in a container or
+run a supported engine directly on the host. The Animator adapter declares capabilities,
 probes readiness and translates supported operations inside the engine.
 [Current switching profiles](../../../../deployments/platform-differences.md#animators)
 
@@ -32,10 +31,10 @@ Quadlet governs the service; callers receive a scoped capability rather than the
 itself. The live Soulstone Animator holds the Rune and Connector, separately from the generated
 Quadlet document.
 
-The proposed [per-Soulstone placement](../../../../adr/08-containers.md#proposed-per-soulstone-placement)
-would let two Soulstones in the same installation choose different ways to run. For example,
-a native llama.cpp on the Mac could share an installation with a containerized renderer.
-Both would keep their own capabilities and the same rules for declaring conflicts.
+One installation can switch between a native single-model llama.cpp and a container Soulstone.
+Each keeps its own capabilities, endpoint and conflict declarations. The host owns the physical
+switch. [Per-Soulstone placement](../../../../adr/08-containers.md#per-soulstone-placement)
+· [Choose placement in a Rune](rune.md#choose-placement)
 
 The [Rune's schema boundary](rune.md#schema-and-process-generation) keeps embedded deployment
 structure separate from Rune ancestry and Domain ownership. `Soulstone` remains one domain concept,

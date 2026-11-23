@@ -68,7 +68,8 @@ normal restart under an explicit test composition.
 
 The historical installed-hybrid trial compared complete SDK history, Intent capability and the
 exact Pattern manifest across two normal native boots, using private Docker and a borrowed
-model. All three native profiles were retired. Their [receipts](../../state-of-the-work.md#current-evidence-envelope)
+model. Those three historical test profiles were retired. Current personal installations have a
+separate [native deployment and recovery procedure](../../deployments/desktop.md). The historical [receipts](../../state-of-the-work.md#current-evidence-envelope)
 remain evidence for those runs. Recovery of a current installed container, an actual crash, and
 restart with both Consent and Checkpoint each require their own observations. General
 retention, compaction, and physical tiering remain incomplete.

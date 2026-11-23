@@ -120,6 +120,15 @@ requested two opposite exclusive transitions in Nexus. Each checked the active e
 and recovered the original Bridge reply after restarting. Both used two native processes with
 the same pinned weights and different served names. [Native browser receipts](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/runtime/desktop-platform-checks-2026-11-18.json)
 
+Per-Soulstone placement now lets a fixed-model native llama.cpp engine and a registered container
+declare the same exclusive hardware domain. Linux host tests cover exact container identity, native child ownership,
+and interruption fencing. A local rootless Podman trial started and stopped a pre-created TLS
+fixture container. The desktop guest tests exercised the real encrypted inference stream and
+rebuilt the projected configuration from the prepare command. The mixed setup still needs a
+Bridge turn and restart on physical macOS and Windows. Windows container actuation currently
+admits Docker Desktop's Linux engine. [Placement and host differences](deployments/platform-differences.md)
+and [desktop lifecycle tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_native_runtime.py).
+
 The [Apple Silicon and standard-user Windows package trials](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/runtime/desktop-platform-checks-2026-11-18.json)
 used the bundled interpreters and Altar and verified committed rows across repair, program removal
 and reinstall. Production Developer ID notarization and Windows Authenticode signing require

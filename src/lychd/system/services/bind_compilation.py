@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 
 from lychd.system.schemas import QuadletContainer, podman_secret_source
 from lychd.system.services.bind import BindRequest
+from lychd.system.unit_names import animator_service_unit
 
 if TYPE_CHECKING:
     from lychd.config.runes.registry import RuneRegistry
@@ -51,18 +52,27 @@ def compile_bind_request(
     tether_consumer_uid: int | None = None,
     tether_forbidden_backend_addresses: tuple[str, ...] | None = None,
 ) -> BindRequest:
-    """Compile the complete container binding generation from declared intent."""
+    """Bind Core containers, per-Soulstone lifecycle units and admitted extension services."""
     from lychd.domain.animation.capabilities import CapabilitySpec
     from lychd.domain.animation.conflicts import require_soulstone_capability_coverage
+    from lychd.domain.animation.services.adapters.contracts import RuntimePlan
     from lychd.domain.animation.services.adapters.registry import (
         RuntimeAdapterRegistry,
     )
     from lychd.domain.animation.transmute import Transmuter
+    from lychd.system.services.managed_native_llama import compile_managed_native_llama
 
+    native = {
+        stone.name: compile_managed_native_llama(stone, settings)
+        for stone in soulstones
+        if stone.resolved_placement("container") == "native"
+    }
     runtime_planner = RuntimeAdapterRegistry(
         soulstone_registrations=extensions.soulstone_registrations,
     )
-    runtime_plans = tuple(runtime_planner.plan(stone) for stone in soulstones)
+    runtime_plans = tuple(
+        RuntimePlan() if stone.name in native else runtime_planner.plan(stone) for stone in soulstones
+    )
     capability_specs: list[CapabilitySpec] = []
     for stone in soulstones:
         runtime = runtime_planner.build_runtime(stone)
@@ -86,6 +96,7 @@ def compile_bind_request(
         portals=tuple(portals),
         runes=runes,
         runtime_plans=runtime_plans,
+        native_relays={name: binding.relay for name, binding in native.items()},
     )
     tether = _compile_tether_contribution(
         settings=settings,
@@ -134,9 +145,16 @@ def compile_bind_request(
     # Only emitted references inherit generation authority; explicit operator
     # requirements must retain BindRequest's core/operator overlap refusal.
     manifest_requirements = manifest_secrets.difference(core_secret_factories)
+    plain_units = _desired_plain_units(settings=settings)
+    for name, binding in native.items():
+        service = animator_service_unit(name)
+        if service in plain_units:
+            msg = f"Managed native Soulstone collides with reserved host service {service}"
+            raise ValueError(msg)
+        plain_units[service] = binding.service_text
     return BindRequest.compile(
         manifests=manifests,
-        plain_units=_desired_plain_units(settings=settings),
+        plain_units=plain_units,
         core_secret_factories=core_secret_factories,
         tether=tether,
         required_secret_names=sorted(

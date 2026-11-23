@@ -463,6 +463,17 @@ class QuadletContainer(QuadletBase):
         return self
 
 
+class NativeRelayContainer(QuadletContainer):
+    """Core-generated relay with one read-only systemd runtime directory."""
+
+    socket_directory: str
+
+    @field_validator("socket_directory")
+    @classmethod
+    def validate_socket_directory(cls, value: str) -> str:
+        return validate_unit_name_component(value, field_name="native socket directory")
+
+
 class QuadletPod(QuadletBase):
     """Data model for 'pod.jinja'.
 

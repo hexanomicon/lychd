@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Literal
 
 import structlog
 
 from lychd.domain.animation.schemas import ModelInfo
+from lychd.domain.animation.schemas.runes.models import model_path_stem
 from lychd.extensions.builtin.animator.llamacpp.parser_models import (
     LlamaCppPresetDocument,
     LlamaCppRuntimeInference,
@@ -110,7 +110,7 @@ class LlamaCppRuntimePlanner:
         if soulstone.served_model_id:
             return soulstone.served_model_id
         if soulstone.model_path:
-            return Path(soulstone.model_path).stem
+            return model_path_stem(soulstone.model_path)
         return soulstone.name
 
     def _single_mode_args(
@@ -131,7 +131,7 @@ class LlamaCppRuntimePlanner:
         generated_alias = (
             min(inferred.model_aliases, default=None)
             or soulstone.served_model_id
-            or (Path(model_ref).stem if model_ref else None)
+            or (model_path_stem(model_ref) if model_ref else None)
             or inferred.docker_repo
             or soulstone.name
         )

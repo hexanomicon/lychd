@@ -5,7 +5,7 @@ from abc import ABC
 from collections.abc import Sequence
 from enum import StrEnum
 from pathlib import Path
-from typing import ClassVar, Final, Never, Self
+from typing import ClassVar, Final, Literal, Never, Self
 
 from pydantic import AnyHttpUrl, Field, field_validator, model_validator
 
@@ -19,6 +19,8 @@ from lychd.system.secret_names import is_valid_podman_secret_name
 
 _ENV_NAME: Final[re.Pattern[str]] = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 _MAX_PORT: Final = 65535
+
+type SoulstonePlacement = Literal["native", "container"]
 
 
 class _FrozenStringMap(dict[str, str]):
@@ -121,7 +123,7 @@ class AnimatorConfig(RuneConfig, ABC):
 
 
 class SoulstoneConfig(AnimatorConfig, ABC):
-    """Local container-backed capability runtimes.
+    """Local capability runtimes with an installation-resolved lifecycle owner.
 
     Soulstones may declare local models because the system typically owns the
     artifact path and runtime process for local execution. Connectors later turn
@@ -132,6 +134,9 @@ class SoulstoneConfig(AnimatorConfig, ABC):
     path_fragment: ClassVar[Path] = Path("soulstones")
 
     description: str = ""
+    placement: SoulstonePlacement | None = Field(
+        default=None, description="Lifecycle placement. Omit to inherit the installation's existing default."
+    )
     quadlet: QuadletConfig = Field(
         description="Typed deployment body compiled into the Soulstone's Quadlet container.",
     )
@@ -139,7 +144,7 @@ class SoulstoneConfig(AnimatorConfig, ABC):
     model_path: str | None = Field(
         default=None,
         description=(
-            "Single model artifact or model directory inside the runtime container. "
+            "Single model artifact or directory in the selected runtime's filesystem. "
             "Use runtime-specific catalogs for multi-model runtimes."
         ),
     )
@@ -208,6 +213,29 @@ class SoulstoneConfig(AnimatorConfig, ABC):
         ),
     )
 
+    def resolved_placement(self, default: SoulstonePlacement) -> SoulstonePlacement:
+        """Resolve against one installation and validate this runtime's launch declarations."""
+        placement = self.placement or default
+        if placement == "native":
+            if (
+                "quadlet" in self.model_fields_set
+                or self.volumes
+                or self.devices
+                or self.security_label_disable
+                or self.env_vars
+                or self.secret_env_files
+                or self.exec
+            ):
+                msg = f"Native Soulstone {self.name!r} cannot declare a container image, mount, device, label, environment, secret or command."
+                raise ValueError(msg)
+            self._validate_native_placement()
+        return placement
+
+    def _validate_native_placement(self) -> None:
+        """Require the runtime extension to admit its typed native launch contract."""
+        msg = f"Soulstone runtime {self.runtime!r} has no supported native placement."
+        raise ValueError(msg)
+
     @field_validator("generation")
     @classmethod
     def _refuse_default_thinking_policy(cls, value: GenerationProfile | None) -> GenerationProfile | None:
@@ -238,6 +266,8 @@ class SoulstoneConfig(AnimatorConfig, ABC):
 
     @model_validator(mode="after")
     def _hydrate_local_defaults(self) -> SoulstoneConfig:
+        if self.placement is not None:
+            self.resolved_placement(self.placement)
         _require_unique_model_ids(self.models)
         for model in self.models:
             if model.generation is not None and model.generation.thinking is not None:

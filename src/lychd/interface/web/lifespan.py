@@ -76,8 +76,9 @@ def _collect_run_queues(app: Litestar) -> dict[str, RunQueue]:
 def _soft_activation_guard_at_startup() -> SoftActivationGuard:
     """Fence unfinished runtime-native effects before any queue can connect."""
     from lychd.config.settings.root import get_settings
+    from lychd.system.desktop.reactor_link import guest_host
 
-    if get_settings().orchestration.switching.actuator == "native-process":
+    if get_settings().orchestration.switching.actuator == "native-process" or guest_host() is not None:
         from lychd.system.services.native_runtime import NativeSingleModelGuard
 
         return NativeSingleModelGuard()
@@ -91,6 +92,16 @@ def _soft_activation_guard_at_startup() -> SoftActivationGuard:
 
 @asynccontextmanager
 async def altar_services_lifespan(app: Litestar) -> AsyncGenerator[None]:
+    """Hold any host inference route until all Vessel workers have drained."""
+    from lychd.config.settings.root import get_settings
+    from lychd.system.desktop.reactor_link import desktop_guest_inference
+
+    async with desktop_guest_inference(get_settings().orchestration.switching), _altar_services(app):
+        yield
+
+
+@asynccontextmanager
+async def _altar_services(app: Litestar) -> AsyncGenerator[None]:
     """Assemble, probe, reconcile, publish, and later drain the Altar services."""
     from lychd.config.settings.root import get_settings
     from lychd.extensions.host import get_extensions  # application assembly root only

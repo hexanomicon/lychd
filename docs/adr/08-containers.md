@@ -22,8 +22,9 @@ the native profile has separate XDG roots and foreground lifecycle. Both profile
 own provisioned data and credentials. Selecting a mode never migrates or stops the other.
 The [portable container profile](../deployments/container-desktop.md) uses the same production
 entrypoint in a local Linux container engine on a personal desktop. Its app, database and optional
-fixed model share a private network namespace. The host operator owns Compose lifecycle. Model
-switching through a host Reactor requires the managed Linux installation.
+fixed CPU model share a private network namespace. The host operator owns Compose lifecycle.
+A separate portable Reactor project can route inference and submit typed switches to a resident
+desktop owner.
 [Choose a Vessel placement](../deployments/platform-differences.md#vessel)
 
 A native installation uses the same application, extension registry, PostgreSQL schema,
@@ -108,31 +109,32 @@ tokens are refused; they cannot introduce an independent secret, mount, device, 
 network-policy path. There is no `Stone`, `ServiceStone`, or `AmbientStone` base type:
 **Soulstone** is the sole accepted service term using that suffix.
 
-### Proposed per-Soulstone placement
+### Per-Soulstone placement
 
-Keep the Soulstone Rune and its runtime family when changing how a local service is launched.
-For example, the same `llamacpp` extension can describe a server running in a container or
-directly on the host. The proposed Rune field is `placement`, with values `container` and
-`native`. A Portal has no local placement. Vessel placement remains an installation choice.
-Today the installation selects one actuator. Per-Soulstone selection and mixed switches are
-design proposals. [Current switching profiles](../deployments/platform-differences.md#animators)
+A local Soulstone Rune may select `placement = "container"` or `placement = "native"`.
+Omission preserves the installation default, container for managed Linux and native for the
+personal process owner. A portable Reactor guest inherits the host's resolved bindings.
+Placement preserves the Rune's identity, runtime family, capabilities and conflicts. Portals
+remain remote connections. Vessel placement is an independent installation choice.
 
-At bind time, resolve an omitted placement using the existing installation profile so older
-Runes keep their behaviour. Validate an explicit placement against the runtime extension and
-the installed lifecycle backend. A container needs a supported image and launcher. A native
-process needs a trusted executable and an endpoint reachable from Vessel. Refuse an unsupported
-combination before changing services. In particular, a container mount or secret declaration
-does not grant a native process access to the corresponding host resource.
+On managed Linux, Bind compiles a container Soulstone to a Quadlet and a native Soulstone to a
+systemd user service. Native placement admits a dedicated, fixed single-model llama.cpp with a
+trusted host executable and local GGUF. Its private Unix socket reaches Vessel through a
+loopback relay in the pod. Bind and the Reactor attest the native service and relay together.
+Both placements participate in the same systemd target and conflict graph.
 
-Keep the existing `TransitionIntent` and Animator IDs at the application boundary. On the
-side that owns execution, bind each dedicated Soulstone to its lifecycle backend and include
-that binding in the configuration generation checked before acting. The backend observes
-and changes the services it owns. A Linux native process could have its own systemd user
-unit alongside a generated container unit. If one systemd graph owns both, submit one transaction.
-For a switch across backends, verify both owners before stopping A, confirm A has stopped
-before starting B, and record enough state to recover the whole transition. The Orchestrator
-still owns conflict policy, lease drain and readiness. [Switching contract](23-orchestrator.md)
-· [Host Reactor](../sepulcher/reactor.md)
+On a personal host, one resident owner supervises native children and may inspect, start and
+stop an operator-provisioned fixed-model container. Each container binding names one local engine,
+immutable container ID, Soulstone label, loopback port mapping and TLS certificate digest.
+Container creation and replacement remain operator actions. A native Vessel holds the owner
+directly. A caged desktop Vessel submits logical transition requests to the resident host through
+its inbox. Its mutually authenticated model connection carries inference for named Animators.
+
+The host commits resolved lifecycle bindings into the configuration generation. A switch uses
+the existing Animator IDs and `TransitionIntent`. Its owner validates the generation and live
+preconditions before acting. [Orchestrator](23-orchestrator.md) owns lease drain, conflict
+policy, readiness and restoration. [Platform differences](../deployments/platform-differences.md#animators)
+and the [Host Reactor](../sepulcher/reactor.md) describe the operating profiles.
 
 ### Versioned application deployments
 
@@ -194,8 +196,8 @@ the old body is another quiesced migration rather than process restart.
 ## Three authorities, one transition
 
 A lifecycle transition crosses three authorities. The [Orchestrator](23-orchestrator.md) decides
-admissibility, the [Dispatcher](22-dispatcher.md) grants capability, and systemd performs the
-physical unit transaction. Before contacting systemd, the application closes relevant admission,
+admissibility, the [Dispatcher](22-dispatcher.md) grants capability, and the installed lifecycle owner
+executes the physical transition. On managed Linux, the application closes relevant admission,
 drains leases, revalidates configuration and the observed world, and attests the generated
 target/service/Coven graph and its loaded sources against Scribe ownership. It then submits the
 transition and observes settlement, readiness, and recovery under [Privilege](10-privilege.md).
@@ -237,7 +239,7 @@ hold for different host UIDs, including the image's historical application UID. 
 assert that third-party images support a read-only root or that a rendered manifest proves
 working subordinate-ID maps, SELinux labels, or filesystem permissions on an operator host.
 
-Current Soulstone compilation joins every service to `lychd.pod`. That topology is not admissible
+Managed Linux joins each container Soulstone or native engine relay to `lychd.pod`. That topology is not admissible
 for a browser-bearing Scout renderer. Such a Soulstone must compile into a dedicated rootless
 containment and network zone with no route to Core peers, Phylactery, host control sockets, wallets,
 or unrelated secrets; its target egress must cross the Scout-owned destination gate. Until the
