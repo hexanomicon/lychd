@@ -108,6 +108,32 @@ tokens are refused; they cannot introduce an independent secret, mount, device, 
 network-policy path. There is no `Stone`, `ServiceStone`, or `AmbientStone` base type:
 **Soulstone** is the sole accepted service term using that suffix.
 
+### Proposed per-Soulstone placement
+
+Keep the Soulstone Rune and its runtime family when changing how a local service is launched.
+For example, the same `llamacpp` extension can describe a server running in a container or
+directly on the host. The proposed Rune field is `placement`, with values `container` and
+`native`. A Portal has no local placement. Vessel placement remains an installation choice.
+Today the installation selects one actuator. Per-Soulstone selection and mixed switches are
+design proposals. [Current switching profiles](../deployments/platform-differences.md#animators)
+
+At bind time, resolve an omitted placement using the existing installation profile so older
+Runes keep their behaviour. Validate an explicit placement against the runtime extension and
+the installed lifecycle backend. A container needs a supported image and launcher. A native
+process needs a trusted executable and an endpoint reachable from Vessel. Refuse an unsupported
+combination before changing services. In particular, a container mount or secret declaration
+does not grant a native process access to the corresponding host resource.
+
+Keep the existing `TransitionIntent` and Animator IDs at the application boundary. On the
+side that owns execution, bind each dedicated Soulstone to its lifecycle backend and include
+that binding in the configuration generation checked before acting. The backend observes
+and changes the services it owns. A Linux native process could have its own systemd user
+unit alongside a generated container unit. If one systemd graph owns both, submit one transaction.
+For a switch across backends, verify both owners before stopping A, confirm A has stopped
+before starting B, and record enough state to recover the whole transition. The Orchestrator
+still owns conflict policy, lease drain and readiness. [Switching contract](23-orchestrator.md)
+· [Host Reactor](../sepulcher/reactor.md)
+
 ### Versioned application deployments
 
 A future `ApplicationDeploymentManifest@1` admits a complete application-specific service body

@@ -33,4 +33,5 @@ The current installation selects one way to control Animators. The portable Comp
 profile serves one optional fixed model. Switching from a container in a Linux VM to a
 native desktop engine would require coordinating both owners, confirming A has stopped
 before asking the host to start B. Reaching B over the network only gives Vessel access
-to its inference API. Mixed switching is future work. [Platform differences](../deployments/platform-differences.md#animators)
+to its inference API. Mixed switching is future work. [Proposed per-Soulstone placement](../adr/08-containers.md#proposed-per-soulstone-placement)
+· [Platform differences](../deployments/platform-differences.md#animators)
