@@ -23,6 +23,8 @@ from tests.unit.compositions.test_reach_documents import NOW, STARTED, make_corp
 
 def profile() -> OperatorConversationProfile:
     return OperatorConversationProfile(
+        animator_id="night-qwen38",
+        model_id="Qwen3.8-27B",
         persona_name="Nadir",
         persona_instructions="Use attributed public evidence.",
         adaptive_context=True,

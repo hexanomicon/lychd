@@ -133,7 +133,6 @@ Create `"$CODEX_DIR/runes/animator/portals/openai/main.toml"`:
 
 ```toml title="main.toml"
 name = "openai-main"
-description = "Explicit remote chat capability."
 api_key_secret_name = "portal_openai_main"
 probe = false
 
@@ -230,7 +229,6 @@ cannot serve as a Reach provider path, including in the public VPS profile.
 | Field | Default | Meaning |
 | :--- | :--- | :--- |
 | `name` | required | Animator identity and capability-key prefix. |
-| `description` | `""` | Operator note. |
 | `provider_name` | provider leaf | Connector identity. |
 | `base_url` | provider leaf | HTTP(S) endpoint root without credentials, query, fragment, or invalid port. |
 | `api_key_secret_name` | `null` | One option-free Podman secret name, never its value. |
@@ -238,6 +236,6 @@ cannot serve as a Reach provider path, including in the public VPS profile.
 | `generation` | `null` | Portal-wide generation overlay. |
 | `probe` | `false` | Opt in to the unauthenticated `/models` probe. |
 
-Each model requires provider-facing `id`; it may add capability hints and a per-model
-generation overlay. Operator description belongs to the Portal, not each model block. Capability hints default to chat with text admission. Verification
-may downgrade a declaration, never invent one.
+Each model requires a provider-facing `id` and may add capability hints and a per-model
+generation overlay. Capability hints default to chat with text admission. A live probe may
+downgrade a declared capability.

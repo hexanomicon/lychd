@@ -10,6 +10,7 @@ import asyncio
 import base64
 import json
 import os
+import re
 from collections.abc import Awaitable, Callable
 from contextlib import suppress
 from http import HTTPStatus
@@ -17,12 +18,15 @@ from typing import Any, NoReturn, cast
 
 import httpx2
 
+from lychd.compositions.reach.operator_model_wire import ANIMATOR_ID_COMPONENT
+
 MAX_BODY_BYTES = 1_048_576
 MAX_FRAME_BYTES = 2_097_152
 PROCESS_TIMEOUT_SECONDS = 300
 TERMINATE_TIMEOUT_SECONDS = 2
-_MODEL_PORT = 28000
+_CONTAINER = re.compile(f"^lychd-{ANIMATOR_ID_COMPONENT}$")
 _MAX_HTTP_STATUS = 599
+_MAX_PORT = 65535
 _ROUTES = {("GET", b"/health"), ("GET", b"/v1/models"), ("POST", b"/v1/chat/completions")}
 _HEADERS = frozenset(
     {
@@ -37,8 +41,8 @@ _HEADERS = frozenset(
     }
 )
 
-# The argv contains only this constant program. Neither its origin nor headers
-# are supplied by the caller; Python isolation and ProxyHandler exclude ambient
+# The trusted host pins the target and port when it binds the relay. Python
+# isolation and ProxyHandler exclude ambient
 # Python and HTTP proxy configuration inside the existing container.
 _HELPER = r"""
 import base64
@@ -77,8 +81,11 @@ try:
     body = base64.b64decode(value["body"], validate=True)
     if len(body) > BODY_LIMIT or (method == "GET" and body):
         raise ValueError()
+    port = int(sys.argv[1])
+    if not 1 <= port <= 65535:
+        raise ValueError()
     request = urllib.request.Request(
-        "http://127.0.0.1:28000" + path,
+        f"http://127.0.0.1:{port}" + path,
         data=body if method == "POST" else None,
         method=method,
         headers={"Content-Type": "application/json", "Accept-Encoding": "identity"},
@@ -106,7 +113,6 @@ try:
 except Exception:
     sys.exit(1)
 """
-_ARGV = ("podman", "exec", "--interactive", "lychd-night-qwen38", "python3", "-I", "-c", _HELPER)
 
 
 def _fail(code: str, request: httpx2.Request) -> NoReturn:
@@ -161,12 +167,12 @@ async def _settle(
         raise asyncio.CancelledError
 
 
-async def _request_frame(request: httpx2.Request) -> bytes:
+async def _request_frame(request: httpx2.Request, *, port: int) -> bytes:
     url = request.url
     if (
         url.scheme != "http"
         or url.raw_host != b"127.0.0.1"
-        or url.port != _MODEL_PORT
+        or url.port != port
         or url.userinfo
         or url.query
         or url.fragment
@@ -234,14 +240,37 @@ class PodmanModelTransport(httpx2.AsyncBaseTransport):
     def __init__(
         self,
         *,
+        container: str,
+        port: int,
         process_factory: Callable[..., Awaitable[asyncio.subprocess.Process]] | None = None,
     ) -> None:
         """Bind the fixed executor without starting a process or network call."""
+        if (
+            _CONTAINER.fullmatch(container) is None
+            or ".." in container
+            or type(port) is not int
+            or not 1 <= port <= _MAX_PORT
+        ):
+            msg = "model_podman_route"
+            raise ValueError(msg)
+        self._port = port
+        self._argv = (
+            "podman",
+            "--remote=false",
+            "exec",
+            "--interactive",
+            container,
+            "python3",
+            "-I",
+            "-c",
+            _HELPER,
+            str(port),
+        )
         self._process_factory = process_factory or asyncio.create_subprocess_exec
 
     async def handle_async_request(self, request: httpx2.Request) -> httpx2.Response:
         """Return one response without retries, redirects or forwarded headers."""
-        frame = await _request_frame(request)
+        frame = await _request_frame(request, port=self._port)
         environment = {
             name: os.environ[name] for name in ("HOME", "XDG_RUNTIME_DIR", "PATH", "LANG") if name in os.environ
         }
@@ -251,7 +280,7 @@ class PodmanModelTransport(httpx2.AsyncBaseTransport):
             async with asyncio.timeout(PROCESS_TIMEOUT_SECONDS):
                 started = asyncio.ensure_future(
                     self._process_factory(
-                        *_ARGV,
+                        *self._argv,
                         stdin=asyncio.subprocess.PIPE,
                         stdout=asyncio.subprocess.PIPE,
                         stderr=asyncio.subprocess.DEVNULL,

@@ -7,13 +7,16 @@ native worker owns cognition; this broker performs only its closed HTTP dialect.
 from __future__ import annotations
 
 import asyncio
+import ipaddress
 import time
 from collections.abc import Callable
 from typing import Any, cast
+from urllib.parse import urlsplit
 
 import httpx2
 
 from lychd.compositions.reach.operator_model_wire import (
+    MAX_MODEL_ID_CHARS,
     MAX_MODEL_PAYLOAD_BYTES,
     OperatorConversationProfile,
     OperatorModelProbe,
@@ -26,17 +29,30 @@ from lychd.compositions.reach.operator_trace import TraceEmitter, TraceName, Tra
 from lychd.compositions.reach.operator_wire import strict_json
 from lychd.lib.http import create_async_http_client
 
-MODEL_ENDPOINT = "http://127.0.0.1:28000"
 MAX_MODEL_IDS = 32
-MAX_MODEL_ID_CHARS = 256
 
 
 def validate_endpoint(endpoint: str) -> str:
-    """Pin the one literal local transport; caller frames cannot alter its road."""
-    if endpoint != MODEL_ENDPOINT:
-        msg = "model_endpoint"
-        raise ValueError(msg)
-    return endpoint
+    """Admit only an explicit and unadorned HTTP loopback origin."""
+    try:
+        parsed = urlsplit(endpoint)
+        host = parsed.hostname
+        port = parsed.port
+        loopback = host is not None and ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        loopback = False
+    else:
+        if (
+            loopback
+            and port
+            and parsed.username is None
+            and parsed.password is None
+            and "%" not in parsed.netloc
+            and endpoint == f"http://{parsed.netloc}"
+        ):
+            return endpoint
+    msg = "model_endpoint"
+    raise ValueError(msg)
 
 
 def _object(value: Any, code: str) -> dict[str, Any]:
@@ -97,14 +113,16 @@ class OperatorModelBroker:
         self,
         profile: OperatorConversationProfile,
         *,
-        endpoint: str = MODEL_ENDPOINT,
+        endpoint: str,
         transport: httpx2.AsyncBaseTransport | None = None,
         trace: TraceSink | None = None,
+        vllm_options: bool = False,
     ) -> None:
         """Bind transport to a frozen profile without opening any network connection."""
         self.profile = profile
         self.endpoint = validate_endpoint(endpoint)
         self.transport = transport
+        self._vllm_options = vllm_options
         self._busy = False
         self.trace = TraceEmitter("host", trace)
         self._active_request: OperatorModelRequest | None = None
@@ -183,7 +201,12 @@ class OperatorModelBroker:
     async def _generate(
         self, client: httpx2.AsyncClient, payload: str, *, authorize: Callable[[], None] | None = None
     ) -> str:
-        body = canonical_json(validate_generation_payload(self.profile, payload)).encode()
+        validated = validate_generation_payload(self.profile, payload)
+        if not self._vllm_options:
+            # The default closed wire includes false for digest compatibility. Ordinary
+            # Chat Completions endpoints need not implement the thinking extension.
+            del validated["chat_template_kwargs"]
+        body = canonical_json(validated).encode()
         if len(body) > MAX_MODEL_PAYLOAD_BYTES:
             msg = "model_request_limit"
             raise ValueError(msg)

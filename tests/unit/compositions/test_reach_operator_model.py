@@ -80,7 +80,9 @@ from tests.unit.compositions.test_reach_research import (
 
 
 def profile() -> OperatorConversationProfile:
-    return OperatorConversationProfile(persona_name="Example", persona_instructions="Be useful.")
+    return OperatorConversationProfile(
+        animator_id="night-qwen38", model_id="Qwen3.8-27B", persona_name="Example", persona_instructions="Be useful."
+    )
 
 
 def body() -> dict[str, Any]:
@@ -173,10 +175,18 @@ RESEARCH_SOURCE_SHAPE_COUNT = 23
 def test_private_thinking_binding_preserves_the_known_legacy_digest_and_existing_defaults() -> None:
     omitted = profile()
     explicit_false = OperatorConversationProfile(
-        persona_name="Example", persona_instructions="Be useful.", enable_thinking=False
+        animator_id="night-qwen38",
+        model_id="Qwen3.8-27B",
+        persona_name="Example",
+        persona_instructions="Be useful.",
+        enable_thinking=False,
     )
     thinking = OperatorConversationProfile(
-        persona_name="Example", persona_instructions="Be useful.", enable_thinking=True
+        animator_id="night-qwen38",
+        model_id="Qwen3.8-27B",
+        persona_name="Example",
+        persona_instructions="Be useful.",
+        enable_thinking=True,
     )
     assert omitted.enable_thinking is False
     assert omitted.digest == explicit_false.digest == LEGACY_PROFILE_DIGEST
@@ -212,7 +222,13 @@ def test_private_thinking_binding_preserves_the_known_legacy_digest_and_existing
 def test_private_thinking_flag_is_an_original_boolean(value: object) -> None:
     with pytest.raises(ValidationError):
         OperatorConversationProfile.model_validate(
-            {"persona_name": "Example", "persona_instructions": "Be useful.", "enable_thinking": value}
+            {
+                "animator_id": "night-qwen38",
+                "model_id": "Qwen3.8-27B",
+                "persona_name": "Example",
+                "persona_instructions": "Be useful.",
+                "enable_thinking": value,
+            }
         )
 
 
@@ -259,6 +275,8 @@ def test_json_object_flag_requires_an_original_boolean(value: object) -> None:
     with pytest.raises(ValidationError):
         OperatorConversationProfile.model_validate(
             {
+                "animator_id": "night-qwen38",
+                "model_id": "Qwen3.8-27B",
                 "persona_name": "Example",
                 "persona_instructions": "Be useful.",
                 "adaptive_context": True,
@@ -269,7 +287,13 @@ def test_json_object_flag_requires_an_original_boolean(value: object) -> None:
 
 def test_json_object_output_requires_an_adaptive_decision_profile() -> None:
     with pytest.raises(ValidationError, match="json_object_output_requires_adaptive_context"):
-        OperatorConversationProfile(persona_name="Example", persona_instructions="Be useful.", json_object_output=True)
+        OperatorConversationProfile(
+            animator_id="night-qwen38",
+            model_id="Qwen3.8-27B",
+            persona_name="Example",
+            persona_instructions="Be useful.",
+            json_object_output=True,
+        )
 
 
 @pytest.mark.parametrize("enabled", [False, True])
@@ -278,6 +302,8 @@ def test_decision_schema_version_is_exact_original_integer_four(*, enabled: bool
     with pytest.raises(ValidationError, match="decision_schema_version"):
         OperatorConversationProfile.model_validate(
             {
+                "animator_id": "night-qwen38",
+                "model_id": "Qwen3.8-27B",
                 "persona_name": "Example",
                 "persona_instructions": "Be useful.",
                 "adaptive_context": True,
@@ -869,7 +895,12 @@ async def test_native_sdk_reasoning_never_enters_review_repair_history_checkpoin
 @pytest.mark.parametrize("enabled", [False, True])
 def test_private_4096_completion_ceiling_requires_exact_profile_and_refuses_4097(*, enabled: bool) -> None:
     binding = OperatorConversationProfile(
-        persona_name="Example", persona_instructions="Be useful.", max_tokens=4096, enable_thinking=enabled
+        animator_id="night-qwen38",
+        model_id="Qwen3.8-27B",
+        persona_name="Example",
+        persona_instructions="Be useful.",
+        max_tokens=4096,
+        enable_thinking=enabled,
     )
     payload = body() | {"max_tokens": 4096, "chat_template_kwargs": {"enable_thinking": enabled}}
     assert validate_generation_payload(binding, canonical_json(payload))["max_tokens"] == 4096
@@ -878,13 +909,30 @@ def test_private_4096_completion_ceiling_requires_exact_profile_and_refuses_4097
     with pytest.raises(ValidationError):
         validate_generation_payload(binding, canonical_json(payload | {"max_tokens": 4097}))
     with pytest.raises(ValidationError):
-        OperatorConversationProfile(persona_name="Example", persona_instructions="Be useful.", max_tokens=4097)
+        OperatorConversationProfile(
+            animator_id="night-qwen38",
+            model_id="Qwen3.8-27B",
+            persona_name="Example",
+            persona_instructions="Be useful.",
+            max_tokens=4097,
+        )
 
 
 def test_legacy_2048_profile_digest_and_default_false_binding_are_unchanged() -> None:
-    omitted = OperatorConversationProfile(persona_name="Example", persona_instructions="Be useful.", max_tokens=2048)
+    omitted = OperatorConversationProfile(
+        animator_id="night-qwen38",
+        model_id="Qwen3.8-27B",
+        persona_name="Example",
+        persona_instructions="Be useful.",
+        max_tokens=2048,
+    )
     explicit = OperatorConversationProfile(
-        persona_name="Example", persona_instructions="Be useful.", max_tokens=2048, enable_thinking=False
+        animator_id="night-qwen38",
+        model_id="Qwen3.8-27B",
+        persona_name="Example",
+        persona_instructions="Be useful.",
+        max_tokens=2048,
+        enable_thinking=False,
     )
     assert omitted.digest == explicit.digest == "02963aa403c0eed97abd99b4c7425e62d40e1f2aaa4377f38ce6f4475125a6d0"
     assert profile().max_tokens == 384
@@ -897,10 +945,20 @@ def test_legacy_2048_profile_digest_and_default_false_binding_are_unchanged() ->
 def test_private_completion_allowance_must_leave_declared_context_for_input() -> None:
     with pytest.raises(ValidationError, match="model_completion_context"):
         OperatorConversationProfile(
-            persona_name="Example", persona_instructions="Be useful.", max_tokens=4096, max_context=4096
+            animator_id="night-qwen38",
+            model_id="Qwen3.8-27B",
+            persona_name="Example",
+            persona_instructions="Be useful.",
+            max_tokens=4096,
+            max_context=4096,
         )
     binding = OperatorConversationProfile(
-        persona_name="Example", persona_instructions="Be useful.", max_tokens=4096, max_context=16_384
+        animator_id="night-qwen38",
+        model_id="Qwen3.8-27B",
+        persona_name="Example",
+        persona_instructions="Be useful.",
+        max_tokens=4096,
+        max_context=16_384,
     )
     assert binding.max_tokens == 4096
     assert binding.max_context == 16_384
@@ -1410,7 +1468,11 @@ def test_thinking_phase_selection_is_closed_unique_and_bounded(value: object) ->
 def test_nonempty_thinking_phases_require_the_known_json_carrier() -> None:
     with pytest.raises(ValidationError, match="model_thinking_phases"):
         OperatorConversationProfile(
-            persona_name="Example", persona_instructions="Be useful.", thinking_phases=("checkback",)
+            animator_id="night-qwen38",
+            model_id="Qwen3.8-27B",
+            persona_name="Example",
+            persona_instructions="Be useful.",
+            thinking_phases=("checkback",),
         )
 
 
@@ -2129,6 +2191,8 @@ def test_enabled_profiles_require_explicit_v4_without_silent_migration(
     opt_in: str, version: int | None, input_mode: str
 ) -> None:
     raw: dict[str, Any] = {
+        "animator_id": "night-qwen38",
+        "model_id": "Qwen3.8-27B",
         "persona_name": "Example",
         "persona_instructions": "Be useful.",
         "adaptive_context": True,
@@ -2155,7 +2219,12 @@ def test_enabled_profiles_require_explicit_v4_without_silent_migration(
 
 
 def test_disabled_legacy_omitted_schema_version_keeps_its_binding() -> None:
-    raw = {"persona_name": "Example", "persona_instructions": "Be useful."}
+    raw = {
+        "animator_id": "night-qwen38",
+        "model_id": "Qwen3.8-27B",
+        "persona_name": "Example",
+        "persona_instructions": "Be useful.",
+    }
     accepted = OperatorConversationProfile.model_validate_json(canonical_json(raw))
     assert "decision_schema_version" not in accepted.model_fields_set
     assert accepted.digest == profile().digest == LEGACY_PROFILE_DIGEST
@@ -2187,3 +2256,46 @@ def test_explicit_210000_input_bound_preserves_default_and_physical_limits() -> 
     payload["messages"] = [{"role": "system", "content": "\x00" * 180_000}]
     with pytest.raises(ValueError, match="model_payload"):
         validate_generation_payload(selected, canonical_json(payload))
+
+
+def test_model_binding_is_explicit_and_keeps_the_exact_historical_identity() -> None:
+    legacy = profile()
+    assert (legacy.animator_id, legacy.model_id) == ("night-qwen38", "Qwen3.8-27B")
+    with pytest.raises(ValidationError, match="animator_id"):
+        OperatorConversationProfile.model_validate({"persona_name": "Example", "persona_instructions": "Be useful."})
+    assert legacy.digest == LEGACY_PROFILE_DIGEST
+    routed = OperatorConversationProfile(
+        persona_name="Example",
+        persona_instructions="Be useful.",
+        animator_id="Local_Soulstone",
+        model_id="/models/small.gguf",
+    )
+    assert routed.capability_key == "Local_Soulstone:chat:/models/small.gguf"
+    assert routed.digest != legacy.digest
+    payload = canonical_json(body() | {"model": "/models/small.gguf"})
+    assert validate_generation_payload(routed, payload)["model"] == "/models/small.gguf"
+    with pytest.raises(ValueError, match="model_generation_binding"):
+        validate_generation_payload(routed, canonical_json(body()))
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("model_id", ""),
+        ("model_id", "has\nnewline"),
+        ("model_id", "x" * 257),
+        ("animator_id", "some/unit"),
+        ("animator_id", ""),
+    ],
+)
+def test_model_binding_identifiers_are_closed(field: str, value: str) -> None:
+    with pytest.raises(ValidationError):
+        OperatorConversationProfile.model_validate(
+            {
+                "animator_id": "night-qwen38",
+                "model_id": "Qwen3.8-27B",
+                "persona_name": "Example",
+                "persona_instructions": "Be useful.",
+                field: value,
+            }
+        )

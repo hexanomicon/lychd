@@ -36,6 +36,10 @@ There is no universal registration API or Crypt loader for these directories. A 
 shape. Add a database, Workflow or HTTP surface when its work requires one. Reusing an Aspect leaves the application responsible for its identity
 and [revision and retirement decisions](../adr/28-workflow.md#composition-identity-revision-and-retirement).
 
+When an application design has an open implementation question, record one behavior to compare
+beside the owning contract. [Finding reference implementations](../sepulcher/aspects/weaver/assimilation.md#find-reference-implementations)
+describes what to ask an explorer to return. [Reach](reach/index.md#reference-questions) has worked examples.
+
 ## Test the part that could fail
 
 Suppose a worker stops after storing a candidate and before a verifier rules on it. What should

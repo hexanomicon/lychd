@@ -29,7 +29,7 @@ Read one complete matching scope before task action:
 | Implementation or tests under `src/**`, `tests/**`, or `clients/android/**` | [Build](.agents/scopes/build.md) |
 | `clients/web/**`, browser projection, Svelte/SvelteKit, Vite, or native CSS | [Frontend](.agents/scopes/frontend.md) |
 | Divination (Transmutation, Transcendence, Altar, or Correspondence), the Great Work, mythic or philosophical interpretation, formation, consciousness, identity, or published documentation navigation | [Divination](.agents/scopes/divination.md) |
-| A named or decision-relevant external technology, protocol, library, research project, or benchmark | [References](.agents/scopes/references.md), after the primary scope |
+| Finding reference implementations for a local capability, or checking a named or decision-relevant external technology, protocol, library, project, or benchmark | [References](.agents/scopes/references.md), after the primary scope |
 
 Frontend routes onward to Svelte when required. Backend work under `src/**` or `tests/**` starts
 with Build; add Frontend only for browser, OpenAPI, or SSE projection changes. Load a second

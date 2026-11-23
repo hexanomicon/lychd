@@ -34,6 +34,22 @@ their coordination and execution. Assimilation itself is not a Portfolio Composi
 No act promises bit-for-bit reproduction, protocol or license compatibility, or freedom from
 upstream maintenance without separate evidence.
 
+### Assimilation targets
+
+An **Assimilation target** names a behavior a local owner wants to understand. A Composition
+can publish a target for one application operation, and an Aspect or other feature owner can
+publish one for a mechanism it governs. Keep the question beside that contract, with the local
+evidence or gap and the decision a comparison could change. A target can exist before anyone
+has identified a reference project.
+
+An explorer may return evidence that the local mechanism already suffices, that a service
+integration fits, that one foreign pattern merits local implementation, or that the evidence
+is inconclusive. The assignment defines the reading scope. The receiving owner decides whether
+the finding warrants construction and where it belongs among existing priorities.
+The [exploration procedure](../sepulcher/aspects/weaver/assimilation.md#find-reference-implementations)
+applies this distinction to [Reach correspondence](../compositions/reach/index.md#reference-questions)
+and [Scout web acquisition](../sepulcher/aspects/scout.md#reference-questions).
+
 ### Paperclip Maximizer
 
 !!! quote "Paperclip Maximizer — the will to become"

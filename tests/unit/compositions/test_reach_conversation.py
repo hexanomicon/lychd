@@ -33,7 +33,12 @@ from tests.unit.compositions.test_reach_documents import NOW, STARTED, make_corp
 
 
 def profile() -> OperatorConversationProfile:
-    return OperatorConversationProfile(persona_name="Example Familiar", persona_instructions="Be direct and helpful.")
+    return OperatorConversationProfile(
+        animator_id="night-qwen38",
+        model_id="Qwen3.8-27B",
+        persona_name="Example Familiar",
+        persona_instructions="Be direct and helpful.",
+    )
 
 
 def policy() -> Any:

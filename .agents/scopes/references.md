@@ -9,6 +9,10 @@ delivery evidence, a dependency, or permission to copy upstream design.
 
 ## Progressive Use
 
+For an open-ended request to find implementations for a Composition or feature, follow
+[Assimilation's reference discovery](../../docs/sepulcher/aspects/weaver/assimilation.md#find-reference-implementations).
+Start from the local owner's question even when no upstream project has been named.
+
 1. Establish LychD truth from tracked docs, source, tests, lockfiles, and installed packages first.
 2. Check `.agents/references/index.md` and the selected reference, then read its one-line
    description and top-level README.

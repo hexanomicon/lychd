@@ -75,11 +75,11 @@ async def test_only_closed_argv_and_bounded_stdin_carry_request(
         monkeypatch.setenv(key, value)
     processes = [Process(), Process()]
     factory = AsyncMock(side_effect=processes)
-    transport = podman.PodmanModelTransport(process_factory=factory)
+    transport = podman.PodmanModelTransport(container="lychd-fixture-model", port=9092, process_factory=factory)
     body = b'{"messages":[{"content":"private prompt"}]}' if method == "POST" else b""
     contents = (body, b"x" * podman.MAX_BODY_BYTES if method == "POST" else b"")
     for process, content in zip(processes, contents, strict=True):
-        request = httpx2.Request(method, f"http://127.0.0.1:28000{path}", content=content)
+        request = httpx2.Request(method, f"http://127.0.0.1:9092{path}", content=content)
         response = await transport.handle_async_request(request)
         assert response.status_code == 200
         assert response.content == b'{"status":"ok"}'
@@ -92,9 +92,19 @@ async def test_only_closed_argv_and_bounded_stdin_carry_request(
         assert base64.b64decode(packet["body"], validate=True) == content
     first, second = factory.await_args_list
     assert first.args == second.args
-    assert first.args[:7] == ("podman", "exec", "--interactive", "lychd-night-qwen38", "python3", "-I", "-c")
-    assert len(first.args) == 8
-    assert isinstance(first.args[7], str)
+    assert first.args[:8] == (
+        "podman",
+        "--remote=false",
+        "exec",
+        "--interactive",
+        "lychd-fixture-model",
+        "python3",
+        "-I",
+        "-c",
+    )
+    assert len(first.args) == 10
+    assert isinstance(first.args[8], str)
+    assert first.args[9] == "9092"
     for call in factory.await_args_list:
         assert call.kwargs["stdin"] == asyncio.subprocess.PIPE
         assert call.kwargs["stdout"] == asyncio.subprocess.PIPE
@@ -107,23 +117,23 @@ async def test_only_closed_argv_and_bounded_stdin_carry_request(
 @pytest.mark.parametrize(
     ("method", "url", "headers", "body"),
     [
-        ("PUT", "http://127.0.0.1:28000/health", {}, b""),
-        ("POST", "http://127.0.0.1:28000/health", {}, b""),
-        ("GET", "http://127.0.0.1:28000/v1/chat/completions", {}, b""),
-        ("GET", "http://127.0.0.1:28000/other", {}, b""),
-        ("GET", "https://127.0.0.1:28000/health", {}, b""),
-        ("GET", "http://localhost:28000/health", {}, b""),
+        ("PUT", "http://127.0.0.1:9092/health", {}, b""),
+        ("POST", "http://127.0.0.1:9092/health", {}, b""),
+        ("GET", "http://127.0.0.1:9092/v1/chat/completions", {}, b""),
+        ("GET", "http://127.0.0.1:9092/other", {}, b""),
+        ("GET", "https://127.0.0.1:9092/health", {}, b""),
+        ("GET", "http://localhost:9092/health", {}, b""),
         ("GET", "http://127.0.0.1:28001/health", {}, b""),
-        ("GET", "http://user:password@127.0.0.1:28000/health", {}, b""),
-        ("GET", "http://127.0.0.1:28000/health?private=1", {}, b""),
-        ("GET", "http://127.0.0.1:28000/health#private", {}, b""),
-        ("GET", "http://127.0.0.1:28000/health", {"Authorization": "private"}, b""),
-        ("GET", "http://127.0.0.1:28000/health", {"Proxy-Authorization": "private"}, b""),
-        ("GET", "http://127.0.0.1:28000/health", {"Cookie": "private"}, b""),
-        ("GET", "http://127.0.0.1:28000/health", {"X-API-Key": "private"}, b""),
-        ("GET", "http://127.0.0.1:28000/health", {"X-Unadmitted": "private"}, b""),
-        ("GET", "http://127.0.0.1:28000/health", {}, b"private"),
-        ("POST", "http://127.0.0.1:28000/v1/chat/completions", {}, b"x" * (podman.MAX_BODY_BYTES + 1)),
+        ("GET", "http://user:password@127.0.0.1:9092/health", {}, b""),
+        ("GET", "http://127.0.0.1:9092/health?private=1", {}, b""),
+        ("GET", "http://127.0.0.1:9092/health#private", {}, b""),
+        ("GET", "http://127.0.0.1:9092/health", {"Authorization": "private"}, b""),
+        ("GET", "http://127.0.0.1:9092/health", {"Proxy-Authorization": "private"}, b""),
+        ("GET", "http://127.0.0.1:9092/health", {"Cookie": "private"}, b""),
+        ("GET", "http://127.0.0.1:9092/health", {"X-API-Key": "private"}, b""),
+        ("GET", "http://127.0.0.1:9092/health", {"X-Unadmitted": "private"}, b""),
+        ("GET", "http://127.0.0.1:9092/health", {}, b"private"),
+        ("POST", "http://127.0.0.1:9092/v1/chat/completions", {}, b"x" * (podman.MAX_BODY_BYTES + 1)),
     ],
 )
 @pytest.mark.asyncio
@@ -133,7 +143,9 @@ async def test_unadmitted_request_never_starts_process(
     factory = AsyncMock()
     request = httpx2.Request(method, url, headers=headers, content=body)
     with pytest.raises(httpx2.TransportError, match=r"^model_podman_request$"):
-        await podman.PodmanModelTransport(process_factory=factory).handle_async_request(request)
+        await podman.PodmanModelTransport(
+            container="lychd-fixture-model", port=9092, process_factory=factory
+        ).handle_async_request(request)
     factory.assert_not_awaited()
 
 
@@ -147,9 +159,11 @@ async def test_streamed_request_stops_at_cumulative_limit_before_spawn() -> None
             yield chunk
 
     factory = AsyncMock()
-    request = httpx2.Request("POST", "http://127.0.0.1:28000/v1/chat/completions", content=chunks())
+    request = httpx2.Request("POST", "http://127.0.0.1:9092/v1/chat/completions", content=chunks())
     with pytest.raises(httpx2.TransportError, match=r"^model_podman_request$"):
-        await podman.PodmanModelTransport(process_factory=factory).handle_async_request(request)
+        await podman.PodmanModelTransport(
+            container="lychd-fixture-model", port=9092, process_factory=factory
+        ).handle_async_request(request)
     assert consumed == [0, 1]
     factory.assert_not_awaited()
 
@@ -177,9 +191,9 @@ async def test_untrusted_response_is_bounded_and_has_content_free_errors(output:
     process = Process(output)
     factory = AsyncMock(return_value=process)
     with pytest.raises(httpx2.TransportError, match=r"^model_podman_protocol$"):
-        await podman.PodmanModelTransport(process_factory=factory).handle_async_request(
-            httpx2.Request("GET", "http://127.0.0.1:28000/health")
-        )
+        await podman.PodmanModelTransport(
+            container="lychd-fixture-model", port=9092, process_factory=factory
+        ).handle_async_request(httpx2.Request("GET", "http://127.0.0.1:9092/health"))
     factory.assert_awaited_once()
 
 
@@ -187,9 +201,9 @@ async def test_untrusted_response_is_bounded_and_has_content_free_errors(output:
 async def test_binary_response_at_exact_body_limit_preserves_status() -> None:
     content = b"\x00\xff" * (podman.MAX_BODY_BYTES // 2)
     factory = AsyncMock(return_value=Process(frame(content, status=503)))
-    response = await podman.PodmanModelTransport(process_factory=factory).handle_async_request(
-        httpx2.Request("GET", "http://127.0.0.1:28000/health")
-    )
+    response = await podman.PodmanModelTransport(
+        container="lychd-fixture-model", port=9092, process_factory=factory
+    ).handle_async_request(httpx2.Request("GET", "http://127.0.0.1:9092/health"))
     assert response.status_code == 503
     assert response.content == content
 
@@ -201,9 +215,9 @@ async def test_process_failure_does_not_expose_diagnostics_or_retry(failure: str
     factory = AsyncMock(side_effect=OSError("private")) if failure == "start" else AsyncMock(return_value=process)
     expected = "model_podman_start" if failure == "start" else "model_podman_failed"
     with pytest.raises(httpx2.TransportError, match=rf"^{expected}$"):
-        await podman.PodmanModelTransport(process_factory=factory).handle_async_request(
-            httpx2.Request("GET", "http://127.0.0.1:28000/health")
-        )
+        await podman.PodmanModelTransport(
+            container="lychd-fixture-model", port=9092, process_factory=factory
+        ).handle_async_request(httpx2.Request("GET", "http://127.0.0.1:9092/health"))
     factory.assert_awaited_once()
 
 
@@ -211,9 +225,9 @@ async def test_process_failure_does_not_expose_diagnostics_or_retry(failure: str
 async def test_timeout_terminates_and_joins_process_before_content_free_error() -> None:
     process = Process(error=TimeoutError("private process diagnostic"))
     with pytest.raises(httpx2.ReadTimeout, match=r"^model_podman_timeout$"):
-        await podman.PodmanModelTransport(process_factory=AsyncMock(return_value=process)).handle_async_request(
-            httpx2.Request("GET", "http://127.0.0.1:28000/health")
-        )
+        await podman.PodmanModelTransport(
+            container="lychd-fixture-model", port=9092, process_factory=AsyncMock(return_value=process)
+        ).handle_async_request(httpx2.Request("GET", "http://127.0.0.1:9092/health"))
     assert process.terminated
     assert process.wait_calls >= 1
     assert process.settled.is_set()
@@ -224,8 +238,10 @@ async def test_timeout_terminates_and_joins_process_before_content_free_error() 
 async def test_cancellation_joins_process_and_escalates_expired_grace(*, grace_expires: bool) -> None:
     process = Process(block=True)
     process.wait_timeout_once = grace_expires
-    transport = podman.PodmanModelTransport(process_factory=AsyncMock(return_value=process))
-    task = asyncio.create_task(transport.handle_async_request(httpx2.Request("GET", "http://127.0.0.1:28000/health")))
+    transport = podman.PodmanModelTransport(
+        container="lychd-fixture-model", port=9092, process_factory=AsyncMock(return_value=process)
+    )
+    task = asyncio.create_task(transport.handle_async_request(httpx2.Request("GET", "http://127.0.0.1:9092/health")))
     await process.entered.wait()
     task.cancel()
     with pytest.raises(asyncio.CancelledError):
@@ -247,8 +263,8 @@ async def test_cancellation_during_spawn_settles_new_process_before_returning() 
         await released.wait()
         return cast("asyncio.subprocess.Process", process)
 
-    transport = podman.PodmanModelTransport(process_factory=spawn)
-    task = asyncio.create_task(transport.handle_async_request(httpx2.Request("GET", "http://127.0.0.1:28000/health")))
+    transport = podman.PodmanModelTransport(container="lychd-fixture-model", port=9092, process_factory=spawn)
+    task = asyncio.create_task(transport.handle_async_request(httpx2.Request("GET", "http://127.0.0.1:9092/health")))
     await entered.wait()
     task.cancel()
     await asyncio.sleep(0)
@@ -281,10 +297,10 @@ async def test_authority_revoked_during_spawn_never_hands_payload_to_helper() ->
             message = "research_consume"
             raise ValueError(message)
 
-    transport = podman.PodmanModelTransport(process_factory=spawn)
+    transport = podman.PodmanModelTransport(container="lychd-fixture-model", port=9092, process_factory=spawn)
     request = httpx2.Request(
         "POST",
-        "http://127.0.0.1:28000/v1/chat/completions",
+        "http://127.0.0.1:9092/v1/chat/completions",
         content=b'{"messages":[{"content":"admitted public-source excerpt"}]}',
         extensions={"lychd_research_authorize": authorize},
     )
@@ -332,8 +348,8 @@ async def test_repeated_cancellation_waits_for_late_spawn_and_owned_reaping() ->
             raise
         return cast("asyncio.subprocess.Process", process)
 
-    transport = podman.PodmanModelTransport(process_factory=spawn)
-    task = asyncio.create_task(transport.handle_async_request(httpx2.Request("GET", "http://127.0.0.1:28000/health")))
+    transport = podman.PodmanModelTransport(container="lychd-fixture-model", port=9092, process_factory=spawn)
+    task = asyncio.create_task(transport.handle_async_request(httpx2.Request("GET", "http://127.0.0.1:9092/health")))
     async with asyncio.timeout(3):
         await spawn_entered.wait()
         task.cancel()
