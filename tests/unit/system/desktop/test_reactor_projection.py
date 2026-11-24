@@ -8,6 +8,7 @@ import subprocess
 import sys
 import tomllib
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 from unittest.mock import Mock
 
@@ -211,7 +212,8 @@ def test_portable_status_selects_only_the_prepared_reactor_overlay(
     monkeypatch.setenv("LYCHD_REACTOR_UID", "1001")
     monkeypatch.setattr(portable, "_local_engine", lambda: ["docker", "--context", "desktop-linux"])
     execute = Mock(return_value=subprocess.CompletedProcess([], 0))
-    monkeypatch.setattr(portable.subprocess, "run", execute)
+    # The host's private-directory checks still run the real OS ACL tools.
+    monkeypatch.setattr(portable, "subprocess", SimpleNamespace(run=execute, TimeoutExpired=subprocess.TimeoutExpired))
     runner = CliRunner()
     assert runner.invoke(portable.status).exit_code == 0
     arguments = execute.call_args.args[0]
