@@ -137,6 +137,11 @@ startup. [Set up two models](desktop.md#choose-between-two-local-models-in-nexus
 | Portable Reactor project, resident desktop owner | The same host child, reachable from the guest through authenticated inference | The same fixed container, lifecycle managed on the host |
 | Base portable Compose or its CPU chat overlay | — | The chat overlay starts one fixed CPU model with the stack |
 
+The desktop Reactor reserves each native model's configured loopback port for the
+Reactor's lifetime. When the model stops, that port closes new connections without forwarding
+a reply. To check the switch, use the Nexus ticket and the model ID served by the active
+endpoint's `/v1/models`. A TCP connection alone only tells you the port is reserved.
+
 ### Linux {#animators-linux}
 
 Managed Vessel asks the [Host Reactor](../sepulcher/reactor.md) to submit one target

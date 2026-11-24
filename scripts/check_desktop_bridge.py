@@ -135,15 +135,17 @@ def verify_dispatch(page: Page, origin: str, run_id: str) -> None:
 
 
 def verify_engine_switch(old_port: int, target_port: int, model_id: str) -> None:
-    """Check both loopback listeners after Nexus reports a completed single-model transition."""
-    try:
-        retired = socket.create_connection(("127.0.0.1", old_port), timeout=5)
-    except ConnectionRefusedError:
-        pass
-    else:
-        retired.close()
-        msg = f"The evicted engine still accepts connections on port {old_port}."
-        raise RuntimeError(msg)
+    """Verify the reserved evictee endpoint drops requests and the active one serves the exact model."""
+    with socket.create_connection(("127.0.0.1", old_port), timeout=5) as retired:
+        try:
+            retired.sendall(b"GET /v1/models HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n")
+            received = retired.recv(1)
+        except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
+            pass
+        else:
+            if received:
+                msg = f"The evicted Animator's endpoint on port {old_port} still returned response data."
+                raise RuntimeError(msg)
 
     engine = http.client.HTTPConnection("127.0.0.1", target_port, timeout=5)
     try:
