@@ -167,9 +167,10 @@ routes = [
 ]
 ```
 
-Start `uv run --no-sync lychd desktop session`. In **Nexus**, choose the desired capability,
-open **Preview**, check the launch and eviction names, and choose **Request transition**.
-Wait for the selected capability to show **active**, then send a fresh Bridge turn. With
+Start the foreground desktop session. In **Nexus → Instance overview**, open **Capabilities**,
+then **List**. On the row for the model you want, open **Preview**. Check which Animator
+will stop and which will start, then choose **Request transition**. Wait for the ticket to
+show **completed** and the selected capability to show **active**, then send a fresh Bridge turn. With
 this preference Bridge requires a warm, eligible route, including for the first turn after
 startup. To change models while Vessel is running, repeat the Nexus transition for the other
 capability. Open **Orb** for each Run and compare the recorded Animator and model identities.
@@ -186,8 +187,9 @@ the same checkout in both and prefix each command below with `uv run --no-sync`.
    Open the displayed address in your browser and enter the displayed credentials when
    prompted. Keep the credentials out of screenshots, URLs and shell history.
 3. Open **Bridge** beside Orb or navigate to `/bridge`. Choose **New Séance** and send a
-   distinctive short message. Wait for a nonempty settled reply. In Nexus verify the selected
-   `personal:chat:personal-model` capability.
+   distinctive short message. Wait for a nonempty settled reply. With the single-model
+   configuration above you can send the first message directly. Open the Run in **Orb**
+   to verify which Animator and model served it.
 4. Run `lychd stop` in the second terminal and wait for the foreground process
    to exit. Run `lychd desktop session` again, sign in and reopen the same conversation. Verify the
    distinctive message and reply survived.

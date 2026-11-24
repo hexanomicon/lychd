@@ -124,9 +124,10 @@ scheduled-task registrations keep working until disabled. [Sign-in setup and com
 
 ## How does LychD switch from model A to model B? {#animators}
 
-Configure A and B as conflicting models. In **Nexus**, the model-selection screen, choose B,
-open **Preview** to see that A will stop, request the transition, and wait for B to become
-active. With the native two-model setup, also select a model before the first chat after
+Configure A and B as conflicting models. Open **Nexus → Capabilities → List**. On B's row,
+choose **Preview**, check that A will stop and B will start, then choose **Request transition**.
+Wait for the ticket to show **completed** and B to become **active**. With the native
+two-model preference, also select a model before the first chat after
 startup. [Set up two models](desktop.md#choose-between-two-local-models-in-nexus)
 
 | Vessel and lifecycle owner | Native Soulstone | Container Soulstone |
