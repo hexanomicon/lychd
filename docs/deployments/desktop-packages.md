@@ -42,18 +42,49 @@ the expected signer certificate thumbprint and a timestamp certificate. Obtain t
 identity and digest before installing. A public signed release requires these actual identities
 and successful platform verification.
 
-Open the verified installer as the account that will own the database. It places program
-files in a directory named for that exact revision. Substitute the full revision below
-and define the function in each terminal you use, including the second terminal for
-`lychd access` or `lychd stop`. These functions run the bundled interpreter in isolated mode.
+### Run the macOS edition
+
+After [obtaining and verifying the edition](#verify-and-install-an-edition), open the Apple
+Silicon `.pkg` from your existing macOS login. Installer places this
+revision under `~/Applications/LychD Editions`. Use a normal Terminal window, including when
+your login has administrator rights. Run LychD without `sudo`.
+
+In the extracted installer folder containing the verified `provenance.json`, select that
+edition in your shell. Repeat this block in each Terminal window you use for LychD.
 
 ```bash title="macOS"
-edition="$HOME/Applications/LychD Editions/<full-revision>"
-lychd() { "$edition/runtime/bin/python3" -I -B -m lychd "$@"; }
-export LYCHD_PG_BIN="/absolute/path/to/postgresql-18/bin"
+revision="$(/usr/bin/plutil -extract revision raw -o - provenance.json)"
+edition="$HOME/Applications/LychD Editions/$revision"
+export PATH="$edition:$PATH"
+command -v lychd
+```
+
+Check that the printed path ends in the selected revision’s `/lychd`. For an older edition
+without that launcher, use `lychd() { "$edition/runtime/bin/python3" -I -B -m lychd "$@"; }`
+in each window and set `export LYCHD_PG_BIN="$(brew --prefix postgresql@18)/bin"` for Homebrew.
+
+With the [native dependencies](desktop.md#choose-the-installation) installed and your model
+at `~/Models/chat.gguf` (or substitute its actual path), run the following in the first
+window. `platform` should report `native` and paths under your home. If you use another
+PostgreSQL 18 installation, first set `LYCHD_PG_BIN` to its absolute bin directory in each
+window.
+
+```bash title="macOS · first Terminal window"
 lychd platform
 lychd desktop install
+lychd desktop configure-model --engine "$(command -v llama-server)" --model "$HOME/Models/chat.gguf"
+lychd desktop session
 ```
+
+Leave the session running. Open a second Terminal window or tab under the same login, select
+the same edition there and run `lychd access`. Open the displayed local address in your
+browser and sign in to [start a Bridge conversation](desktop.md#open-altar-and-talk-in-bridge).
+When finished, run `lychd stop` in that second window, then `lychd desktop stop`.
+
+### Run the Windows edition
+
+Open the verified installer as the account that will own the database. Substitute the full
+revision below and define the function in both PowerShell windows used for LychD.
 
 ```powershell title="Windows"
 $edition = "$env:LOCALAPPDATA\Programs\LychD Editions\<full-revision>"
@@ -66,7 +97,7 @@ lychd desktop install
 The edition root also contains `desktop-tether` on macOS or `desktop-tether.exe` on Windows.
 Run the executable with `-help` to inspect its options. [Tether setup and peer admission](desktop-tether.md)
 
-Use this `lychd` function wherever the source installation uses `uv run --no-sync lychd`.
+On either platform, use the selected edition’s `lychd` wherever the source installation uses `uv run --no-sync lychd`.
 Configure the model, start `lychd desktop session`, and confirm that the same Bridge
 conversation opens after restarting. The deployment guide covers login access, vault
 credentials, cold login and backup. [Personal desktop operation](desktop.md)
@@ -83,7 +114,7 @@ credentials, cold login and backup. [Personal desktop operation](desktop.md)
   and stop the dedicated database. If the old program files were already removed,
   repair that exact trusted edition first. Provisioning with a different interpreter refuses
   while the earlier login registration exists. Install the new edition alongside it. Select the new
-  edition in the terminal function, run `lychd desktop install` and qualify the persisted
+  edition in a fresh terminal, run `lychd desktop install` and qualify the persisted
   chat. Re-enable login through the new edition if required.
 - **Recover.** Keep the old verified installer with its matching pre-upgrade backup and
   credential recovery materials. A program downgrade cannot undo a database migration.

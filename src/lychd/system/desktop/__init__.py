@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 import os
+import platform
 import re
 import shutil
 import subprocess
@@ -46,8 +47,45 @@ def _data() -> Path:
     return Path(ctx.meta["desktop_cluster"])
 
 
+def _require_postgres_version(binary: str) -> None:
+    """Verify the selected server and reuse its version within the current CLI invocation."""
+    ctx = click.get_current_context(silent=True)
+    versions: dict[str, str] = ctx.meta.setdefault("desktop_pg_versions", {}) if ctx is not None else {}
+    if binary not in versions:
+        try:
+            versions[binary] = subprocess.check_output([binary, "--version"], text=True).strip()
+        except (OSError, subprocess.CalledProcessError) as exc:
+            msg = f"Could not check PostgreSQL version with {binary}: {exc}"
+            raise click.ClickException(msg) from exc
+    if not re.match(rf"initdb \(PostgreSQL\) {_MAJOR}(?:\.|\s|$)", versions[binary]):
+        msg = (
+            f"Expected PostgreSQL {_MAJOR}, found {versions[binary]} at {binary}. "
+            f"Set LYCHD_PG_BIN to a PostgreSQL {_MAJOR} bin directory."
+        )
+        raise click.ClickException(msg)
+
+
 def postgres_program(name: str) -> str:
+    """On macOS select one server installation, including Homebrew's keg-only PostgreSQL 18."""
     directory = os.environ.get("LYCHD_PG_BIN")
+    if directory is None and sys.platform == "darwin":
+        prefix = {"arm64": "/opt/homebrew", "x86_64": "/usr/local"}.get(platform.machine())
+        brew = shutil.which("initdb", path=f"{prefix}/opt/postgresql@{_MAJOR}/bin") if prefix else None
+        missing = f"PostgreSQL {_MAJOR} initdb is unavailable. Set LYCHD_PG_BIN to its bin directory."
+        failure = click.ClickException(missing)
+        for candidate in (shutil.which("initdb"), brew):
+            if candidate is None:
+                continue
+            initdb = Path(candidate).resolve()
+            try:
+                _require_postgres_version(str(initdb))
+            except click.ClickException as exc:
+                failure = exc
+            else:
+                directory = str(initdb.parent)
+                break
+        else:
+            raise failure
     binary = shutil.which(name, path=directory)
     if not binary:
         msg = f"PostgreSQL {_MAJOR} executable {name} is unavailable. Set LYCHD_PG_BIN to its bin directory."
@@ -247,10 +285,7 @@ def install() -> None:
 
     read_registration()
     binary = postgres_program("initdb")
-    version = subprocess.check_output([binary, "--version"], text=True)
-    if not re.match(rf"initdb \(PostgreSQL\) {_MAJOR}(?:\.|\s|$)", version):
-        msg = f"Expected PostgreSQL {_MAJOR}, found {version.strip()}"
-        raise click.ClickException(msg)
+    _require_postgres_version(binary)
     settings = _prepare_installation()
     db = settings.server.database
     if db.password is None:

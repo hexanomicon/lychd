@@ -68,9 +68,10 @@ image from the same revision and run `lychd init --dry-run` first. [Linux instal
 
 ### macOS {#installation-macos}
 
-The Apple Silicon `.pkg` includes the app and Python. Install PostgreSQL, pgvector and the
-model engine separately. Source setup and per-user test packages are both available.
-[Get and verify a desktop edition](desktop-packages.md#verify-and-install-an-edition)
+The Apple Silicon `.pkg` includes the app and Python. Install it under your existing login
+and run LychD from a normal Terminal without `sudo`. An administrator-capable login works.
+Install PostgreSQL 18, pgvector and the model engine separately.
+[Verify the package](desktop-packages.md#verify-and-install-an-edition) · [Run the installed Mac edition](desktop-packages.md#run-the-macos-edition)
 
 ### Windows {#installation-windows}
 
@@ -101,7 +102,8 @@ Open `%LOCALAPPDATA%\LychD` for native `config`, `data` and `cache`. Program fil
 ## How do I start and stop it? {#lifecycle}
 
 **Native on all three systems:** run `lychd desktop session` in one terminal to start PostgreSQL
-and Vessel. Use `lychd access` in a second terminal for the browser address and password.
+and Vessel. Use `lychd access` in a second terminal under the same login for the browser
+address and password.
 Shut down with `lychd stop`, then `lychd desktop stop`. In a prepared source checkout,
 prefix these commands with `uv run --no-sync`. [Foreground session](desktop.md#open-altar-and-talk-in-bridge)
 

@@ -17,6 +17,19 @@ from lychd import __main__ as entry
 from lychd.system import constants, vessel_mode
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="macOS uses POSIX effective user IDs")
+def test_macos_admin_login_can_run_natively_until_elevated(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(sys, "platform", "darwin")
+    monkeypatch.delenv("LYCHD_VESSEL_MODE", raising=False)
+    monkeypatch.setattr(vessel_mode.os, "getgroups", lambda: [20, 80])  # macOS staff and admin
+    monkeypatch.setattr(vessel_mode.os, "geteuid", lambda: 501)
+    vessel_mode.require_native_user()
+
+    monkeypatch.setattr(vessel_mode.os, "geteuid", lambda: 0)
+    with pytest.raises(ValueError, match="without sudo"):
+        vessel_mode.require_native_user()
+
+
 @pytest.mark.parametrize("operating_system", ["darwin", "win32"])
 def test_desktop_bootstrap_routes_and_personal_paths(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, operating_system: str

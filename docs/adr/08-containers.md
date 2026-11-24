@@ -30,6 +30,9 @@ desktop owner.
 A native installation uses the same application, extension registry, PostgreSQL schema,
 queue, authenticated Altar and Bridge. Its launcher owns an explicit loopback listener.
 An installed service runs under the account that owns its configuration and credentials.
+Personal native installations can use the operator's existing login. LychD rejects a root
+process on Linux or macOS and an elevated process token on Windows. A separate OS account is
+an optional boundary when the operator wants to restrict access to personal files.
 A configured trusted native engine may use the host GPU. A container engine is a separately
 selected dependency. No deployment inherits another profile's guarantees by sharing code.
 

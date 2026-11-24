@@ -134,6 +134,11 @@ used the bundled interpreters and Altar and verified committed rows across repai
 and reinstall. Production Developer ID notarization and Windows Authenticode signing require
 the corresponding release identities. [Edition installation and verification](deployments/desktop-packages.md)
 
+Current macOS editions include a per-edition `lychd` launcher for the existing login.
+The desktop CLI can discover Homebrew's PostgreSQL 18 tools from a fresh Terminal.
+The install procedure and same-account checks are in the
+[Mac edition guide](deployments/desktop-packages.md#run-the-macos-edition).
+
 The 20 October 2026 container-only correction retired the former Core host-native runtime,
 including native stop, credential-source, server/TCP, and host fixtures. Core pytest, lint,
 format checks, and typing now enter `Containerfile.tests` through the Makefile and bounded OCI
