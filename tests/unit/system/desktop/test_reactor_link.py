@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import asyncio
 import os
-import socket
 import ssl
 import sys
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -14,12 +14,6 @@ import pytest
 from lychd.system.desktop import reactor_link
 from lychd.system.desktop.reactor_identity import create_identities
 from lychd.system.services import native_socket_relay
-
-
-def free_port() -> int:
-    with socket.socket() as sock:
-        sock.bind(("127.0.0.1", 0))
-        return int(sock.getsockname()[1])
 
 
 async def echo(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
@@ -60,13 +54,13 @@ def test_mailbox_session_is_bounded_and_shared(tmp_path: Path) -> None:
 
 @pytest.mark.asyncio
 async def test_guest_only_reaches_its_bound_engine_and_authenticates_host(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, unused_tcp_port_factory: Callable[[], int]
 ) -> None:
     root = await asyncio.to_thread(tmp_path.resolve, strict=True)
     create_identities(root)
     unrelated = root / "other-installation"
     create_identities(unrelated)
-    host_port, client_port, link_port = free_port(), free_port(), free_port()
+    host_port, client_port, link_port = unused_tcp_port_factory(), unused_tcp_port_factory(), unused_tcp_port_factory()
     projection = reactor_link.ReactorProjection(
         profile_digest="sha256:" + "d" * 64,
         binding_digest="sha256:" + "a" * 64,
@@ -105,13 +99,15 @@ async def test_guest_only_reaches_its_bound_engine_and_authenticates_host(
     reason="Linux managed service uses an AF_UNIX engine socket",
 )
 @pytest.mark.asyncio
-async def test_pod_relay_forwards_to_fixed_socket_and_handles_stopped_engine(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_pod_relay_forwards_to_fixed_socket_and_handles_stopped_engine(
+    monkeypatch: pytest.MonkeyPatch, unused_tcp_port: int
+) -> None:
     from tempfile import TemporaryDirectory
 
     with TemporaryDirectory() as directory:
         endpoint = str(Path(directory) / "engine.sock")
         monkeypatch.setattr(native_socket_relay, "_ENGINE_SOCKET", endpoint)
-        port = free_port()
+        port = unused_tcp_port
         owner = asyncio.create_task(native_socket_relay.serve(port))
         try:
             async with asyncio.timeout(5):
