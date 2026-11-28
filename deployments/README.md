@@ -2,6 +2,9 @@
 
 Start with the [deployment guide](../docs/deployments/index.md). Installation, host provisioning,
 application lifecycle and private access have distinct owners and acceptance checks.
+For a fresh VPS, follow the
+[standalone installer replacement](../docs/deployments/tumbleweed/index.md#replace-the-standalone-vps-installer)
+from disk review through application verification.
 
 | Target | Installation input | Ansible entry | Read-only acceptance |
 | --- | --- | --- | --- |
