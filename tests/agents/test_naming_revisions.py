@@ -14,8 +14,8 @@ from lychd.agents.workflows import (
     BRIDGE_CHAT,
     BRIDGE_CHAT_ARCHIVE,
     BRIDGE_CHAT_BOUND,
-    BRIDGE_CHAT_SCOUT,
     BRIDGE_CHAT_SEMANTIC,
+    BRIDGE_CHAT_WEBCRAWLER,
     BuiltinWorkflowRegistry,
     builtin_workflow_registry,
     resolve_named_workflow,
@@ -23,13 +23,13 @@ from lychd.agents.workflows import (
 )
 from lychd.domain.cortex.semantic_answer import SemanticAnswerBinding
 from lychd.domain.naming import NamingSnapshot
-from tests.scout_fixtures import PROMPT, scout_binding
 from tests.unit.domain.test_archive_semantic import MANIFEST, PROFILE, REFERENCE
+from tests.webcrawler_fixtures import PROMPT, webcrawler_binding
 
 if TYPE_CHECKING:
     from lychd.agents.workflows.base import Workflow
 
-_PROFILES = (BRIDGE_CHAT, BRIDGE_CHAT_BOUND, BRIDGE_CHAT_ARCHIVE, BRIDGE_CHAT_SCOUT, BRIDGE_CHAT_SEMANTIC)
+_PROFILES = (BRIDGE_CHAT, BRIDGE_CHAT_BOUND, BRIDGE_CHAT_ARCHIVE, BRIDGE_CHAT_WEBCRAWLER, BRIDGE_CHAT_SEMANTIC)
 
 
 def _naming() -> NamingSnapshot:
@@ -51,7 +51,7 @@ def _intent(workflow: Workflow) -> Intent:
         prompt=PROMPT if revision == "4" else "hello",
         admitted_capability_key=None if revision == "1" else "chat:test",
         admitted_archive=PROFILE if revision == "3" else None,
-        admitted_scout=scout_binding() if revision == "4" else None,
+        admitted_webcrawler=webcrawler_binding() if revision == "4" else None,
         admitted_semantic=SemanticAnswerBinding(manifest=MANIFEST, generation=REFERENCE, min_cosine=-0.5)
         if revision == "5"
         else None,

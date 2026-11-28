@@ -40,8 +40,8 @@ from lychd.domain.cortex.runs import RunStatus
 from lychd.domain.scout.attempts import SCOUT_FEED_URL
 from lychd.interface.api.scavenger import ScavengerController
 from lychd.interface.web.openapi import StrictPydanticSchemaPlugin, build_openapi_config
-from tests.scout_feed_fixtures import Scenario, scenario
 from tests.unit.compositions.test_scavenger_values import observation_document, seed_document
+from tests.webcrawler_feed_fixtures import Scenario, scenario
 
 CSRF_VALUE = "synthetic-scavenger-csrf"
 AUTHORIZATION = "Basic " + b64encode(b"magus:synthetic-feed-coordinator-credential").decode()
@@ -137,7 +137,7 @@ async def api(*, body_logging: bool = False) -> API:
     service = ScavengerService(
         store=cast("DbScavengerStore", store),
         policy=LocalScavengerPolicy(access=source.access, profile=source.binding.profile, owner="magus"),
-        scout=source.service,
+        webcrawler=source.service,
     )
     plugins: list[Any] = [StrictPydanticSchemaPlugin()]
     routes: list[Any] = [ScavengerController]

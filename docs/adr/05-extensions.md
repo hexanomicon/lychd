@@ -196,10 +196,10 @@ registration context or by the presence of an equally named package.
 
 Web-acquisition providers preserve the same rule. A package may register an Animator definition
 for a search or browser service, but a `SoulstoneDefinition`, `PortalDefinition`, or raw
-`ToolConnector` is not a Scout provider registration and grants no Search, Fetch, Crawl, Render,
-or Extract authority. The future provider contribution surface must be explicitly Scout-owned,
+`ToolConnector` is not a Webcrawler provider registration and grants no Search, Fetch, Crawl, Render,
+or Extract authority. The future provider contribution surface must be explicitly Webcrawler-owned,
 effect-specific, provenance-preserving, and sealed with the other registration stores. Until that
-surface exists, provider-facing toolsets remain incapable of constituting a delivered Scout path.
+surface exists, provider-facing toolsets remain incapable of constituting a delivered Webcrawler path.
 
 ### 3. Contributions as Organs
 

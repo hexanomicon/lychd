@@ -1,4 +1,4 @@
-"""Mocked scout custody proves acknowledgement, admission, bounded output and exact cleanup."""
+"""Mocked webcrawler custody proves acknowledgement, admission, bounded output and exact cleanup."""
 
 from __future__ import annotations
 
@@ -221,12 +221,16 @@ class Engine:
 
 
 @pytest.mark.asyncio
-async def test_acknowledgement_precedes_scout_and_job_discloses_only_local_metadata(
+async def test_acknowledgement_precedes_webcrawler_and_job_discloses_only_local_metadata(
     broker_case: BrokerCase, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     broker, request, path, _ = broker_case
     engine = Engine(Process(encoded_source()))
     monkeypatch.setattr(module.asyncio, "create_subprocess_exec", engine.spawn)
+    journal_dir = broker.state_dir / "scout"
+    journal_dir.mkdir(mode=0o700)
+    prior_journal = journal_dir / "journal.json"
+    prior_journal.write_text('{"retained":"previous attempt"}')
     progress_sent = asyncio.Event()
 
     async def progress(message: ReachResearchProgress) -> None:
@@ -265,16 +269,17 @@ async def test_acknowledgement_precedes_scout_and_job_discloses_only_local_metad
     assert "--security-opt=label=disable" in command
     assert command.count("--mount") == 2
     assert f"type=bind,src={path.parent},dst=/run/research-authority,readonly" in command
-    assert f"type=bind,src={broker.state_dir / 'scout'},dst=/state/research" in command
+    assert f"type=bind,src={prior_journal.parent},dst=/state/research" in command
+    assert prior_journal.read_text() == '{"retained":"previous attempt"}'
     assert IMAGE in command
     assert "/work/scripts/reach_scout_worker.py" in command
     assert engine.calls[-1][-1] == CONTAINER_ID
     assert set(engine.environments[0]) == {"PATH", "LANG"}
-    assert not list(broker.state_dir.glob("scout-*"))
+    assert not list(broker.state_dir.glob("webcrawler-*"))
 
 
 @pytest.mark.asyncio
-async def test_doc_only_plan_requires_ack_but_never_starts_a_scout(
+async def test_doc_only_plan_requires_ack_but_never_starts_a_webcrawler(
     broker_case: BrokerCase, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     broker, request, _, _ = broker_case
@@ -447,8 +452,8 @@ async def test_foreign_protocol_or_size_failures_are_content_free_and_cleanup_ex
         value["text_digest"] = "0" * 64
     output = json.dumps([value, value] if failure == "extra" else [value]).encode()
     if failure == "stdout":
-        output = b"secret-source" * module.MAX_SCOUT_OUTPUT_BYTES
-    error = b"secret-diagnostic" * module.MAX_SCOUT_ERROR_BYTES if failure == "stderr" else b""
+        output = b"secret-source" * module.MAX_WEBCRAWLER_OUTPUT_BYTES
+    error = b"secret-diagnostic" * module.MAX_WEBCRAWLER_ERROR_BYTES if failure == "stderr" else b""
     engine = Engine(Process(output, error, code=1 if failure == "exit" else 0))
     monkeypatch.setattr(module.asyncio, "create_subprocess_exec", engine.spawn)
     result = await broker.handle(request, ack(broker))
@@ -461,7 +466,7 @@ async def test_foreign_protocol_or_size_failures_are_content_free_and_cleanup_ex
 
 
 @pytest.mark.asyncio
-async def test_cancellation_retires_scout_then_removes_its_exact_container(
+async def test_cancellation_retires_webcrawler_then_removes_its_exact_container(
     broker_case: BrokerCase, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     broker, request, _, _ = broker_case
@@ -539,7 +544,7 @@ async def test_repeated_cancellation_cannot_cancel_the_owned_spawn_capture(
     assert not interrupted.is_set()
     assert process.terminated
     assert engine.calls[-1][-3:] == ("rm", "--force", CONTAINER_ID)
-    assert not list(broker.state_dir.glob("scout-*"))
+    assert not list(broker.state_dir.glob("webcrawler-*"))
     await assert_available_for_local_turn(broker, request)
 
 
@@ -566,7 +571,7 @@ async def test_repeated_cancellation_waits_for_proved_cleanup_before_removing_ci
     monkeypatch.setattr(broker, "_cleanup", delayed)
     task = asyncio.create_task(broker.handle(request, ack(broker)))
     await started.wait()
-    scratch = next(broker.state_dir.glob("scout-*"))
+    scratch = next(broker.state_dir.glob("webcrawler-*"))
     for _ in range(3):
         task.cancel()
         await asyncio.sleep(0)
@@ -597,7 +602,7 @@ async def test_cancelled_owned_cleanup_retains_cid_and_fences_later_work(
     monkeypatch.setattr(broker, "_cleanup", interrupted)
     with pytest.raises(asyncio.CancelledError):
         await broker.handle(request, ack(broker))
-    scratch = next(broker.state_dir.glob("scout-*"))
+    scratch = next(broker.state_dir.glob("webcrawler-*"))
     assert (scratch / "container.id").read_text(encoding="ascii") == CONTAINER_ID
     assert len(engine.calls) == 1
     later = request.model_copy(
@@ -608,14 +613,14 @@ async def test_cancelled_owned_cleanup_retains_cid_and_fences_later_work(
 
 
 @pytest.mark.asyncio
-async def test_timeout_settles_started_scout_and_does_not_retry(
+async def test_timeout_settles_started_webcrawler_and_does_not_retry(
     broker_case: BrokerCase, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     broker, request, _, _ = broker_case
     process = Process(running=True)
     engine = Engine(process)
     monkeypatch.setattr(module.asyncio, "create_subprocess_exec", engine.spawn)
-    monkeypatch.setattr(module, "SCOUT_TIMEOUT_SECONDS", 0)
+    monkeypatch.setattr(module, "WEBCRAWLER_TIMEOUT_SECONDS", 0)
     result = await broker.handle(request, ack(broker))
     assert result.reason == "research_timeout"
     assert process.terminated
@@ -641,7 +646,7 @@ async def test_client_retirement_failure_still_attempts_exact_container_removal(
     monkeypatch.setattr(module, "_retire", failed_client)
     result = await broker.handle(request, ack(broker))
     assert result.reason == "research_cleanup"
-    scratch = next(broker.state_dir.glob("scout-*"))
+    scratch = next(broker.state_dir.glob("webcrawler-*"))
     assert (scratch / "container.id").read_text(encoding="ascii") == CONTAINER_ID
     assert engine.calls[-1][-3:] == ("rm", "--force", CONTAINER_ID)
     assert (await broker.handle(next_local_request(request), ack(broker))).reason == "research_unavailable"
@@ -677,7 +682,7 @@ async def test_uncertain_cleanup_fences_later_source_work(
     monkeypatch.setattr(module.asyncio, "create_subprocess_exec", engine.spawn)
     result = await broker.handle(request, ack(broker))
     assert result.reason == "research_cleanup"
-    scratch = next(broker.state_dir.glob("scout-*"))
+    scratch = next(broker.state_dir.glob("webcrawler-*"))
     assert (scratch / "container.id").read_text(encoding="ascii") == identity
     count = len(engine.calls)
     later = request.model_copy(

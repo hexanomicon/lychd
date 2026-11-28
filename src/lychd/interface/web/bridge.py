@@ -33,7 +33,6 @@ from lychd.domain.cortex.events import InProcessEventBus, RunEvent, RunEventKind
 from lychd.domain.cortex.ledger import RunAdmissionConflictError
 from lychd.domain.cortex.runs import TERMINAL_STATUSES, RunRecord
 from lychd.domain.cortex.semantic_answer import SemanticAnswerBinding
-from lychd.domain.scout.profile import ScoutProfile, ScoutWorkflowError
 from lychd.domain.web.consent_reviews import (
     ConsentReviewFailureError,
     ConsentReviewForbiddenError,
@@ -58,6 +57,7 @@ from lychd.domain.web.contracts import (
 from lychd.domain.web.projection import EventProjector
 from lychd.domain.web.schemas import BridgeTurn, ConsentCard
 from lychd.domain.web.sessions import SessionRecord, SessionStorePort
+from lychd.domain.webcrawler.profile import WebcrawlerProfile, WebcrawlerWorkflowError
 from lychd.interface.web.bridge_archive import read_session_page
 from lychd.interface.web.bridge_stream import BoundedRunEventStream
 
@@ -69,7 +69,7 @@ if TYPE_CHECKING:
     from lychd.domain.cortex.ledger import RunLedger
 
 _SSE_KEEPALIVE_S = 15.0
-_SCOUT_COMPOSER_GUIDANCE = (
+_WEBCRAWLER_COMPOSER_GUIDANCE = (
     "Enter /read-public followed by one exact public HTTPS URL, then a newline and your question. "
     "Sending this command declares the complete URL, including its path and query, public. "
     "Approval is required before page contact.\n\n"
@@ -93,11 +93,11 @@ def _composer_view(state: State) -> BridgeComposer | None:
     guidance = None
     if (
         identity == ("bridge_chat", "4")
-        and isinstance(getattr(engine, "bridge_scout", None), ScoutProfile)
-        and getattr(engine, "scout_admission", None) is not None
-        and getattr(state.services, "scout_admission", None) is not None
+        and isinstance(getattr(engine, "bridge_webcrawler", None), WebcrawlerProfile)
+        and getattr(engine, "webcrawler_admission", None) is not None
+        and getattr(state.services, "webcrawler_admission", None) is not None
     ):
-        guidance = _SCOUT_COMPOSER_GUIDANCE
+        guidance = _WEBCRAWLER_COMPOSER_GUIDANCE
     if identity == ("bridge_chat", "5") and isinstance(getattr(engine, "bridge_semantic", None), SemanticAnswerBinding):
         guidance = (
             "Semantic public-note answers are configured for new messages. "
@@ -320,14 +320,14 @@ class BridgeController(Controller):
             await bridge_sessions.add_turn(session_id, turn)
 
         try:
-            scout_admission = getattr(state.services, "scout_admission", None)
-            scout_declaration = (
-                scout_admission.declare(
+            webcrawler_admission = getattr(state.services, "webcrawler_admission", None)
+            webcrawler_declaration = (
+                webcrawler_admission.declare(
                     prompt=prompt,
                     request_id=uuid5(NAMESPACE_URL, f"lychd:scout:bridge:{session_id}:{data.request_id}"),
                     authentication=request.auth,
                 )
-                if scout_admission is not None
+                if webcrawler_admission is not None
                 else None
             )
             handle = await run_engine.submit(
@@ -341,7 +341,7 @@ class BridgeController(Controller):
                 retain_before_publish=retain_user_turn,
                 idempotency_key=f"bridge:{session_id}:{data.request_id}",
                 exclusive_session=True,
-                scout_declaration=scout_declaration,
+                webcrawler_declaration=webcrawler_declaration,
             )
         except BridgePreferenceError as exc:
             raise ServiceUnavailableException(
@@ -351,7 +351,7 @@ class BridgeController(Controller):
                 ),
                 extra={"code": exc.code.value},
             ) from None
-        except (RunAdmissionConflictError, ScoutWorkflowError) as exc:
+        except (RunAdmissionConflictError, WebcrawlerWorkflowError) as exc:
             raise ValidationException(detail=str(exc)) from exc
         refreshed = await bridge_sessions.get_session(session_id)
         authoritative_turn = next(

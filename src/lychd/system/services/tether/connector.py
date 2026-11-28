@@ -68,7 +68,7 @@ class _BrokerStream(scout_socket.PinnedTcpStream):
         only broker-carrier assembly and closure if that assembly fails.
         """
         try:
-            # The broker reuses Scout's validator without acquiring a new IP socket.
+            # The broker reuses Webcrawler's validator without acquiring a new IP socket.
             scout_socket._target_address(self._target, self._deadline)  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
             if self._target.role != "origin":
                 raise FetchError(FetchCode.CONFIG)  # noqa: TRY301 - carrier owns failed assembly cleanup

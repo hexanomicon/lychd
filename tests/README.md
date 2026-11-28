@@ -12,7 +12,7 @@ Core tests execute in an admitted OCI image. The ordinary
 files, sockets or credentials. A profile needs its own adapter for those inputs. A host-native
 Core pytest invocation is not a fallback.
 
-The Docker PostgreSQL harness and dedicated Scout OCI adapter below have explicit launch routes.
+The Docker PostgreSQL harness and dedicated Webcrawler OCI adapter below have explicit launch routes.
 The other model/private-manager/composed recipes retain requirements for a future admitted OCI
 adaptation; their `text` blocks are selection references, not working host launch commands.
 Retired native receipts cannot qualify a new image or occurrence.
@@ -147,7 +147,9 @@ reconstructed evidence. [The maintained receipt](fixtures/archive/native-semanti
 binds critical source through `_sources(ANSWER_PROFILE)` and does not qualify installed startup,
 browser delivery, automatic crash recovery, general answer quality or aggregate containment.
 
-## Scout static and RSS extraction adaptation
+<a name="scout-static-and-rss-extraction-adaptation"></a>
+
+## Webcrawler static and RSS extraction adaptation
 
 For the separate Linux x86-64 extraction proof, prepare a JSON profile outside the checkout with
 absolute `bwrap` and dedicated `python_root` paths, plus a `libraries` array of absolute paths for
@@ -160,7 +162,7 @@ to 512 MiB/20,000 entries; the proof installs nothing and mounts no broad host l
 Selection reference for the admitted adapter:
 
 ```text
-LYCHD_REQUIRE_SCOUT_EXTRACTION_PROOF=1 LYCHD_SCOUT_EXTRACTION_PROFILE=/absolute/path/runtime.json make test M=container N=0 PYTEST_TARGETS=tests/integration/test_scout_extraction_runtime.py PYTEST_BASETEMP=/tmp/lychd-scout-extraction-proof
+LYCHD_REQUIRE_SCOUT_EXTRACTION_PROOF=1 LYCHD_SCOUT_EXTRACTION_PROFILE=/absolute/path/runtime.json make test M=container N=0 PYTEST_TARGETS=tests/integration/test_scout_extraction_runtime.py PYTEST_BASETEMP=/tmp/lychd-webcrawler-extraction-proof
 ```
 
 Synthetic bytes, a local socket and disposable workers exercise extraction, host-access denial,
@@ -181,7 +183,7 @@ LYCHD_SCOUT_EXTRACTION_PROFILE=/absolute/path/runtime.json \
 LYCHD_SCOUT_STATIC_EXTRACTION_RECEIPT=/absolute/current-run/receipt.json \
 make test M=container N=0 \
   PYTEST_TARGETS=tests/integration/test_scout_rss_extraction_runtime.py \
-  K=test_scout_rss_extraction_host_boundary PYTEST_BASETEMP=/tmp/lychd-scout-rss-proof
+  K=test_scout_rss_extraction_host_boundary PYTEST_BASETEMP=/tmp/lychd-webcrawler-rss-proof
 ```
 
 Use a second fresh basetemp; hold source/runtime unchanged through both proofs. Inspect the RSS
@@ -190,7 +192,9 @@ CI checks its six source fingerprints and static-runtime agreement. RSS adds act
 launch/protocol, output, timeout and cancellation cases; static owns the shared host/resource/death
 cases. Neither qualifies feed admission, acquisition, digest custody or watching.
 
-## Scout OCI network and extraction qualification
+<a name="scout-oci-network-and-extraction-qualification"></a>
+
+## Webcrawler OCI network and extraction qualification
 
 The dedicated adapter runs static extraction → DNS/TLS → current authority, unchanged and in that
 order, using real local servers in an isolated Linux x86-64 namespace. Local `trusted-scout-c2`
@@ -204,8 +208,9 @@ LYCHD_SCOUT_QUALIFICATION_OUTPUT=/absolute/existing/artifact-directory \
   bash scripts/container_scout_qualification.sh
 ```
 
-Manual **Repository Checks**, `scope=scout`, selects separate `trusted-scout-ci-c1` on the chosen
-revision. Default `scope=contracts` retains Python/PostgreSQL checks. CI pins the official Docker
+In manual **Repository Checks**, choose `scope=webcrawler` for `trusted-scout-ci-c1` on the chosen
+revision. The earlier `scope=scout` selects the same profile. Default `scope=contracts` retains
+the Python and PostgreSQL checks. CI pins the official Docker
 setup action and Docker 29.9.3/API 1.56/runc 1.5.2. Controller and CLI must share the explicit local
 Unix socket; remote endpoints, context overrides, different engines and automatic fallback refuse.
 No daemon socket enters the test container. `--build-only` builds images without qualification.
@@ -257,11 +262,13 @@ The [OCI static receipt](fixtures/scout/linux-oci-extraction-runtime.json) binds
 and paired network proofs separately from historical static/RSS evidence. These proofs qualify
 isolated mechanisms, not durable attempts, a workflow, production authorizer, public website or SearXNG.
 
-## Scout composed and Scavenger adaptation
+<a name="scout-composed-and-scavenger-adaptation"></a>
 
-The [composed proof](integration/test_scout_composed_runtime.py) requires its own admitted OCI
+## Webcrawler composed and Scavenger adaptation
+
+The [composed proof](integration/test_webcrawler_composed_runtime.py) requires its own admitted OCI
 adaptation; the network adapter above does not execute it. Select
-`LYCHD_REQUIRE_SCOUT_COMPOSED_PROOF=1`, the test path, a fresh basetemp and reviewed
+`LYCHD_REQUIRE_WEBCRAWLER_COMPOSED_PROOF=1`, the test path, a fresh basetemp and reviewed
 `LYCHD_SCOUT_EXTRACTION_PROFILE`. Supply `container-test` dependencies, local `/var/run/docker.sock`
 and already cached `pgvector/pgvector:pg18-trixie`, selecting its image ID without pulling.
 
@@ -286,7 +293,7 @@ LYCHD_REQUIRE_SCAVENGER_PG_PROOF=1 make test M=container N=0 \
   PYTEST_BASETEMP=/tmp/lychd-scavenger-feed-proof
 ```
 
-Real acquisition in that file additionally requires `LYCHD_REQUIRE_SCOUT_COMPOSED_PROOF=1`,
+Real acquisition in that file additionally requires `LYCHD_REQUIRE_WEBCRAWLER_COMPOSED_PROOF=1`,
 reviewed `LYCHD_SCOUT_EXTRACTION_PROFILE`, and the composed cached-image/socket prerequisites.
 Use a new basetemp; observe namespace, database and cleanup rather than assuming flags enforce them.
 No maintained-success or installed-cutover claim follows. Public Internet, SAQ process/restart,

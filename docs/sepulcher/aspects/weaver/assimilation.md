@@ -29,7 +29,7 @@ For work with today's contributors and coding agents, follow
 
 ## The hammer has no crown
 
-First establish what material the author may use. [Scout](../scout.md) can acquire exact source,
+First establish what material the author may use. [Webcrawler](../webcrawler.md) can acquire exact source,
 but its custody owner must validate and admit the bytes before the candidate author receives them. Another
 source/custody route can provide the same settled handoff.
 
@@ -74,7 +74,7 @@ Record the finding with the task or issue. The reading assignment ends with that
 material for construction, carry that evidence into [the reuse procedure](#upstream-reuse-and-notices).
 
 [Reach](../../../compositions/reach/index.md#reference-questions) shows how the same correspondence
-problem changes across providers. [Scout](../scout.md#reference-questions) shows how one
+problem changes across providers. [Webcrawler](../webcrawler.md#reference-questions) shows how one
 upstream product can supply evidence about several effects that LychD governs separately.
 
 ## Upstream reuse and notices

@@ -26,7 +26,7 @@ challenge point to a specific claim under a specific boundary.
 The owning [Spellweaver Pattern](../../../adr/28-workflow.md) declares the operational
 [Shadow Lens](../../../adr/20-agents.md#mechanical-cognitive-postures), permitted evidence and tool
 access, review rounds, budget, and stop conditions. A fresh Invocation receives no private
-Dancer generation context and cannot rewrite sibling history. Hunter is not Scout's web-acquisition
+Dancer generation context and cannot rewrite sibling history. Hunter is not Webcrawler's web-acquisition
 office; any bounded inquiry proceeds only through Pattern-granted access.
 
 The candidate remains **Vikalpa**, a possibility awaiting measurement. Hunter's attention does not

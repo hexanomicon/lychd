@@ -29,6 +29,7 @@ it("renders every occurrence with explicit coverage, duplicates/missing values a
   expect(screen.getByText("Same link as occurrence 1")).toBeTruthy();
   expect(screen.getByText(/this response is not the entire market/)).toBeTruthy();
   expect(screen.getByText(/Price, condition, seller, eligibility and source freshness: not assessed/)).toBeTruthy();
+  expect(screen.getByText("Webcrawler receipt").nextElementSibling?.textContent).toBe(otherId);
   expect(submitMarketObservation).not.toHaveBeenCalled();
 });
 

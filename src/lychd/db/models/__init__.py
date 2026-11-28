@@ -40,11 +40,11 @@ from lychd.db.models.privacy import DisclosureCapacityRecord, DisclosureTransmis
 from lychd.db.models.run import Run
 from lychd.db.models.run_delivery import RunDelivery
 from lychd.db.models.scavenger import ScavengerObservation
-from lychd.db.models.scout import ScoutAttempt, ScoutBudget
 from lychd.db.models.session import Session
 from lychd.db.models.soulstone import SoulstoneRecord
 from lychd.db.models.step import Step
 from lychd.db.models.ward import WardAudit, WardCredential, WardPermission, WardPrincipal, WardSession, WardUser
+from lychd.db.models.webcrawler import WebcrawlerAttempt, WebcrawlerBudget
 
 __all__ = [
     "ArchiveEmbeddingGeneration",
@@ -88,8 +88,6 @@ __all__ = [
     "RunCheckpoint",
     "RunDelivery",
     "ScavengerObservation",
-    "ScoutAttempt",
-    "ScoutBudget",
     "Session",
     "SoulstoneRecord",
     "Step",
@@ -99,4 +97,6 @@ __all__ = [
     "WardPrincipal",
     "WardSession",
     "WardUser",
+    "WebcrawlerAttempt",
+    "WebcrawlerBudget",
 ]

@@ -91,7 +91,7 @@ local subject, and policy revision. It is valid only with PostgreSQL and the sam
 custody profile. The whole binding is retained at Run admission; changed settings cannot rewrite
 an admitted casting. This selector grants no remote identity, namespace access, ingestion, or
 embedding capability. Intake and promotion remain separate explicit Archive operations.
-Revisions 3 and 4 continue to require their exact `capability_key` and their own Archive or Scout
+Revisions 3 and 4 continue to require their exact `capability_key` and their own Archive or Webcrawler
 binding respectively; neither accepts `preference`.
 
 ### Exact delegated casting selection
@@ -127,7 +127,7 @@ does not introduce a general SDLC coordinator or portable Resolution Lock.
 
 ### Exact finite Scavenger selection
 
-Optional `[weaver.scavenger]` selects Composition `revision = "3"` and one explicit `scout`
+Optional `[weaver.scavenger]` selects Composition `revision = "3"` and one explicit `webcrawler`
 configuration with `rss-public-feed@1` for the source-built `scavenger.observe_market@2` Pattern.
 Omission disables new Scavenger admission while retaining its exact registered Pattern for
 historical resolution. The selection requires PostgreSQL and the actual same-host startup
@@ -135,13 +135,13 @@ credential owner; settings loading and assembly perform no acquisition, model re
 reservation or migration. It accepts no capability key, model, arbitrary source locator,
 implementation name or fallback. A separately configured ordinary Bridge remains independent.
 
-The first native profile permits one active Scout binding in a fresh profile database. It cannot
+The first native profile permits one active Webcrawler binding in a fresh profile database. It cannot
 coexist with Bridge revision4's page binding. Existing page/RSS budget rows reject a changed
 binding without mutation; changing the selector never resets spent counters or unknown claims.
 The profile pins its exact native resolver/custody assertion, CA/extractor runtime, current policy,
 finite allowance/host ceilings and review expiry. These are declarations, not containment or
 source-publicness evidence. The exact advertised Bazoš PC feed and consumer projection remain
-owned by [Scout](30-webcrawler.md) and [Scavenger](../compositions/scavenger/market.md#finite-feed-observation).
+owned by [Webcrawler](30-webcrawling.md) and [Scavenger](../compositions/scavenger/market.md#finite-feed-observation).
 
 The complete supplied campaign seed and initial filter enter Scavenger's protected application
 admission, never Settings or a model prompt. Their immutable consumer/digests bind the held Run

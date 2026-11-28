@@ -3,9 +3,7 @@ title: Iron Tongue
 icon: material/alphabet-tengwar
 ---
 
-# :material-alphabet-tengwar: Iron Tongue
-
-<span id="iron-tongue-canonical-project-terms"></span>
+# :material-alphabet-tengwar: Iron Tongue <span id="iron-tongue-canonical-project-terms"></span>
 
 Use these names to distinguish what the Lich's body does. The Vessel runs; the Phylactery keeps
 committed truth; a Rune declares intent; a Scroll gives work its score. The dictionary keeps each
@@ -903,14 +901,6 @@ tree.
 
 ## S
 
-### [Scout](../sepulcher/aspects/scout.md) { #scout }
-
-The web-acquisition Aspect. It separates authorization for discovery, contact,
-transformation, interaction, capture, and download effects. Crawl is its finite-frontier track;
-durable Artifact Admission remains with the custody owner.
-
-[Covenant 30](../adr/30-webcrawler.md)
-
 ### [Scroll](../sepulcher/aspects/weaver/index.md) { #scroll }
 
 The complete fixed score for one Pattern revision. It contains one or more Spell placements,
@@ -1179,6 +1169,14 @@ current policy for the requested object or effect.
 Spellweaver’s short name in code, existing paths, and compatibility references.
 
 [Covenant 28](../adr/28-workflow.md)
+
+### [Webcrawler](../sepulcher/aspects/webcrawler.md) <span id="scout"></span> { #webcrawler }
+
+The web-acquisition Aspect. It separates authorization for discovery, contact,
+transformation, interaction, capture, and download effects. Crawl is its finite-frontier track;
+durable Artifact Admission remains with the custody owner.
+
+[Covenant 30](../adr/30-webcrawling.md)
 
 ### [Whim](../adr/23-orchestrator.md#1-the-tipping-point-whim-algorithm) { #whim }
 

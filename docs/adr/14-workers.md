@@ -413,7 +413,7 @@ real PostgreSQL lifecycle.
 
 ## Service job attempts
 
-Long-running image, video, Form, Kinesis, Scanner, Scout, speech, engine, or provider work is not a
+Long-running image, video, Form, Kinesis, Scanner, Webcrawler, speech, engine, or provider work is not a
 broker retry and cannot be represented by a live Connector handle in Graph state. The accepted
 common mechanical envelope is `ServiceJobAttempt@1`; source, migrations, adapters, and restart
 receipts are not delivered yet.
@@ -466,7 +466,7 @@ requests refuse. Unknown ordering or closure remains unresolved, with no `CANCEL
 Local reservation release follows terminal containment; an indeterminate local or paid remote attempt
 keeps the relevant fence or operator-visible containment instead of guessing. The common envelope
 owns delivery, reconciliation, cancellation, and settlement mechanics. Scanner, Prism, Form,
-Kinesis, Foundry, Scout, Echo, and each Composition retain their domain request/result contracts,
+Kinesis, Foundry, Webcrawler, Echo, and each Composition retain their domain request/result contracts,
 validation, acceptance, and finish law.
 
 After checkpoint and exact attempt ownership are durable, the parent Run may park as

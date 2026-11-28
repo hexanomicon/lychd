@@ -17,7 +17,7 @@ The current implementation is narrower than this designed office. Its
 surfaces, projects its configured model catalogue, and exposes agent-loop toolsets. That catalogue
 is not necessarily a live discovery result. It is an available **OpenAI model
 connector**, not a universal implementation of every API beneath an `/v1` root. Audio, Images,
-Videos, OCR, Scout, Form, Kinesis, engine jobs, and live sessions have no delivered connector.
+Videos, OCR, Webcrawler, Form, Kinesis, engine jobs, and live sessions have no delivered connector.
 
 The selected llama.cpp extension adds `LlamacppConnector`, which implements `EmbeddingConnector`
 for the [fixed local embedding profile](../../../adr/22-dispatcher.md#explicit-local-embedding-compatibility-profile).
@@ -79,7 +79,7 @@ resources, or a remote boundary. The same typed job interface remains visible ab
 private transport.
 
 `ToolConnector` and Pydantic AI toolsets remain an agent-loop convenience. They cannot establish a
-Scout Search grant, media effect, filesystem right, browser session, Blender job, payment,
+Webcrawler Search grant, media effect, filesystem right, browser session, Blender job, payment,
 publication, or another host authority. An agent-facing tool calls a host-owned typed handler;
 raw provider toolsets never become an effect boundary merely because the model can name them.
 

@@ -41,7 +41,7 @@ A Product selects profiles/use cases; a client changes presentation; a [Persona]
 
 ## Handoffs and supporting mechanisms
 
-Workshop can use existing mechanisms while retaining the purpose and policy of the service case. Companion, Echo, Tether, and Ward keep mobile controls, speech chronology, transport, authentication, grants, and revocation. Scout and Sight provide acquisition/visual evidence; Workshop decides whether that source applies and which check may follow. When parts need sourcing, [Scavenger](../scavenger/index.md) keeps its own listing, seller, bargaining, commitment, payment, and parcel records.
+Workshop can use existing mechanisms while retaining the purpose and policy of the service case. Companion, Echo, Tether, and Ward keep mobile controls, speech chronology, transport, authentication, grants, and revocation. Webcrawler and Sight provide acquisition/visual evidence; Workshop decides whether that source applies and which check may follow. When parts need sourcing, [Scavenger](../scavenger/index.md) keeps its own listing, seller, bargaining, commitment, payment, and parcel records.
 
 `WorkshopPartRequirement@1` carries compatibility, quantity, condition, certification, and evidence needs to stock or Scavenger, without reservation or commitment authority. A stock owner can return exact snapshots and reservation/use/return receipts. Workshop records them; it cannot mutate ambient inventory.
 

@@ -14,7 +14,6 @@ from typing import TYPE_CHECKING, Literal, cast
 from urllib.parse import quote
 
 from lychd.agents.workflows.base import pattern_snapshot_is_valid
-from lychd.domain.scout.feed import ScoutFeedBinding
 from lychd.domain.web.contracts import (
     DelegatedJobEventView,
     DelegatedJobSummary,
@@ -26,6 +25,7 @@ from lychd.domain.web.contracts import (
     OrbRunSummary,
     PatternReference,
 )
+from lychd.domain.webcrawler.feed import WebcrawlerFeedBinding
 
 if TYPE_CHECKING:
     from lychd.domain.cortex.events import RunEvent
@@ -48,11 +48,11 @@ def bridge_context_path(session_id: str, workflow_name: str) -> str | None:
 
 
 def _application_path(run: RunRecord) -> str | None:
-    binding = run.admitted_scout
+    binding = run.admitted_webcrawler
     if (
         run.source == "scavenger"
         and run.workflow_name == "scavenger.observe_market"
-        and type(binding) is ScoutFeedBinding
+        and type(binding) is WebcrawlerFeedBinding
     ):
         return f"/scavenger?observation={binding.consumer.application_admission_id}"
     return None

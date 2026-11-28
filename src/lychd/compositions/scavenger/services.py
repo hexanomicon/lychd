@@ -20,7 +20,7 @@ from lychd.compositions.scavenger.schemas import (
 from lychd.domain.codex.local_access import LocalOperatorAccess, LocalOperatorAuthentication
 from lychd.domain.codex.scopes import scopes_satisfied
 from lychd.domain.cortex.runs import RunDeliveryState, RunStatus
-from lychd.domain.scout.feed import ScoutFeedBinding
+from lychd.domain.webcrawler.feed import WebcrawlerFeedBinding
 
 if TYPE_CHECKING:
     from lychd.compositions.scavenger.ports import ObservationCommit
@@ -29,9 +29,9 @@ if TYPE_CHECKING:
     from lychd.domain.codex.sigil import Sigil
     from lychd.domain.cortex.engine import RunEngine
     from lychd.domain.scout.attempts import ScoutFeedConsumer
-    from lychd.domain.scout.feed import ScoutFeedMaterial, ScoutFeedProfile, ScoutFeedWorkflowPort
-    from lychd.domain.scout.profile import ScoutReviewRef
-    from lychd.interface.web.scout_feed_admission import ScoutFeedAdmissionService
+    from lychd.domain.webcrawler.feed import WebcrawlerFeedMaterial, WebcrawlerFeedProfile, WebcrawlerFeedWorkflowPort
+    from lychd.domain.webcrawler.profile import WebcrawlerReviewRef
+    from lychd.interface.web.webcrawler_feed_admission import WebcrawlerFeedAdmissionService
 
 
 def _document(retained: RetainedObservation) -> ObservationDocument:
@@ -75,7 +75,7 @@ def _document(retained: RetainedObservation) -> ObservationDocument:
 class LocalScavengerPolicy:
     """One credential-backed local owner; read/delete never borrow acquisition consent."""
 
-    def __init__(self, *, access: LocalOperatorAccess, profile: ScoutFeedProfile, owner: str) -> None:
+    def __init__(self, *, access: LocalOperatorAccess, profile: WebcrawlerFeedProfile, owner: str) -> None:
         """Pin one actual startup authority, feed configuration and application owner."""
         self.access, self.profile, self.owner = access, profile, owner
 
@@ -93,7 +93,7 @@ class LocalScavengerPolicy:
             reason = "application_authority"
             raise ScavengerRefused(reason)
 
-    def worker(self, binding: ScoutFeedBinding) -> None:
+    def worker(self, binding: WebcrawlerFeedBinding) -> None:
         """Attribution is usable only with the exact retained Run checked by the store."""
         if (
             binding.profile != self.profile
@@ -109,9 +109,11 @@ class LocalScavengerPolicy:
 class ScavengerService:
     """Share one application policy/store with HTTP admission and the model-free Graph."""
 
-    def __init__(self, *, store: DbScavengerStore, policy: LocalScavengerPolicy, scout: ScoutFeedWorkflowPort) -> None:
+    def __init__(
+        self, *, store: DbScavengerStore, policy: LocalScavengerPolicy, webcrawler: WebcrawlerFeedWorkflowPort
+    ) -> None:
         """Inject receiving custody and the actual transient-material owner."""
-        self.store, self.policy, self.scout = store, policy, scout
+        self.store, self.policy, self.webcrawler = store, policy, webcrawler
 
     async def submit(
         self,
@@ -120,7 +122,7 @@ class ScavengerService:
         authentication: object,
         principal: Sigil,
         engine: RunEngine,
-        admission: ScoutFeedAdmissionService,
+        admission: WebcrawlerFeedAdmissionService,
     ) -> ObservationAdmission:
         """Reserve before admission; same-key retries never refresh an existing acquisition."""
         reserved = await self.reserve(
@@ -157,13 +159,13 @@ class ScavengerService:
             self.policy.http(authentication, principal, "bind")
             if (
                 run is None
-                or type(run.admitted_scout) is not ScoutFeedBinding
-                or run.admitted_scout.consumer != reserved.consumer
+                or type(run.admitted_webcrawler) is not WebcrawlerFeedBinding
+                or run.admitted_webcrawler.consumer != reserved.consumer
             ):
                 reason = "run_custody"
                 raise ScavengerRefused(reason)
             await self.retain_run(
-                run_id=run_id, binding=run.admitted_scout, authentication=authentication, principal=principal
+                run_id=run_id, binding=run.admitted_webcrawler, authentication=authentication, principal=principal
             )
 
         handle = await engine.submit(
@@ -194,8 +196,8 @@ class ScavengerService:
             run is None
             or run.source != "scavenger"
             or run.sigil_name != self.policy.owner
-            or type(run.admitted_scout) is not ScoutFeedBinding
-            or run.admitted_scout.consumer != consumer
+            or type(run.admitted_webcrawler) is not WebcrawlerFeedBinding
+            or run.admitted_webcrawler.consumer != consumer
         ):
             reason = "run_custody"
             raise ScavengerRefused(reason)
@@ -240,7 +242,7 @@ class ScavengerService:
         self,
         *,
         run_id: str,
-        binding: ScoutFeedBinding,
+        binding: WebcrawlerFeedBinding,
         authentication: object,
         principal: Sigil,
     ) -> None:
@@ -251,7 +253,7 @@ class ScavengerService:
             authorize=lambda: self.policy.http(authentication, principal, "bind"),
         )
 
-    async def committed(self, *, run_id: str, binding: ScoutFeedBinding) -> ObservationCommit | None:
+    async def committed(self, *, run_id: str, binding: WebcrawlerFeedBinding) -> ObservationCommit | None:
         return await self.store.committed(
             run_id=UUID(run_id),
             binding=binding,
@@ -260,11 +262,16 @@ class ScavengerService:
         )
 
     async def adopt(
-        self, *, run_id: str, binding: ScoutFeedBinding, review: ScoutReviewRef, material: ScoutFeedMaterial
+        self,
+        *,
+        run_id: str,
+        binding: WebcrawlerFeedBinding,
+        review: WebcrawlerReviewRef,
+        material: WebcrawlerFeedMaterial,
     ) -> ObservationCommit:
         def current() -> None:
             self.policy.worker(binding)
-            self.scout.authorize_feed_consume(run_id=run_id, binding=binding, review=review, material=material)
+            self.webcrawler.authorize_feed_consume(run_id=run_id, binding=binding, review=review, material=material)
 
         return await self.store.adopt(
             run_id=UUID(run_id), binding=binding, material=material, owner=self.policy.owner, authorize=current

@@ -80,18 +80,18 @@ if TYPE_CHECKING:
     from lychd.domain.orchestration.actuator import RuntimeActuator
     from lychd.domain.orchestration.containment import SoftActivationGuard
     from lychd.domain.scout.authority import ScoutHostAuthorizer
-    from lychd.domain.scout.feed import ScoutFeedProfile
-    from lychd.domain.scout.profile import ScoutProfile
     from lychd.domain.web.atlas import AtlasStorePort
     from lychd.domain.web.consent_reviews import ConsentReviewProducer
     from lychd.domain.web.fragments import FragmentRegistry
     from lychd.domain.web.sessions import SessionStorePort
     from lychd.domain.web.swap_requests import SwapRequestLedger
+    from lychd.domain.webcrawler.feed import WebcrawlerFeedProfile
+    from lychd.domain.webcrawler.profile import WebcrawlerProfile
     from lychd.extensions.delegation import RegisteredDelegatedRuntime
-    from lychd.interface.web.scout_admission import ScoutAdmissionService
-    from lychd.interface.web.scout_feed_admission import ScoutFeedAdmissionService
+    from lychd.interface.web.webcrawler_admission import WebcrawlerAdmissionService
+    from lychd.interface.web.webcrawler_feed_admission import WebcrawlerFeedAdmissionService
     from lychd.system.services.native_runtime import NativeRuntimeActuator
-    from lychd.system.services.scout_workflow import ScoutWorkflowService
+    from lychd.system.services.webcrawler_workflow import WebcrawlerWorkflowService
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -118,15 +118,15 @@ class AltarServices:
     substrate: RunSubstrate
     naming: NamingStore | None = None
     scavenger: ScavengerService | None = None
-    feed_admission: ScoutFeedAdmissionService | None = None
+    feed_admission: WebcrawlerFeedAdmissionService | None = None
     creation: InvestigationService | None = None
     archive: ArchiveService | None = None
     archive_derivation: ArchiveDerivationService | None = None
     archive_semantic: ArchiveSemanticService | None = None
     delegates: DelegatedAgentCoordinator | None
     delegated_runtime_catalog: tuple[RegisteredDelegatedRuntime, ...]
-    scout: ScoutWorkflowService | None = None
-    scout_admission: ScoutAdmissionService | None = None
+    webcrawler: WebcrawlerWorkflowService | None = None
+    webcrawler_admission: WebcrawlerAdmissionService | None = None
     runtime_observations: RuntimeCatalogue | None = None
 
     native_actuator: NativeRuntimeActuator | None = None
@@ -135,10 +135,10 @@ class AltarServices:
     async def aclose(self) -> None:
         """Cancel tracked tasks and drain pending ledger writes before shutdown."""
         failures: list[BaseException] = []
-        if self.scout is not None:
-            self.scout.fence_all("service_close")
+        if self.webcrawler is not None:
+            self.webcrawler.fence_all("service_close")
             try:
-                await self.scout.contain_all()
+                await self.webcrawler.contain_all()
             except BaseException as exc:  # noqa: BLE001 - retain containment uncertainty
                 failures.append(exc)
         for close in (self.dictation.aclose, self.tickets.aclose, self.bus.aclose):
@@ -351,38 +351,38 @@ def _build_archive(
     ), policy.subject_for
 
 
-def _build_scout_runtime(
+def _build_webcrawler_runtime(
     *,
     persistence: str,
-    profile: ScoutProfile | ScoutFeedProfile,
+    profile: WebcrawlerProfile | WebcrawlerFeedProfile,
     capability_key: str | None,
     access: LocalOperatorAccess | None,
     ledger: RunLedger,
     consents: ConsentLedger,
     reviews: ConsentReviewProducer | None,
-) -> tuple[ScoutWorkflowService, ScoutHostAuthorizer, ConsentReviewProducer]:
-    """Construct the one physical Scout owner shared by both exact profile factories."""
-    from lychd.domain.scout.feed import ScoutFeedProfile
-    from lychd.domain.scout.profile import ScoutProfile
+) -> tuple[WebcrawlerWorkflowService, ScoutHostAuthorizer, ConsentReviewProducer]:
+    """Construct the one physical Webcrawler owner shared by both exact profile factories."""
+    from lychd.domain.webcrawler.feed import WebcrawlerFeedProfile
+    from lychd.domain.webcrawler.profile import WebcrawlerProfile
 
     if persistence != "postgres" or access is None:
-        msg = "Scout requires PostgreSQL and the actual local credential owner."
+        msg = "Webcrawler requires PostgreSQL and the actual local credential owner."
         raise ValueError(msg)
-    if type(profile) is ScoutFeedProfile:
+    if type(profile) is WebcrawlerFeedProfile:
         if capability_key is not None:
-            msg = "The feed Scout profile cannot borrow a model capability."
+            msg = "The feed Webcrawler profile cannot borrow a model capability."
             raise ValueError(msg)
-    elif type(profile) is not ScoutProfile or capability_key is None:
-        msg = "The page Scout profile requires an exact local chat capability."
+    elif type(profile) is not WebcrawlerProfile or capability_key is None:
+        msg = "The page Webcrawler profile requires an exact local chat capability."
         raise ValueError(msg)
     from lychd.db.engine import get_session_factory
-    from lychd.db.scout import DbScoutAttemptStore
+    from lychd.db.webcrawler import DbWebcrawlerAttemptStore
     from lychd.domain.cortex.cancellation import RunEffectFence
     from lychd.domain.scout.attempts import SCOUT_FEED_PURPOSE
     from lychd.domain.scout.authority import ScoutAction, ScoutHostAuthorizer, ScoutHostPolicy
-    from lychd.domain.scout.profile import SCOUT_ANSWER_PURPOSE
-    from lychd.interface.web.scout_review import ScoutConsentReviews
-    from lychd.system.services.scout_workflow import ScoutCompletions, ScoutWorkflowService
+    from lychd.domain.webcrawler.profile import WEBCRAWLER_ANSWER_PURPOSE
+    from lychd.interface.web.webcrawler_review import WebcrawlerConsentReviews
+    from lychd.system.services.webcrawler_workflow import WebcrawlerCompletions, WebcrawlerWorkflowService
 
     authorizer = ScoutHostAuthorizer(
         access=access,
@@ -390,20 +390,22 @@ def _build_scout_runtime(
             policy_revision=profile.policy_revision,
             revocation_generation=profile.revocation_generation,
             actions=frozenset(ScoutAction),
-            purposes=frozenset({SCOUT_FEED_PURPOSE if type(profile) is ScoutFeedProfile else SCOUT_ANSWER_PURPOSE}),
+            purposes=frozenset(
+                {SCOUT_FEED_PURPOSE if type(profile) is WebcrawlerFeedProfile else WEBCRAWLER_ANSWER_PURPOSE}
+            ),
             categories=frozenset({"public-web-locator"}),
             binding_digests=frozenset({profile.binding_digest}),
             resolver_custody_digests=frozenset({profile.resolver_custody_digest}),
         ),
     )
-    completions = ScoutCompletions()
-    store = DbScoutAttemptStore(
+    completions = WebcrawlerCompletions()
+    store = DbWebcrawlerAttemptStore(
         get_session_factory(),
         authorizer=authorizer,
         budget_limits=profile.budget_limits,
         settlement_verifier=completions,
     )
-    service = ScoutWorkflowService(
+    service = WebcrawlerWorkflowService(
         store=store,
         completions=completions,
         ledger=ledger,
@@ -413,28 +415,32 @@ def _build_scout_runtime(
         authorizer=authorizer,
         fence=RunEffectFence(),
     )
-    return service, authorizer, ScoutConsentReviews(access=access, authorizer=authorizer, store=store, other=reviews)
+    return (
+        service,
+        authorizer,
+        WebcrawlerConsentReviews(access=access, authorizer=authorizer, store=store, other=reviews),
+    )
 
 
-def _build_scout(
+def _build_webcrawler(
     *,
     persistence: str,
-    profile: ScoutProfile | None,
+    profile: WebcrawlerProfile | None,
     capability_key: str | None,
     access: LocalOperatorAccess | None,
     ledger: RunLedger,
     consents: ConsentLedger,
     reviews: ConsentReviewProducer | None,
-) -> tuple[ScoutWorkflowService | None, ScoutAdmissionService | None, ConsentReviewProducer | None]:
+) -> tuple[WebcrawlerWorkflowService | None, WebcrawlerAdmissionService | None, ConsentReviewProducer | None]:
     """Compose the exact page profile without changing its existing typed contract."""
     if profile is None:
         return None, None, reviews
     if persistence != "postgres" or access is None or capability_key is None:
-        msg = "Scout requires PostgreSQL, the actual local credential owner and an exact local chat capability."
+        msg = "Webcrawler requires PostgreSQL, the actual local credential owner and an exact local chat capability."
         raise ValueError(msg)
-    from lychd.interface.web.scout_admission import ScoutAdmissionService
+    from lychd.interface.web.webcrawler_admission import WebcrawlerAdmissionService
 
-    service, authorizer, reviews = _build_scout_runtime(
+    service, authorizer, reviews = _build_webcrawler_runtime(
         persistence=persistence,
         profile=profile,
         capability_key=capability_key,
@@ -443,25 +449,25 @@ def _build_scout(
         consents=consents,
         reviews=reviews,
     )
-    return service, ScoutAdmissionService(access=access, authorizer=authorizer, profile=profile), reviews
+    return service, WebcrawlerAdmissionService(access=access, authorizer=authorizer, profile=profile), reviews
 
 
-def _build_feed_scout(
+def _build_feed_webcrawler(
     *,
     persistence: str,
-    profile: ScoutFeedProfile,
+    profile: WebcrawlerFeedProfile,
     access: LocalOperatorAccess | None,
     ledger: RunLedger,
     consents: ConsentLedger,
     reviews: ConsentReviewProducer | None,
-) -> tuple[ScoutWorkflowService, ScoutFeedAdmissionService, ConsentReviewProducer]:
-    """Compose the distinct model-free issuer with the same physical Scout owner."""
+) -> tuple[WebcrawlerWorkflowService, WebcrawlerFeedAdmissionService, ConsentReviewProducer]:
+    """Compose the distinct model-free issuer with the same physical Webcrawler owner."""
     if persistence != "postgres" or access is None:
-        msg = "Scout requires PostgreSQL and the actual local credential owner."
+        msg = "Webcrawler requires PostgreSQL and the actual local credential owner."
         raise ValueError(msg)
-    from lychd.interface.web.scout_feed_admission import ScoutFeedAdmissionService
+    from lychd.interface.web.webcrawler_feed_admission import WebcrawlerFeedAdmissionService
 
-    service, authorizer, reviews = _build_scout_runtime(
+    service, authorizer, reviews = _build_webcrawler_runtime(
         persistence=persistence,
         profile=profile,
         capability_key=None,
@@ -470,21 +476,21 @@ def _build_feed_scout(
         consents=consents,
         reviews=reviews,
     )
-    return service, ScoutFeedAdmissionService(access=access, authorizer=authorizer, profile=profile), reviews
+    return service, WebcrawlerFeedAdmissionService(access=access, authorizer=authorizer, profile=profile), reviews
 
 
 def _build_scavenger(
     *,
     settings: Settings,
     access: LocalOperatorAccess | None,
-    scout: ScoutWorkflowService | None,
+    webcrawler: WebcrawlerWorkflowService | None,
 ) -> ScavengerService | None:
-    """Bind the exact receiving application to the shared credential/Scout owners."""
+    """Bind the exact receiving application to the shared credential/Webcrawler owners."""
     selection = settings.weaver.scavenger
     if selection is None:
         return None
-    if access is None or scout is None:
-        msg = "Scavenger requires its actual local authority and shared native Scout."
+    if access is None or webcrawler is None:
+        msg = "Scavenger requires its actual local authority and shared native Webcrawler."
         raise ValueError(msg)
     from lychd.agents.workflows.observe_market import OBSERVE_MARKET
     from lychd.compositions.scavenger.services import LocalScavengerPolicy, ScavengerService
@@ -493,8 +499,8 @@ def _build_scavenger(
 
     return ScavengerService(
         store=DbScavengerStore(get_session_factory(), pattern=OBSERVE_MARKET.manifest.snapshot()),
-        policy=LocalScavengerPolicy(access=access, profile=selection.scout, owner=default_sigil().name),
-        scout=scout,
+        policy=LocalScavengerPolicy(access=access, profile=selection.webcrawler, owner=default_sigil().name),
+        webcrawler=webcrawler,
     )
 
 
@@ -784,9 +790,9 @@ def build_altar_services(
     bridge_sessions = _build_session_store(profile, sigil_name=default_sigil().name)
     atlas, consents, naming = _build_atlas_store(profile), _build_consent_ledger(profile), _build_naming_store(profile)
     if scavenger_casting is None:
-        scout, scout_admission, consent_reviews = _build_scout(
+        webcrawler, webcrawler_admission, consent_reviews = _build_webcrawler(
             persistence=profile,
-            profile=bridge_casting.scout if bridge_casting is not None else None,
+            profile=bridge_casting.webcrawler if bridge_casting is not None else None,
             capability_key=bridge_casting.capability_key if bridge_casting is not None else None,
             access=operator_access,
             ledger=ledger,
@@ -795,16 +801,16 @@ def build_altar_services(
         )
         feed_admission = None
     else:
-        scout, feed_admission, consent_reviews = _build_feed_scout(
+        webcrawler, feed_admission, consent_reviews = _build_feed_webcrawler(
             persistence=profile,
-            profile=scavenger_casting.scout,
+            profile=scavenger_casting.webcrawler,
             access=operator_access,
             ledger=ledger,
             consents=consents,
             reviews=consent_reviews,
         )
-        scout_admission = None
-    scavenger = _build_scavenger(settings=settings, access=operator_access, scout=scout)
+        webcrawler_admission = None
+    scavenger = _build_scavenger(settings=settings, access=operator_access, webcrawler=webcrawler)
     tickets, swap_requests = TicketStore(), _build_swap_request_ledger(profile)
     projector = EventProjector(
         fragments=fragments, sessions=bridge_sessions, consents=consents, consent_reviews=consent_reviews
@@ -849,10 +855,10 @@ def build_altar_services(
         archive=archive,
         archive_semantic=archive_semantic,
         archive_subject_resolver=archive_subject_resolver,
-        scout=scout if scout_admission is not None else None,
-        feed_scout=scout if feed_admission is not None else None,
+        webcrawler=webcrawler if webcrawler_admission is not None else None,
+        feed_webcrawler=webcrawler if feed_admission is not None else None,
         scavenger=scavenger,
-        effects=scout,
+        effects=webcrawler,
     )
     run_engine = RunEngine(
         naming_lookup=naming.get,
@@ -878,11 +884,11 @@ def build_altar_services(
             subject_resolver=archive_subject_resolver,
         ),
         delegation_binding=delegation_binding,
-        bridge_scout=bridge_casting.scout if bridge_casting is not None else None,
-        scout_admission=scout_admission,
-        feed_scout=scavenger_casting.scout if scavenger_casting is not None else None,
-        feed_scout_admission=feed_admission,
-        effects=scout,
+        bridge_webcrawler=bridge_casting.webcrawler if bridge_casting is not None else None,
+        webcrawler_admission=webcrawler_admission,
+        feed_webcrawler=scavenger_casting.webcrawler if scavenger_casting is not None else None,
+        feed_webcrawler_admission=feed_admission,
+        effects=webcrawler,
     )
     dictation, dictation_lexicon = _build_dictation_services(profile, settings)
     return AltarServices(
@@ -915,8 +921,8 @@ def build_altar_services(
         archive=archive,
         delegates=delegates,
         delegated_runtime_catalog=tuple(delegated_runtime_catalog),
-        scout=scout,
-        scout_admission=scout_admission,
+        webcrawler=webcrawler,
+        webcrawler_admission=webcrawler_admission,
         runtime_observations=_build_runtime_observations(
             settings=settings,
             registry=registry,
@@ -926,7 +932,7 @@ def build_altar_services(
                 name
                 for name, service in (
                     ("archive", archive),
-                    ("scout", scout),
+                    ("webcrawler", webcrawler),
                     ("creation", creation),
                     ("scavenger", scavenger),
                     ("delegation", delegates),

@@ -24,8 +24,8 @@ from lychd.domain.cortex.semantic_answer import SemanticAnswerBinding
 from lychd.domain.delegation.routing import DelegatedRuntimeBinding
 from lychd.domain.intercom.native import PeerRunBinding
 from lychd.domain.naming import NamingSnapshot
-from lychd.domain.scout.feed import ScoutFeedBinding
-from lychd.domain.scout.profile import ScoutBinding
+from lychd.domain.webcrawler.feed import WebcrawlerFeedBinding
+from lychd.domain.webcrawler.profile import WebcrawlerBinding
 
 if TYPE_CHECKING:
     from lychd.agents.router import Intent
@@ -188,7 +188,7 @@ class RunRecord:
     admitted_archive: ArchiveProfile | None = None
     admitted_semantic: SemanticAnswerBinding | None = None
     admitted_delegation: DelegatedRuntimeBinding | None = None
-    admitted_scout: ScoutBinding | ScoutFeedBinding | None = None
+    admitted_webcrawler: WebcrawlerBinding | WebcrawlerFeedBinding | None = None
     admitted_peer: PeerRunBinding | None = None
     attempt: int = 0
     enqueue_seq: int = 0
@@ -221,7 +221,7 @@ class RunRecord:
             admitted_archive=self.admitted_archive,
             admitted_semantic=self.admitted_semantic,
             admitted_delegation=self.admitted_delegation,
-            admitted_scout=self.admitted_scout,
+            admitted_webcrawler=self.admitted_webcrawler,
             admitted_peer=self.admitted_peer,
         )
 

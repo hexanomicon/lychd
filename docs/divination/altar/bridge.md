@@ -451,7 +451,7 @@ establish what was transmitted to a provider.
 
 ## Public-page answers
 
-With the Scout profile as the current default, the composer shows a two-line example.
+With the Webcrawler profile as the current default, the composer shows a two-line example.
 Enter one exact public HTTPS URL, press **Shift + Enter**, then enter the question.
 
 ```text
@@ -465,7 +465,7 @@ reads a single page, can quote it in the retained answer, and uses no model tool
 chat history. It performs no URL search, redirect following or retry of a lost acquisition.
 Current composer guidance applies even in an older conversation. Look to Loom for the exact
 `bridge_chat@4` score and Orb for this Run's outcome.
-[Scout public-page answers](../../sepulcher/aspects/scout.md#public-page-answers)
+[Webcrawler public-page answers](../../sepulcher/aspects/webcrawler.md#public-page-answers)
 
 ## Proposals under design
 
