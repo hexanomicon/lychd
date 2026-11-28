@@ -1692,6 +1692,87 @@ describe("Bridge reader preservation during refresh", () => {
 });
 
 
+describe("Bridge pending consent Run references", () => {
+  it("links similar requests in separate conversations to their own Runs and submits each exact verdict", async () => {
+    const first: ConsentCardModel = {
+      ...pendingConsent,
+      native_review_status: "available",
+      native_review: {
+        title: "Review the request",
+        facts: [{ key: "target", label: "Target", value: "chat:local" }]
+      },
+      review_binding_digest: "a".repeat(64)
+    };
+    const second: ConsentCardModel = {
+      ...first,
+      id: "consent-b",
+      run_id: "run-b",
+      review_binding_digest: "b".repeat(64)
+    };
+    function waiting(sessionId: string, consent: ConsentCardModel, otherPending: number): BridgeSnapshot {
+      const current = snapshot(sessionId, [{
+        ...projection(sessionId, consent.run_id),
+        run_status: "awaiting_consent",
+        activity: "awaiting_consent"
+      }]);
+      return {
+        ...current,
+        sessions: current.sessions.map((session) => ({
+          ...session, pending_count: session.id === sessionId ? 1 : otherPending
+        })),
+        session: { ...current.session!, pending_count: 1 },
+        pending_consents: [consent],
+        pending_count: 1 + otherPending
+      };
+    }
+
+    getSnapshotMock
+      .mockResolvedValueOnce(waiting("session-a", first, 1))
+      .mockResolvedValueOnce(waiting("session-b", second, 0));
+    decideConsentMock
+      .mockResolvedValueOnce({ consent: { ...first, state: "consented" }, pending_count: 1 })
+      .mockResolvedValueOnce({ consent: { ...second, state: "refused" }, pending_count: 0 });
+
+    const view = render(BridgeView, { sessionId: "session-a" });
+    const firstCard = within(await screen.findByRole("group", { name: "pending consent" }));
+    expect(firstCard.getByRole("link", { name: "View Run run-a in Orb" }).getAttribute("href")).toBe("/orb/run-a");
+    expect(screen.queryByRole("link", { name: "View Run run-b in Orb" })).toBeNull();
+    expect(decideConsentMock).not.toHaveBeenCalled();
+
+    await fireEvent.click(firstCard.getByRole("button", { name: "Consecrate" }));
+    expect(await screen.findByRole("group", { name: "approved consent" })).toBeTruthy();
+
+    await view.rerender({ sessionId: "session-b" });
+    const secondCard = within(await screen.findByRole("group", { name: "pending consent" }));
+    expect(secondCard.getByRole("link", { name: "View Run run-b in Orb" }).getAttribute("href")).toBe("/orb/run-b");
+    expect(screen.queryByRole("link", { name: "View Run run-a in Orb" })).toBeNull();
+    await fireEvent.click(secondCard.getByRole("button", { name: "Refuse" }));
+    expect(await screen.findByRole("group", { name: "refused consent" })).toBeTruthy();
+    expect(decideConsentMock.mock.calls).toEqual([
+      [first.id, "approve", first.review_binding_digest],
+      [second.id, "deny", second.review_binding_digest]
+    ]);
+  });
+
+  it("shows unavailable Run evidence beside a read-only consent review", async () => {
+    getSnapshotMock.mockResolvedValueOnce({
+      ...snapshot("session-a"),
+      pending_consents: [{
+        ...pendingConsent, run_id: "../run-b?event=other", can_decide: false, native_review_status: "unavailable"
+      }],
+      pending_count: 1
+    });
+    render(BridgeView, { sessionId: "session-a" });
+    const card = within(await screen.findByRole("group", { name: "pending consent" }));
+    expect(card.getByText("Run evidence link unavailable")).toBeTruthy();
+    expect(card.queryByRole("link")).toBeNull();
+    expect(card.getByText(/required review is unavailable or incomplete/)).toBeTruthy();
+    expect(card.getByRole<HTMLButtonElement>("button", { name: "Consecrate" }).disabled).toBe(true);
+    expect(card.getByRole<HTMLButtonElement>("button", { name: "Refuse" }).disabled).toBe(true);
+    expect(decideConsentMock).not.toHaveBeenCalled();
+  });
+});
+
 describe("Bridge historical consent navigation", () => {
   function consentSnapshot(): BridgeSnapshot {
     return { ...snapshot("session-a", [projection(), projection("session-a", "run-b")]), pending_consents: [

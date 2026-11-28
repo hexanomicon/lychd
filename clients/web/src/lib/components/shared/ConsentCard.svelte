@@ -1,11 +1,13 @@
 <script lang="ts">
   import { ApiError, decideConsent } from "$lib/api/client";
   import type { ConsentCard } from "$lib/api/models";
+  import { orbReturnHref } from "$lib/navigation/instruments";
   import type { BridgeWorkspace } from "$lib/shell/state/bridge-workspace.svelte";
 
   let {
     consent,
     sessionId,
+    showRunReference = false,
     decisions,
     onauthority,
     ondecided,
@@ -13,12 +15,14 @@
   }: {
     consent: ConsentCard;
     sessionId: string;
+    showRunReference?: boolean;
     decisions: BridgeWorkspace["consentDecisions"];
     onauthority: () => number;
     ondecided: (consent: ConsentCard, pending: number, authorityVersion: number) => void;
     onrefresh: () => void;
   } = $props();
   let error = $state("");
+  let runHref = $derived(orbReturnHref(consent.run_id));
   let decision = $derived(decisions.get(consent.id));
   let busy = $derived(Boolean(decision?.sending || decision?.settled));
   let decisionError = $derived(decision?.error || error);
@@ -92,6 +96,15 @@
     <span class="rune-head">⬡ Consent sought</span>
     <span class="glyph">{consent.tool_name}</span>
   </div>
+  {#if showRunReference && consent.state === "pending_consent"}
+    <p class="run-reference">
+      {#if runHref}
+        <a href={runHref}>View Run <code>{consent.run_id}</code> in Orb</a>
+      {:else}
+        Run evidence link unavailable
+      {/if}
+    </p>
+  {/if}
   <div class="vision"><em>Vision:</em> {consent.vision}</div>
   <dl class="args">
     {#each Object.entries(consent.args) as [name, value] (name)}
@@ -167,6 +180,19 @@
 
 <style>
   .consent-card:focus-visible { outline: 2px solid var(--color-rune); outline-offset: 3px; }
+
+  .run-reference {
+    margin: 12px 16px 0;
+    color: var(--color-parchment);
+    font-size: var(--text-sm);
+    overflow-wrap: anywhere;
+  }
+
+  .run-reference a {
+    color: var(--color-rune);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
 
   .native-review {
     min-width: 0;
