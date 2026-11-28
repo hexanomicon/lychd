@@ -81,7 +81,7 @@ name the telos it serves, but its decision must stand on technical requirements 
 | How are Seeds admitted, retrieved, corrected, and reanimated? | [27 — Memory](27-memory.md) |
 | Who owns an application, its exact score, casting, coordination, and protected authorship? | [28 — Workflow](28-workflow.md) |
 | Which evidence makes an execution legible without granting authority? | [29 — Observability](29-observability.md) |
-| How are search, fetch, render, and extraction effects contained? | [30 — Webcrawler](30-webcrawler.md) |
+| How are search, fetch, render, and extraction effects contained? | [30 — Webcrawling](30-webcrawling.md) |
 | How are speculative worlds isolated, judged, and promoted? | [31 — Simulation](31-simulation.md) |
 | How are Persona, Sigil, attribution, and revision bound? | [32 — Identity](32-identity.md) |
 | How are training corpora admitted and resulting weights promoted? | [33 — Training](33-training.md) |

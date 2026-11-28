@@ -1,1 +1,1 @@
-"""Scout acquisition foundations; no effect or contact authority is provided."""
+"""Receipt-bound native acquisition primitives used by Webcrawler."""

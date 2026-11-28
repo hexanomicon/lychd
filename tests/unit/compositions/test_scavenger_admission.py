@@ -25,11 +25,11 @@ from lychd.domain.cortex.events import InProcessEventBus
 from lychd.domain.cortex.ledger import InMemoryRunLedger
 from lychd.domain.cortex.runs import RunDeliveryState
 from lychd.domain.scout.attempts import ScoutFeedConsumer
-from lychd.domain.scout.feed import ScoutFeedBinding
 from lychd.domain.web.orb import bridge_context_path, build_orb_snapshot
-from tests.scout_feed_fixtures import Scenario, scenario
+from lychd.domain.webcrawler.feed import WebcrawlerFeedBinding
 from tests.unit.compositions.test_scavenger_values import seed_document
-from tests.unit.domain.cortex.test_scout_feed_admission import Queue
+from tests.unit.domain.cortex.test_webcrawler_feed_admission import Queue
+from tests.webcrawler_feed_fixtures import Scenario, scenario
 
 
 class ReceivingPort:
@@ -43,7 +43,7 @@ class ReceivingPort:
             seed_digest=request.seed.digest,
             initial_filter_digest=digest(canonical(request.initial_filter)),
         )
-        self.binding: ScoutFeedBinding | None = None
+        self.binding: WebcrawlerFeedBinding | None = None
         self.run_id: UUID | None = None
         self.events: list[str] = []
 
@@ -69,7 +69,7 @@ class ReceivingPort:
         assert delivery is not None
         assert delivery.state is RunDeliveryState.HELD
         assert self.queue.enqueued == []
-        assert run.admitted_scout == kwargs["binding"]
+        assert run.admitted_webcrawler == kwargs["binding"]
         kwargs["authorize"]()
         self.binding = kwargs["binding"]
         self.run_id = kwargs["run_id"]
@@ -99,18 +99,18 @@ async def setup() -> Setup:
     app = ScavengerService(
         store=cast("DbScavengerStore", store),
         policy=LocalScavengerPolicy(access=s.access, profile=s.binding.profile, owner="magus"),
-        scout=s.service,
+        webcrawler=s.service,
     )
     engine = RunEngine(
         ledger=ledger,
         bus=bus,
         workflows=builtin_workflow_registry(
-            weaver=WeaverSettings(scavenger=ScavengerCastingSettings(revision="3", scout=s.binding.profile))
+            weaver=WeaverSettings(scavenger=ScavengerCastingSettings(revision="3", webcrawler=s.binding.profile))
         ),
         queue_router=QueueRouter({"default": RouteRule(queue="runs", priority=50)}),
         queues={"runs": queue},
-        feed_scout=s.binding.profile,
-        feed_scout_admission=s.admission,
+        feed_webcrawler=s.binding.profile,
+        feed_webcrawler_admission=s.admission,
         bridge_capability_key="ordinary:chat:unrelated",
     )
     return Setup(s, request, store, app, engine, ledger, bus, queue)
@@ -166,7 +166,7 @@ async def test_held_replay_retains_winners_actual_binding_without_adopting_the_l
         )
         binding = s.source.admission(intent, original, s.source.binding.profile)
         run, created = await s.ledger.create_idempotent(
-            intent.model_copy(update={"admitted_scout": binding}),
+            intent.model_copy(update={"admitted_webcrawler": binding}),
             idempotency_key=f"scavenger:{s.request.request_id}",
             workflow_name=OBSERVE_MARKET.name,
             pattern_manifest=OBSERVE_MARKET.manifest.snapshot(),

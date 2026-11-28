@@ -161,7 +161,7 @@ class NativeLoop:
         )
         self.timeline: list[str] = []
         self.frames: list[dict[str, Any]] = []
-        self.scout_calls: list[OperatorResearchRequest] = []
+        self.webcrawler_calls: list[OperatorResearchRequest] = []
         self.document_reads: list[str] = []
         self.model_run_ids: list[str] = []
         self.delivery: Literal["succeeded", "rejected", "unknown", "cancelled"] = "succeeded"
@@ -182,7 +182,7 @@ class NativeLoop:
         ) -> SourceReadResult:
             self.timeline.append("document")
             self.document_reads.append(source_id)
-            assert self.timeline[:4] == ["model_plan", "delivered_plan", "ack", "scout"]
+            assert self.timeline[:4] == ["model_plan", "delivered_plan", "ack", "webcrawler"]
             assert focus == PLAN
             assert reference_labels == ()
             return original_read(
@@ -195,7 +195,7 @@ class NativeLoop:
             )
 
         monkeypatch.setattr(conversation_workflow, "read_research_document", read_document)
-        monkeypatch.setattr(self.broker, "_scout", self.scout)
+        monkeypatch.setattr(self.broker, "_webcrawler", self.webcrawler)
         self.runtime = build_runtime(
             self.policy,
             self.corpus,
@@ -242,11 +242,11 @@ class NativeLoop:
             )
         )
 
-    async def scout(self, request: OperatorResearchRequest) -> tuple[SourceReadResult, ...]:
+    async def webcrawler(self, request: OperatorResearchRequest) -> tuple[SourceReadResult, ...]:
         assert self.timeline == ["model_plan", "delivered_plan", "ack"]
         assert request.event == self.event
-        self.timeline.append("scout")
-        self.scout_calls.append(request)
+        self.timeline.append("webcrawler")
+        self.webcrawler_calls.append(request)
         if self.progress_shape == "duplicate":
             assert self.progress_frame is not None
             self.reader.feed_data(self.progress_frame)
@@ -276,7 +276,7 @@ class NativeLoop:
 
     async def deliver_plan(self, progress: ReachResearchProgress) -> bool:
         assert progress.text == PLAN
-        assert self.scout_calls == self.document_reads == []
+        assert self.webcrawler_calls == self.document_reads == []
         self.timeline.append("delivered_plan")
         if self.delivery == "cancelled":
             raise asyncio.CancelledError
@@ -339,13 +339,13 @@ async def test_independent_neutral_edges_share_native_research_graph_and_exact_p
             "model_plan",
             "delivered_plan",
             "ack",
-            "scout",
+            "webcrawler",
             "document",
             "model_synthesize",
         ]
         assert [frame["kind"] for frame in loop.frames] == ["request", "progress_ack"]
         assert loop.frames[-1]["accepted"] is True
-        assert len(loop.scout_calls) == 1
+        assert len(loop.webcrawler_calls) == 1
         assert loop.document_reads == ["doc:docs/graph.md"]
         run = await loop.runtime.substrate.ledger.get(result.run_id)
         assert run is not None
@@ -380,7 +380,7 @@ async def test_unconfirmed_plan_delivery_prevents_both_web_and_local_document_re
         assert result.status == "error"
         assert loop.timeline == ["model_plan", "delivered_plan", "ack"]
         assert loop.frames[-1]["accepted"] is False
-        assert loop.scout_calls == loop.document_reads == []
+        assert loop.webcrawler_calls == loop.document_reads == []
         assert len(loop.model_run_ids) == 1
     finally:
         await loop.close()
@@ -402,7 +402,7 @@ async def test_foreign_progress_fences_the_client_without_acknowledgement_or_acq
     finally:
         await loop.close()
     assert [frame["kind"] for frame in loop.frames] == ["request"]
-    assert loop.scout_calls == loop.document_reads == []
+    assert loop.webcrawler_calls == loop.document_reads == []
     assert len(loop.model_run_ids) == 1
     assert loop.timeline.count("delivered_plan") == 0
 
@@ -424,8 +424,8 @@ async def test_duplicate_progress_fences_the_client_after_the_first_acknowledgem
         await loop.close()
     assert [frame["kind"] for frame in loop.frames] == ["request", "progress_ack"]
     assert loop.frames[-1]["accepted"] is True
-    assert len(loop.scout_calls) == 1
-    assert loop.timeline[:4] == ["model_plan", "delivered_plan", "ack", "scout"]
+    assert len(loop.webcrawler_calls) == 1
+    assert loop.timeline[:4] == ["model_plan", "delivered_plan", "ack", "webcrawler"]
     assert loop.timeline.count("delivered_plan") == 1
 
 
@@ -445,7 +445,7 @@ async def test_cancelled_plan_delivery_writes_no_ack_and_cannot_acquire(
     finally:
         await loop.close()
     assert [frame["kind"] for frame in loop.frames] == ["request"]
-    assert loop.scout_calls == loop.document_reads == []
+    assert loop.webcrawler_calls == loop.document_reads == []
 
 
 @pytest.mark.parametrize(
@@ -469,7 +469,7 @@ async def test_native_admission_keeps_neutral_platform_account_actor_and_place_b
         assert result.reason == reason
         assert result.run_id is None
         assert await loop.runtime.sessions.list_sessions() == []
-        assert loop.model_run_ids == loop.scout_calls == loop.document_reads == []
+        assert loop.model_run_ids == loop.webcrawler_calls == loop.document_reads == []
         assert loop.timeline == []
     finally:
         await loop.close()
@@ -497,7 +497,7 @@ async def test_real_broker_independently_refuses_a_foreign_neutral_conversation(
         response = await loop.broker.handle(request, send)
         assert response.status == "refused"
         assert response.reason == "research_event"
-        assert delivered == loop.scout_calls == loop.document_reads == []
+        assert delivered == loop.webcrawler_calls == loop.document_reads == []
     finally:
         await loop.close()
 

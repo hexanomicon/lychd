@@ -1,4 +1,4 @@
-"""Executable Graph with actual Scout coordinator; acquisition and app custody substituted."""
+"""Executable Graph with actual Webcrawler coordinator; acquisition and app custody substituted."""
 
 from __future__ import annotations
 
@@ -25,11 +25,11 @@ from lychd.compositions.scavenger.ports import ObservationCommit
 from lychd.domain.cortex.graph_runner import GraphRunner
 from lychd.domain.cortex.runs import ConsentPending, RunParked
 from lychd.domain.cortex.stasis import DurableStasisPhylactery, InMemoryStasisStore
-from lychd.domain.scout.feed import ScoutFeedBinding, ScoutFeedMaterial
-from lychd.domain.scout.profile import ScoutReviewRef, ScoutWorkflowCode, ScoutWorkflowError
+from lychd.domain.webcrawler.feed import WebcrawlerFeedBinding, WebcrawlerFeedMaterial
+from lychd.domain.webcrawler.profile import WebcrawlerReviewRef, WebcrawlerWorkflowCode, WebcrawlerWorkflowError
 from tests.agents.conftest import make_services
 from tests.agents.fakes import FakeConsents, FakeEvents, FakeOrchestrator, FakeTurns
-from tests.scout_feed_fixtures import Scenario, install_effects, scenario
+from tests.webcrawler_feed_fixtures import Scenario, install_effects, scenario
 
 
 class NoTransition:
@@ -48,15 +48,15 @@ class App:
         self.lose_ack = False
         self.revoke_during_adoption = False
 
-    def current(self, run_id: str, binding: ScoutFeedBinding) -> None:
+    def current(self, run_id: str, binding: WebcrawlerFeedBinding) -> None:
         if (
             not self.source.access.current(self.source.authentication)
             or run_id != self.source.run.run_id
             or binding != self.source.binding
         ):
-            raise ScoutWorkflowError(ScoutWorkflowCode.BINDING)
+            raise WebcrawlerWorkflowError(WebcrawlerWorkflowCode.BINDING)
 
-    async def committed(self, *, run_id: str, binding: ScoutFeedBinding) -> ObservationCommit | None:
+    async def committed(self, *, run_id: str, binding: WebcrawlerFeedBinding) -> ObservationCommit | None:
         await asyncio.sleep(0)
         self.current(run_id, binding)
         return self.value
@@ -65,9 +65,9 @@ class App:
         self,
         *,
         run_id: str,
-        binding: ScoutFeedBinding,
-        review: ScoutReviewRef,
-        material: ScoutFeedMaterial,
+        binding: WebcrawlerFeedBinding,
+        review: WebcrawlerReviewRef,
+        material: WebcrawlerFeedMaterial,
     ) -> ObservationCommit:
         await asyncio.sleep(0)
         if self.revoke_during_adoption:
@@ -108,7 +108,7 @@ async def setup() -> Setup:
             consents=FakeConsents(),
             orchestrator=FakeOrchestrator(),
         ),
-        feed_scout=source.service,
+        feed_webcrawler=source.service,
         scavenger=app,
     )
     # These are explicit negative controls, never substitute native effect evidence.
@@ -138,7 +138,7 @@ async def test_actual_graph_parks_and_restores_consent_then_commits_only_referen
     assert OBSERVE_MARKET.durable
     parked = await runner.run_graph(OBSERVE_MARKET.graph, PrepareFeedReview(), s.ctx.state, deps=s.ctx.deps)
     assert isinstance(parked, RunParked)
-    assert parked.tool_name == "scout.public-feed"
+    assert parked.tool_name == "webcrawler.public-feed"
     fetch.assert_not_awaited()
     s.source.consents.get.return_value = granted
     result = await runner.resume_graph(OBSERVE_MARKET.graph, deps=s.ctx.deps)
@@ -166,7 +166,10 @@ async def test_lost_commit_ack_resolves_exact_retained_reference_without_second_
     with pytest.raises(ConnectionError, match="Synthetic lost"):
         await AcquireMarketField().run(s.ctx)
     assert s.ctx.state.commit is None
-    restored = ObserveMarketState.model_validate_json(s.ctx.state.model_dump_json())
+    payload = s.ctx.state.model_dump(mode="json")
+    assert payload["scout"] == s.ctx.state.webcrawler.model_dump(mode="json")
+    assert "webcrawler" not in payload
+    restored = ObserveMarketState.model_validate(payload)
     ctx = GraphRunContext(state=restored, deps=s.ctx.deps)
     await AcquireMarketField().run(ctx)
     result = await FinishMarketObservation().run(ctx)
@@ -185,9 +188,9 @@ async def test_lost_material_without_commit_never_refetches(monkeypatch: pytest.
     await PrepareFeedReview().run(s.ctx)
     assert s.ctx.state.review is not None
     await s.source.service.acquire(run_id=s.source.run.run_id, binding=s.source.binding, review=s.ctx.state.review)
-    with pytest.raises(ScoutWorkflowError) as error:
+    with pytest.raises(WebcrawlerWorkflowError) as error:
         await AcquireMarketField().run(s.ctx)
-    assert error.value.code is ScoutWorkflowCode.MATERIAL_UNAVAILABLE
+    assert error.value.code is WebcrawlerWorkflowCode.MATERIAL_UNAVAILABLE
     assert s.app.value is None
     assert s.app.adoptions == 0
     fetch.assert_awaited_once()
@@ -202,12 +205,12 @@ async def test_denial_and_current_revocation_do_not_commit_or_request_inference(
     await PrepareFeedReview().run(s.ctx)
     granted = s.source.consents.get.return_value
     s.source.consents.get.return_value = replace(granted, status="denied")
-    with pytest.raises(ScoutWorkflowError):
+    with pytest.raises(WebcrawlerWorkflowError):
         await AwaitFeedConsent().run(s.ctx)
     fetch.assert_not_awaited()
     s.source.consents.get.return_value = granted
     s.app.revoke_during_adoption = True
-    with pytest.raises(ScoutWorkflowError):
+    with pytest.raises(WebcrawlerWorkflowError):
         await AcquireMarketField().run(s.ctx)
     fetch.assert_awaited_once()
     assert s.app.value is None
@@ -221,7 +224,7 @@ async def test_state_tampering_and_forged_commit_do_not_supply_application_autho
     validator = OBSERVE_MARKET.validate_state
     assert validator is not None
     validator(s.source.run.to_intent(), s.ctx.state)
-    with pytest.raises(ScoutWorkflowError):
+    with pytest.raises(WebcrawlerWorkflowError):
         validator(s.source.run.to_intent(), s.ctx.state.model_copy(update={"run_id": uuid4()}))
     s.ctx.state.commit = ObservationCommit(
         admission_id=s.source.binding.consumer.application_admission_id,
@@ -231,10 +234,10 @@ async def test_state_tampering_and_forged_commit_do_not_supply_application_autho
         field_digest="d" * 64,
         item_count=1,
     )
-    with pytest.raises(ScoutWorkflowError):
+    with pytest.raises(WebcrawlerWorkflowError):
         await FinishMarketObservation().run(s.ctx)
     s.source.access.revoke()
-    with pytest.raises(ScoutWorkflowError):
+    with pytest.raises(WebcrawlerWorkflowError):
         await PrepareFeedReview().run(s.ctx)
 
 
@@ -248,5 +251,5 @@ async def test_pending_consent_stays_explicit_and_wrong_admission_refuses() -> N
         await AwaitFeedConsent().run(s.ctx)
     intent = s.source.run.to_intent()
     for changes in [{"source": "bridge"}, {"prompt": "copied seed"}, {"admitted_capability_key": "placeholder"}]:
-        with pytest.raises(ScoutWorkflowError):
+        with pytest.raises(WebcrawlerWorkflowError):
             OBSERVE_MARKET.make_state(intent.model_copy(update=changes))

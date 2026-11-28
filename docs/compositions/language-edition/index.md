@@ -33,7 +33,7 @@ publication retain their own owners. Crossing into their work requires separate 
 ??? info "Revision 2 and the earlier design"
 
     Revision `2` supersedes revision `1` of the Composition and its `@1` Pattern,
-    request, and result family. It admits source locators without acquiring Scout or custody
+    request, and result family. It admits source locators without acquiring Webcrawler or custody
     authority and requires source-dialogue attestation before source-aligned wording becomes
     canonical. No registry or Run used revision `1`, so there is no executable migration. The
     earlier meanings remain part of the design history.
@@ -41,7 +41,7 @@ publication retain their own owners. Crossing into their work requires separate 
 ## One bounded language-edition road
 
 **Establish the source.** Language Edition judges whether the source fits the request. A locator
-may require a separately granted Scout Fetch or Download. Scout owns Search, Fetch, Download,
+may require a separately granted Webcrawler Fetch or Download. Webcrawler owns Search, Fetch, Download,
 destination and contact policy, quarantine arrival, and acquisition receipts. After bounded
 quarantine, separately granted, custody-owned Artifact Admission validates retained bytes and
 establishes the immutable source master. A URL cannot stand in for that master; an acquisition

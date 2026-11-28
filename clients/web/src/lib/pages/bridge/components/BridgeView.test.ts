@@ -341,7 +341,7 @@ describe("Bridge configured composer guidance", () => {
     view.unmount();
   });
 
-  it("does not invent composer instructions from a historical Scout Run or a draft", async () => {
+  it("does not invent composer instructions from a historical public-page Run or a draft", async () => {
     const historical = {
       ...projection(), pattern_revision: "4", loom_path: "/loom/bridge_chat/4",
       run_status: "done", activity: "done", terminal: true

@@ -10,7 +10,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 
 class ScavengerObservation(UUIDAuditBase):
-    """Application-owned payloads, separate from immutable Run and Scout custody."""
+    """Application-owned payloads, separate from immutable Run and Webcrawler custody."""
 
     __tablename__ = "scavenger_observation"
     __table_args__ = (

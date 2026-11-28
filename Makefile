@@ -35,12 +35,12 @@ CI_PYTEST_TARGETS := tests/unit/config tests/unit/db \
 	tests/unit/system/services/test_artifact_publication.py \
 	tests/unit/system/services/test_native_candidate_custody.py \
 	tests/unit/system/services/test_native_candidate_authority.py \
-	tests/unit/system/test_scout_worker.py tests/unit/system/test_scout_rss_worker.py \
-	tests/unit/system/services/test_scout_extraction.py \
-	tests/unit/system/services/test_scout_rss_extraction.py \
-	tests/unit/system/services/test_scout_dns.py tests/unit/system/services/test_scout_socket.py \
-	tests/unit/system/services/test_scout_http.py tests/unit/system/services/test_scout_fetch.py \
-	tests/unit/system/services/test_scout_workflow.py tests/codex/test_local_access.py \
+	tests/unit/system/test_webcrawler_worker.py tests/unit/system/test_webcrawler_rss_worker.py \
+	tests/unit/system/services/test_webcrawler_extraction.py \
+	tests/unit/system/services/test_webcrawler_rss_extraction.py \
+	tests/unit/system/services/test_webcrawler_dns.py tests/unit/system/services/test_webcrawler_socket.py \
+	tests/unit/system/services/test_webcrawler_http.py tests/unit/system/services/test_webcrawler_fetch.py \
+	tests/unit/system/services/test_webcrawler_workflow.py tests/codex/test_local_access.py \
 	tests/unit/domain/intercom tests/unit/system/services/test_intercom.py \
 	tests/unit/cli/test_intercom_lab.py \
 	tests/unit/interface tests/unit/cli/test_reach_prepare.py \
@@ -51,7 +51,7 @@ CI_PYTEST_TARGETS := tests/unit/config tests/unit/db \
 	tests/unit/cli/test_reach_operator_model.py \
 	tests/unit/cli/test_reach_context_rounds.py tests/unit/cli/test_reach_podman_model.py \
 	tests/unit/cli/test_reach_relay_retirement.py tests/unit/cli/test_reach_research_broker.py \
-	tests/unit/cli/test_reach_research_image.py tests/unit/cli/test_reach_scout_worker.py \
+	tests/unit/cli/test_reach_research_image.py tests/unit/cli/test_reach_webcrawler_worker.py \
 	tests/unit/cli/test_reach_trace_archive.py tests/unit/cli/test_reach_trace_capture.py \
 	tests/unit/cli/test_reach_observation.py tests/unit/system/services/test_oculus_snapshot.py \
 	tests/unit/cli/test_reach_operator_onboarding.py \
@@ -68,7 +68,7 @@ CI_PYTEST_TARGETS := tests/unit/config tests/unit/db \
 	tests/unit/domain/animation tests/unit/domain/cortex tests/unit/domain/delegation \
 	tests/unit/domain/test_naming.py \
 	tests/unit/domain/oculus \
-	tests/unit/domain/orchestration tests/unit/domain/privacy tests/unit/domain/web tests/unit/domain/scout \
+	tests/unit/domain/orchestration tests/unit/domain/privacy tests/unit/domain/web tests/unit/domain/webcrawler \
 	tests/unit/domain/ward \
 	tests/unit/extensions tests/unit/lib tests/unit/compositions tests/agents tests/web \
 	tests/integration/test_configuration_workflows.py \
@@ -104,8 +104,8 @@ CONTAINER_TEST_TARGETS ?= tests/integration/test_db_consent_pg.py \
 	tests/integration/test_intercom_pg.py tests/integration/test_intercom_migrations_pg.py \
 	tests/integration/test_intercom_inbox_pg.py \
 	tests/integration/test_native_peer_migrations_pg.py \
-	tests/integration/test_scout_attempts_pg.py tests/integration/test_scout_migrations_pg.py \
-	tests/integration/test_scout_workflow_pg.py \
+	tests/integration/test_webcrawler_attempts_pg.py tests/integration/test_webcrawler_migrations_pg.py \
+	tests/integration/test_webcrawler_workflow_pg.py \
 	tests/integration/test_production_wiring.py::test_production_wiring_real_factory_over_postgres_survives_second_boot
 PYTEST_BASE_ROOT ?= .cache/pytest
 PYTEST_BASETEMP ?=

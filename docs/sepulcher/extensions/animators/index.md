@@ -31,7 +31,7 @@ Check what the service declares, what its bound surface has proved, and what is 
 distinct: a probe may invalidate a declaration, but cannot invent a capability.
 
 Adapters keep native protocols behind the stable surface requested by Graph or an extension.
-An Animator-backed web effect still needs Scout's separate grant, destination, budget, and receipt.
+An Animator-backed web effect still needs Webcrawler's separate grant, destination, budget, and receipt.
 
 ## The Galvanic Arc
 

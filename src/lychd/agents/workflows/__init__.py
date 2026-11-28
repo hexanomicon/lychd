@@ -19,8 +19,8 @@ from lychd.agents.workflows.base import PatternManifest, Trigger, Workflow, patt
 from lychd.agents.workflows.bridge_chat import BRIDGE_CHAT, BRIDGE_CHAT_BOUND
 from lychd.agents.workflows.delegated_rite import DELEGATED_RITE, DELEGATED_RITE_BOUND
 from lychd.agents.workflows.observe_market import OBSERVE_MARKET
-from lychd.agents.workflows.scout_chat import BRIDGE_CHAT_SCOUT
 from lychd.agents.workflows.semantic_chat import BRIDGE_CHAT_SEMANTIC
+from lychd.agents.workflows.webcrawler_chat import BRIDGE_CHAT_WEBCRAWLER
 from lychd.domain.naming import NamingSnapshot
 
 if TYPE_CHECKING:
@@ -33,8 +33,8 @@ __all__ = [
     "BRIDGE_CHAT",
     "BRIDGE_CHAT_ARCHIVE",
     "BRIDGE_CHAT_BOUND",
-    "BRIDGE_CHAT_SCOUT",
     "BRIDGE_CHAT_SEMANTIC",
+    "BRIDGE_CHAT_WEBCRAWLER",
     "DELEGATED_RITE",
     "DELEGATED_RITE_BOUND",
     "OBSERVE_MARKET",
@@ -296,7 +296,7 @@ def _named_bridge_workflow(workflow: Workflow) -> Workflow:
 
 _NAMED_BRIDGE_WORKFLOWS = tuple(
     _named_bridge_workflow(workflow)
-    for workflow in (BRIDGE_CHAT, BRIDGE_CHAT_BOUND, BRIDGE_CHAT_ARCHIVE, BRIDGE_CHAT_SCOUT, BRIDGE_CHAT_SEMANTIC)
+    for workflow in (BRIDGE_CHAT, BRIDGE_CHAT_BOUND, BRIDGE_CHAT_ARCHIVE, BRIDGE_CHAT_WEBCRAWLER, BRIDGE_CHAT_SEMANTIC)
 )
 
 
@@ -320,7 +320,7 @@ def builtin_workflow_registry(*, weaver: WeaverSettings | None = None) -> Builti
     if weaver is not None and weaver.bridge is not None and weaver.bridge.revision == "3":
         bridge = BRIDGE_CHAT_ARCHIVE
     if weaver is not None and weaver.bridge is not None and weaver.bridge.revision == "4":
-        bridge = BRIDGE_CHAT_SCOUT
+        bridge = BRIDGE_CHAT_WEBCRAWLER
     if weaver is not None and weaver.bridge is not None and weaver.bridge.revision == "5":
         bridge = BRIDGE_CHAT_SEMANTIC
     delegate = DELEGATED_RITE_BOUND if weaver is not None and weaver.delegation is not None else DELEGATED_RITE
@@ -330,7 +330,7 @@ def builtin_workflow_registry(*, weaver: WeaverSettings | None = None) -> Builti
             BRIDGE_CHAT,
             BRIDGE_CHAT_BOUND,
             BRIDGE_CHAT_ARCHIVE,
-            BRIDGE_CHAT_SCOUT,
+            BRIDGE_CHAT_WEBCRAWLER,
             BRIDGE_CHAT_SEMANTIC,
             *_NAMED_BRIDGE_WORKFLOWS,
             DELEGATED_RITE,

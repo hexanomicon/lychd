@@ -1,4 +1,4 @@
-"""Trusted host admission and custody for one disposable public-source scout.
+"""Trusted host admission and custody for one disposable public-source webcrawler.
 
 The broker exposes a frozen catalogue, an acknowledgement handshake and one fixed
 container entrypoint. Source text and foreign diagnostics never select host code,
@@ -35,11 +35,11 @@ from lychd.compositions.reach.research_wire import (
 from lychd.compositions.reach.schemas import ReachPolicy
 
 MAX_PROFILE_BYTES = 16_384
-MAX_SCOUT_OUTPUT_BYTES = 49_152
-MAX_SCOUT_ERROR_BYTES = 8192
+MAX_WEBCRAWLER_OUTPUT_BYTES = 49_152
+MAX_WEBCRAWLER_ERROR_BYTES = 8192
 MAX_SEEN_EVENTS = 1000
 ACK_TIMEOUT_SECONDS = 20
-SCOUT_TIMEOUT_SECONDS = 70
+WEBCRAWLER_TIMEOUT_SECONDS = 70
 _IMAGE = re.compile(r"sha256:[0-9a-f]{64}")
 _CONTAINER = re.compile(r"[0-9a-f]{64}")
 
@@ -131,7 +131,7 @@ class _PendingAcknowledgement:
     future: asyncio.Future[bool]
 
 
-class _ScoutSettlement:
+class _WebcrawlerSettlement:
     """Remember caller cancellation while joining owned spawn and cleanup tasks."""
 
     def __init__(self) -> None:
@@ -155,7 +155,7 @@ class _ScoutSettlement:
 
 
 class OperatorResearchBroker:
-    """Admit one exact event once and settle the scout before releasing its slot."""
+    """Admit one exact event once and settle the webcrawler before releasing its slot."""
 
     def __init__(
         self,
@@ -303,7 +303,7 @@ class OperatorResearchBroker:
         request: OperatorResearchRequest,
         send_progress: Callable[[ReachResearchProgress], Awaitable[None]],
     ) -> OperatorResearchResponse:
-        """Await the delivered interpretation, then perform at most one fixed scout job."""
+        """Await the delivered interpretation, then perform at most one fixed webcrawler job."""
         reason = self._admission(request)
         if reason is not None:
             return self._refuse(request, reason)
@@ -328,7 +328,7 @@ class OperatorResearchBroker:
             reason = self._fresh_authority(request)
             if reason is not None:
                 return self._refuse(request, reason)
-            sources = await self._scout(request) if request.source_ids else ()
+            sources = await self._webcrawler(request) if request.source_ids else ()
             if self._poisoned:
                 return self._refuse(request, "research_cleanup")
             reason = self._fresh_authority(request)
@@ -448,7 +448,7 @@ class OperatorResearchBroker:
                 raise ValueError(msg)
         return sources
 
-    async def _receive_scout(
+    async def _receive_webcrawler(
         self, process: asyncio.subprocess.Process, job: ResearchJob, tasks: list[asyncio.Task[bytes]]
     ) -> bytes:
         if process.stdin is None or process.stdout is None or process.stderr is None:
@@ -456,8 +456,8 @@ class OperatorResearchBroker:
             raise ValueError(msg)
         tasks.extend(
             (
-                asyncio.create_task(_bounded_read(process.stdout, MAX_SCOUT_OUTPUT_BYTES)),
-                asyncio.create_task(_bounded_read(process.stderr, MAX_SCOUT_ERROR_BYTES)),
+                asyncio.create_task(_bounded_read(process.stdout, MAX_WEBCRAWLER_OUTPUT_BYTES)),
+                asyncio.create_task(_bounded_read(process.stderr, MAX_WEBCRAWLER_ERROR_BYTES)),
             )
         )
         process.stdin.write(job.model_dump_json().encode("utf-8") + b"\n")
@@ -470,12 +470,13 @@ class OperatorResearchBroker:
             raise ValueError(msg)
         return stdout
 
-    async def _scout(self, request: OperatorResearchRequest) -> tuple[SourceReadResult, ...]:
+    async def _webcrawler(self, request: OperatorResearchRequest) -> tuple[SourceReadResult, ...]:
         _private_directory(self.state_dir)
+        # This journal fences previously attempted contact across upgrades.
         state = self.state_dir / "scout"
         state.mkdir(mode=0o700, exist_ok=True)
         _private_directory(state)
-        scratch = Path(tempfile.mkdtemp(prefix="scout-", dir=self.state_dir))
+        scratch = Path(tempfile.mkdtemp(prefix="webcrawler-", dir=self.state_dir))
         (scratch / "engine-config").mkdir(mode=0o700)
         job = ResearchJob(
             event_id=request.event.event_id,
@@ -487,10 +488,10 @@ class OperatorResearchBroker:
         process: asyncio.subprocess.Process | None = None
         spawn: asyncio.Task[asyncio.subprocess.Process] | None = None
         tasks: list[asyncio.Task[bytes]] = []
-        settlement = _ScoutSettlement()
+        settlement = _WebcrawlerSettlement()
         cleanup_proved = False
         try:
-            async with asyncio.timeout(SCOUT_TIMEOUT_SECONDS):
+            async with asyncio.timeout(WEBCRAWLER_TIMEOUT_SECONDS):
                 spawn = asyncio.create_task(
                     asyncio.create_subprocess_exec(
                         *self._command(state, scratch),
@@ -498,12 +499,12 @@ class OperatorResearchBroker:
                         stdout=asyncio.subprocess.PIPE,
                         stderr=asyncio.subprocess.PIPE,
                         env=self._environment,
-                        limit=MAX_SCOUT_OUTPUT_BYTES + 1,
+                        limit=MAX_WEBCRAWLER_OUTPUT_BYTES + 1,
                     )
                 )
                 process = await settlement.join(spawn)
                 settlement.propagate()
-                stdout = await self._receive_scout(process, job, tasks)
+                stdout = await self._receive_webcrawler(process, job, tasks)
                 return self._sources(stdout, request)
         finally:
             if spawn is not None and (not spawn.done() or spawn.cancelled()):

@@ -84,7 +84,7 @@ a settled reply through restart; they establish different behavior. Use the
 [receipt requirements](state-of-the-work.md#operator-receipt-requirements) and the relevant
 [delivery boundary](state-of-the-work.md) to interpret what the observation supports.
 
-Keep the first text pilot small. It needs no Phoenix, embedding model, Archive, Scout, Tomb,
+Keep the first text pilot small. It needs no Phoenix, embedding model, Archive, Webcrawler, Tomb,
 foreign coding runtime, training, federation, or public extension SDK. When adding one later,
 repeat the authority, custody, persistence, resource, and recovery checks affected by that addition.
 

@@ -79,7 +79,7 @@ fork may support separate owners. This comparison promises no merger or universa
 
 ## Shared machinery, separate judgments
 
-Start with the work that can be shared without moving its judgment. Scout can search/fetch/render/crawl while an application decides source policy, interpretation, rank, and consequence. Mail/platform delivery carries a message; the application still decides recipient purpose, disclosure, review, reply meaning, and follow-up. Echo/Prism similarly supply admitted media effects while their consumers judge interpretation and acceptance.
+Start with the work that can be shared without moving its judgment. Webcrawler can search/fetch/render/crawl while an application decides source policy, interpretation, rank, and consequence. Mail/platform delivery carries a message; the application still decides recipient purpose, disclosure, review, reply meaning, and follow-up. Echo/Prism similarly supply admitted media effects while their consumers judge interpretation and acceptance.
 
 The same boundary applies to transport and physical work. Tether/Veil provide roads without creating identity or grants. Legion can carry a bounded task while the body retains fresh local refusal. A model or tool provider therefore never owns application decision policy.
 

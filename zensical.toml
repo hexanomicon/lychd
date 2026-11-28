@@ -17,6 +17,11 @@ extra_javascript = [
 
 [project.plugins.awesome-nav]
 
+[project.plugins.redirects.redirect_maps]
+"adr/30-webcrawler.md" = "adr/30-webcrawling.md"
+"sepulcher/aspects/scout.md" = "sepulcher/aspects/webcrawler.md"
+"sepulcher/aspects/scout-implementation-study.md" = "sepulcher/aspects/webcrawler.md"
+
 [project.theme]
 name = "material"
 logo = "assets/hexanomicon.png"

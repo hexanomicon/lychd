@@ -28,7 +28,7 @@ from lychd.compositions.scavenger.schemas import (
 from lychd.db.models.run import Run
 from lychd.db.models.run_delivery import RunDelivery
 from lychd.db.models.scavenger import ScavengerObservation
-from lychd.db.models.scout import ScoutAttempt
+from lychd.db.models.webcrawler import WebcrawlerAttempt
 from lychd.domain.codex.scopes import scopes_satisfied
 from lychd.domain.cortex.runs import TERMINAL_STATUSES, RunStatus
 from lychd.domain.scout.attempts import (
@@ -39,14 +39,14 @@ from lychd.domain.scout.attempts import (
     decode_scout_preparation,
     document_digest,
 )
-from lychd.domain.scout.feed import ScoutFeedBinding
+from lychd.domain.webcrawler.feed import WebcrawlerFeedBinding
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Callable
 
     from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-    from lychd.domain.scout.feed import ScoutFeedMaterial
+    from lychd.domain.webcrawler.feed import WebcrawlerFeedMaterial
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -78,7 +78,7 @@ class RetainedObservation:
 
 @dataclass(frozen=True, kw_only=True)
 class _Disposition:
-    """One locked Run/delivery snapshot and immutable Scout terminal observation."""
+    """One locked Run/delivery snapshot and immutable Webcrawler terminal observation."""
 
     run_id: UUID | None
     run_status: RunStatus | None
@@ -151,8 +151,8 @@ def _reference(observation: MarketObservation) -> ObservationCommit:
 class DbScavengerStore:
     """Lock the finite application slot, then its row and Run.
 
-    Scout claim locks its attempt before Run; never take that attempt lock here.
-    Successful Scout settlement is immutable. The locked Run prevents a new
+    Webcrawler claim locks its attempt before Run; never take that attempt lock here.
+    Successful Webcrawler settlement is immutable. The locked Run prevents a new
     claim from crossing a proved terminal Run during deletion.
 
     Every public operation requires a synchronous current-authority callback.
@@ -206,7 +206,7 @@ class DbScavengerStore:
         session: AsyncSession,
         row: ScavengerObservation,
         run_id: UUID,
-        binding: ScoutFeedBinding,
+        binding: WebcrawlerFeedBinding,
     ) -> Run:
         run = await session.scalar(select(Run).where(Run.id == run_id).with_for_update())
         if run is None:
@@ -225,8 +225,8 @@ class DbScavengerStore:
             or intent.sigil_name != row.owner
             or not scopes_satisfied(intent.sigil_scopes, ("runs:submit",))
             or intent.prompt != str(row.id)
-            or type(intent.admitted_scout) is not ScoutFeedBinding
-            or intent.admitted_scout != binding
+            or type(intent.admitted_webcrawler) is not WebcrawlerFeedBinding
+            or intent.admitted_webcrawler != binding
             or binding.consumer != _consumer(row)
             or binding.request_id != row.id
             or binding.profile.configuration_digest != row.configuration_digest
@@ -306,7 +306,7 @@ class DbScavengerStore:
         self,
         *,
         run_id: UUID,
-        binding: ScoutFeedBinding,
+        binding: WebcrawlerFeedBinding,
         owner: str,
         authorize: Callable[[], None],
     ) -> None:
@@ -345,7 +345,7 @@ class DbScavengerStore:
         self,
         *,
         run_id: UUID,
-        binding: ScoutFeedBinding,
+        binding: WebcrawlerFeedBinding,
         owner: str,
         authorize: Callable[[], None],
     ) -> ObservationCommit | None:
@@ -369,12 +369,12 @@ class DbScavengerStore:
         self,
         *,
         run_id: UUID,
-        binding: ScoutFeedBinding,
-        material: ScoutFeedMaterial,
+        binding: WebcrawlerFeedBinding,
+        material: WebcrawlerFeedMaterial,
         owner: str,
         authorize: Callable[[], None],
     ) -> ObservationCommit:
-        """Commit the complete field under exact successful Scout/Run custody once."""
+        """Commit the complete field under exact successful Webcrawler/Run custody once."""
         authorize()
         async with self._transaction() as session:
             await self._lock(session, authorize)
@@ -384,7 +384,7 @@ class DbScavengerStore:
             if row.run_id != run_id or row.status not in {"bound", "committed"} or run.status != "running":
                 reason = "adoption_unavailable"
                 raise ScavengerRefused(reason)
-            attempt = await session.scalar(select(ScoutAttempt).where(ScoutAttempt.id == material.attempt_id))
+            attempt = await session.scalar(select(WebcrawlerAttempt).where(WebcrawlerAttempt.id == material.attempt_id))
             authorize()
             observation = self._candidate(row, run, binding, material, attempt)
             retained = _observation(row)
@@ -402,9 +402,9 @@ class DbScavengerStore:
     def _candidate(
         row: ScavengerObservation,
         run: Run,
-        binding: ScoutFeedBinding,
-        material: ScoutFeedMaterial,
-        attempt: ScoutAttempt | None,
+        binding: WebcrawlerFeedBinding,
+        material: WebcrawlerFeedMaterial,
+        attempt: WebcrawlerAttempt | None,
     ) -> MarketObservation:
         if attempt is None or attempt.settlement_bytes is None:
             reason = "scout_custody"
@@ -569,7 +569,7 @@ class DbScavengerStore:
             return _Disposition(run_id=None, run_status=None, acquisition_status=None, state="terminal")
         run = runs[0]
         deliveries = list(await session.scalars(select(RunDelivery).where(RunDelivery.run_id == run.id)))
-        attempts = list(await session.scalars(select(ScoutAttempt).where(ScoutAttempt.run_id == run.id)))
+        attempts = list(await session.scalars(select(WebcrawlerAttempt).where(WebcrawlerAttempt.run_id == run.id)))
         allowed = {"prepared", "claimed", "unknown_after_crash", "succeeded", "refused"}
         if len(attempts) > 1 or any(a.status not in allowed for a in attempts):
             reason = "scout_custody"

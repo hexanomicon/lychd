@@ -243,9 +243,9 @@ assert that third-party images support a read-only root or that a rendered manif
 working subordinate-ID maps, SELinux labels, or filesystem permissions on an operator host.
 
 Managed Linux joins each container Soulstone or native engine relay to `lychd.pod`. That topology is not admissible
-for a browser-bearing Scout renderer. Such a Soulstone must compile into a dedicated rootless
+for a browser-bearing Webcrawler renderer. Such a Soulstone must compile into a dedicated rootless
 containment and network zone with no route to Core peers, Phylactery, host control sockets, wallets,
-or unrelated secrets; its target egress must cross the Scout-owned destination gate. Until the
+or unrelated secrets; its target egress must cross the Webcrawler-owned destination gate. Until the
 Rune, `RuntimePlan`, compiler, and effectful containment tests can express and prove that topology,
 the Crawl4AI renderer candidate remains Designed rather than deployable.
 

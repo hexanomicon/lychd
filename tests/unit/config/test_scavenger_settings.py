@@ -22,14 +22,25 @@ from lychd.domain.animation.services.registry import AnimatorRegistry
 from lychd.domain.cortex.engine import QueueRouter, RouteRule, RunEngine
 from lychd.domain.cortex.events import InProcessEventBus
 from lychd.domain.cortex.ledger import InMemoryRunLedger
-from lychd.domain.scout.profile import ScoutWorkflowError
+from lychd.domain.webcrawler.profile import WebcrawlerWorkflowError
 from lychd.interface.web.altar_services import build_altar_services
 from tests.runtime_guards import InertSoftActivationGuard
-from tests.scout_feed_fixtures import scenario
-from tests.scout_fixtures import scout_profile
-from tests.unit.domain.cortex.test_scout_feed_admission import Queue
+from tests.unit.domain.cortex.test_webcrawler_feed_admission import Queue
+from tests.webcrawler_feed_fixtures import scenario
+from tests.webcrawler_fixtures import webcrawler_profile
 
 pytestmark = pytest.mark.asyncio
+
+
+async def test_feed_config_accepts_old_spelling_and_emits_only_webcrawler() -> None:
+    profile = (await scenario()).binding.profile
+    raw = {"revision": "3", "scout": profile}
+    settings = ScavengerCastingSettings.model_validate(raw)
+    assert settings.webcrawler == profile
+    assert "webcrawler" in settings.model_dump()
+    assert "scout" not in settings.model_dump()
+    with pytest.raises(ValidationError, match="Extra inputs"):
+        ScavengerCastingSettings.model_validate(raw | {"webcrawler": profile})
 
 
 async def test_omission_disables_new_feed_route_but_retains_exact_pattern_resolution() -> None:
@@ -48,15 +59,15 @@ async def test_omission_disables_new_feed_route_but_retains_exact_pattern_resolu
 
 async def test_explicit_feed_selection_is_separate_from_ordinary_bridge_and_snapshot_isolated() -> None:
     s = await scenario()
-    selection = ScavengerCastingSettings(revision="3", scout=s.binding.profile)
+    selection = ScavengerCastingSettings(revision="3", webcrawler=s.binding.profile)
     weaver = WeaverSettings(
         scavenger=selection, bridge=BridgeCastingSettings(revision="2", capability_key="ordinary:chat:separate")
     )
     snapshot = SettingsSnapshot.capture(Settings(weaver=weaver))
-    selection.scout = s.binding.profile.model_copy(update={"binding_id": "changed-generation"})
+    selection.webcrawler = s.binding.profile.model_copy(update={"binding_id": "changed-generation"})
     restored = snapshot.materialize()
     assert restored.weaver.scavenger is not None
-    assert restored.weaver.scavenger.scout == s.binding.profile
+    assert restored.weaver.scavenger.webcrawler == s.binding.profile
     registry = builtin_workflow_registry(weaver=restored.weaver)
     assert registry.default.manifest.revision == "2"
     assert registry.is_active(OBSERVE_MARKET.name, "2")
@@ -69,7 +80,7 @@ async def test_explicit_feed_selection_is_separate_from_ordinary_bridge_and_snap
     [
         {"revision": "2"},
         {"revision": 3},
-        {"scout": None},
+        {"webcrawler": None},
         {"capability_key": "dummy"},
         {"source_url": "https://example.com/feed"},
         {"fallback": "other"},
@@ -79,15 +90,17 @@ async def test_explicit_feed_selection_is_separate_from_ordinary_bridge_and_snap
 async def test_feed_selection_refuses_implicit_versions_model_demand_and_unowned_policy(patch: dict[str, Any]) -> None:
     s = await scenario()
     with pytest.raises(ValidationError):
-        ScavengerCastingSettings.model_validate({"revision": "3", "scout": s.binding.profile} | patch)
+        ScavengerCastingSettings.model_validate({"revision": "3", "webcrawler": s.binding.profile} | patch)
 
 
-async def test_first_profile_cannot_coexist_with_page_scout() -> None:
+async def test_first_profile_cannot_coexist_with_page_webcrawler() -> None:
     s = await scenario()
-    with pytest.raises(ValidationError, match="one active Scout binding"):
+    with pytest.raises(ValidationError, match="one active Webcrawler binding"):
         WeaverSettings(
-            scavenger=ScavengerCastingSettings(revision="3", scout=s.binding.profile),
-            bridge=BridgeCastingSettings(revision="4", capability_key="local:chat:page", scout=scout_profile()),
+            scavenger=ScavengerCastingSettings(revision="3", webcrawler=s.binding.profile),
+            bridge=BridgeCastingSettings(
+                revision="4", capability_key="local:chat:page", webcrawler=webcrawler_profile()
+            ),
         )
 
 
@@ -105,7 +118,7 @@ async def test_missing_native_persistence_or_credential_owner_refuses_before_any
             runes=RuneRegistry(()),
             profile=persistence,
             settings=Settings(
-                weaver=WeaverSettings(scavenger=ScavengerCastingSettings(revision="3", scout=s.binding.profile))
+                weaver=WeaverSettings(scavenger=ScavengerCastingSettings(revision="3", webcrawler=s.binding.profile))
             ),
             operator_access=s.access if persistence == "memory" else None,
             soft_activation_guard=InertSoftActivationGuard(),
@@ -122,14 +135,14 @@ async def test_explicit_registry_cannot_override_configured_scavenger() -> None:
             profile="postgres",
             workflows=builtin_workflow_registry(),
             settings=Settings(
-                weaver=WeaverSettings(scavenger=ScavengerCastingSettings(revision="3", scout=s.binding.profile))
+                weaver=WeaverSettings(scavenger=ScavengerCastingSettings(revision="3", webcrawler=s.binding.profile))
             ),
             operator_access=s.access,
             soft_activation_guard=InertSoftActivationGuard(),
         )
 
 
-async def test_selected_assembly_shares_one_actual_scout_and_app_without_readiness_or_io(
+async def test_selected_assembly_shares_one_actual_webcrawler_and_app_without_readiness_or_io(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     s = await scenario()
@@ -143,23 +156,23 @@ async def test_selected_assembly_shares_one_actual_scout_and_app_without_readine
         runes=RuneRegistry(()),
         profile="postgres",
         settings=Settings(
-            weaver=WeaverSettings(scavenger=ScavengerCastingSettings(revision="3", scout=s.binding.profile))
+            weaver=WeaverSettings(scavenger=ScavengerCastingSettings(revision="3", webcrawler=s.binding.profile))
         ),
         operator_access=s.access,
         soft_activation_guard=InertSoftActivationGuard(),
     )
     try:
         assert services.scavenger is not None
-        assert services.scout is not None
+        assert services.webcrawler is not None
         assert services.feed_admission is not None
-        assert services.scout_admission is None
-        assert services.substrate.scout is None
-        assert services.substrate.feed_scout is services.scout
+        assert services.webcrawler_admission is None
+        assert services.substrate.webcrawler is None
+        assert services.substrate.feed_webcrawler is services.webcrawler
         assert services.substrate.scavenger is services.scavenger
-        assert services.substrate.effects is services.scout
-        assert services.run_engine.effects is services.scout
-        assert services.run_engine.feed_scout == s.binding.profile
-        assert services.run_engine.feed_scout_admission is services.feed_admission
+        assert services.substrate.effects is services.webcrawler
+        assert services.run_engine.effects is services.webcrawler
+        assert services.run_engine.feed_webcrawler == s.binding.profile
+        assert services.run_engine.feed_webcrawler_admission is services.feed_admission
         assert services.run_engine.workflows is services.workflows
         assert services.substrate.workflows is services.workflows
         assert services.orchestrator.worker_broker.claim_gate.is_set()
@@ -183,7 +196,7 @@ async def test_disabled_scavenger_cannot_fall_through_to_chat_admission() -> Non
     create = AsyncMock(wraps=ledger.create)
     ledger.create = create
     try:
-        with pytest.raises(ScoutWorkflowError):
+        with pytest.raises(WebcrawlerWorkflowError):
             await engine.submit(Intent(session_id="unused", prompt="opaque", source="scavenger"))
         create.assert_not_awaited()
         assert not queue.enqueued
