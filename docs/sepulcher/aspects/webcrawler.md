@@ -256,6 +256,11 @@ wire_bytes = 5242880
 Bridge and Scavenger also accept the earlier `scout` key. To update an existing profile, rename
 the table to `webcrawler` and keep its binding ID and budget limits.
 
+A pending review keeps its original label, owner and digest across the rename. The Vessel
+still checks the review's expiry and the current operator authentication generation before
+resuming. After restarting the Vessel, prepare a new review under its fresh generation.
+[Compatibility verification](../../state-of-the-work.md#webcrawler-web-acquisition)
+
 The resolver address must be numeric; its reachable TCP listener and upstream custody are operator
 configuration. The example does not start a resolver or qualify those paths. The dedicated Python
 tree must contain no operator material. Runtime and library qualification follows the maintained
