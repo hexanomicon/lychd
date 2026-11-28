@@ -117,10 +117,11 @@ def test_container_carries_project_license_and_notices() -> None:
     project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
     dependencies = set(project["project"]["dependencies"])
     assert "litestar-saq>=0.5.3" in dependencies
-    assert "psycopg[pool]>=3.2.13,<4" in dependencies
-    assert all("psycopg-binary" not in dependency for dependency in dependencies)
+    assert {dependency for dependency in dependencies if dependency.startswith("psycopg")} == {
+        "psycopg[pool]>=3.3.9,<4",
+    }
     assert project["project"]["optional-dependencies"]["postgres-binary"] == [
-        "psycopg-binary==3.3.8",
+        "psycopg[binary]",
     ]
     assert "--no-dev --no-install-project --no-editable" in containerfile
 
