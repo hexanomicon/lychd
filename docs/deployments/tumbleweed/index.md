@@ -36,6 +36,31 @@ owns its incomplete acceptance. An initial application without a model can test 
 authenticated database/queue readback. It cannot answer chat. Active container lifecycle and
 Portal inference remain blocked; see [Application acceptance](#application-acceptance).
 
+## Replace the standalone VPS installer
+
+The standalone `hexanomicon/lychd-autoinstall` prototype at
+`5d2af397437aab653089e95a0b2d9d4825dd777f` paired a whole-disk installation with a
+first-boot deployment bundle. For a new VPS, use the following sequence from one LychD checkout:
+
+1. [Generate the Server profile and review it at the provider console](install.md).
+   Confirm the target disk in YaST. If the VPS requires static IPv6, configure its
+   network interactively. The generator supports wired DHCP or static IPv4.
+2. After a clean disk boot, verify administrator console access and use the provider console
+   to confirm the new server's SSH host-key fingerprint.
+   [Prepare the private controller inventory](#prepare-the-controller-and-private-inventory)
+   and [select the exact source revision and CLI inputs](#prepare-one-exact-lychd-source).
+3. [Admit the matching OCI archive and run the Server playbook](#automate-one-host-end-to-end).
+   Authorize provisioning for the one inventory alias, then authorize startup after reviewing
+   recovery. The playbook runs from the controller after the installed OS is reachable.
+4. Rerun the same Server command with both effect authorizations removed. Retain the
+   read-only verification results alongside the installer identity, source revision and image ID.
+   [Application acceptance](#application-acceptance) describes what those checks establish.
+
+The original inventory, unattended remote GRUB reinstall script, first-boot bundle and
+`image-490dd057` release archive belong to the retained prototype backup. This procedure
+takes private host inputs from the operator and uses the image admitted for the selected
+revision. Qualify a disposable pilot before relying on it to replace an observed VPS deployment.
+
 ## What each layer owns
 
 | Layer | Responsibility |
