@@ -331,6 +331,7 @@ def test_generated_topology_attests_with_real_default_dependencies(  # noqa: PLR
                             systemctl_bin=str(binaries["systemctl"]),
                             systemctl_timeout_s=3.0,
                             owned_bindings_provider=scribe.inspect_owned_bindings,
+                            settings_provider=lambda: settings,
                         ).attest_current_topology()
                     )
                 expected_after = {

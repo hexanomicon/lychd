@@ -243,6 +243,11 @@ class AnimatorRegistry:
         self.ensure_loaded()
         return self._soulstones.get(name)
 
+    @property
+    def lifecycle_binding_digest(self) -> str | None:
+        """Opaque commitment to the installation's lifecycle owners."""
+        return self._declarations.lifecycle_binding_digest
+
     def list_soulstone_runes(self) -> list[SoulstoneConfig]:
         """Return every local runtime declaration, including capability-empty stones."""
         self.ensure_loaded()

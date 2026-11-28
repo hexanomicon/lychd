@@ -24,7 +24,8 @@ Rune type; no `type=` field may switch it after discovery.
 | :--- | :--- | :--- |
 | `name` | required | Animator identity; first segment of every capability key. |
 | `description` | `""` | Operator note. |
-| `quadlet.image` | runtime default | OCI image inside the embedded `QuadletConfig`; required by the generic runtime. |
+| `placement` | installation default | Select `native` or `container` for this Soulstone. |
+| `quadlet.image` | runtime default | OCI image for a generated container. Native placement refuses an explicit `quadlet`. |
 | `runtime` | `"generic"` | Selects the local runtime adapter. |
 | `model_path` | `null` | Single-model artifact path or runtime-specific identity input. |
 | `served_model_id` | `null` | For an inferred single model, set the exact provider-facing id when it differs from the path stem (basename without its final suffix), or the Soulstone name if no path is set. |
@@ -51,6 +52,33 @@ Then check the endpoint. `base_url` preserves a path prefix such as `/v1`, but r
 credentials, query or fragment state, port zero, and out-of-range ports during validation.
 Hydration also requires an approved loopback host and an explicit port. If `port` is declared
 separately, it must match the URL. Remote endpoints belong at the Portal boundary.
+
+## Choose placement
+
+Omit `placement` to retain the installation default. Use `container` for a managed Linux
+Quadlet or an explicitly [bound desktop container](../../../../deployments/desktop.md#animator-ownership).
+Use `native` for a dedicated llama.cpp with one fixed GGUF. In either case, the Rune's name
+remains the Animator identity. The following Rune can be used by either native lifecycle owner.
+
+```toml title="runes/animator/soulstones/llamacpp/local.toml"
+name = "local"
+placement = "native"
+startup_mode = "single"
+model_path = '/srv/models/local.gguf'
+port = 8082
+base_url = "http://127.0.0.1:8082/v1"
+```
+
+Enable `animator/llamacpp` in the host's `[extensions]` list of `builtins`. In its existing
+`[orchestration.switching]` settings, set `native_llama_server` to the
+absolute executable and `native_model_root` to the absolute directory containing the GGUF.
+Use canonical local paths owned by the installation user or administrator. Container mounts,
+devices, environment, secrets and command overrides cannot be used with this placement. For
+managed Linux, keep the `host-reactor` actuator, use a llama-server build that accepts a Unix
+socket path with `--host`, then bind the updated generation. The model path is on the host.
+The generated systemd service creates the private socket, and its relay exposes only the
+configured port on pod loopback. A personal installation uses `native-process` and can
+generate the native model settings with [desktop configure-model](../../../../deployments/desktop.md#connect-a-real-model).
 
 ## Capability declarations
 

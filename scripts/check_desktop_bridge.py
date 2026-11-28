@@ -16,6 +16,7 @@ import hashlib
 import http.client
 import json
 import re
+import socket
 import subprocess
 import sys
 import time
@@ -34,7 +35,7 @@ from check_desktop_startup import (
     require_fresh_native_installation,
 )
 
-from lychd.domain.web.contracts import MessageAccepted, MessageIntent
+from lychd.domain.web.contracts import MessageAccepted, MessageIntent, SwapIntent
 from lychd.system.constants import PATH_SOULSTONES_DIR
 from lychd.system.services.local_access import load_local_access
 
@@ -133,14 +134,43 @@ def verify_dispatch(page: Page, origin: str, run_id: str) -> None:
         cursor = following
 
 
+def verify_engine_switch(old_port: int, target_port: int, model_id: str) -> None:
+    """Verify the reserved evictee endpoint drops requests and the active one serves the exact model."""
+    with socket.create_connection(("127.0.0.1", old_port), timeout=5) as retired:
+        try:
+            retired.sendall(b"GET /v1/models HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n")
+            received = retired.recv(1)
+        except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
+            pass
+        else:
+            if received:
+                msg = f"The evicted Animator's endpoint on port {old_port} still returned response data."
+                raise RuntimeError(msg)
+
+    engine = http.client.HTTPConnection("127.0.0.1", target_port, timeout=5)
+    try:
+        engine.request("GET", "/v1/models")
+        response = engine.getresponse()
+        if response.status != HTTPStatus.OK or {m["id"] for m in json.load(response)["data"]} != {model_id}:
+            msg = f"The active loopback process on port {target_port} did not serve exactly {model_id}."
+            raise RuntimeError(msg)
+    finally:
+        engine.close()
+
+
 def switch_animators(page: Page, origin: str, output: Path) -> list[str]:
     """Use the Nexus UI to evict and launch both real processes, sharing one pinned GGUF."""
     page.goto(f"{origin}/nexus", wait_until="domcontentloaded")
-    page.get_by_role("button", name="List", exact=True).click()
+    page.get_by_role("button", name=re.compile(r"^Capabilities\b")).click()
+    page.get_by_role("group", name="Nexus view").get_by_role("button", name="List", exact=True).click()
+    capabilities = page.get_by_role("region", name="Observed capabilities")
+    preview = page.get_by_role("region", name="Non-binding preview")
+    ticket_status = page.get_by_role("region", name="Request ticket").get_by_role("status")
     transitions: list[str] = []
-    for old, target, port in (("personal", "alternate", 8082), ("alternate", "personal", 8081)):
+    ports = {"personal": 8081, "alternate": 8082}
+    for old, target in (("personal", "alternate"), ("alternate", "personal")):
         key = f"{target}:chat:{target}-model"
-        row = page.get_by_role("article").filter(
+        row = capabilities.get_by_role("article").filter(
             has=page.get_by_role("button", name=f"Inspect managed capability {key}", exact=True)
         )
         with page.expect_response("**/api/v1/nexus/plan?*") as planned:
@@ -149,12 +179,17 @@ def switch_animators(page: Page, origin: str, output: Path) -> list[str]:
         if plan["evict_coven_ids"] != [old] or plan["launch_coven_ids"] != [target]:
             msg = f"Nexus did not preview the exact {old} to {target} swap."
             raise RuntimeError(msg)
+        preview.get_by_text(key, exact=True).wait_for()
         with page.expect_response("**/api/v1/nexus/swaps") as submitted:
-            page.get_by_role("button", name="Request transition", exact=True).click()
-        if not submitted.value.ok:
+            preview.get_by_role("button", name="Request transition", exact=True).click()
+        if submitted.value.status != HTTPStatus.ACCEPTED:
             msg = f"Nexus rejected the transition to {target}."
             raise RuntimeError(msg)
         ticket = submitted.value.json()["ticket"]
+        intent = SwapIntent.model_validate(submitted.value.request.post_data_json)
+        if intent.target != key or ticket["target"] != key or ticket["request_id"] != intent.request_id:
+            msg = f"Nexus did not admit the browser's request for {key}."
+            raise RuntimeError(msg)
         deadline = time.monotonic() + 90
         while time.monotonic() < deadline:
             observed = page.request.get(f"{origin}/api/v1/nexus/swaps/{ticket['id']}").json()["ticket"]
@@ -173,17 +208,9 @@ def switch_animators(page: Page, origin: str, output: Path) -> list[str]:
         else:
             msg = f"Nexus did not complete the {target} transition."
             raise RuntimeError(msg)
-        engine = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
-        try:
-            engine.request("GET", "/v1/models")
-            response = engine.getresponse()
-            if response.status != HTTPStatus.OK or f"{target}-model" not in {
-                m["id"] for m in json.load(response)["data"]
-            }:
-                msg = f"The active loopback process did not serve {target}-model."
-                raise RuntimeError(msg)
-        finally:
-            engine.close()
+        ticket_status.get_by_text(ticket["request_id"], exact=True).wait_for()
+        ticket_status.get_by_text("completed", exact=True).wait_for()
+        verify_engine_switch(ports[old], ports[target], f"{target}-model")
         transitions.append(ticket["request_id"])
     capture(page, output / "04-nexus.png")
     return transitions

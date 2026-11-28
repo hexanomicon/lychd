@@ -65,6 +65,7 @@ from lychd.domain.cortex.substrate import RunSubstrate
 from lychd.domain.web.fragments import build_fragment_registry
 from lychd.ghouls.runs import perform_run, reconcile_runs
 from tests.agents.fakes import FakeOrchestrator, FakeRegistry
+from tests.postgres_model_tables import with_referenced_tables
 from tests.support.blockworld import CapturedQueue, SimulatedProcessLoss
 from tests.support.creation import (
     CreationDispatcher,
@@ -108,6 +109,7 @@ async def factory(pg_url: str) -> AsyncIterator[async_sessionmaker[AsyncSession]
             CreationSuccessor.__table__,
         ],
     )
+    tables = with_referenced_tables(tables)
     async with engine.begin() as connection:
         await connection.run_sync(Run.metadata.drop_all, tables=tables)
         await connection.run_sync(Run.metadata.create_all, tables=tables)

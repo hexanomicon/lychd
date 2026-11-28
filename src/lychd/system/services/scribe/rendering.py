@@ -45,6 +45,10 @@ class BindingRenderer:
         self._pod_tmpl = self._env.get_template("pod.jinja")
         self._target_tmpl = self._env.get_template("target.jinja")
 
+    def render_container(self, manifest: QuadletContainer) -> str:
+        """Return the exact Quadlet text used for binding and native relay attestation."""
+        return self._container_tmpl.render(**manifest.model_dump())
+
     def render_generated(
         self,
         manifests: Sequence[QuadletBase],
@@ -94,7 +98,7 @@ class BindingRenderer:
             site: Literal["quadlet", "systemd"] = "quadlet"
             suffixes = QUADLET_SUFFIXES
         elif isinstance(manifest, QuadletContainer):
-            content = self._container_tmpl.render(**manifest.model_dump())
+            content = self.render_container(manifest)
             filename = f"{manifest.container_name}.container"
             site = "quadlet"
             suffixes = QUADLET_SUFFIXES

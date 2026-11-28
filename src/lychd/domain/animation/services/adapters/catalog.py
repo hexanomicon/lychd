@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 from lychd.domain.animation.capabilities import CapabilityFamily, CapabilitySpec, SourceKind
@@ -14,6 +13,7 @@ from lychd.domain.animation.schemas import (
     ModelSurface,
     SoulstoneConfig,
 )
+from lychd.domain.animation.schemas.runes.models import model_path_stem
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -64,7 +64,7 @@ def default_model_id_for_soulstone(soulstone: SoulstoneConfig, model_infos: Sequ
     if soulstone.served_model_id:
         return soulstone.served_model_id
     if soulstone.model_path:
-        return Path(soulstone.model_path).stem
+        return model_path_stem(soulstone.model_path)
     if model_infos:
         return model_infos[0].id
     return soulstone.name
@@ -89,7 +89,7 @@ def model_infos_from_soulstone(
         return list(discovered)
 
     model_id = soulstone.served_model_id or (
-        Path(soulstone.model_path).stem if soulstone.model_path else soulstone.name
+        model_path_stem(soulstone.model_path) if soulstone.model_path else soulstone.name
     )
     return [_build_model_info(model_id=model_id, profile=profile)]
 

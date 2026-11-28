@@ -672,6 +672,43 @@ def _switching_services(
     return actuator, guard, None
 
 
+def _animator_registry(
+    settings: Settings,
+    runes: RuneRegistry,
+    runtime_adapters: Sequence[SoulstoneRuntimeAdapter],
+    portal_definitions: Sequence[PortalDefinition],
+    soulstone_registrations: Sequence[RegisteredSoulstoneDefinition],
+    portal_registrations: Sequence[RegisteredPortalDefinition],
+) -> AnimatorRegistry:
+    """Build the local catalogue and verify the desktop host's binding before probing engines."""
+    from lychd.system.desktop.reactor_link import guest_host, read_guest_projection
+
+    guest_projection = read_guest_projection() if guest_host() is not None else None
+    if guest_projection is not None and settings.orchestration.switching.actuator != "host-reactor":
+        msg = "The desktop guest requires the host-reactor actuator."
+        raise ValueError(msg)
+    registry = AnimatorRegistry(
+        declarations=compile_animator_declarations(
+            settings=settings,
+            runes=runes,
+            lifecycle_binding_digest=guest_projection.binding_digest if guest_projection is not None else None,
+        ),
+        runtime_adapters=runtime_adapters,
+        portal_definitions=portal_definitions,
+        soulstone_registrations=soulstone_registrations,
+        portal_registrations=portal_registrations,
+    )
+    if guest_projection is not None or settings.orchestration.switching.actuator == "native-process":
+        registry.load(probe_readiness=False)
+    if guest_projection is not None:
+        from lychd.domain.orchestration.actuator import capability_config_generation
+
+        if capability_config_generation(registry) != guest_projection.generation:
+            msg = "Guest Animator declarations differ from their host binding."
+            raise ValueError(msg)
+    return registry
+
+
 def build_altar_services(
     *,
     queues: Mapping[str, RunQueue],
@@ -718,18 +755,9 @@ def build_altar_services(
     }
     policy = resolve_switch_policy(settings.orchestration.switching.policy)
     _validate_routed_queues(routing, queues)
-    registry = AnimatorRegistry(
-        declarations=compile_animator_declarations(
-            settings=settings,
-            runes=runes,
-        ),
-        runtime_adapters=runtime_adapters,
-        portal_definitions=portal_definitions,
-        soulstone_registrations=soulstone_registrations,
-        portal_registrations=portal_registrations,
+    registry = _animator_registry(
+        settings, runes, runtime_adapters, portal_definitions, soulstone_registrations, portal_registrations
     )
-    if settings.orchestration.switching.actuator == "native-process":
-        registry.load(probe_readiness=False)
     leases = LeaseLedger()
     ledger = _build_run_ledger(profile, settings)
     bus = InProcessEventBus(ledger=ledger)

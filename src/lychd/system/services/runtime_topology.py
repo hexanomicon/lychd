@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass
+from pathlib import Path
 from typing import TYPE_CHECKING, Final
 
 from lychd.domain.animation.conflicts import (
@@ -21,12 +22,14 @@ from lychd.system.unit_names import (
     animator_service_unit,
     animator_target_unit,
     coven_target_unit,
+    native_relay_stem,
 )
 
 if TYPE_CHECKING:
     from asyncio.subprocess import Process
     from collections.abc import Callable, Iterable, Mapping
 
+    from lychd.config.settings.root import Settings
     from lychd.domain.animation.protocols import CapabilityRegistry
     from lychd.domain.animation.schemas import SoulstoneConfig
     from lychd.system.services.scribe import OwnedBindings
@@ -152,6 +155,14 @@ class _ExpectedGraph:
         return frozenset(animator_service_unit(name) for name in self.runes_by_name)
 
     @property
+    def native_relays(self) -> dict[str, str]:
+        return {
+            name: f"{native_relay_stem(name)}.service"
+            for name, rune in self.runes_by_name.items()
+            if rune.placement == "native"
+        }
+
+    @property
     def coven_targets(self) -> frozenset[str]:
         return frozenset(coven_target_unit(name) for name in self.coven_members)
 
@@ -162,6 +173,7 @@ class _ExpectedGraph:
                 _LYCHD_POD_SERVICE,
                 *self.animator_targets,
                 *self.animator_services,
+                *self.native_relays.values(),
                 *self.coven_targets,
             }
         )
@@ -177,12 +189,14 @@ class RuntimeTopologyAttestor:
         systemctl_bin: str,
         owned_bindings_provider: Callable[[], OwnedBindings],
         systemctl_timeout_s: float = 120.0,
+        settings_provider: Callable[[], Settings] | None = None,
     ) -> None:
         """Bind to complete registry truth and an attested systemctl binary."""
         self._registry = registry
         self._systemctl = systemctl_bin
         self._systemctl_timeout_s = validate_systemctl_timeout(systemctl_timeout_s)
         self._owned_bindings_provider = owned_bindings_provider
+        self._settings_provider = settings_provider
 
     async def attest(self, intent: TransitionIntent) -> None:
         """Reject stale declarations, unsafe closures, or altered loaded units."""
@@ -215,6 +229,8 @@ class RuntimeTopologyAttestor:
                 snapshots,
                 sources_by_unit=sources_by_unit,
             )
+        for name, relay in expected.native_relays.items():
+            self._attest_native_relay(name, snapshots[relay], expected, sources_by_unit)
         for coven_name in sorted(expected.coven_members):
             self._attest_coven_target(
                 coven_name,
@@ -258,7 +274,10 @@ class RuntimeTopologyAttestor:
             sources_by_unit[unit_name] = str(source)
 
         expected_targets = expected.animator_targets | expected.coven_targets
-        missing = sorted((expected_targets | expected.animator_services) - sources_by_unit.keys())
+        missing = sorted(
+            (expected_targets | expected.animator_services | set(expected.native_relays.values()))
+            - sources_by_unit.keys()
+        )
         if missing:
             msg = f"Scribe ownership receipt omits runtime topology units: {', '.join(missing)}."
             raise RuntimePreconditionError(msg)
@@ -274,7 +293,47 @@ class RuntimeTopologyAttestor:
             )
             raise RuntimePreconditionError(msg)
 
+        try:
+            self._verify_launch_sources(expected, sources_by_unit)
+        except (ValueError, OSError, LookupError) as exc:
+            msg = f"Cannot validate current runtime launch sources: {exc}"
+            raise RuntimePreconditionError(msg) from exc
         return sources_by_unit
+
+    def _verify_launch_sources(self, expected: _ExpectedGraph, sources: dict[str, str]) -> None:
+        """Bind both placement families to current launch bytes, even before an operator rebind."""
+        from lychd.config.settings.root import get_settings
+        from lychd.domain.animation.services.adapters.registry import RuntimeAdapterRegistry
+        from lychd.domain.animation.transmute import Transmuter
+        from lychd.extensions.host import assemble_extensions
+        from lychd.system.binding_sites import DEFAULT_BINDING_SITES
+        from lychd.system.constants import PATH_RUNE_TEMPLATES_DIR
+        from lychd.system.services.managed_native_llama import compile_managed_native_llama
+        from lychd.system.services.scribe.rendering import BindingRenderer
+
+        settings = (self._settings_provider or get_settings)()
+        planner = RuntimeAdapterRegistry(soulstone_registrations=assemble_extensions(settings).soulstone_registrations)
+        transmuter = Transmuter(settings=settings, runtime_planner=planner)
+        renderer = BindingRenderer(templates_dir=PATH_RUNE_TEMPLATES_DIR, sites=DEFAULT_BINDING_SITES)
+        for name, rune in expected.runes_by_name.items():
+            source = Path(sources[animator_service_unit(name)])
+            if name in expected.native_relays:
+                binding = compile_managed_native_llama(rune, settings)
+                self._match_source(source, ".service", binding.service_text)
+                relay = Path(sources[expected.native_relays[name]])
+                self._match_source(relay, ".container", renderer.render_container(binding.relay))
+            else:
+                manifest = transmuter.container_service(rune)
+                self._match_source(source, ".container", renderer.render_container(manifest))
+
+    @staticmethod
+    def _match_source(path: Path, suffix: str, expected_text: str) -> None:
+        from lychd.system.services.scribe.storage import capture_path_state
+
+        state = capture_path_state(path)
+        if path.suffix != suffix or state is None or state.content != expected_text.encode():
+            msg = f"Owned source {path.name} differs from the current binding; bind before switching."
+            raise RuntimePreconditionError(msg)
 
     async def _attest_loaded_target_set(self, expected: _ExpectedGraph) -> None:
         """Reject stale installed or loaded targets absent from current Rune truth."""
@@ -456,7 +515,7 @@ class RuntimeTopologyAttestor:
         RuntimeTopologyAttestor._require_source(
             snapshot,
             expected_source=sources_by_unit[unit_name],
-            plain_target=True,
+            plain_unit=True,
         )
         # Requires=service is forward from this target, so its reverse appears
         # on service.RequiredBy. Only service.BindsTo=target reverses onto this
@@ -548,6 +607,18 @@ class RuntimeTopologyAttestor:
                 f"expected pod plus exact target {target_unit}, observed {sorted(snapshot.after)}."
             )
             raise RuntimePreconditionError(msg)
+        is_native = animator_name in expected.native_relays
+        relay_units: set[str] = {expected.native_relays[animator_name]} if is_native else set()
+        if is_native:
+            for prop, values, expected_values in (
+                ("BindsTo", snapshot.binds_to, {target_unit, _LYCHD_POD_SERVICE, *relay_units}),
+                ("After", snapshot.after, {target_unit, _LYCHD_POD_SERVICE}),
+                ("Wants", snapshot.wants, set[str]()),
+                ("Requires", snapshot.requires, set[str]()),
+            ):
+                RuntimeTopologyAttestor._require_relation(
+                    snapshot, prop, values, expected_values, expected.managed_units
+                )
         RuntimeTopologyAttestor._require_relation(
             snapshot,
             "RequiredBy",
@@ -559,7 +630,7 @@ class RuntimeTopologyAttestor:
             snapshot,
             "BoundBy",
             snapshot.bound_by,
-            set(),
+            relay_units,
             expected.managed_units,
         )
         RuntimeTopologyAttestor._require_relation(
@@ -580,14 +651,35 @@ class RuntimeTopologyAttestor:
             snapshot,
             "Before",
             snapshot.before,
-            set(),
+            relay_units,
             expected.managed_units,
         )
         RuntimeTopologyAttestor._require_source(
             snapshot,
             expected_source=sources_by_unit[unit_name],
-            plain_target=False,
+            plain_unit=is_native,
         )
+
+    @staticmethod
+    def _attest_native_relay(
+        name: str, snapshot: _UnitSnapshot, expected: _ExpectedGraph, sources: dict[str, str]
+    ) -> None:
+        """Require the intended generated Pod relay to follow its exact native owner."""
+        native = animator_service_unit(name)
+        for prop, values, required in (
+            ("After", snapshot.after, {_LYCHD_POD_SERVICE, native}),
+            ("BindsTo", snapshot.binds_to, {_LYCHD_POD_SERVICE, native}),
+            ("BoundBy", snapshot.bound_by, {native}),
+            ("RequiredBy", snapshot.required_by, set[str]()),
+            ("Requires", snapshot.requires, set[str]()),
+            ("Wants", snapshot.wants, set[str]()),
+            ("PartOf", snapshot.part_of, set[str]()),
+            ("Before", snapshot.before, set[str]()),
+            ("Conflicts", snapshot.conflicts, set[str]()),
+            ("ConflictedBy", snapshot.conflicted_by, set[str]()),
+        ):
+            RuntimeTopologyAttestor._require_relation(snapshot, prop, values, required, expected.managed_units)
+        RuntimeTopologyAttestor._require_source(snapshot, expected_source=sources[snapshot.unit_name], plain_unit=False)
 
     @staticmethod
     def _attest_coven_target(
@@ -636,7 +728,7 @@ class RuntimeTopologyAttestor:
         RuntimeTopologyAttestor._require_source(
             snapshot,
             expected_source=sources_by_unit[unit_name],
-            plain_target=True,
+            plain_unit=True,
         )
 
     @staticmethod
@@ -662,13 +754,13 @@ class RuntimeTopologyAttestor:
         snapshot: _UnitSnapshot,
         *,
         expected_source: str,
-        plain_target: bool,
+        plain_unit: bool,
     ) -> None:
         """Tie each loaded fragment to its exact receipt-owned source."""
-        if plain_target:
+        if plain_unit:
             if snapshot.fragment_path != expected_source or snapshot.unit_file_state != "static":
                 msg = (
-                    f"Loaded target source mismatch for {snapshot.unit_name}: "
+                    f"Loaded {'target' if snapshot.unit_name.endswith('.target') else 'service'} source mismatch for {snapshot.unit_name}: "
                     f"FragmentPath={snapshot.fragment_path!r}, "
                     f"UnitFileState={snapshot.unit_file_state!r}, expected {expected_source!r} and 'static'."
                 )

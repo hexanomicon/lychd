@@ -57,5 +57,9 @@ def require_native_user() -> None:
         raise ValueError(msg)
     elevated = _windows_process_elevated() if os.name == "nt" else os.geteuid() == 0
     if elevated:
-        msg = "Run native Vessel as the ordinary installation user."
+        msg = (
+            "Close the elevated Windows terminal. Run LychD in a normal terminal under your installation login."
+            if os.name == "nt"
+            else "Run LychD as your ordinary user in a normal terminal, without sudo or a root shell."
+        )
         raise ValueError(msg)

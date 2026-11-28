@@ -1,5 +1,10 @@
 FROM localhost/lychd:portable-base
 USER root
+ARG LYCHD_REACTOR_UID=1001
+# A native bind mount can preserve the desktop account's numeric UID.
+# Set the image user before populating any engine-managed data volumes.
+RUN test "$LYCHD_REACTOR_UID" -gt 0 && \
+    if [ "$LYCHD_REACTOR_UID" != 1001 ]; then usermod -u "$LYCHD_REACTOR_UID" lich; fi
 RUN install -d -o lich -g lich -m 0700 \
     /home/lich/.local/share/lychd/runtime-guard \
     /home/lich/.local/share/lychd/triggers/inbox \

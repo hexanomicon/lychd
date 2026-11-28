@@ -106,7 +106,7 @@ from lychd.system.vessel_mode import require_native_user
 try:
     require_native_user()
 except ValueError as exc:
-    if str(exc) != "Run native Vessel as the ordinary installation user.":
+    if "Close the elevated Windows terminal." not in str(exc):
         raise
 else:
     raise SystemExit("The elevated runner was admitted to native Vessel.")

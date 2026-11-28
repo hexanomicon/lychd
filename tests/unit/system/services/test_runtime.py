@@ -10,7 +10,7 @@ from collections.abc import Generator
 from contextlib import contextmanager
 from types import SimpleNamespace
 from typing import TYPE_CHECKING
-from unittest.mock import AsyncMock, call
+from unittest.mock import AsyncMock, Mock, call
 
 import pytest
 from pydantic import ValidationError
@@ -787,7 +787,7 @@ async def test_direct_systemd_does_not_misclassify_post_entry_lock_failure() -> 
 
 
 def _runtime_registry(*names: str) -> SimpleNamespace:
-    stones = {name: SimpleNamespace(name=name) for name in names}
+    stones = {name: SimpleNamespace(name=name, placement=None) for name in names}
     return SimpleNamespace(
         list_soulstone_runes=lambda: list(stones.values()),
         list_capabilities=list,
@@ -802,6 +802,7 @@ def _observing_actuator(*names: str, systemctl_timeout_s: float = 120.0) -> Syst
         systemctl_bin="/usr/bin/systemctl",
         systemctl_timeout_s=systemctl_timeout_s,
     )
+    actuator._validate_generation = Mock()
     actuator._topology_attestor.attest = AsyncMock()
     actuator._pending_relevant_jobs = AsyncMock(return_value=())
     actuator._await_relevant_jobs_quiescent = AsyncMock()
@@ -1256,3 +1257,32 @@ async def test_host_systemd_world_observes_targets_and_services_for_every_soulst
         call("/usr/bin/systemctl", "--user", "is-active", "--quiet", "lychd-animator-vision.target"),
         call("/usr/bin/systemctl", "--user", "is-active", "--quiet", "lychd-vision.service"),
     ]
+
+
+@pytest.mark.asyncio
+async def test_direct_managed_switch_refuses_stale_generation_and_partial_relay() -> None:
+    """A stale word and an unmatched relay can never attest the active native world."""
+    from lychd.extensions.builtin.animator.soulstones.llamacpp import LlamaCppSoulstoneConfig
+
+    native = LlamaCppSoulstoneConfig.model_validate(
+        {
+            "name": "chat",
+            "placement": "native",
+            "startup_mode": "single",
+            "model_path": "/models/chat.gguf",
+        }
+    )
+    registry = SimpleNamespace(
+        lifecycle_binding_digest="current", list_capabilities=list, list_soulstone_runes=lambda: [native]
+    )
+    actuator = SystemdRuntimeActuator(registry, systemctl_bin="/usr/bin/systemctl")  # type: ignore[arg-type]
+    actuator._topology_attestor.attest = AsyncMock()
+    actuator._run_systemctl = AsyncMock()
+    for operation in (actuator.apply, actuator.recover):
+        with pytest.raises(RuntimePreconditionError, match="configuration generation"):
+            await operation(_intent())
+    actuator._run_systemctl.assert_not_awaited()
+    actuator._topology_attestor.attest.assert_not_awaited()
+    actuator._unit_is_active = AsyncMock(side_effect=[True, True, False])
+    assert (await actuator._observe_runtime_world()).is_exact(("chat",)) is False
+    assert "lychd-native-relay-chat.service" in actuator._relevant_units(_intent())

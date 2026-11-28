@@ -17,7 +17,7 @@ answer. The service's deployment manifest and the application's purpose belong e
 
 | Source | What the operator declares | What LychD can control |
 | --- | --- | --- |
-| [Soulstone](soulstone/index.md), **The Furnace of Animus** | Local Rune, rootless Podman/Quadlet service, models or profiles, devices, mounts, secrets, and lifecycle. | Admitted local service and supported runtime-native transitions. |
+| [Soulstone](soulstone/index.md), **The Furnace of Animus** | A local service, its capabilities and its [native or container placement](soulstone/rune.md#choose-placement). | A dedicated service under LychD's control and supported model changes inside a running engine. |
 | [Portal](portal.md), **The Rift to the Remote Sky** | Remote endpoint, provider contract, explicit models or profiles, and credential reference. | Its own admitted connection; no provider start, stop, repair, or local VRAM. |
 
 [Portal Roads](portal-roads.md) selects a remote custody and economic road. [Audio hardware and

@@ -118,7 +118,8 @@ $tether = if ($IsWindows) { "$edition/desktop-tether.exe" } else { "$edition/des
 if (!(Test-Path -LiteralPath "$edition/TETHER_THIRD_PARTY_NOTICES.txt" -PathType Leaf)) { throw 'Missing Tether notices.' }
 $installed = Get-Content "$edition/edition.json" -Raw | ConvertFrom-Json
 if ($installed.revision -cne $Revision -or $installed.wheel_sha256 -cne $receipt.wheel_sha256) { throw 'Wrong installed edition.' }
-$profilePaths = & $python -I -B -m lychd platform | ConvertFrom-Json
+$profilePaths = if ($IsMacOS) { & "$edition/lychd" platform | ConvertFrom-Json }
+else { & $python -I -B -m lychd platform | ConvertFrom-Json }
 if ($profilePaths.profile -ne 'personal-desktop') { throw 'Expected the personal host profile.' }
 # Place synthetic content in the real data/config locations of this disposable account.
 $markers = foreach ($directory in $profilePaths.config, $profilePaths.data) {

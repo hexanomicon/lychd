@@ -12,7 +12,7 @@ icon: material/scale-balance
 
 ## Requirements
 
-- Orchestrator alone owns application-initiated readiness transitions; systemd remains the physical transaction engine.
+- Orchestrator owns application-initiated readiness transitions. Each installation binds their physical execution to its host owner.
 - Fresh capability observations and the compiled conflict graph determine one plan.
 - Dedicated local Soulstones alone are lifecycle-managed; shared runtimes and Portals may be warm routes but are not managed.
 - Admission closes before complete affected-set lease drain; stale truth declines before effect.
@@ -36,7 +36,7 @@ icon: material/scale-balance
 | [Dispatcher](22-dispatcher.md) | Match and issue warm grants; register leases | Activate or mutate lifecycle |
 | Orchestrator | Plan, prioritize, close/drain, converge, compensate, contain | Choose semantic provider or Graph meaning |
 | Adapter | Probe and supported runtime-native activation | Cross-Animator eviction |
-| Actuator/systemd | Attest, transact target, classify settled world | Invent policy |
+| Host actuator | Verify ownership, perform the physical transition, classify the settled world | Invent policy |
 | [Graph](24-graph.md) | Stasis and retry after convergence | Mutate hardware |
 
 A non-warm managed route arrives as handle-free HardwareTransitionRequired; canonical registry
@@ -154,9 +154,9 @@ The actual rite is:
 1. Refresh and compute target plus exact affected set.
 2. Close affected lease admission, then the process claim gate.
 3. Wait for no live LeaseLedger grant on any affected Animator.
-4. Freeze a TransitionIntent with target, evict/launch sets, expected active pre-world, and capability/conflict digest.
-5. Have the host boundary attest freshness, ownership, loaded topology, and pending systemd work.
-6. Perform one hard target transaction or one permitted runtime-native soft activation.
+4. Freeze a TransitionIntent with target, evict/launch sets, expected active pre-world, and configuration digest covering capabilities, conflicts and lifecycle bindings.
+5. Have the host owner verify freshness, ownership and the pre-world. On managed Linux this includes the loaded topology and pending systemd jobs.
+6. Perform the admitted hard switch through its bound owner, or one permitted runtime-native soft activation.
 7. Require target WARM, and after hard swap every evictee stopped.
 8. Reopen only under the restoration law.
 
@@ -225,11 +225,20 @@ All domain host mutation passes through `RuntimeActuator.apply(TransitionIntent)
 intent contains logical Animator identities, never a shell or unit payload. Compensation refers
 to one completed forward transition and must be its exact typed inverse.
 
-Direct systemd remains an explicit host-adapter test mechanism, not a host-native Core profile: under the lifecycle lock it resolves registry identities,
-attests the loaded Scribe-owned graph, requests one target transaction, awaits jobs, and classifies
-service state. Caged Host Reactor atomically publishes owner-only JSON, revalidates after claim,
-shares the lock, uses an attested absolute systemctl, and records the result; local-UID handoff is
-not a signed remote protocol.
+On managed Linux, the Host Reactor claims the owner-only inbox request, acquires the lifecycle
+lock, revalidates the generation and Scribe-owned graph, and submits one systemd target transaction
+for either placement. A private test adapter can submit the same transaction directly. The Reactor
+classifies the observed services and records the outcome in the host journal.
+
+On a desktop, one resident actuator holds the installation lock and a private SQLite journal.
+It checks child process and listener ownership and verifies each bound container's identity and
+running incarnation before a switch. It stops the declared evictees and confirms the remaining
+active set before starting their replacements in a mixed switch. A recoverable failure must
+restore the exact prior active set. An unresolved submission or journal entry fences further
+effects and requires operator reconciliation. A native Vessel hosts this actuator directly.
+A portable Reactor guest uses the same logical inbox and read-only journal contract. The separate
+authenticated model relay grants access only to inference for the projected generation.
+[Placement law](08-containers.md#per-soulstone-placement) · [Host Reactor](../sepulcher/reactor.md)
 
 | Reactor result | Meaning |
 | --- | --- |
@@ -241,7 +250,7 @@ not a signed remote protocol.
 | .rejected | Invalid delivery, not physical success |
 
 Unclaimed publication may be retracted after claim deadline. Claimed cancellation/timeout does not
-prove systemd stopped; wait for terminal classification. Exact desired state wins even after a bad
+prove that host work stopped; wait for terminal classification. Exact desired state wins even after a bad
 client return. Cancellation retains a host-owned decline or exact-restoration receipt and may reopen
 admission on that proof; completion alone does not prove restoration. For an ordinary failed
 transaction, exact prior state is restored; otherwise one typed compensation must prove exact

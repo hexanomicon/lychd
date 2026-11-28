@@ -19,18 +19,20 @@ The Windows 11 workstation and cold-login trials are tracked in the platform iss
 
 ## Choose the installation
 
-**Select native mode.** Run `export LYCHD_VESSEL_MODE=native` on Linux or macOS, or
-`$env:LYCHD_VESSEL_MODE = 'native'` in Windows PowerShell. Keep the same setting in each terminal,
-including the one used for access or shutdown. macOS and Windows already choose native by default.
+**On macOS, use your existing login and open Terminal.** An account with administrator rights
+can run LychD normally. Run its commands without `sudo`. For the Apple Silicon package, start
+with [Install and run the macOS edition](desktop-packages.md#run-the-macos-edition).
+Windows also defaults to native. On Linux, set `export LYCHD_VESSEL_MODE=native` in each
+terminal. If you previously selected container mode on Mac or Windows, clear that setting
+in the terminals for this installation.
+
 Check `lychd platform` for `"vessel_mode": "native"`. On Linux config, data and cache each use a
 `lychd-native` directory under the corresponding XDG root. Switching modes selects an independent
 installation. If both need to run concurrently, give their host listeners distinct ports.
 
-For a packaged macOS or Windows Python runtime and bundled web client, follow [Desktop editions](desktop-packages.md).
-The source installation below uses uv.
-
-Start with a clean personal account or a dedicated test account. Have a checked-out LychD
-revision, Git, uv, PostgreSQL **18** and the matching **server-side pgvector extension**.
+A packaged [desktop edition](desktop-packages.md) includes Python and the web client. For the
+source installation below, have a checked-out LychD revision, Git and uv. Both installations
+need PostgreSQL **18** and the matching **server-side pgvector extension**.
 For chat, supply a trusted native `llama-server` executable built for your OS and one local GGUF
 in a private model directory. Choose an instruction-tuned chat model with a working template.
 Bridge validates structured replies. For the small CPU trial, use the
@@ -45,7 +47,7 @@ system service or an existing application database can keep its own port and dat
 | Target | Prepare this machine |
 | --- | --- |
 | Linux · source | Install PostgreSQL 18, matching server-side pgvector and a native llama.cpp build for your hardware. Set `LYCHD_PG_BIN` if the 18 binaries are outside PATH. Check `initdb --version` using that bin directory. Use an ordinary account and leave `LYCHD_VESSEL_MODE=native` set. |
-| macOS · Apple Silicon | Install the matching tools, for example `brew install postgresql@18 pgvector llama.cpp`. In the terminal for this setup run `export LYCHD_PG_BIN="$(brew --prefix postgresql@18)/bin"`. Check `"$LYCHD_PG_BIN/initdb" --version` and `command -v llama-server`. |
+| macOS · Apple Silicon | Install the matching tools with `brew install postgresql@18 pgvector llama.cpp`. Check `"$(brew --prefix postgresql@18)/bin/initdb" --version` and `command -v llama-server`. LychD can find Homebrew’s versioned PostgreSQL 18 tools in its standard location. To select a particular installation, export `LYCHD_PG_BIN` with its absolute bin directory, for example `export LYCHD_PG_BIN="$(brew --prefix postgresql@18)/bin"`. |
 | Windows · x64 | Install the PostgreSQL 18 server tools and [pgvector for that PostgreSQL installation](https://github.com/pgvector/pgvector#windows). Install the matching [llama.cpp Windows release](https://github.com/ggml-org/llama.cpp/releases) and keep its DLLs beside the executable. In PowerShell set `$env:LYCHD_PG_BIN = 'C:\Program Files\PostgreSQL\18\bin'` and run `& "$env:LYCHD_PG_BIN\initdb.exe" --version`. Administrator access, if required by the dependency installer, ends before running LychD. |
 
 From the repository directory, use the same revision and environment for the following commands.
@@ -69,18 +71,25 @@ current revision's migrations.
 Vessel, its installed Python extensions and the native model run as the installation user.
 An engine selected in Nexus can therefore open the same personal files as a program you start
 in that terminal. To keep your own documents and credentials out of reach while using a native
-GPU, install and sign in under a separate standard OS account. On Linux and macOS, put the
-models in that account’s own shelf or a root-owned, read-only shelf. Keep the engine and
-weights on paths owned by that account or root, with write access restricted to their owner.
-The launcher also accepts administrator-managed Homebrew executable paths. On Windows, use a
+GPU, you can opt into a separate standard OS account. On Linux and macOS, put the
+models in the installation account’s own directory or a root-owned, read-only directory.
+LychD checks the ownership of every component of the resolved engine and model paths.
+Each component must belong to the installation user or root. Keep those paths writable
+only by their owner. A sticky directory such as the system temporary directory is permitted.
+On macOS, engine paths under `/opt/homebrew` or `/usr/local` may also be writable by the
+`admin` group. The same ownership check still applies, and the path must deny world write access.
+If another login owns the Homebrew installation, unpack a trusted llama.cpp distribution,
+including its libraries, into a private directory you own. Pass the full path to that
+`llama-server` to `desktop configure-model`. On Windows, use a
 trusted engine directory including its DLLs and grant the installation account read access to
 the model using filesystem permissions. Keep private files under your own account with
 permissions that exclude the installation account. Shared folders and group-readable files
 remain accessible. A developer running Vessel under their everyday login chooses that login's
 access.
 
-During `desktop install`, LychD makes its config, data and cache directories private to the
-installation user. It preserves the shared parent directories. The native engine gets a fresh
+During `desktop install`, LychD makes its own config, data and cache directories private to
+the installation user. Existing files elsewhere in your home and the permissions of shared
+parent directories stay in place. The native engine gets a fresh
 working directory for each launch. Its home, cache and temporary paths point there. The launcher
 passes the configured executable and GGUF, closes inherited application handles and excludes
 database credentials from the child environment. Normal engine retirement removes the working
@@ -158,9 +167,10 @@ routes = [
 ]
 ```
 
-Start `uv run --no-sync lychd desktop session`. In **Nexus**, choose the desired capability,
-open **Preview**, check the launch and eviction names, and choose **Request transition**.
-Wait for the selected capability to show **active**, then send a fresh Bridge turn. With
+Start the foreground desktop session. In **Nexus → Instance overview**, open **Capabilities**,
+then **List**. On the row for the model you want, open **Preview**. Check which Animator
+will stop and which will start, then choose **Request transition**. Wait for the ticket to
+show **completed** and the selected capability to show **active**, then send a fresh Bridge turn. With
 this preference Bridge requires a warm, eligible route, including for the first turn after
 startup. To change models while Vessel is running, repeat the Nexus transition for the other
 capability. Open **Orb** for each Run and compare the recorded Animator and model identities.
@@ -168,33 +178,46 @@ capability. Open **Orb** for each Run and compare the recorded Animator and mode
 
 ## Open Altar and talk in Bridge
 
-1. Start the database and Vessel from this account in a foreground terminal with
-   `uv run --no-sync lychd desktop session`. Leave that terminal open.
-2. In a second private terminal run `uv run --no-sync lychd access`. Open
-   `http://127.0.0.1:7134/` in a dedicated browser profile and enter the displayed credentials
-   when prompted. Keep the credentials out of screenshots, URLs and shell history.
-3. Open **Bridge** beside Orb or navigate to `/bridge`. Choose **New Séance** and send a
-   distinctive short message. Wait for a nonempty settled reply. In Nexus verify the selected
-   `personal:chat:personal-model` capability. Record the exact revision, engine, model, OS and
-   CPU/GPU. Opening the shell alone proves only the web assets and local login.
-4. Run `uv run --no-sync lychd stop` in the second terminal and wait for the foreground process
-   to exit. Start `desktop session` again, sign in and reopen the same conversation. Verify the
-   distinctive message and reply survived. For the platform issue, attach redacted screenshots
-   of the settled turn and the reopened conversation.
+For a package, select the same edition in both terminals. For a source installation, open
+the same checkout in both and prefix each command below with `uv run --no-sync`.
 
-To stop the database too, run `uv run --no-sync lychd desktop stop` after the Vessel exits.
+1. Run `lychd desktop session` to start the database and Vessel. Leave this terminal open.
+   If your session is already running, continue in the second terminal.
+2. In a second terminal window or tab under the same login, run `lychd access`.
+   Open the displayed address in your browser and enter the displayed credentials when
+   prompted. Keep the credentials out of screenshots, URLs and shell history.
+3. Open **Bridge** beside Orb or navigate to `/bridge`. Choose **New Séance** and send a
+   distinctive short message. Wait for a nonempty settled reply. With the single-model
+   configuration above you can send the first message directly. Open the Run in **Orb**
+   to verify which Animator and model served it.
+4. Run `lychd stop` in the second terminal and wait for the foreground process
+   to exit. Run `lychd desktop session` again, sign in and reopen the same conversation. Verify the
+   distinctive message and reply survived.
+
+To stop the database too, run `lychd desktop stop` after the Vessel exits.
 `lychd start` runs only the foreground Vessel when its database is already running.
 `lychd desktop status` queries the dedicated PostgreSQL cluster. A second Vessel targeting the
 same database must refuse before startup recovery can affect the first one's work.
 
-The automated qualification uses a disposable OS account, the same CLI and a real browser.
-For reproducible short replies it sets `temperature = 0.0` and `max_tokens = 128` in the
+For a platform qualification report, record the revision, engine, model, OS and CPU/GPU and
+attach redacted screenshots of the settled turn and reopened conversation. The maintainer
+trial scripts `check_desktop_startup.py` and `check_desktop_bridge.py` require fresh LychD
+data and configuration roots in a disposable installation. The startup trial rotates
+credentials, and the browser trial configures its own model. To check an existing installation
+in place, start its foreground session and reopen the saved Bridge conversation as described
+above.
+For reproducible short replies the automated trial sets `temperature = 0.0` and `max_tokens = 128` in the
 personal Rune’s `[generation]` table. Operators can choose a larger output budget. The trial
 saves the opened Bridge, the completed reply, the same reply after restarting PostgreSQL and
 Vessel, and a JSON receipt with the Run ID and the model and engine hashes. Maintainers can run
 the **Desktop host CI** workflow with the browser-chat input selected. Retrieve its
 `desktop-bridge-macOS` and `desktop-bridge-Windows` artifacts from that run. Use the platform
 issues below for hardware, GPU and cold-login trials.
+
+To exercise Homebrew's current `llama-server` on Apple Silicon, select
+`macos_homebrew_bridge` in **Desktop host CI**, or include `[run-macos-homebrew-bridge]`
+in a same-repository PR description. The `desktop-bridge-macOS-homebrew` artifact records
+the installed formula versions and the Bridge conversation before and after restart.
 
 ## Login, update and removal
 
@@ -239,8 +262,9 @@ qualified isolation boundary.
   alone cannot recover access under a fresh user profile.
   [Apple Keychain items](https://developer.apple.com/documentation/security/keychain-items) ·
   [Windows DPAPI](https://learn.microsoft.com/en-us/windows/win32/api/dpapi/nf-dpapi-cryptprotectdata)
-- **Recovery into a fresh account.** Recover the original five portable files into a private
-  directory under that account. Run `lychd desktop recover-credentials "<recovered-directory>"`
+- **Recovery into a fresh account.** If you are restoring an existing installation under
+  another login, recover the original five portable files into a private directory under
+  that account. Run `lychd desktop recover-credentials "<recovered-directory>"`
   before installing against the restored dedicated cluster. This verifies every input before
   filling missing credentials and stops on disagreement with an existing value. If restored
   files reference a former account's vault, add `--rebind-vault` to seal matching portable values
@@ -316,18 +340,63 @@ responsibility for tunnel and service configuration.
 
 ## Animator ownership
 
-On managed Linux the Reactor applies the declared conflicts through systemd and generated Quadlets.
-In the personal profile the same orchestration contract selects the native process actuator.
-Vessel starts a configured executable using fixed arguments, verifies ownership of its loopback
-listener, and waits for the conflicting foreground process to exit before launching its replacement. Login registration starts
-Vessel under the desktop account. A request to Bridge grants no general host command execution.
+In the personal profile, one process owns all dedicated Animators in the installation. A native
+Vessel holds this role during its session. For the portable caged Vessel, run the
+[desktop Reactor](container-desktop.md#desktop-reactor) in its place. The same lock prevents both
+from adopting the same engines. Login registration starts the native Vessel.
 
-We considered llama-swap for its model routing and swap matrix. Adding it as another lifecycle
-owner would require coordinating its independent unload decisions with LychD's grants and
-observations. The personal profile uses the existing llama.cpp extension and the native process actuator. A future
-adapter for an externally managed server needs its own authority and readiness contract.
-[Upstream swap matrix](https://github.com/mostlygeek/llama-swap/blob/a109800cc5340e7722895b7baf78b3d16ef19311/docs/kb/guides/routing/groups-and-matrix.md)
-· [Containers and switching](../adr/08-containers.md).
+To add a container alongside the native `personal` model, provision one **stopped**, dedicated,
+fixed-model service on the local engine. Give it a TLS listener, the label
+`io.lychd.soulstone=alternate` and exactly one published TCP port, for example
+`127.0.0.1:18443:8443`. The host checks the full container ID, loopback mapping, running
+incarnation and server certificate before forwarding inference. The example uses a container
+listening on 8443 that serves the model ID `alternate-model` from `/models/alternate.gguf`.
+Choose and configure its image, model mount, certificate and private key when creating it.
+Use an unprivileged standalone container with automatic removal and restart disabled. Keep it
+outside a pod, linked services and shared network namespaces.
+
+Declare the service in a separate llama.cpp Rune. Port 8082 is the Animator port reserved by
+the host for clients. Choose a different host publication port for the TLS backend.
+
+```toml title="runes/animator/soulstones/llamacpp/alternate.toml"
+name = "alternate"
+placement = "container"
+startup_mode = "single"
+model_path = "/models/alternate.gguf"
+served_model_id = "alternate-model"
+structured_output = "json-schema"
+port = 8082
+base_url = "http://127.0.0.1:8082/v1"
+```
+
+Add its binding in the host's `lychd.toml`. Substitute the actual local endpoint, full
+lowercase container ID and the lowercase, unseparated SHA-256 digest of the server's DER leaf
+certificate. The two identity values below are placeholders. Retain the existing
+`[orchestration.switching]` settings, including `actuator = "native-process"` and the private
+absolute `native_state_dir`. Each container Rune requires exactly one matching binding.
+
+```toml title="lychd.toml"
+[[orchestration.switching.containers]]
+animator = "alternate"
+engine = "docker"
+endpoint = "unix:///run/user/1000/docker.sock"
+container_id = "<64 lowercase hexadecimal digits from container inspect>"
+container_port = 8443
+host_port = 18443
+tls_sha256 = "<64 lowercase hexadecimal digits from the server certificate>"
+```
+
+Linux and macOS accept the account's local Unix socket for rootless Podman, rootless Docker or
+Docker Desktop's Linux engine. Use `engine = "podman"` for a Podman socket. Windows requires
+`engine = "docker"` and `endpoint = "npipe:////./pipe/dockerDesktopLinuxEngine"` for Docker
+Desktop in Linux-container mode. A remote context, a running container or an unexpected
+port mapping fails validation. Container replacement requires an updated binding.
+
+Use the [two-model Nexus procedure](#choose-between-two-local-models-in-nexus) to select A,
+preview B's evictions, request B and check the model grant in Orb. If startup reports an
+unresolved native journal, reconcile the recorded process, port, container incarnation and
+pending request under the original installation before retiring any evidence.
+[Placement and switching](../adr/08-containers.md#per-soulstone-placement)
 
 ## Virtual machines
 
@@ -335,9 +404,9 @@ A separately selected Linux guest can bring its own Linux services and storage. 
 VM profile must prove guest lifecycle, private networking and access to the specific host engine.
 The guest sees its own loopback interface. Test any provider-supplied host address from the actual
 Vessel container. Outbound inference and inbound VPN traffic have different firewall and routing
-requirements. Guest root grants no authority on the outer host. Managing a host process would
-require an authenticated, narrowly scoped host helper, an allowlist of targets and recovery after
-lost acknowledgement. Keep unrestricted host commands, the container-engine socket and host
+requirements. Guest root grants no authority on the outer host. The [portable desktop Reactor](container-desktop.md#desktop-reactor) requires host-mounted private
+directories and a provider host alias. A separately provisioned VM needs its own qualification
+for that ownership, transport and recovery path. Keep unrestricted host commands, the container-engine socket and host
 credentials outside the guest. [Privilege](../adr/10-privilege.md) · [VPN](../adr/39-vpn.md).
 
 Follow implementation of [volume snapshots](https://github.com/hexanomicon/lychd/issues/182),

@@ -144,13 +144,18 @@ class RuntimeActuator(Protocol):
 
 
 def capability_config_generation(registry: CapabilityRegistry) -> str:
-    """Digest capabilities plus the complete physical conflict declaration set."""
+    """Fence capabilities, conflict declarations and the bound physical lifecycle."""
     capabilities = sorted(registry.list_capabilities(), key=lambda item: item.key)
     soulstones = sorted(registry.list_soulstone_runes(), key=lambda rune: rune.name)
-    payload = {
+    payload: dict[str, object] = {
         "capabilities": [spec.model_dump(mode="json") for spec in capabilities],
         "runtime_topology": [_runtime_topology_projection(rune) for rune in soulstones],
     }
+    if registry.lifecycle_binding_digest is not None:
+        payload["lifecycle_binding"] = registry.lifecycle_binding_digest
+        payload["launch_declarations"] = [
+            rune.model_dump(mode="json", exclude={"description", "groups", "concurrency"}) for rune in soulstones
+        ]
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
     return "sha256:" + hashlib.sha256(encoded).hexdigest()
 

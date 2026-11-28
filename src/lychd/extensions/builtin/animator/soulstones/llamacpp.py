@@ -138,6 +138,23 @@ class LlamaCppSoulstoneConfig(SoulstoneConfig):
         {"LLAMA_ARG_MODEL", "LLAMA_ARG_MODEL_URL", "LLAMA_ARG_DOCKER_REPO", "LLAMA_ARG_HF_REPO", "LLAMA_ARG_HF_FILE"}
     )
 
+    def _validate_native_placement(self) -> None:
+        """Admit the trusted fixed-model plan without command or container overrides."""
+        if (
+            not self.concurrency.dedicated
+            or self.startup_mode != LlamaCppMode.SINGLE
+            or not self.model_path
+            or self.extra_args
+            or self.lora_adapters
+            or self.embedding_profile
+            or self.models_dir
+            or self.models_preset
+            or self.chat_template
+            or self.model_fields_set.intersection({"models_max", "models_autoload"})
+        ):
+            msg = f"Native llama.cpp Soulstone {self.name!r} requires a dedicated fixed single model without router, adapter, embedding or command overrides."
+            raise ValueError(msg)
+
     def resolved_mode(self, inferred_mode: Literal["single", "router"] | None = None) -> Literal["single", "router"]:
         """Honor explicit startup intent; infer AUTO before the typed-model fallback."""
         if self.startup_mode == LlamaCppMode.SINGLE:

@@ -12,6 +12,7 @@ from lychd.domain.animation.schemas.runes.animators import (
     OpenAIPortalConfig,
     PortalConfig,
     SoulstoneConfig,
+    SoulstonePlacement,
 )
 from lychd.domain.animation.schemas.runes.models import (
     LocalModelConfig,
@@ -30,4 +31,5 @@ __all__ = [
     "PortalConfig",
     "PortalModelConfig",
     "SoulstoneConfig",
+    "SoulstonePlacement",
 ]

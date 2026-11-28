@@ -92,6 +92,7 @@ def _registry() -> Any:
         )
     }
     return SimpleNamespace(
+        lifecycle_binding_digest=None,
         list_capabilities=lambda: [_Spec()],
         list_soulstone_runes=lambda: list(runes.values()),
         get_soulstone_rune=runes.get,
@@ -110,6 +111,7 @@ def _swap_registry() -> Any:
         for name in names
     }
     return SimpleNamespace(
+        lifecycle_binding_digest=None,
         list_capabilities=lambda: [_Spec(name) for name in names],
         list_soulstone_runes=lambda: list(runes.values()),
         get_soulstone_rune=runes.get,
@@ -728,6 +730,7 @@ async def test_reactor_recomputes_policy_before_host_effect(tmp_path: Path) -> N
         for name in ("old", "local")
     }
     registry: Any = SimpleNamespace(
+        lifecycle_binding_digest=None,
         list_capabilities=lambda: specs,
         list_soulstone_runes=lambda: list(runes.values()),
         get_soulstone_rune=runes.get,

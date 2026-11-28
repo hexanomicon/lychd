@@ -1,0 +1,33 @@
+name: lychd-portable-reactor
+x-reactor-image: &reactor-image localhost/lychd:portable-reactor-${LYCHD_REACTOR_UID:?Set the prepared guest UID}
+services:
+  provision:
+    image: *reactor-image
+  migrate:
+    image: *reactor-image
+  vessel:
+    image: *reactor-image
+    build:
+      args:
+        LYCHD_REACTOR_UID: ${LYCHD_REACTOR_UID}
+    environment:
+      XDG_CONFIG_HOME: /run/lychd/desktop-reactor/config
+      LYCHD_DESKTOP_REACTOR_HOST: ${LYCHD_DESKTOP_REACTOR_HOST:-host.docker.internal}
+    volumes:
+      - type: bind
+        source: ${LYCHD_REACTOR_BUNDLE:?Run lychd desktop reactor-prepare on the host}
+        target: /run/lychd/desktop-reactor
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${LYCHD_REACTOR_INBOX:?Set the prepared host inbox}
+        target: /home/lich/.local/share/lychd/triggers/inbox
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${LYCHD_REACTOR_JOURNAL:?Set the prepared host journal}
+        target: /home/lich/.local/share/lychd/triggers/journal
+        read_only: true
+        bind:
+          create_host_path: false

@@ -26,23 +26,33 @@ on:
         description: Run real browser inference and verify the conversation after restart
         type: boolean
         default: false
-
-env:
-  BRIDGE_CHAT: >-
-    ${{ (github.event_name == 'workflow_dispatch' && inputs.bridge_chat) ||
-        (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository &&
-         contains(github.event.pull_request.body, '[run-desktop-bridge]')) }}
+      macos_homebrew_bridge:
+        description: Run real browser chat with the existing macOS login's Homebrew installation
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
 jobs:
   desktop:
-    name: Personal host (${{ matrix.os }})
+    name: Personal host (${{ matrix.os }})${{ matrix.trial == 'homebrew' && ' Homebrew' || '' }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-24.04, macos-15, windows-2025]
+        trial:
+          - >-
+            ${{ ((github.event_name == 'workflow_dispatch' && inputs.bridge_chat) ||
+                (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository &&
+                 contains(github.event.pull_request.body, '[run-desktop-bridge]'))) && 'pinned' || 'startup' }}
+        include: >-
+          ${{ fromJSON(((github.event_name == 'workflow_dispatch' && inputs.macos_homebrew_bridge) ||
+              (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository &&
+               contains(github.event.pull_request.body, '[run-macos-homebrew-bridge]'))) &&
+              '[{"os":"macos-15","trial":"homebrew"}]' || '[]') }}
+    env:
+      BRIDGE_CHAT: ${{ matrix.trial != 'startup' }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 85
     steps:
@@ -69,8 +79,19 @@ jobs:
         run: uv run --no-sync python -m pytest -q -o addopts= tests/unit/cli/test_native_entry.py tests/unit/domain/web/test_vessel_owner.py tests/unit/system/desktop tests/unit/system/services/test_native_runtime.py
       - name: Check Linux native routing and foreground lifecycle
         if: runner.os == 'Linux'
-        run: uv run --no-sync python -m pytest -q -o addopts= tests/unit/cli/test_native_entry.py tests/unit/system/desktop/test_linux_foreground.py tests/unit/system/services/test_native_runtime.py
+        run: >-
+          uv run --no-sync python -m pytest -q -o addopts=
+          tests/unit/cli/test_native_entry.py
+          tests/unit/system/desktop/test_linux_foreground.py
+          tests/unit/system/desktop/test_reactor_link.py
+          tests/unit/system/desktop/test_reactor_projection.py
+          tests/unit/system/services/test_native_runtime.py
       - uses: ./.github/actions/desktop-postgres
+      - name: Verify the existing macOS login runs unelevated and belongs to admin
+        if: runner.os == 'macOS'
+        run: |
+          test "$(id -u)" -ne 0
+          id -Gn | tr ' ' '\n' | grep -Fx admin
       - name: Recover an actual committed PostgreSQL row
         if: runner.os != 'Windows'
         run: uv run --no-sync python -m pytest -q -o addopts= tests/integration/test_native_pg_backup.py
@@ -78,7 +99,12 @@ jobs:
         if: runner.os != 'Windows' && env.BRIDGE_CHAT != 'true'
         env:
           PGHOSTADDR: 127.0.0.2
-        run: uv run --no-sync python scripts/check_desktop_startup.py
+        run: |
+          if [[ "$RUNNER_OS" == "macOS" ]]; then
+            unset LYCHD_PG_BIN
+            export PATH=/usr/bin:/bin:/usr/sbin:/sbin
+          fi
+          .venv/bin/python scripts/check_desktop_startup.py
       - name: Install the pinned official Linux CPU inference archive
         if: runner.os == 'Linux' && env.BRIDGE_CHAT == 'true'
         run: |
@@ -89,7 +115,7 @@ jobs:
           mkdir -p .ci-llama/build/bin
           tar -xzf "$archive" -C .ci-llama/build/bin
       - name: Install the pinned official Apple Silicon inference archive
-        if: runner.os == 'macOS' && env.BRIDGE_CHAT == 'true'
+        if: runner.os == 'macOS' && matrix.trial == 'pinned'
         run: |
           archive="$RUNNER_TEMP/llama-b12494-bin-macos-arm64.tar.gz"
           curl --fail --location --silent --show-error --max-filesize 17249612 --max-time 180 --output "$archive" \
@@ -109,7 +135,7 @@ jobs:
             throw 'Windows inference distribution checksum mismatch.'
           }
           Expand-Archive -LiteralPath $archive -DestinationPath .ci-llama/build/bin
-      - name: Verify the pinned model and locate the inference server
+      - name: Verify the pinned model
         if: env.BRIDGE_CHAT == 'true'
         shell: pwsh
         run: |
@@ -121,16 +147,33 @@ jobs:
             throw 'Qualification model checksum mismatch.'
           }
           "BRIDGE_MODEL=$model" >> $env:GITHUB_ENV
+      - name: Locate the pinned inference server
+        if: matrix.trial == 'pinned'
+        shell: pwsh
+        run: |
           $binary = if ($IsWindows) { 'llama-server.exe' } else { 'llama-server' }
           $engine = @(Get-ChildItem -Path .ci-llama/build/bin -Recurse -File -Filter $binary)
           if ($engine.Count -ne 1) { throw 'Expected one built llama-server.' }
           "BRIDGE_ENGINE=$($engine[0].FullName)" >> $env:GITHUB_ENV
       - name: Exercise browser chat and verify the answer after native restart
-        if: runner.os != 'Windows' && env.BRIDGE_CHAT == 'true'
+        if: runner.os != 'Windows' && matrix.trial == 'pinned'
         env:
           PGHOSTADDR: 127.0.0.2
         run: |
           uv run --no-sync python scripts/check_desktop_bridge.py --engine "$BRIDGE_ENGINE" --model "$BRIDGE_MODEL" --output bridge-evidence
+      - name: Recover a Bridge conversation with the personal login's Homebrew engine
+        if: matrix.trial == 'homebrew'
+        env:
+          PGHOSTADDR: 127.0.0.2
+        run: |
+          brew install llama.cpp
+          engine="$(command -v llama-server)"
+          test "$engine" -ef "$(brew --prefix llama.cpp)/bin/llama-server"
+          brew list --versions postgresql@18 pgvector llama.cpp > "$RUNNER_TEMP/homebrew-formulae.txt"
+          unset LYCHD_PG_BIN
+          export PATH=/usr/bin:/bin:/usr/sbin:/sbin
+          .venv/bin/python scripts/check_desktop_bridge.py --engine "$engine" --model "$BRIDGE_MODEL" --output bridge-evidence
+          cp "$RUNNER_TEMP/homebrew-formulae.txt" bridge-evidence/
       - name: Exercise PostgreSQL recovery and the Vessel as a standard Windows user
         if: runner.os == 'Windows'
         shell: pwsh
@@ -139,7 +182,7 @@ jobs:
         if: always() && env.BRIDGE_CHAT == 'true'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
-          name: desktop-bridge-${{ runner.os }}
+          name: desktop-bridge-${{ runner.os }}${{ matrix.trial == 'homebrew' && '-homebrew' || '' }}
           path: bridge-evidence/
           if-no-files-found: ignore
           retention-days: 7

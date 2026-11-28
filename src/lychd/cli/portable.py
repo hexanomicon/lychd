@@ -12,6 +12,7 @@ from pathlib import Path
 import click
 
 _MIN_ENGINE_MAJOR = 28
+_MAX_GUEST_UID = 2**31 - 1
 GUIDE = "https://hexanomicon.dev/deployments/container-desktop/"
 
 
@@ -51,23 +52,59 @@ def _local_engine() -> list[str]:
     return client
 
 
+def _reactor_overlay() -> bool:
+    keys = ("LYCHD_REACTOR_BUNDLE", "LYCHD_REACTOR_INBOX", "LYCHD_REACTOR_JOURNAL")
+    paths = [os.environ.get(key, "") for key in keys]
+    uid = os.environ.get("LYCHD_REACTOR_UID", "")
+    if not any(paths) and not uid:
+        return False
+    if re.fullmatch(r"[1-9][0-9]{0,9}", uid) is None or int(uid) > _MAX_GUEST_UID:
+        msg = "Use the positive guest UID returned by reactor-prepare."
+        raise click.ClickException(msg)
+    if os.environ.get("LYCHD_GGUF") or not all(Path(path).is_absolute() for path in paths):
+        msg = "Use all three prepared Reactor directories together, with LYCHD_GGUF unset."
+        raise click.ClickException(msg)
+    from lychd.system.constants import PATH_CRYPT_ROOT
+    from lychd.system.desktop.private import verify_private_directory
+
+    root = (PATH_CRYPT_ROOT / "desktop-reactor").resolve(strict=True)
+    bundle, inbox, journal = map(Path, paths)
+    if (
+        inbox != root / "inbox"
+        or journal != root / "journal"
+        or bundle.parent != root / "bundles"
+        or re.fullmatch(r"[0-9a-f]{64}", bundle.name) is None
+    ):
+        msg = "Use the exact sources returned by the current installation's reactor-prepare."
+        raise click.ClickException(msg)
+    for directory in (bundle, inbox, journal):
+        verify_private_directory(directory)
+    if inbox.samefile(journal) or inbox.samefile(bundle) or journal.samefile(bundle):
+        msg = "Reactor mount sources overlap."
+        raise click.ClickException(msg)
+    return True
+
+
 def _compose(*arguments: str, include_model: bool = False) -> None:
     location = Path(os.environ.get("LYCHD_CONTAINER_DIR", ""))
     if not location.is_absolute() or not (location / "compose.yaml").is_file():
         msg = f"Set LYCHD_CONTAINER_DIR to the absolute reviewed portable-container directory. {GUIDE}"
         raise click.ClickException(msg)
     try:
+        reactor = _reactor_overlay()
         command = [
             *_local_engine(),
             "compose",
             "--project-directory",
             str(location),
             "-p",
-            "lychd-portable",
+            "lychd-portable-reactor" if reactor else "lychd-portable",
             "-f",
             str(location / "compose.yaml"),
         ]
-        if include_model and (model := os.environ.get("LYCHD_GGUF")):
+        if reactor:
+            command.extend(["-f", str(location / "compose.reactor.yaml")])
+        elif include_model and (model := os.environ.get("LYCHD_GGUF")):
             if not Path(model).is_absolute() or not Path(model).is_file():
                 msg = "LYCHD_GGUF must name the absolute path to an existing model file."
                 raise click.ClickException(msg)

@@ -73,6 +73,7 @@ $edition = [ordered]@{
 }
 $edition | ConvertTo-Json | Set-Content "$payload/edition.json" -Encoding utf8NoBOM
 if ($IsMacOS) {
+    & /usr/bin/install -m 0755 "$PSScriptRoot/lychd-macos.sh" "$payload/lychd"
     if ($Sign) { & /bin/bash "$PSScriptRoot/sign-macos.sh" runtime $payload }
     $component = "$work/edition.pkg"
     $identifier = "org.lychd.desktop.r$Revision"

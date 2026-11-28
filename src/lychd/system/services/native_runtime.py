@@ -1,4 +1,4 @@
-"""Personal single-process llama.cpp effect owner for a private desktop installation."""
+"""Personal process and pre-provisioned container ownership for one desktop installation."""
 
 from __future__ import annotations
 
@@ -17,25 +17,31 @@ from typing import TYPE_CHECKING
 
 from lychd.domain.animation.conflicts import build_conflict_topology
 from lychd.domain.orchestration.actuator import (
+    RuntimeActuationRestoredError,
+    RuntimeCancellationRestoredError,
     RuntimePreconditionError,
     TransitionIntent,
     build_compensation_intent,
     capability_config_generation,
 )
-from lychd.extensions.builtin.animator.llamacpp.parser_models import LlamaCppRuntimeInference
-from lychd.extensions.builtin.animator.llamacpp.runtime import LlamaCppRuntimePlanner
-from lychd.extensions.builtin.animator.soulstones.llamacpp import LlamaCppMode, LlamaCppSoulstoneConfig
-from lychd.system.desktop.private import check_native_inputs, verify_private_directory
+from lychd.lib.asyncio import complete_under_cancellation
+from lychd.system.desktop.private import check_path, verify_private_directory, verify_private_file
+from lychd.system.services.desktop_container import DesktopContainer, UnsettledContainerError
+from lychd.system.services.native_llama import native_llama_command
 
 if TYPE_CHECKING:
+    from typing import BinaryIO
+
     from lychd.config.settings.orchestration import SwitchingSettings
     from lychd.domain.animation.protocols import CapabilityRegistry
+    from lychd.domain.animation.schemas import SoulstoneConfig
     from lychd.domain.orchestration.containment import SoftActivationRecord
 
+_RESTORED = 2
 _WINDOWS_TCP_COLUMNS = 5
 _UNSETTLED = (
     "Native runtime ownership is unresolved. Stop Core, inspect the private native.sqlite3 journal, "
-    "verify the recorded llama-server processes are stopped and their ports are free before archiving the journal."
+    "reconcile each recorded process, container incarnation, and pending transition before archiving the journal."
 )
 
 
@@ -57,7 +63,7 @@ class NativeSingleModelGuard:
 class NativeRuntimeActuator:
     """Own foreground children by live process handle and journal transitions before mutation.
 
-    The desktop launcher holds the installation's single-Core lock. No stored PID is
+    One host owner holds the state-directory lock for this actuator's lifetime. No stored PID is
     used as termination authority. A crash with a live or pending owner fences startup.
     """
 
@@ -88,87 +94,76 @@ class NativeRuntimeActuator:
                 raise RuntimePreconditionError(msg)
         self._registry = registry
         self._settings = settings
+        self._containers = {
+            binding.animator: DesktopContainer(binding, timeout=settings.systemctl_timeout_s)
+            for binding in settings.containers
+        }
+        self._incarnations: dict[str, str] = {}
         self._scratch: dict[str, TemporaryDirectory[str]] = {}
         self._children: dict[str, subprocess.Popen[bytes]] = {}
         self._lock = asyncio.Lock()
         self._endpoints: dict[str, asyncio.Server] = {}
         self._upstreams: dict[str, int] = {}
         self._connections: set[asyncio.Task[None]] = set()
+        self._owner = self._acquire_owner(directory)
+        try:
+            self._initialize_journal()
+        except BaseException:
+            self._owner.close()
+            raise
+
+    @staticmethod
+    def _acquire_owner(directory: Path) -> BinaryIO:
+        """Exclude every native Vessel and desktop Reactor sharing these effects."""
+        path = directory / "native-owner.lock"
+        check_path(path)
+        flags = os.O_RDWR | os.O_CREAT | getattr(os, "O_NOFOLLOW", 0)
+        stream = os.fdopen(os.open(path, flags, 0o600), "r+b")
+        try:
+            verify_private_file(path)
+            if not os.path.samestat(os.fstat(stream.fileno()), path.lstat()):
+                message = "Native ownership lock changed while opening."
+                raise RuntimePreconditionError(message)  # noqa: TRY301 - release this descriptor on every failure
+            if os.name == "nt":
+                import msvcrt
+
+                msvcrt.locking(stream.fileno(), msvcrt.LK_NBLCK, 1)
+            else:
+                import fcntl
+
+                fcntl.flock(stream.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError as exc:
+            stream.close()
+            message = "Native runtime ownership is unresolved: another host owner holds the installation lock."
+            raise RuntimePreconditionError(message) from exc
+        except BaseException:
+            stream.close()
+            raise
+        return stream
+
+    def _initialize_journal(self) -> None:
         with closing(sqlite3.connect(self._journal)) as db, db:
             db.execute(
                 "CREATE TABLE IF NOT EXISTS transition (id TEXT PRIMARY KEY, intent TEXT NOT NULL, done INTEGER NOT NULL)"
             )
             db.execute("CREATE TABLE IF NOT EXISTS child (name TEXT PRIMARY KEY, pid INTEGER NOT NULL)")
-            if db.execute("SELECT 1 FROM child UNION ALL SELECT 1 FROM transition WHERE done=0").fetchone():
+            db.execute("CREATE TABLE IF NOT EXISTS container (name TEXT PRIMARY KEY, incarnation TEXT NOT NULL)")
+            if db.execute(
+                "SELECT 1 FROM child UNION ALL SELECT 1 FROM container UNION ALL SELECT 1 FROM transition WHERE done=0"
+            ).fetchone():
                 raise RuntimeError(_UNSETTLED)
 
     def _command(self, name: str) -> tuple[list[str], int]:
-        rune = self._registry.get_soulstone_rune(name)
-        engine = self._settings.native_llama_server
-        root = self._settings.native_model_root
-        if (
-            not isinstance(rune, LlamaCppSoulstoneConfig)
-            or not rune.concurrency.dedicated
-            or engine is None
-            or root is None
-        ):
-            msg = f"No managed native llama.cpp binding for {name!r}."
-            raise RuntimePreconditionError(msg)
-        if (
-            rune.startup_mode != LlamaCppMode.SINGLE
-            or not rune.model_path
-            or rune.port is None
-            or rune.exec
-            or rune.extra_args
-            or rune.env_vars
-            or rune.secret_env_files
-            or rune.lora_adapters
-            or rune.embedding_profile
-            or rune.models_dir
-            or rune.models_preset
-            or rune.chat_template
-            or rune.devices
-            or rune.security_label_disable
-            or rune.volumes
-            or "quadlet" in rune.model_fields_set
-        ):
-            msg = "Native llama.cpp requires a single typed model with no command, environment, adapter or container overrides."
-            raise RuntimePreconditionError(msg)
-        if rune.base_url is not None and str(rune.base_url).rstrip("/") != f"http://127.0.0.1:{rune.port}/v1":
-            msg = "Native llama.cpp requires an explicit http://127.0.0.1:<port>/v1 endpoint."
-            raise RuntimePreconditionError(msg)
-        if (
-            engine.name != ("llama-server.exe" if os.name == "nt" else "llama-server")
-            or not engine.is_file()
-            or not os.access(engine, os.X_OK)
-        ):
-            msg = "The approved llama-server executable is missing or unusable."
-            raise RuntimePreconditionError(msg)
-        model = Path(rune.model_path)
-        if (
-            not model.is_absolute()
-            or not root.is_dir()
-            or not model.is_relative_to(root)
-            or model.suffix.lower() != ".gguf"
-            or not model.is_file()
-        ):
-            msg = "Native model must be an existing absolute GGUF file inside native_model_root."
-            raise RuntimePreconditionError(msg)
-        try:
-            check_native_inputs(engine, model)
-        except (OSError, ValueError) as exc:
-            raise RuntimePreconditionError(str(exc)) from exc
-        planner = LlamaCppRuntimePlanner()
-        args = planner.plan_exec_args(
-            soulstone=rune, inferred=LlamaCppRuntimeInference(), mode="single", listen_host="127.0.0.1"
-        )
-        return [str(engine.resolve(strict=True)), *args], rune.port
+        return native_llama_command(self._registry.get_soulstone_rune(name), self._settings, name=name)
 
     async def verify_startup(self) -> None:
         """Reserve configured loopback endpoints before any registry observation."""
+        self._require_owner()
         try:
-            for rune in self._registry.list_soulstone_runes():
-                _, port = self._command(rune.name)
+            runes = self._bound_runes()
+            public_ports = {rune.port for rune in runes}
+            for rune in runes:
+                port = await self._public_port(rune, public_ports)
                 listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 try:
                     if os.name == "nt":
@@ -190,6 +185,38 @@ class NativeRuntimeActuator:
             await self.aclose()
             raise
 
+    def _bound_runes(self) -> list[SoulstoneConfig]:
+        runes = self._registry.list_soulstone_runes()
+        expected = {rune.name for rune in runes if rune.placement == "container"}
+        if expected != self._containers.keys():
+            message = "Each explicit desktop container Soulstone requires its exact local binding."
+            raise RuntimePreconditionError(message)
+        return runes
+
+    async def _public_port(self, rune: SoulstoneConfig, public_ports: set[int | None]) -> int:
+        container = self._containers.get(rune.name)
+        if container is None:
+            _, port = self._command(rune.name)
+            return port
+        port = rune.port
+        if (
+            not rune.concurrency.dedicated
+            or rune.concurrency.persistent_resident
+            or port is None
+            or str(rune.base_url).rstrip("/") != f"http://127.0.0.1:{port}/v1"
+            or container.binding.host_port in public_ports
+            or any(spec.is_dynamic for spec in self._registry.list_capabilities() if spec.animator_name == rune.name)
+        ):
+            message = (
+                "Desktop container requires a dedicated fixed model, distinct upstream and explicit loopback endpoint."
+            )
+            raise RuntimePreconditionError(message)
+        await asyncio.to_thread(container.verify_engine)
+        if await asyncio.to_thread(container.observe) is not None:
+            message = "Cannot adopt a previously running desktop container."
+            raise RuntimePreconditionError(message)
+        return port
+
     def _connect(self, name: str, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
         task = asyncio.create_task(self._forward(name, reader, writer))
         self._connections.add(task)
@@ -200,16 +227,24 @@ class NativeRuntimeActuator:
         port = self._upstreams.get(name)
         upstream: asyncio.StreamWriter | None = None
         try:
-            if child is None or child.poll() is not None or port is None:
-                return
-            source, upstream = await asyncio.open_connection("127.0.0.1", port)
-            # Verify after connecting. A subsequent bind cannot redirect this stream.
-            if not await asyncio.to_thread(_owns_listener, child.pid, port) or child.poll() is not None:
-                return
+            if container := self._containers.get(name):
+                incarnation = self._incarnations.get(name)
+                if incarnation is None:
+                    return
+                async with asyncio.timeout(self._settings.warmup_timeout_s):
+                    source, upstream = await container.connect(incarnation)
+                if self._incarnations.get(name) != incarnation:
+                    return
+            else:
+                if child is None or child.poll() is not None or port is None:
+                    return
+                source, upstream = await asyncio.open_connection("127.0.0.1", port)
+                if not await asyncio.to_thread(_owns_listener, child.pid, port) or child.poll() is not None:
+                    return
             async with asyncio.TaskGroup() as group:
                 group.create_task(_pipe(reader, upstream))
                 group.create_task(_pipe(source, writer))
-        except (OSError, ExceptionGroup, subprocess.SubprocessError):
+        except (OSError, RuntimeError, ValueError, ExceptionGroup, subprocess.SubprocessError):
             return
         finally:
             if upstream is not None:
@@ -218,49 +253,126 @@ class NativeRuntimeActuator:
 
     async def apply(self, intent: TransitionIntent) -> None:
         async with self._lock:
+            self._require_owner()
             with closing(sqlite3.connect(self._journal)) as db:
                 db.execute("BEGIN IMMEDIATE")
                 if await self._replayed(db, intent):
                     return
-                self._validate(db, intent)
-                commands = {name: self._command(name) for name in (*intent.evict_animators, *intent.launch_animators)}
-                for name in intent.launch_animators:
+                prior = await self._active(db)
+                self._validate(db, intent, prior)
+                for name in (*intent.evict_animators, *intent.launch_animators):
+                    if name in self._containers:
+                        await asyncio.to_thread(self._containers[name].verify_engine)
+                    else:
+                        self._command(name)
                     if name not in self._endpoints:
-                        msg = "Native endpoint has not been reserved or is occupied."
-                        raise RuntimePreconditionError(msg)
+                        message = "Native endpoint has not been reserved or is occupied."
+                        raise RuntimePreconditionError(message)
                 with db:
                     db.execute(
                         "INSERT INTO transition VALUES (?, ?, 0)", (intent.transition_id, intent.model_dump_json())
                     )
-                for name in intent.evict_animators:
-                    await self._stop(db, name)
-                for name in intent.launch_animators:
-                    args, _ = commands[name]
-                    with socket.socket() as probe:
-                        probe.bind(("127.0.0.1", 0))
-                        port = int(probe.getsockname()[1])
-                    args[args.index("--port") + 1] = str(port)
-                    scratch = TemporaryDirectory(prefix="engine-", dir=self._journal.parent)
-                    try:
-                        child = self._launch(args, Path(scratch.name))
-                    except BaseException:
-                        scratch.cleanup()
-                        raise
-                    self._scratch[name] = scratch
-                    self._children[name] = child
-                    with db:
-                        db.execute("INSERT INTO child VALUES (?, ?)", (name, child.pid))
-                    try:
-                        await self._await_listener(child, port)
-                    except BaseException as exc:
-                        try:
-                            await self._stop(db, name)
-                        except (OSError, RuntimeError, sqlite3.Error, subprocess.SubprocessError) as cleanup_error:
-                            exc.add_note(f"Native child cleanup failed for {name!r}: {cleanup_error!r}")
-                        raise
-                    self._upstreams[name] = port
+                if self._containers:
+                    await self._mixed_transition(db, intent, prior)
+                else:
+                    await self._switch(db, intent)
                 with db:
                     db.execute("UPDATE transition SET done=1 WHERE id=?", (intent.transition_id,))
+
+    def _require_owner(self) -> None:
+        if self._owner.closed:
+            message = "Native runtime owner has been closed."
+            raise RuntimePreconditionError(message)
+
+    async def recover(self, intent: TransitionIntent) -> None:
+        """Revalidate the recorded result or retry only before a local effect claim exists."""
+        await self.apply(intent)
+
+    async def _switch(self, db: sqlite3.Connection, intent: TransitionIntent) -> None:
+        for name in intent.evict_animators:
+            await self._stop(db, name)
+        if self._containers and await self._active(db) != set(intent.expected_active_animators) - set(
+            intent.evict_animators
+        ):
+            raise UnsettledContainerError(_UNSETTLED)
+        for name in intent.launch_animators:
+            await self._start(db, name)
+        desired = (set(intent.expected_active_animators) - set(intent.evict_animators)) | set(intent.launch_animators)
+        if await self._active(db) != desired:
+            raise RuntimeError(_UNSETTLED)
+
+    async def _mixed_transition(self, db: sqlite3.Connection, intent: TransitionIntent, prior: set[str]) -> None:
+        task = asyncio.create_task(self._switch(db, intent))
+        try:
+            await asyncio.shield(task)
+        except asyncio.CancelledError as exc:
+            # Never restore while an engine command can still change the world.
+            try:
+                await complete_under_cancellation(task)
+            except UnsettledContainerError:
+                raise
+            except Exception as operation_error:  # noqa: BLE001 - reobserve before restoration
+                exc.add_note(f"Switch before cancellation failed: {operation_error!r}")
+            await complete_under_cancellation(self._restore(db, intent, prior))
+            message = "Mixed switch cancelled and prior world restored."
+            raise RuntimeCancellationRestoredError(message) from exc
+        except UnsettledContainerError:
+            raise
+        except Exception as exc:
+            await complete_under_cancellation(self._restore(db, intent, prior))
+            message = "Mixed switch failed and prior world was restored."
+            raise RuntimeActuationRestoredError(message) from exc
+
+    async def _restore(self, db: sqlite3.Connection, intent: TransitionIntent, prior: set[str]) -> None:
+        try:
+            current = await self._active(db)
+            if (current ^ prior) - {*intent.evict_animators, *intent.launch_animators}:
+                raise RuntimeError(_UNSETTLED)
+            for name in sorted(current - prior):
+                await self._stop(db, name)
+            for name in sorted(prior - current):
+                await self._start(db, name)
+            if await self._active(db) != prior:
+                raise RuntimeError(_UNSETTLED)
+        except RuntimePreconditionError as exc:
+            # After an effect, a failed restoration prerequisite can never become a no-effect decline.
+            raise RuntimeError(_UNSETTLED) from exc
+        with db:
+            db.execute("UPDATE transition SET done=2 WHERE id=?", (intent.transition_id,))
+
+    async def _start(self, db: sqlite3.Connection, name: str) -> None:
+        if container := self._containers.get(name):
+            incarnation = await asyncio.to_thread(container.change, "start")
+            if incarnation is None:
+                raise UnsettledContainerError(_UNSETTLED)
+            self._incarnations[name] = incarnation
+            with db:
+                db.execute("INSERT INTO container VALUES (?, ?)", (name, incarnation))
+            return
+        args, _ = self._command(name)
+        with socket.socket() as probe:
+            probe.bind(("127.0.0.1", 0))
+            port = int(probe.getsockname()[1])
+        args[args.index("--port") + 1] = str(port)
+        scratch = TemporaryDirectory(prefix="engine-", dir=self._journal.parent)
+        try:
+            child = self._launch(args, Path(scratch.name))
+        except BaseException:
+            scratch.cleanup()
+            raise
+        self._scratch[name] = scratch
+        self._children[name] = child
+        with db:
+            db.execute("INSERT INTO child VALUES (?, ?)", (name, child.pid))
+        try:
+            await self._await_listener(child, port)
+        except BaseException as exc:
+            try:
+                await self._stop(db, name)
+            except (OSError, RuntimeError, sqlite3.Error, subprocess.SubprocessError) as cleanup_error:
+                exc.add_note(f"Native child cleanup failed for {name!r}: {cleanup_error!r}")
+            raise
+        self._upstreams[name] = port
 
     @staticmethod
     def _launch(args: list[str], scratch: Path) -> subprocess.Popen[bytes]:
@@ -294,14 +406,31 @@ class NativeRuntimeActuator:
         """Acknowledge a completed intent only while its owned process outcome still holds."""
         if db.execute("SELECT 1 FROM transition WHERE done=0").fetchone():
             raise RuntimeError(_UNSETTLED)
-        row = db.execute("SELECT intent FROM transition WHERE id=?", (intent.transition_id,)).fetchone()
+        row = db.execute("SELECT intent, done FROM transition WHERE id=?", (intent.transition_id,)).fetchone()
         if row is None:
             return False
         if row[0] != intent.model_dump_json():
             msg = "Native transition ID was reused with a different intent."
             raise RuntimePreconditionError(msg)
-        live = self._owned_processes(db)
-        for name, pid in live.items():
+        live = await self._active(db)
+        if row[1] == _RESTORED:
+            if live != set(
+                intent.expected_active_animators
+            ) or intent.config_generation != capability_config_generation(self._registry):
+                message = "Restored transition no longer matches the prior world."
+                raise RuntimePreconditionError(message)
+            message = "The recorded mixed transition restored its prior world."
+            raise RuntimeActuationRestoredError(message)
+        desired = (set(intent.expected_active_animators) - set(intent.evict_animators)) | set(intent.launch_animators)
+        if desired != live or intent.config_generation != capability_config_generation(self._registry):
+            msg = "Completed native transition no longer matches the current configuration or active processes."
+            raise RuntimePreconditionError(msg)
+        return True
+
+    async def _active(self, db: sqlite3.Connection) -> set[str]:
+        """Observe every bound owner and match running incarnations to the private journal."""
+        children = self._owned_processes(db)
+        for name, pid in children.items():
             port = self._upstreams.get(name)
             if (
                 port is None
@@ -309,11 +438,13 @@ class NativeRuntimeActuator:
                 or self._children[name].poll() is not None
             ):
                 raise RuntimeError(_UNSETTLED)
-        desired = (set(intent.expected_active_animators) - set(intent.evict_animators)) | set(intent.launch_animators)
-        if desired != live.keys() or intent.config_generation != capability_config_generation(self._registry):
-            msg = "Completed native transition no longer matches the current configuration or active processes."
-            raise RuntimePreconditionError(msg)
-        return True
+        if dict(db.execute("SELECT name, incarnation FROM container")) != self._incarnations:
+            raise RuntimeError(_UNSETTLED)
+        for name, container in self._containers.items():
+            observed = await asyncio.to_thread(container.observe)
+            if observed != self._incarnations.get(name):
+                raise UnsettledContainerError(_UNSETTLED)
+        return set(children) | set(self._incarnations)
 
     def _owned_processes(self, db: sqlite3.Connection) -> dict[str, int]:
         recorded = dict(db.execute("SELECT name, pid FROM child"))
@@ -322,7 +453,7 @@ class NativeRuntimeActuator:
             raise RuntimeError(_UNSETTLED)
         return live
 
-    def _validate(self, db: sqlite3.Connection, intent: TransitionIntent) -> None:
+    def _validate(self, db: sqlite3.Connection, intent: TransitionIntent, live: set[str]) -> None:
         spec = self._registry.get_capability(intent.target_capability_key)
         if (
             spec is None
@@ -331,7 +462,6 @@ class NativeRuntimeActuator:
         ):
             msg = "Native transition target or configuration generation is stale."
             raise RuntimePreconditionError(msg)
-        live = self._owned_processes(db)
         prior = set(intent.expected_active_animators)
         if set(live) != prior:
             msg = "Native transition expected a different set of owned processes."
@@ -356,6 +486,14 @@ class NativeRuntimeActuator:
             raise RuntimePreconditionError(msg)
 
     async def _stop(self, db: sqlite3.Connection, name: str) -> None:
+        if container := self._containers.get(name):
+            if not (owned := self._incarnations.get(name)) or await asyncio.to_thread(container.observe) != owned:
+                raise UnsettledContainerError(_UNSETTLED)
+            await asyncio.to_thread(container.change, "stop", expected=owned)
+            del self._incarnations[name]
+            with db:
+                db.execute("DELETE FROM container WHERE name=? AND incarnation=?", (name, owned))
+            return
         child = self._children[name]
         row = db.execute("SELECT pid FROM child WHERE name=?", (name,)).fetchone()
         if row != (child.pid,):
@@ -376,25 +514,34 @@ class NativeRuntimeActuator:
     async def aclose(self) -> None:
         """Stop only children of this instance before releasing its installation lock."""
         async with self._lock:
-            with closing(sqlite3.connect(self._journal)) as db:
-                for endpoint in self._endpoints.values():
-                    endpoint.close()
-                connections = tuple(self._connections)
-                for connection in connections:
-                    connection.cancel()
-                await asyncio.gather(*connections, return_exceptions=True)
-                for endpoint in self._endpoints.values():
-                    await endpoint.wait_closed()
-                self._endpoints.clear()
-                for name in tuple(self._children):
-                    await self._stop(db, name)
+            if self._owner.closed:
+                return
+            try:
+                await complete_under_cancellation(self._close_owned_services())
+            finally:
+                self._owner.close()
+
+    async def _close_owned_services(self) -> None:
+        with closing(sqlite3.connect(self._journal)) as db:
+            for endpoint in self._endpoints.values():
+                endpoint.close()
+            connections = tuple(self._connections)
+            for connection in connections:
+                connection.cancel()
+            await asyncio.gather(*connections, return_exceptions=True)
+            for endpoint in self._endpoints.values():
+                await endpoint.wait_closed()
+            self._endpoints.clear()
+            for name in (*self._children, *self._incarnations):
+                await self._stop(db, name)
 
 
 async def _pipe(source: asyncio.StreamReader, target: asyncio.StreamWriter) -> None:
     while data := await source.read(65536):
         target.write(data)
         await target.drain()
-    target.write_eof()
+    if target.can_write_eof():
+        target.write_eof()
 
 
 def _owns_listener(pid: int, port: int) -> bool:

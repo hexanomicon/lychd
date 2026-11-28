@@ -182,8 +182,14 @@ def check_password_rotation(cli: list[str]) -> None:
 
 def require_fresh_native_installation(cli: list[str]) -> None:
     profile = json.loads(subprocess.check_output([*cli, "platform"], text=True))
-    if profile["vessel_mode"] != "native" or any(Path(profile[key]).exists() for key in ("data", "config")):
-        msg = "Select the native Vessel in a disposable account with fresh data and configuration roots."
+    if profile["vessel_mode"] != "native":
+        msg = "Select the native Vessel before running the desktop qualification."
+        raise SystemExit(msg)
+    if any(Path(profile[key]).exists() for key in ("data", "config")):
+        msg = (
+            "This qualification needs unused desktop data and config paths. "
+            "To check your existing installation, use lychd desktop session and open Bridge with lychd access."
+        )
         raise SystemExit(msg)
 
 

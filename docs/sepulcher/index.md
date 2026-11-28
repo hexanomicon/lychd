@@ -33,6 +33,7 @@ Then open the body:
 | [Codex](codex.md) | Settings, Runes, configuration precedence, and the binding rite: `lychd bind`. |
 | [Crypt](crypt.md) | Where persistent files belong and which external workspaces may be mounted. |
 | [Vessel](vessel/index.md) | What starts, serves, and stops inside one application process. |
+| [Host Reactor](reactor.md) | Who switches local Animators and when Vessel needs a separate host service. |
 | [Ghouls](vessel/ghouls.md) | How admitted work reaches a worker and settles. |
 | [Intercom](intercom.md) | Submit a bounded public task to an enrolled sovereign peer. |
 | [Phylactery](phylactery/index.md) | Committed state that can survive the process. |
@@ -43,8 +44,7 @@ Then open the body:
 ### II. The Animating Spark
 
 An [Animator](extensions/animators/index.md) is a capability service you can address and call. A local
-[Soulstone](extensions/animators/soulstone/index.md) lives on your iron, with its Rune, container, devices,
-mounts, secrets, and lifecycle. A [Portal](extensions/animators/portal.md) declares a remote API boundary;
+[Soulstone](extensions/animators/soulstone/index.md) lives on your iron. Its Rune declares capabilities and selects a native process or container. A [Portal](extensions/animators/portal.md) declares a remote API boundary;
 the provider controls that service's lifecycle.
 
 [Capabilities](extensions/animators/capabilities.md) tells you what you can ask for and receive.

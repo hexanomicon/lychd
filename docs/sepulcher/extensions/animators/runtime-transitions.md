@@ -27,7 +27,7 @@ The [Orchestrator](../../../adr/23-orchestrator.md) owns every application-reque
 1. refresh the target and compute its exact affected conflict neighborhood;
 2. close lease admission and the Run claim gate;
 3. drain affected leases;
-4. revalidate configuration and the loaded Scribe-owned unit graph;
+4. revalidate configuration and the live host bindings, including the loaded unit graph on managed Linux;
 5. request one physical transaction or supported runtime-native activation;
 6. require honest `WARM`, then reopen only under the restoration law.
 
@@ -140,7 +140,8 @@ Set these fields beneath `[orchestration.switching]` in the Codex.
 
 | Field | Default | Meaning |
 | :--- | :--- | :--- |
-| `actuator` | `"host-reactor"` | Managed-container mediated actuation; `"systemd"` is a host-adapter test mechanism, not a host-native Core profile. |
+| `actuator` | `"host-reactor"` | A caged Vessel uses the host inbox. Personal hosts select `"native-process"` for native children and bound containers. `"systemd"` is a direct host test adapter. |
+| `containers` | `[]` | Operator bindings for fixed-model [desktop containers](../../../deployments/desktop.md#animator-ownership). |
 | `host_reactor_dir` | XDG trigger inbox | Absolute writable intent inbox; sibling journal is derived read-only. |
 | `policy` | `"declared-conflicts"` | Select exact active conflict neighbors; `"evict-idle"` is a compatibility alias. |
 | `min_priority_for_hard_swap` | `40` | Decline colder hard swaps. |

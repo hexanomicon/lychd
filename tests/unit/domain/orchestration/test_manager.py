@@ -102,6 +102,8 @@ class StubRuntime:
 
 
 class StubRegistry:
+    lifecycle_binding_digest: str | None = None
+
     def __init__(
         self,
         specs: list[CapabilitySpec],

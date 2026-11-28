@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 import errno
 import os
 import stat
@@ -159,12 +160,19 @@ def private_directory(directory: Path) -> None:
     )
 
 
-def _verify_windows_acl(path: Path) -> None:
+def _verify_windows_acl(path: Path, *, security_descriptor: bytes | None = None) -> None:
     powershell = Path(os.environ["SYSTEMROOT"]) / "System32/WindowsPowerShell/v1.0/powershell.exe"
+    read_acl = (
+        "$a=if([IO.Directory]::Exists($p)){[IO.Directory]::GetAccessControl($p)}else{[IO.File]::GetAccessControl($p)};"
+        if security_descriptor is None
+        else "$a=[Security.AccessControl.FileSecurity]::new();"
+        "$a.SetSecurityDescriptorBinaryForm([Convert]::FromBase64String([Console]::In.ReadToEnd()),"
+        "[Security.AccessControl.AccessControlSections]'Owner,Access');"
+    )
     script = (
         "$ErrorActionPreference='Stop';$u=[Security.Principal.WindowsIdentity]::GetCurrent().User;"
         "$p=$env:LYCHD_PRIVATE_FILE;"
-        "$a=if([IO.Directory]::Exists($p)){[IO.Directory]::GetAccessControl($p)}else{[IO.File]::GetAccessControl($p)};"
+        f"{read_acl}"
         "if($a.GetOwner([Security.Principal.SecurityIdentifier]) -ne $u -or @($a.Access).Count -eq 0)"
         "{throw 'Unverified file owner or ACL'};"
         "foreach($r in $a.Access){$sid=$r.IdentityReference.Translate([Security.Principal.SecurityIdentifier]).Value;"
@@ -174,8 +182,87 @@ def _verify_windows_acl(path: Path) -> None:
     subprocess.run(  # noqa: S603 -- fixed script, path conveyed separately.
         [powershell, "-NoProfile", "-NonInteractive", "-Command", script],
         env={**os.environ, "LYCHD_PRIVATE_FILE": str(path)},
+        input=base64.b64encode(security_descriptor) if security_descriptor is not None else None,
         check=True,
     )
+
+
+def _windows_record_security_descriptor(fd: int) -> bytes:
+    """Check the opened object's type and retrieve its owner and DACL."""
+    if sys.platform != "win32":
+        msg = "Windows file handles are required"
+        raise OSError(msg)
+    import ctypes
+    import msvcrt
+    from ctypes import wintypes
+
+    info = os.fstat(fd)
+    if not stat.S_ISREG(info.st_mode) or info.st_file_attributes & stat.FILE_ATTRIBUTE_REPARSE_POINT:
+        msg = "Reactor record must be a regular file without a reparse point"
+        raise ValueError(msg)
+    advapi = ctypes.WinDLL("advapi32", use_last_error=True)
+    kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+    descriptor = ctypes.c_void_p()
+    get_security = advapi.GetSecurityInfo
+    get_security.argtypes = [wintypes.HANDLE, ctypes.c_int, wintypes.DWORD, *([ctypes.POINTER(ctypes.c_void_p)] * 5)]
+    get_security.restype = wintypes.DWORD
+    # SE_FILE_OBJECT, OWNER_SECURITY_INFORMATION | DACL_SECURITY_INFORMATION
+    error = get_security(msvcrt.get_osfhandle(fd), 1, 5, None, None, None, None, ctypes.byref(descriptor))
+    if error:
+        raise ctypes.WinError(error)
+    length = advapi.GetSecurityDescriptorLength
+    length.argtypes = [ctypes.c_void_p]
+    length.restype = wintypes.DWORD
+    free = kernel.LocalFree
+    free.argtypes = [ctypes.c_void_p]
+    free.restype = ctypes.c_void_p
+    try:
+        return ctypes.string_at(descriptor, length(descriptor))
+    finally:
+        free(descriptor)
+
+
+def open_windows_reactor_record(path: Path) -> int:
+    """Return a non-inheritable read descriptor for a private record in the verified journal."""
+    if sys.platform != "win32":
+        msg = "Windows file handles are required"
+        raise OSError(msg)
+    import ctypes
+    import msvcrt
+    from ctypes import wintypes
+
+    kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+    create = kernel.CreateFileW
+    create.argtypes = [
+        wintypes.LPCWSTR,
+        wintypes.DWORD,
+        wintypes.DWORD,
+        ctypes.c_void_p,
+        wintypes.DWORD,
+        wintypes.DWORD,
+        wintypes.HANDLE,
+    ]
+    create.restype = wintypes.HANDLE
+    # GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_DELETE, OPEN_EXISTING, FILE_FLAG_OPEN_REPARSE_POINT.
+    # The producer may retire its temporary hard link while the host reads the pinned object.
+    handle = create(str(path), 0x80000000, 5, None, 3, 0x00200000, None)
+    if handle == ctypes.c_void_p(-1).value:
+        raise ctypes.WinError(ctypes.get_last_error())
+    try:
+        descriptor = msvcrt.open_osfhandle(handle, os.O_RDONLY | os.O_NOINHERIT)
+    except BaseException:
+        close = kernel.CloseHandle
+        close.argtypes = [wintypes.HANDLE]
+        close.restype = wintypes.BOOL
+        close(handle)
+        raise
+    try:
+        msvcrt.setmode(descriptor, os.O_BINARY)
+        _verify_windows_acl(path, security_descriptor=_windows_record_security_descriptor(descriptor))
+    except BaseException:
+        os.close(descriptor)
+        raise
+    return descriptor
 
 
 def _verify_macos_directory_acl(directory: Path) -> None:
@@ -244,7 +331,7 @@ def private_file(path: Path) -> None:
         path.chmod(0o600)
 
 
-def _commit_file(source: Path, target: Path, *, replace: bool) -> None:
+def commit_file(source: Path, target: Path, *, replace: bool) -> None:
     """Request durable publication of a complete file on the same local filesystem."""
     if os.name == "nt":
         import ctypes
@@ -279,7 +366,7 @@ def publish_file(path: Path, content: bytes, *, replace: bool = False) -> None:
                 verify_private_file(path)
             elif path.exists():
                 raise FileExistsError(path)
-            _commit_file(temporary, path, replace=replace)
+            commit_file(temporary, path, replace=replace)
         finally:
             stream.close()
             temporary.unlink(missing_ok=True)
