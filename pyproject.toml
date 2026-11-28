@@ -120,7 +120,7 @@ music-probe = [
     "numpy>=2.0,<3",
 ]
 desktop-browser = [
-    "playwright==1.58.0",
+    "playwright==1.65.2",
 ]
 
 [project.scripts]
