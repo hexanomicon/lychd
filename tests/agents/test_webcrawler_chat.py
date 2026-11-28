@@ -49,7 +49,15 @@ from lychd.domain.webcrawler.profile import (
 )
 from tests.agents.conftest import make_services
 from tests.agents.fakes import FakeConsents, FakeDispatcher, FakeEvents, FakeOrchestrator, FakeTurns
-from tests.webcrawler_fixtures import CAPABILITY, PROMPT, QUESTION, SOURCE_TEXT, webcrawler_binding, webcrawler_material, webcrawler_review
+from tests.webcrawler_fixtures import (
+    CAPABILITY,
+    PROMPT,
+    QUESTION,
+    SOURCE_TEXT,
+    webcrawler_binding,
+    webcrawler_material,
+    webcrawler_review,
+)
 
 
 class _Model(FunctionModel):
@@ -145,7 +153,9 @@ class _Webcrawler:
         self.settlements += 1
 
 
-def _context() -> tuple[GraphRunContext[WebcrawlerChatState, WorkflowServices], _Webcrawler, _Dispatcher, _Model, FakeTurns]:
+def _context() -> tuple[
+    GraphRunContext[WebcrawlerChatState, WorkflowServices], _Webcrawler, _Dispatcher, _Model, FakeTurns
+]:
     model, webcrawler, turns = _Model(), _Webcrawler(), FakeTurns()
     dispatcher = _Dispatcher(model=model, key=CAPABILITY)
     services = make_services(
