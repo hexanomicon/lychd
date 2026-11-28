@@ -1325,6 +1325,7 @@
           <ConsentCard
             {consent}
             sessionId={selected.id}
+            showRunReference
             decisions={work.consentDecisions}
             onauthority={beginConsentDecision}
             ondecided={consentDecided}
