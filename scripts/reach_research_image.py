@@ -1,4 +1,4 @@
-"""Build one explicit Scout image from pinned Core and a dedicated public Python tree."""
+"""Build one explicit Webcrawler image from pinned Core and a dedicated public Python tree."""
 
 from __future__ import annotations
 

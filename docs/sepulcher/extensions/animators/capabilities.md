@@ -49,7 +49,7 @@ implementation that can fulfill it and the act you are requesting now:
 
 | Record | Question it answers | Example |
 | --- | --- | --- |
-| `CapabilityInterfaceRef` | Which versioned request-and-return contract is requested? | `model.chat@1`, `echo.transcribe@1`, `prism.image@2`, `prism.scanner@1`, `scout.search@1` |
+| `CapabilityInterfaceRef` | Which versioned request-and-return contract is requested? | `model.chat@1`, `echo.transcribe@1`, `prism.image@2`, `prism.scanner@1`, `webcrawler.search@1` |
 | `CapabilityProfileRef` | Which exact implementation closure can perform it? | one model and weights, Comfy graph, native parser, engine toolchain, language set, limits, and licenses at an immutable revision/digest |
 | **operation** | Which admitted act within that interface is requested now? | `generate`, `edit`, `transcribe`, `segment`, `retarget`, `search`, `validate` |
 

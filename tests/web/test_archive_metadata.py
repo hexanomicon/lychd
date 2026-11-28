@@ -20,7 +20,7 @@ from lychd.agents.workflows import (
     BRIDGE_CHAT,
     BRIDGE_CHAT_ARCHIVE,
     BRIDGE_CHAT_BOUND,
-    BRIDGE_CHAT_SCOUT,
+    BRIDGE_CHAT_WEBCRAWLER,
     BuiltinWorkflowRegistry,
     Workflow,
 )
@@ -192,7 +192,7 @@ async def test_recall_purpose_never_supplies_metadata_storage_authority(operatio
 def admission_engine(*, revision: str = "3", binding: object = PROFILE) -> SimpleNamespace:
     return SimpleNamespace(
         workflows=BuiltinWorkflowRegistry(
-            workflows=(BRIDGE_CHAT, BRIDGE_CHAT_BOUND, BRIDGE_CHAT_ARCHIVE, BRIDGE_CHAT_SCOUT),
+            workflows=(BRIDGE_CHAT, BRIDGE_CHAT_BOUND, BRIDGE_CHAT_ARCHIVE, BRIDGE_CHAT_WEBCRAWLER),
             active_revisions=(("bridge_chat", revision),),
             default_name="bridge_chat",
         ),

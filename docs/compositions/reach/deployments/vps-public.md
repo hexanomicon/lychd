@@ -71,7 +71,7 @@ Firewall policy denies metadata/private-network egress except exact local servic
 
 ## Public corpus contract
 
-Reach judges source eligibility, interpretation, selection, and citations. Acquisition follows [Webcrawler](../../../adr/30-webcrawler.md#destination-and-data-boundary); a checkout or static site alone is no retrieval system.
+Reach judges source eligibility, interpretation, selection, and citations. Acquisition follows [Webcrawling](../../../adr/30-webcrawling.md#destination-and-data-boundary); a checkout or static site alone is no retrieval system.
 
 Start acquisition from canonical HTTPS Git/static sources only. Refuse git/SSH/SCP/local/file origins, credential helpers, and ambient credentials. Bind the source to pinned paths, an operator-admitted commit or verified immutable release provenance, digests, builder/parser/index revisions, and file/byte/expansion/depth/work ceilings. A moving branch may reveal a candidate but cannot activate it.
 

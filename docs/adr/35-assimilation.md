@@ -48,7 +48,7 @@ is inconclusive. The assignment defines the reading scope. The receiving owner d
 the finding warrants construction and where it belongs among existing priorities.
 The [exploration procedure](../sepulcher/aspects/weaver/assimilation.md#find-reference-implementations)
 applies this distinction to [Reach correspondence](../compositions/reach/index.md#reference-questions)
-and [Scout web acquisition](../sepulcher/aspects/scout.md#reference-questions).
+and [Webcrawler web acquisition](../sepulcher/aspects/webcrawler.md#reference-questions).
 
 ### Paperclip Maximizer
 

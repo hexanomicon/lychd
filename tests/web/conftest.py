@@ -130,7 +130,7 @@ class FakeRunEngine(RunEngine):
         retain_before_publish: Any = None,
         idempotency_key: str | None = None,
         exclusive_session: bool = False,
-        scout_declaration: Any = None,
+        webcrawler_declaration: Any = None,
         feed_declaration: Any = None,
         peer_declaration: Any = None,
     ) -> RunHandle:
@@ -141,7 +141,7 @@ class FakeRunEngine(RunEngine):
         """
         import uuid
 
-        assert scout_declaration is None
+        assert webcrawler_declaration is None
         assert feed_declaration is None
         assert peer_declaration is None
 

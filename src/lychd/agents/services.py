@@ -30,9 +30,9 @@ if TYPE_CHECKING:
     from lychd.domain.delegation.ports import DelegatedAgentCoordinatorPort
     from lychd.domain.intercom.native import PeerWorkflowPort
     from lychd.domain.orchestration.schema import TransitionPlan
-    from lychd.domain.scout.feed import ScoutFeedWorkflowPort
-    from lychd.domain.scout.profile import ScoutWorkflowPort
     from lychd.domain.web.fragments import FragmentRegistry
+    from lychd.domain.webcrawler.feed import WebcrawlerFeedWorkflowPort
+    from lychd.domain.webcrawler.profile import WebcrawlerWorkflowPort
 
 
 class TurnLedgerPort(Protocol):
@@ -114,8 +114,8 @@ class WorkflowServices:
     archive: ArchiveService | None = None
     archive_semantic: ArchiveSemanticService | None = None
     archive_subject_provider: Callable[[], ArchiveSubject] | None = None
-    scout: ScoutWorkflowPort | None = None
-    feed_scout: ScoutFeedWorkflowPort | None = None
+    webcrawler: WebcrawlerWorkflowPort | None = None
+    feed_webcrawler: WebcrawlerFeedWorkflowPort | None = None
     scavenger: ScavengerWorkflowPort | None = None
     peer: PeerWorkflowPort | None = None
 

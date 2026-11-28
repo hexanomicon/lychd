@@ -522,9 +522,9 @@ async def _recover_durable_state(
     boot_cutoff: datetime,
 ) -> None:
     """Reconcile every durable authority before workers or HTTP can observe it."""
-    scout = getattr(services, "scout", None)
-    if scout is not None:
-        await scout.reconcile_before(boot_cutoff)
+    webcrawler = getattr(services, "webcrawler", None)
+    if webcrawler is not None:
+        await webcrawler.reconcile_before(boot_cutoff)
     await _sync_preauths_at_startup(runes=runes, settings=settings)
     required = settings.server.database.profile == "postgres"
     await _reconcile_cancellations_at_startup(

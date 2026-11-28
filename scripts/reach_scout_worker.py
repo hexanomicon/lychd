@@ -1,7 +1,7 @@
 """One OCI-only operator catalogue read with durable, non-replayable admission.
 
 This worker owns a separate standing public-catalogue profile. It does not mint
-native Bridge authentication, consent, Runs or Scout store claims. Network and
+native Bridge authentication, consent, Runs or Webcrawler store claims. Network and
 extraction mechanisms are reused under its own synchronous gate and journal.
 """
 
@@ -693,7 +693,7 @@ def main(argv: list[str] | None = None) -> int:
         return 130
     except Exception:  # noqa: BLE001 - rejected locators, bodies and errors stay private
         print("[]")  # noqa: T201 - one closed protocol failure frame
-        print("reach_scout_worker_refused", file=sys.stderr)  # noqa: T201 - fixed local diagnostic
+        print("reach_webcrawler_worker_refused", file=sys.stderr)  # noqa: T201 - fixed local diagnostic
         return 1
     finally:
         logging.disable(previous_level)

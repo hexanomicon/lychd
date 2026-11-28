@@ -40,12 +40,12 @@ from lychd.domain.cortex.priority import saq_wire_priority, validate_priority
 from lychd.domain.cortex.runs import TERMINAL_STATUSES, RunDeliveryState, RunHandle, RunStatus
 from lychd.domain.cortex.semantic_answer import SemanticAnswerBinding
 from lychd.domain.naming import NamingSnapshot
-from lychd.domain.scout.feed import ScoutFeedBinding, ScoutFeedDeclarationProof
-from lychd.domain.scout.profile import (
-    ScoutBinding,
-    ScoutDeclarationProof,
-    ScoutWorkflowCode,
-    ScoutWorkflowError,
+from lychd.domain.webcrawler.feed import WebcrawlerFeedBinding, WebcrawlerFeedDeclarationProof
+from lychd.domain.webcrawler.profile import (
+    WebcrawlerBinding,
+    WebcrawlerDeclarationProof,
+    WebcrawlerWorkflowCode,
+    WebcrawlerWorkflowError,
     parse_page_question,
 )
 from lychd.lib.asyncio import complete_under_cancellation
@@ -62,8 +62,8 @@ if TYPE_CHECKING:
     from lychd.domain.delegation.ports import DelegatedAgentCoordinatorPort
     from lychd.domain.delegation.routing import DelegatedRuntimeBinding
     from lychd.domain.intercom.native import PeerAdmission, PeerDeclarationProof, PeerRunBinding, PeerWorkflowPort
-    from lychd.domain.scout.feed import ScoutFeedAdmission, ScoutFeedProfile
-    from lychd.domain.scout.profile import ScoutAdmission, ScoutProfile
+    from lychd.domain.webcrawler.feed import WebcrawlerFeedAdmission, WebcrawlerFeedProfile
+    from lychd.domain.webcrawler.profile import WebcrawlerAdmission, WebcrawlerProfile
 
 __all__ = [
     "QueueRouter",
@@ -458,24 +458,24 @@ class RunEngine:
         "bridge_capability_key",
         "bridge_preference",
         "bridge_preference_selector",
-        "bridge_scout",
         "bridge_semantic",
+        "bridge_webcrawler",
         "bus",
         "cancellations",
         "consents",
         "delegates",
         "delegation_binding",
         "effects",
-        "feed_scout",
-        "feed_scout_admission",
+        "feed_webcrawler",
+        "feed_webcrawler_admission",
         "ledger",
         "naming_lookup",
         "peer",
         "peer_admission",
         "queue_router",
         "queues",
-        "scout_admission",
         "stasis_store",
+        "webcrawler_admission",
         "workflows",
     )
 
@@ -500,17 +500,17 @@ class RunEngine:
         bridge_preference_selector: Callable[[BridgePreference], Awaitable[BridgePreferenceDecision]] | None = None,
         bridge_archive: ArchiveProfile | None = None,
         bridge_semantic: SemanticAnswerBinding | None = None,
-        bridge_scout: ScoutProfile | None = None,
-        scout_admission: ScoutAdmission | None = None,
-        feed_scout: ScoutFeedProfile | None = None,
-        feed_scout_admission: ScoutFeedAdmission | None = None,
+        bridge_webcrawler: WebcrawlerProfile | None = None,
+        webcrawler_admission: WebcrawlerAdmission | None = None,
+        feed_webcrawler: WebcrawlerFeedProfile | None = None,
+        feed_webcrawler_admission: WebcrawlerFeedAdmission | None = None,
         peer: PeerWorkflowPort | None = None,
         peer_admission: PeerAdmission | None = None,
         delegation_binding: DelegatedRuntimeBinding | None = None,
     ) -> None:
         """Bind the already-constructed run collaborators."""
-        if bridge_scout is not None and feed_scout is not None:
-            raise ScoutWorkflowError(ScoutWorkflowCode.BINDING)
+        if bridge_webcrawler is not None and feed_webcrawler is not None:
+            raise WebcrawlerWorkflowError(WebcrawlerWorkflowCode.BINDING)
         self.ledger = ledger
         self.bus = bus
         self.workflows = workflows
@@ -528,9 +528,9 @@ class RunEngine:
             if bridge_semantic is not None
             else None
         )
-        self.bridge_scout = bridge_scout
-        self.scout_admission = scout_admission
-        self.feed_scout, self.feed_scout_admission = feed_scout, feed_scout_admission
+        self.bridge_webcrawler = bridge_webcrawler
+        self.webcrawler_admission = webcrawler_admission
+        self.feed_webcrawler, self.feed_webcrawler_admission = feed_webcrawler, feed_webcrawler_admission
         self.peer = peer
         self.peer_admission = peer_admission
         self.delegation_binding = delegation_binding
@@ -556,8 +556,8 @@ class RunEngine:
         retain_before_publish: Callable[[str], Awaitable[None]] | None = None,
         idempotency_key: str | None = None,
         exclusive_session: bool = False,
-        scout_declaration: ScoutDeclarationProof | None = None,
-        feed_declaration: ScoutFeedDeclarationProof | None = None,
+        webcrawler_declaration: WebcrawlerDeclarationProof | None = None,
+        feed_declaration: WebcrawlerFeedDeclarationProof | None = None,
         peer_declaration: PeerDeclarationProof | None = None,
     ) -> RunHandle:
         """Admit work, optionally allowing only one nonterminal Run per session.
@@ -568,8 +568,8 @@ class RunEngine:
         the same session. Terminal ledger truth releases the fence naturally; no
         process-local active marker becomes recovery authority.
         """
-        if scout_declaration is not None and feed_declaration is not None:
-            raise ScoutWorkflowError(ScoutWorkflowCode.BINDING)
+        if webcrawler_declaration is not None and feed_declaration is not None:
+            raise WebcrawlerWorkflowError(WebcrawlerWorkflowCode.BINDING)
         if (
             intent.admitted_naming is not None
             or intent.admitted_capability_key is not None
@@ -577,10 +577,10 @@ class RunEngine:
             or intent.admitted_archive is not None
             or intent.admitted_semantic is not None
             or intent.admitted_delegation is not None
-            or intent.admitted_scout is not None
+            or intent.admitted_webcrawler is not None
             or intent.admitted_peer is not None
         ):
-            msg = "Naming, capability, Archive, semantic, Scout, peer and delegation bindings are server-owned admission metadata, not caller Intent."
+            msg = "Naming, capability, Archive, semantic, Webcrawler, peer and delegation bindings are server-owned admission metadata, not caller Intent."
             raise ValueError(msg)
         if exclusive_session:
             session_key = ("exclusive_session", intent.session_id)
@@ -594,7 +594,7 @@ class RunEngine:
                             intent,
                             retain_before_publish=retain_before_publish,
                             idempotency_key=idempotency_key,
-                            scout_declaration=scout_declaration,
+                            webcrawler_declaration=webcrawler_declaration,
                             feed_declaration=feed_declaration,
                             peer_declaration=peer_declaration,
                         )
@@ -608,7 +608,7 @@ class RunEngine:
                     intent,
                     retain_before_publish=retain_before_publish,
                     idempotency_key=idempotency_key,
-                    scout_declaration=scout_declaration,
+                    webcrawler_declaration=webcrawler_declaration,
                     feed_declaration=feed_declaration,
                     peer_declaration=peer_declaration,
                 )
@@ -618,7 +618,7 @@ class RunEngine:
             intent,
             retain_before_publish=retain_before_publish,
             idempotency_key=idempotency_key,
-            scout_declaration=scout_declaration,
+            webcrawler_declaration=webcrawler_declaration,
             feed_declaration=feed_declaration,
             peer_declaration=peer_declaration,
         )
@@ -629,8 +629,8 @@ class RunEngine:
         *,
         retain_before_publish: Callable[[str], Awaitable[None]] | None,
         idempotency_key: str | None,
-        scout_declaration: ScoutDeclarationProof | None,
-        feed_declaration: ScoutFeedDeclarationProof | None,
+        webcrawler_declaration: WebcrawlerDeclarationProof | None,
+        feed_declaration: WebcrawlerFeedDeclarationProof | None,
         peer_declaration: PeerDeclarationProof | None,
     ) -> RunHandle:
         """Single-flight one optional durable admission identity."""
@@ -639,7 +639,7 @@ class RunEngine:
                 intent,
                 retain_before_publish=retain_before_publish,
                 idempotency_key=None,
-                scout_declaration=scout_declaration,
+                webcrawler_declaration=webcrawler_declaration,
                 feed_declaration=feed_declaration,
                 peer_declaration=peer_declaration,
             )
@@ -651,7 +651,7 @@ class RunEngine:
                 intent,
                 retain_before_publish=retain_before_publish,
                 idempotency_key=idempotency_key,
-                scout_declaration=scout_declaration,
+                webcrawler_declaration=webcrawler_declaration,
                 feed_declaration=feed_declaration,
                 peer_declaration=peer_declaration,
             )
@@ -664,8 +664,8 @@ class RunEngine:
         *,
         retain_before_publish: Callable[[str], Awaitable[None]] | None,
         idempotency_key: str | None,
-        scout_declaration: ScoutDeclarationProof | None,
-        feed_declaration: ScoutFeedDeclarationProof | None,
+        webcrawler_declaration: WebcrawlerDeclarationProof | None,
+        feed_declaration: WebcrawlerFeedDeclarationProof | None,
         peer_declaration: PeerDeclarationProof | None,
     ) -> RunHandle:
         """Route once, persist QUEUED, retain admission context, then publish work.
@@ -686,12 +686,14 @@ class RunEngine:
         if idempotency_key is not None:
             existing = await self.ledger.get_idempotent(intent, idempotency_key=idempotency_key)
             if existing is not None:
-                self._validate_admission_replay(intent, existing, scout_declaration, feed_declaration, peer_declaration)
+                self._validate_admission_replay(
+                    intent, existing, webcrawler_declaration, feed_declaration, peer_declaration
+                )
                 validate = partial(
                     self._validate_admission_replay,
                     intent,
                     existing,
-                    scout_declaration,
+                    webcrawler_declaration,
                     feed_declaration,
                     peer_declaration,
                 )
@@ -702,15 +704,15 @@ class RunEngine:
 
         workflow = self.workflows.route(intent)
         if intent.source == "scavenger" and workflow.name != "scavenger.observe_market":
-            raise ScoutWorkflowError(ScoutWorkflowCode.ADMISSION)
+            raise WebcrawlerWorkflowError(WebcrawlerWorkflowCode.ADMISSION)
         if (
             workflow.manifest.key == "scavenger.observe_market"
             and workflow.manifest.revision == "2"
             and retain_before_publish is None
         ):
-            raise ScoutWorkflowError(ScoutWorkflowCode.ADMISSION)
+            raise WebcrawlerWorkflowError(WebcrawlerWorkflowCode.ADMISSION)
         intent = await self._bind_workflow_intent(
-            intent, workflow, scout_declaration, feed_declaration, peer_declaration
+            intent, workflow, webcrawler_declaration, feed_declaration, peer_declaration
         )
         intent, workflow = await self._bind_naming(intent, workflow)
         queue_name, priority = self.queue_router.resolve(intent)
@@ -726,7 +728,7 @@ class RunEngine:
                 queue_name=queue_name,
                 priority=priority,
                 hold_delivery=retain_before_publish is not None
-                or intent.admitted_scout is not None
+                or intent.admitted_webcrawler is not None
                 or intent.admitted_peer is not None,
             )
         )
@@ -737,7 +739,9 @@ class RunEngine:
             # canonical id, then refuse only a caller-context-gated admission.
             run, created = await complete_under_cancellation(create_task)
             if created and (
-                retain_before_publish is not None or run.admitted_scout is not None or run.admitted_peer is not None
+                retain_before_publish is not None
+                or run.admitted_webcrawler is not None
+                or run.admitted_peer is not None
             ):
                 await complete_under_cancellation(self._refuse_admission(run, exc))
             raise
@@ -746,7 +750,7 @@ class RunEngine:
             run,
             created=created,
             retain=retain_before_publish,
-            proof=scout_declaration,
+            proof=webcrawler_declaration,
             feed_proof=feed_declaration,
             peer_proof=peer_declaration,
         )
@@ -758,8 +762,8 @@ class RunEngine:
         *,
         created: bool,
         retain: Callable[[str], Awaitable[None]] | None,
-        proof: ScoutDeclarationProof | None,
-        feed_proof: ScoutFeedDeclarationProof | None,
+        proof: WebcrawlerDeclarationProof | None,
+        feed_proof: WebcrawlerFeedDeclarationProof | None,
         peer_proof: PeerDeclarationProof | None,
     ) -> RunHandle:
         """Recheck authenticated admission after commit and around turn retention."""
@@ -773,7 +777,7 @@ class RunEngine:
         if not created:
             if not await self._repair_replayed_admission(run, retain, validate=validate):
                 return await self._replayed_run_handle(run)
-        elif retain is not None or run.admitted_scout is not None or run.admitted_peer is not None:
+        elif retain is not None or run.admitted_webcrawler is not None or run.admitted_peer is not None:
             await self._retain_and_release_admission(run, retain, validate=validate)
         validate()
         return await self._publish_admission(run, validate=validate)
@@ -795,12 +799,12 @@ class RunEngine:
         self,
         intent: Intent,
         run: RunRecord,
-        scout: ScoutDeclarationProof | None,
-        feed: ScoutFeedDeclarationProof | None,
+        webcrawler: WebcrawlerDeclarationProof | None,
+        feed: WebcrawlerFeedDeclarationProof | None,
         peer: PeerDeclarationProof | None,
     ) -> None:
         """Recheck current source authority around every retained admission await."""
-        self._validate_scout_replay(intent, run, scout, feed)
+        self._validate_webcrawler_replay(intent, run, webcrawler, feed)
         if run.admitted_peer is None:
             if peer is not None:
                 msg = "Peer declaration cannot authorize another workflow."
@@ -810,69 +814,79 @@ class RunEngine:
             msg = "Native peer admission replay changed the immutable source or target."
             raise ValueError(msg)
 
-    def _bind_scout(self, intent: Intent, proof: ScoutDeclarationProof | None) -> ScoutBinding:
+    def _bind_webcrawler(self, intent: Intent, proof: WebcrawlerDeclarationProof | None) -> WebcrawlerBinding:
         """Validate live handler proof after waits and bind exact command operands."""
-        if type(proof) is not ScoutDeclarationProof or self.bridge_scout is None or self.scout_admission is None:
-            raise ScoutWorkflowError(ScoutWorkflowCode.ADMISSION)
-        if not self.bridge_capability_key or not self.bridge_capability_key.strip():
-            raise ScoutWorkflowError(ScoutWorkflowCode.BINDING)
-        command = parse_page_question(intent.prompt)
-        binding = self.scout_admission(intent, proof, self.bridge_scout)
         if (
-            type(binding) is not ScoutBinding
-            or binding.profile != self.bridge_scout
+            type(proof) is not WebcrawlerDeclarationProof
+            or self.bridge_webcrawler is None
+            or self.webcrawler_admission is None
+        ):
+            raise WebcrawlerWorkflowError(WebcrawlerWorkflowCode.ADMISSION)
+        if not self.bridge_capability_key or not self.bridge_capability_key.strip():
+            raise WebcrawlerWorkflowError(WebcrawlerWorkflowCode.BINDING)
+        command = parse_page_question(intent.prompt)
+        binding = self.webcrawler_admission(intent, proof, self.bridge_webcrawler)
+        if (
+            type(binding) is not WebcrawlerBinding
+            or binding.profile != self.bridge_webcrawler
             or (binding.declaration.url, binding.question, binding.request_id)
             != (command.url, command.question, proof.request_id)
         ):
-            raise ScoutWorkflowError(ScoutWorkflowCode.BINDING)
+            raise WebcrawlerWorkflowError(WebcrawlerWorkflowCode.BINDING)
         return binding
 
-    def _bind_feed_scout(self, intent: Intent, proof: ScoutFeedDeclarationProof | None) -> ScoutFeedBinding:
+    def _bind_feed_webcrawler(
+        self, intent: Intent, proof: WebcrawlerFeedDeclarationProof | None
+    ) -> WebcrawlerFeedBinding:
         """Bind the exact authenticated receiving request without any model demand."""
-        if type(proof) is not ScoutFeedDeclarationProof or self.feed_scout is None or self.feed_scout_admission is None:
-            raise ScoutWorkflowError(ScoutWorkflowCode.ADMISSION)
-        binding = self.feed_scout_admission(intent, proof, self.feed_scout)
         if (
-            type(binding) is not ScoutFeedBinding
-            or binding.profile != self.feed_scout
+            type(proof) is not WebcrawlerFeedDeclarationProof
+            or self.feed_webcrawler is None
+            or self.feed_webcrawler_admission is None
+        ):
+            raise WebcrawlerWorkflowError(WebcrawlerWorkflowCode.ADMISSION)
+        binding = self.feed_webcrawler_admission(intent, proof, self.feed_webcrawler)
+        if (
+            type(binding) is not WebcrawlerFeedBinding
+            or binding.profile != self.feed_webcrawler
             or binding.request_id != proof.request_id
             or binding.consumer != proof.consumer
             or binding.expires_at != proof.expires_at
             or binding.declaration != proof.declaration
         ):
-            raise ScoutWorkflowError(ScoutWorkflowCode.BINDING)
+            raise WebcrawlerWorkflowError(WebcrawlerWorkflowCode.BINDING)
         return binding
 
-    def _validate_scout_replay(
+    def _validate_webcrawler_replay(
         self,
         intent: Intent,
         run: RunRecord,
-        proof: ScoutDeclarationProof | None,
-        feed_proof: ScoutFeedDeclarationProof | None = None,
+        proof: WebcrawlerDeclarationProof | None,
+        feed_proof: WebcrawlerFeedDeclarationProof | None = None,
     ) -> None:
         """Fresh possession cannot refresh an existing declaration or effect expiry."""
-        if type(run.admitted_scout) is ScoutFeedBinding:
+        if type(run.admitted_webcrawler) is WebcrawlerFeedBinding:
             if proof is not None or run.admitted_capability_key is not None:
-                raise ScoutWorkflowError(ScoutWorkflowCode.BINDING)
-            binding = self._bind_feed_scout(intent, feed_proof)
+                raise WebcrawlerWorkflowError(WebcrawlerWorkflowCode.BINDING)
+            binding = self._bind_feed_webcrawler(intent, feed_proof)
             exclude: dict[str, Any] = {"declaration": {"declared_at"}, "expires_at": True}
-            if binding.model_dump(exclude=exclude) != run.admitted_scout.model_dump(exclude=exclude):
-                raise ScoutWorkflowError(ScoutWorkflowCode.BINDING)
+            if binding.model_dump(exclude=exclude) != run.admitted_webcrawler.model_dump(exclude=exclude):
+                raise WebcrawlerWorkflowError(WebcrawlerWorkflowCode.BINDING)
             return
         if feed_proof is not None:
-            raise ScoutWorkflowError(ScoutWorkflowCode.BINDING)
-        if run.admitted_scout is None:
+            raise WebcrawlerWorkflowError(WebcrawlerWorkflowCode.BINDING)
+        if run.admitted_webcrawler is None:
             if proof is not None:
-                raise ScoutWorkflowError(ScoutWorkflowCode.BINDING)
+                raise WebcrawlerWorkflowError(WebcrawlerWorkflowCode.BINDING)
             return
-        if type(run.admitted_scout) is not ScoutBinding:
-            raise ScoutWorkflowError(ScoutWorkflowCode.BINDING)
-        binding = self._bind_scout(intent, proof)
+        if type(run.admitted_webcrawler) is not WebcrawlerBinding:
+            raise WebcrawlerWorkflowError(WebcrawlerWorkflowCode.BINDING)
+        binding = self._bind_webcrawler(intent, proof)
         exclude = {"declaration": {"declared_at"}}
         if run.admitted_capability_key != self.bridge_capability_key or binding.model_dump(
             exclude=exclude
-        ) != run.admitted_scout.model_dump(exclude=exclude):
-            raise ScoutWorkflowError(ScoutWorkflowCode.BINDING)
+        ) != run.admitted_webcrawler.model_dump(exclude=exclude):
+            raise WebcrawlerWorkflowError(WebcrawlerWorkflowCode.BINDING)
 
     async def _bind_naming(self, intent: Intent, workflow: Workflow) -> tuple[Intent, Workflow]:
         """Pin current names once and select an execution that preserves their binding."""
@@ -890,39 +904,39 @@ class RunEngine:
         self,
         intent: Intent,
         workflow: Workflow,
-        scout_declaration: ScoutDeclarationProof | None = None,
-        feed_declaration: ScoutFeedDeclarationProof | None = None,
+        webcrawler_declaration: WebcrawlerDeclarationProof | None = None,
+        feed_declaration: WebcrawlerFeedDeclarationProof | None = None,
         peer_declaration: PeerDeclarationProof | None = None,
     ) -> Intent:
         """Stamp selected bindings only for a fresh explicitly configured admission."""
         if workflow.manifest.key == "native_public_peer" and workflow.manifest.revision == "1":
-            if scout_declaration is not None or feed_declaration is not None:
-                msg = "Scout declaration cannot authorize a peer station."
+            if webcrawler_declaration is not None or feed_declaration is not None:
+                msg = "Webcrawler declaration cannot authorize a peer station."
                 raise ValueError(msg)
             return intent.model_copy(update={"admitted_peer": self._bind_peer(intent, peer_declaration)})
         if peer_declaration is not None:
             msg = "Peer declaration cannot authorize another workflow."
             raise ValueError(msg)
         if workflow.manifest.key == "scavenger.observe_market" and workflow.manifest.revision == "2":
-            if scout_declaration is not None:
-                raise ScoutWorkflowError(ScoutWorkflowCode.BINDING)
+            if webcrawler_declaration is not None:
+                raise WebcrawlerWorkflowError(WebcrawlerWorkflowCode.BINDING)
             return intent.model_copy(
                 update={
                     "admitted_capability_key": None,
-                    "admitted_scout": self._bind_feed_scout(intent, feed_declaration),
+                    "admitted_webcrawler": self._bind_feed_webcrawler(intent, feed_declaration),
                 }
             )
         if feed_declaration is not None:
-            raise ScoutWorkflowError(ScoutWorkflowCode.BINDING)
+            raise WebcrawlerWorkflowError(WebcrawlerWorkflowCode.BINDING)
         if workflow.manifest.key == "bridge_chat" and workflow.manifest.revision == "4":
             return intent.model_copy(
                 update={
                     "admitted_capability_key": self.bridge_capability_key,
-                    "admitted_scout": self._bind_scout(intent, scout_declaration),
+                    "admitted_webcrawler": self._bind_webcrawler(intent, webcrawler_declaration),
                 }
             )
-        if scout_declaration is not None:
-            raise ScoutWorkflowError(ScoutWorkflowCode.BINDING)
+        if webcrawler_declaration is not None:
+            raise WebcrawlerWorkflowError(WebcrawlerWorkflowCode.BINDING)
         if workflow.manifest.key == "delegated_rite" and workflow.manifest.revision == "2":
             if self.delegation_binding is None:
                 msg = "delegated_rite@2 requires its configured runtime binding before admission."
@@ -966,7 +980,7 @@ class RunEngine:
             or not self.bridge_capability_key.strip()
             or self.bridge_preference is not None
             or self.bridge_archive is not None
-            or self.bridge_scout is not None
+            or self.bridge_webcrawler is not None
         ):
             msg = "bridge_chat@5 requires its configured semantic binding and exact local chat key."
             raise ValueError(msg)
@@ -1039,9 +1053,9 @@ class RunEngine:
             return True
         if delivery.state is not RunDeliveryState.HELD:
             return False
-        if type(run.admitted_scout) is ScoutFeedBinding and retain is None:
-            raise ScoutWorkflowError(ScoutWorkflowCode.ADMISSION)
-        if retain is None and run.admitted_scout is None and run.admitted_peer is None:
+        if type(run.admitted_webcrawler) is WebcrawlerFeedBinding and retain is None:
+            raise WebcrawlerWorkflowError(WebcrawlerWorkflowCode.ADMISSION)
+        if retain is None and run.admitted_webcrawler is None and run.admitted_peer is None:
             msg = f"Run {run.run_id!r} idempotent admission remains held without a retention owner."
             raise RuntimeError(msg)
         await self._retain_and_release_admission(run, retain, validate=validate)

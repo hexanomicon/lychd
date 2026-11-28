@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 import ssl
 from collections.abc import AsyncGenerator, AsyncIterator, Callable, Iterator
 from contextlib import asynccontextmanager
@@ -45,11 +46,11 @@ from lychd.db.checkpoints import PostgresStasisStore
 from lychd.db.models.run import Run as RunRow
 from lychd.db.models.run_delivery import RunDelivery
 from lychd.db.models.scavenger import ScavengerObservation
-from lychd.db.models.scout import ScoutAttempt, ScoutBudget
 from lychd.db.models.session import Session as SessionRow
+from lychd.db.models.webcrawler import WebcrawlerAttempt, WebcrawlerBudget
 from lychd.db.scavenger import DbScavengerStore
-from lychd.db.scout import DbScoutAttemptStore
 from lychd.db.sessions import DbBridgeSessionStore
+from lychd.db.webcrawler import DbWebcrawlerAttemptStore
 from lychd.domain.codex.ledger import CodexConsentLedger
 from lychd.domain.codex.middleware import sigil_auth_middleware
 from lychd.domain.codex.sigil import Sigil, default_local_sigil
@@ -61,28 +62,28 @@ from lychd.domain.cortex.runs import RunStatus
 from lychd.domain.cortex.substrate import RunSubstrate
 from lychd.domain.scout.attempts import SCOUT_FEED_URL, NewScoutClaim, ScoutSettlement
 from lychd.domain.scout.destination import preflight_destination
-from lychd.domain.scout.feed import ScoutFeedBinding, ScoutFeedProfile
 from lychd.domain.web.contracts import CsrfClientContract
+from lychd.domain.webcrawler.feed import WebcrawlerFeedBinding, WebcrawlerFeedProfile
 from lychd.ghouls.runs import perform_run
 from lychd.interface.api.scavenger import ScavengerController
 from lychd.interface.web import AltarController, BridgeController, OrbController
 from lychd.interface.web.altar_services import AltarServices, build_altar_services
 from lychd.interface.web.deps import web_dependencies
 from lychd.interface.web.openapi import StrictPydanticSchemaPlugin
-from lychd.interface.web.scout_review import ScoutConsentReviews
+from lychd.interface.web.webcrawler_review import WebcrawlerConsentReviews
 from lychd.system.services.scout_http import serialize_rss_get
-from lychd.system.services.scout_workflow import ScoutCompletions, ScoutWorkflowService
+from lychd.system.services.webcrawler_workflow import WebcrawlerCompletions, WebcrawlerWorkflowService
 from tests import scout_network_fixture as network
 from tests.agents.conftest import make_services
 from tests.agents.fakes import FakeConsents, FakeEvents, FakeOrchestrator, FakeTurns
 from tests.integration import test_archive_migrations_pg as migration
-from tests.integration import test_scout_composed_runtime as composed_proof
+from tests.integration import test_webcrawler_composed_runtime as composed_proof
 from tests.runtime_guards import InertSoftActivationGuard
-from tests.scout_feed_fixtures import Scenario, install_effects, scenario
 from tests.scout_network_fixture import require_namespace
 from tests.scout_postgres_fixture import IsolatedPostgres, isolated_postgres
-from tests.unit.domain.cortex.test_scout_feed_admission import Queue
+from tests.unit.domain.cortex.test_webcrawler_feed_admission import Queue
 from tests.web.test_scavenger import AUTHORIZATION
+from tests.webcrawler_feed_fixtures import Scenario, install_effects, scenario
 
 pytestmark = [pytest.mark.integration, pytest.mark.container, pytest.mark.asyncio]
 
@@ -145,10 +146,10 @@ class Assembly:
     app: ScavengerService
     engine: RunEngine
     substrate: RunSubstrate
-    binding: ScoutFeedBinding
+    binding: WebcrawlerFeedBinding
     run_id: str
     forbidden: Mock
-    reviews: ScoutConsentReviews
+    reviews: WebcrawlerConsentReviews
     bus: InProcessEventBus
     orchestrator: FakeOrchestrator
 
@@ -158,10 +159,10 @@ async def assemble(factory: async_sessionmaker[AsyncSession]) -> Assembly:
     ledger, queue = DbRunLedger(session_factory=factory), Queue()
     bus = InProcessEventBus(ledger=ledger)
     consents = CodexConsentLedger(session_factory=factory)
-    completions = ScoutCompletions()
-    scout_store = DbScoutAttemptStore(factory, s.authorizer, s.binding.profile.budget_limits, completions)
-    scout = ScoutWorkflowService(
-        store=scout_store,
+    completions = WebcrawlerCompletions()
+    webcrawler_store = DbWebcrawlerAttemptStore(factory, s.authorizer, s.binding.profile.budget_limits, completions)
+    webcrawler = WebcrawlerWorkflowService(
+        store=webcrawler_store,
         completions=completions,
         ledger=ledger,
         consents=consents,
@@ -173,7 +174,7 @@ async def assemble(factory: async_sessionmaker[AsyncSession]) -> Assembly:
     app = ScavengerService(
         store=DbScavengerStore(factory, pattern=OBSERVE_MARKET.manifest.snapshot()),
         policy=LocalScavengerPolicy(access=s.access, profile=s.binding.profile, owner="magus"),
-        scout=scout,
+        webcrawler=webcrawler,
     )
     request_id = uuid4()
     admission = await app.reserve(
@@ -196,9 +197,9 @@ async def assemble(factory: async_sessionmaker[AsyncSession]) -> Assembly:
         workflows=workflows,
         queue_router=QueueRouter({"default": RouteRule(queue="runs", priority=50)}),
         queues={"runs": queue},
-        feed_scout=s.binding.profile,
-        feed_scout_admission=s.admission,
-        effects=scout,
+        feed_webcrawler=s.binding.profile,
+        feed_webcrawler_admission=s.admission,
+        effects=webcrawler,
         consents=consents,
     )
     turns = DbBridgeSessionStore(factory, sigil_name="magus")
@@ -248,8 +249,8 @@ async def assemble(factory: async_sessionmaker[AsyncSession]) -> Assembly:
         forge=forbidden,
         consents=consents,
         queues=engine.queues,
-        effects=scout,
-        feed_scout=scout,
+        effects=webcrawler,
+        feed_webcrawler=webcrawler,
         scavenger=app,
         stasis_store=PostgresStasisStore(factory),
         cancellations=engine.cancellations,
@@ -263,7 +264,7 @@ async def assemble(factory: async_sessionmaker[AsyncSession]) -> Assembly:
         binding,
         handle.run_id,
         forbidden,
-        ScoutConsentReviews(access=s.access, authorizer=s.authorizer, store=scout_store),
+        WebcrawlerConsentReviews(access=s.access, authorizer=s.authorizer, store=webcrawler_store),
         bus,
         orchestrator,
     )
@@ -377,10 +378,10 @@ async def test_native_worker_retains_whole_field_recovery_and_terminal_tombstone
         ]:
             assert private not in wire
         async with factory() as session:
-            attempts = list(await session.scalars(select(ScoutAttempt)))
+            attempts = list(await session.scalars(select(WebcrawlerAttempt)))
             assert len(attempts) == 1
             assert attempts[0].status == "succeeded"
-            budgets = list(await session.scalars(select(ScoutBudget)))
+            budgets = list(await session.scalars(select(WebcrawlerBudget)))
             before = [(b.scope, b.connects_used, b.connects_reserved, b.active_claims) for b in budgets]
         await a.app.delete(
             **read_args,
@@ -405,7 +406,7 @@ async def test_native_worker_retains_whole_field_recovery_and_terminal_tombstone
                 request_digest="f" * 64,
                 observation_digest=retained.observation_digest,
             )
-        # Exact deletion replay is inert and never resets Scout allowance.
+        # Exact deletion replay is inert and never resets Webcrawler allowance.
         await a.app.delete(
             **read_args,
             request_digest=retained.request_digest,
@@ -420,7 +421,7 @@ async def test_native_worker_retains_whole_field_recovery_and_terminal_tombstone
                 row.observation_bytes,
                 row.slot,
             ) == (None, None, None, None)
-            budgets = list(await session.scalars(select(ScoutBudget)))
+            budgets = list(await session.scalars(select(WebcrawlerBudget)))
             assert [(b.scope, b.connects_used, b.connects_reserved, b.active_claims) for b in budgets] == before
     finally:
         await a.bus.aclose()
@@ -507,7 +508,7 @@ async def selected_api(
     factory: async_sessionmaker[AsyncSession],
     monkeypatch: pytest.MonkeyPatch,
     *,
-    profile: ScoutFeedProfile | None = None,
+    profile: WebcrawlerFeedProfile | None = None,
 ) -> AsyncGenerator[SelectedAPI]:
     """Use actual selected composition with its only DB factory explicitly test-owned."""
     source = await scenario()
@@ -521,7 +522,7 @@ async def selected_api(
         profile="postgres",
         settings=Settings(
             weaver=WeaverSettings(
-                scavenger=ScavengerCastingSettings(revision="3", scout=profile or source.binding.profile)
+                scavenger=ScavengerCastingSettings(revision="3", webcrawler=profile or source.binding.profile)
             )
         ),
         operator_access=source.access,
@@ -684,10 +685,10 @@ async def test_unknown_claim_custody_blocks_delete_and_same_key_admission_does_n
         assert (await a.services.ledger.try_claim_run(a.run_id, enqueue_seq=1)).acknowledged is True
         run = await a.services.ledger.get(a.run_id)
         assert run is not None
-        assert type(run.admitted_scout) is ScoutFeedBinding
-        service = a.services.scout
+        assert type(run.admitted_webcrawler) is WebcrawlerFeedBinding
+        service = a.services.webcrawler
         assert service is not None
-        review = await service.prepare(run_id=a.run_id, binding=run.admitted_scout)
+        review = await service.prepare(run_id=a.run_id, binding=run.admitted_webcrawler)
         # Host port invocation and state injection are intentional, not a sandbox proof.
         store = service._store  # pyright: ignore[reportPrivateUsage]
         claim = await store.claim(review.attempt_id, review.preparation_digest, enqueue_seq=1)
@@ -714,7 +715,7 @@ async def test_unknown_claim_custody_blocks_delete_and_same_key_admission_does_n
         assert replay.status_code == 200
         assert replay.json()["run_id"] == a.run_id
         async with factory() as session:
-            budget = await session.scalar(select(ScoutBudget).where(ScoutBudget.scope == "binding"))
+            budget = await session.scalar(select(WebcrawlerBudget).where(WebcrawlerBudget.scope == "binding"))
             assert budget is not None
             assert budget.active_claims == 1
             assert budget.wire_bytes_reserved == a.source.binding.profile.allowance.wire_bytes
@@ -879,7 +880,11 @@ async def native_feed_passage(a: SelectedAPI, fixture: network.ScoutNetworkFixtu
 async def test_selected_native_feed_dns_tls_child_and_durable_whole_field(
     factory: async_sessionmaker[AsyncSession], monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    network.require_namespace("LYCHD_REQUIRE_SCOUT_COMPOSED_PROOF")
+    network.require_namespace(
+        "LYCHD_REQUIRE_WEBCRAWLER_COMPOSED_PROOF"
+        if "LYCHD_REQUIRE_WEBCRAWLER_COMPOSED_PROOF" in os.environ
+        else "LYCHD_REQUIRE_SCOUT_COMPOSED_PROOF"
+    )
     runtime = composed_proof._runtime()  # pyright: ignore[reportPrivateUsage] - exact shared opt-in runtime loader
     certificate, key = await asyncio.to_thread(
         network.certificate, tmp_path, "scavenger", "www.bazos.sk", include_ip=False
@@ -913,10 +918,10 @@ async def test_selected_native_feed_dns_tls_child_and_durable_whole_field(
             ca_file=certificate,
             resolver_custody_statement="Synthetic DNS/TLS in this proof's isolated loopback-only namespace.",
         )
-        async with selected_api(factory, monkeypatch, profile=ScoutFeedProfile.model_validate(values)) as a:
+        async with selected_api(factory, monkeypatch, profile=WebcrawlerFeedProfile.model_validate(values)) as a:
             document = await native_feed_passage(a, fixture)
             async with factory() as session:
-                attempts = list(await session.scalars(select(ScoutAttempt)))
+                attempts = list(await session.scalars(select(WebcrawlerAttempt)))
                 assert len(attempts) == 1
                 assert attempts[0].settlement_bytes is not None
                 settlement = ScoutSettlement.model_validate_json(attempts[0].settlement_bytes)

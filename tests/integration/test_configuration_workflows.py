@@ -38,7 +38,7 @@ from lychd.extensions.host import AssembledExtensions, assemble_extensions
 from lychd.ghouls.runs import perform_run
 from lychd.interface.web.altar_services import build_altar_services
 from tests.runtime_guards import InertSoftActivationGuard
-from tests.scout_feed_fixtures import scenario as feed_scenario
+from tests.webcrawler_feed_fixtures import scenario as feed_scenario
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -477,7 +477,9 @@ async def test_scavenger_selection_is_opt_in_while_generic_workflow_and_artifact
     assert {workflow.name for workflow in registry.all()} == {"bridge_chat", "delegated_rite", OBSERVE_MARKET.name}
     assert registry.get(OBSERVE_MARKET.name) is None
     source = await feed_scenario()
-    settings = Settings.model_validate({"weaver": {"scavenger": {"revision": "3", "scout": source.binding.profile}}})
+    settings = Settings.model_validate(
+        {"weaver": {"scavenger": {"revision": "3", "webcrawler": source.binding.profile}}}
+    )
     selected = builtin_workflow_registry(weaver=settings.weaver)
     assert selected.get(OBSERVE_MARKET.name) is OBSERVE_MARKET
     assert selected.is_active(OBSERVE_MARKET.name, "2")

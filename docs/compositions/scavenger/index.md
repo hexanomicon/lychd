@@ -20,7 +20,7 @@ can compare offers and perform its admitted checkout. For a transaction assigned
 its commitment remains the single acquisition commitment; Homestead keeps the need and can accept
 the resulting stock against the settled receipt.
 
-Scavenger retains the campaign and the criteria, observations, evidence, rankings, judgments, preference revisions, offers, commitments, parcels, inspections, and diligence that support its decisions. Scout separately owns the bounded acquisition/interaction receipts. The Magus decides private disclosure, final commitment, payment, acceptance, dispute, and every property transaction; a campaign result cannot make those decisions on its own.
+Scavenger retains the campaign and the criteria, observations, evidence, rankings, judgments, preference revisions, offers, commitments, parcels, inspections, and diligence that support its decisions. Webcrawler separately owns the bounded acquisition/interaction receipts. The Magus decides private disclosure, final commitment, payment, acceptance, dispute, and every property transaction; a campaign result cannot make those decisions on its own.
 
 Unbounded scraping, spam, false identity or leverage, hidden criteria changes, professional certification, and unapproved commitment, payment, deposit, signature, or settlement remain outside the contract. Scavenger searches a finite market; [Hunter](../../sepulcher/aspects/shadow/hunter.md) instead adversarially challenges an already formed candidate.
 

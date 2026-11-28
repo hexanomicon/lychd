@@ -29,8 +29,8 @@ from lychd.agents.workflows import (
     BRIDGE_CHAT,
     BRIDGE_CHAT_ARCHIVE,
     BRIDGE_CHAT_BOUND,
-    BRIDGE_CHAT_SCOUT,
     BRIDGE_CHAT_SEMANTIC,
+    BRIDGE_CHAT_WEBCRAWLER,
     DELEGATED_RITE,
     DELEGATED_RITE_BOUND,
     OBSERVE_MARKET,
@@ -53,10 +53,10 @@ from lychd.domain.cortex.runs import RunRecord, RunStatus
 from lychd.domain.cortex.stasis import DurableStasisPhylactery, InMemoryStasisStore, LiveStasisPhylactery
 from lychd.domain.delegation.routing import DelegatedRuntimeBinding
 from lychd.domain.naming import NamingSnapshot
-from lychd.domain.scout.profile import ScoutWorkflowCode, ScoutWorkflowError
+from lychd.domain.webcrawler.profile import WebcrawlerWorkflowCode, WebcrawlerWorkflowError
 from lychd.ghouls.runs import _phylactery_for
-from tests.scout_feed_fixtures import scenario as feed_scenario
-from tests.scout_fixtures import PROMPT, scout_binding
+from tests.webcrawler_feed_fixtures import scenario as feed_scenario
+from tests.webcrawler_fixtures import PROMPT, webcrawler_binding
 
 pydantic_ai.models.ALLOW_MODEL_REQUESTS = False
 
@@ -73,7 +73,7 @@ async def test_every_workflow_state_round_trips() -> None:
             ("bridge_chat", "1-naming1"): BRIDGE_CHAT,
             ("bridge_chat", "2-naming1"): BRIDGE_CHAT_BOUND,
             ("bridge_chat", "3-naming1"): BRIDGE_CHAT_ARCHIVE,
-            ("bridge_chat", "4-naming1"): BRIDGE_CHAT_SCOUT,
+            ("bridge_chat", "4-naming1"): BRIDGE_CHAT_WEBCRAWLER,
             ("bridge_chat", "5-naming1"): BRIDGE_CHAT_SEMANTIC,
         }.get((workflow.manifest.key, workflow.manifest.revision), workflow)
         if profile is not workflow:
@@ -103,18 +103,22 @@ async def test_every_workflow_state_round_trips() -> None:
                     ),
                 }
             )
-        if profile is BRIDGE_CHAT_SCOUT:
+        if profile is BRIDGE_CHAT_WEBCRAWLER:
             intent = intent.model_copy(
-                update={"prompt": PROMPT, "admitted_capability_key": "chat:offline", "admitted_scout": scout_binding()}
+                update={
+                    "prompt": PROMPT,
+                    "admitted_capability_key": "chat:offline",
+                    "admitted_webcrawler": webcrawler_binding(),
+                }
             )
         if profile is BRIDGE_CHAT_SEMANTIC:
             from tests.unit.domain.cortex.test_semantic_answer_admission import BINDING
 
             intent = intent.model_copy(update={"admitted_capability_key": "chat:offline", "admitted_semantic": BINDING})
         if workflow is OBSERVE_MARKET:
-            with pytest.raises(ScoutWorkflowError) as refused:
+            with pytest.raises(WebcrawlerWorkflowError) as refused:
                 workflow.make_state(intent)
-            assert refused.value.code is ScoutWorkflowCode.ADMISSION
+            assert refused.value.code is WebcrawlerWorkflowCode.ADMISSION
             source = await feed_scenario()
             intent = source.run.to_intent()
         state = workflow.make_state(intent)

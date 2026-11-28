@@ -7,7 +7,7 @@ icon: material/storefront-outline
 
 Each morning brings a changed market: new, removed, relisted, repriced, reworded, and rephotographed candidates. The useful view shows the whole field, including the reasons some listings cannot qualify. A shortlist alone would hide the evidence needed to correct it.
 
-`scavenger.observe_market@2` admits finite snapshots, normalizes and deduplicates listings, and preserves retrieval time and source claims. Scheduled observations coalesce rather than accumulate an endless backlog. The Scout profile fixes origins/paths, user agent, pacing, concurrency, bytes/pages, expiry, robots decision, selectors, sessions, CAPTCHA handling, fixtures, and kill switch. A `bazos.sk` adapter observes a source; the campaign decides what it means.
+`scavenger.observe_market@2` admits finite snapshots, normalizes and deduplicates listings, and preserves retrieval time and source claims. Scheduled observations coalesce rather than accumulate an endless backlog. The Webcrawler profile fixes origins/paths, user agent, pacing, concurrency, bytes/pages, expiry, robots decision, selectors, sessions, CAPTCHA handling, fixtures, and kill switch. A `bazos.sk` adapter observes a source; the campaign decides what it means.
 
 ## Finite feed observation {#finite-feed-observation}
 
@@ -48,7 +48,7 @@ subject/request binds the canonical seed digest, Run and selected Composition/Pa
 source and acquisition profiles, purpose, retention profile and initial filter revision. Replaying
 that exact binding resolves the same admission/result; a changed binding refuses. The first
 profile allows only one pending or retained observation per selected profile database and creates
-no additional Scout allowance store.
+no additional Webcrawler allowance store.
 
 The whole field contains every item returned by the admitted bounded extraction, in source order,
 including unmatched, duplicate and unjudged occurrences. Each occurrence retains an internal
@@ -63,7 +63,7 @@ at most 1024 UTF-8 bytes, and links of at most 4096 bytes. The complete seed is 
 and the canonical application observation to 256 KiB. If the result overflows, refuse it whole
 rather than hide items or shorten fields.
 
-To show what the field represents, retain the requested/contacted locator, retrieval time, Scout
+To show what the field represents, retain the requested/contacted locator, retrieval time, Webcrawler
 receipt, source/record/field digests, selected profiles, omissions, duplicate/missing counts and
 declared coverage. Source dates/GUIDs alone establish neither identity nor freshness.
 
@@ -72,7 +72,7 @@ Feed bodies, channel text, summaries, images, publisher dates/identifiers and se
 fields are discarded after transient consumption. Titles and links are deliberately retained
 source claims; the profile does not promise that source text contains no personal information.
 Run/Graph state, generic events/logs and Bridge history carry opaque references, safe counts/status
-and closed reasons, never item values or a copied campaign seed. Scout retains its independently
+and closed reasons, never item values or a copied campaign seed. Webcrawler retains its independently
 owned contact attribution and positively selected extraction metadata, not this field.
 
 An authorized read returns the complete field. A bounded literal, versioned case-folded substring
@@ -92,7 +92,7 @@ automatic unknown-attempt reconciliation.
 
 Once terminal disposition permits deletion, atomically remove the application seed, item payload
 and content projections. Keep only a content-free tombstone and necessary immutable execution/
-Scout receipts, whose contact metadata is not erased. The tombstone fences late writes and exact
+Webcrawler receipts, whose contact metadata is not erased. The tombstone fences late writes and exact
 replay so neither can recreate the payload. Report deletion distinctly from an empty market and
 do not imply backup erasure.
 
@@ -110,7 +110,7 @@ against the same key/digest; ambiguity remains unknown and creates no acquisitio
 the field supports fresh authorized reads/re-filters after restart. Once deleted, that identity
 stays deleted.
 
-The first native profile uses one active Scout binding in a fresh profile database. Existing page
+The first native profile uses one active Webcrawler binding in a fresh profile database. Existing page
 budget rows refuse a page/RSS switch or coexistence without mutation. This is an explicit initial
 compatibility boundary, not a reset, migration or second budget store.
 

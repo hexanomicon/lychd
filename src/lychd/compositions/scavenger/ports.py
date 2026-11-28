@@ -8,8 +8,8 @@ from uuid import UUID
 from lychd.compositions.scavenger.schemas import Digest, Nonnegative, Record
 
 if TYPE_CHECKING:
-    from lychd.domain.scout.feed import ScoutFeedBinding, ScoutFeedMaterial
-    from lychd.domain.scout.profile import ScoutReviewRef
+    from lychd.domain.webcrawler.feed import WebcrawlerFeedBinding, WebcrawlerFeedMaterial
+    from lychd.domain.webcrawler.profile import WebcrawlerReviewRef
 
 
 class ObservationCommit(Record):
@@ -27,18 +27,18 @@ class ScavengerWorkflowPort(Protocol):
     """Check receiving custody on every entry; resolve one commit without acquisition.
 
     Implementations validate the exact retained Run/seed/consumer and current
-    application authority after waits. Adoption rechecks current Scout CONSUME
+    application authority after waits. Adoption rechecks current Webcrawler CONSUME
     and the Run fence inside the locked receiving transaction before commit.
     An uncertain commit resolves only the same immutable occurrence, never a fetch.
     """
 
-    async def committed(self, *, run_id: str, binding: ScoutFeedBinding) -> ObservationCommit | None: ...
+    async def committed(self, *, run_id: str, binding: WebcrawlerFeedBinding) -> ObservationCommit | None: ...
 
     async def adopt(
         self,
         *,
         run_id: str,
-        binding: ScoutFeedBinding,
-        review: ScoutReviewRef,
-        material: ScoutFeedMaterial,
+        binding: WebcrawlerFeedBinding,
+        review: WebcrawlerReviewRef,
+        material: WebcrawlerFeedMaterial,
     ) -> ObservationCommit: ...

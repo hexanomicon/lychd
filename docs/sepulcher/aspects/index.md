@@ -20,7 +20,7 @@ its work, the decisions it owns, and its cooperation with the rest of LychD.
 | [Veil](veil.md) | **Hostile ingress:** terminate transport, canonicalize metadata, and admit declared routes. |
 | [Ward](ward.md) | **IAM and authority:** resolve principals and recheck current permission over an exact object or effect. |
 | [Spellweaver](weaver/index.md) | **Workflow:** validate Spell contracts and Scroll lifecycle, admit castings, and preserve continuity and logical time. Its methods include [Smith](weaver/smith.md) for software work and [Drift](weaver/drift/index.md) for evaluation. |
-| [Scout](scout.md) | **Web acquisition:** bound search, fetch, extraction, rendering, and interaction. |
+| [Webcrawler](webcrawler.md) | **Web acquisition:** bound search, fetch, extraction, rendering, and interaction. |
 | [Soulforge](soulforge/index.md) | **Training:** bind admitted corpus, base digest, objective, Recipe, Training Run, evaluation, and candidate-weight lineage. |
 | [Toll](toll.md) | **Economics:** distinguish quote, authorization, settlement, delivery, refund, and reconciliation. |
 | [Prism](prism/index.md) | **Visual and spatial grounding:** bind observations, transformations, reconstructions, and generated forms to exact sources and derivatives. |
@@ -35,7 +35,7 @@ implementation. [State of Work](../../state-of-the-work.md) records which parts 
 
 ## Follow a change across the body
 
-Scout may acquire a source for a proposed software change. [Smith](weaver/smith.md) carries the
+Webcrawler may acquire a source for a proposed software change. [Smith](weaver/smith.md) carries the
 change through inquiry, construction, verification, and a request for delivery. When it adopts
 foreign craft, [Assimilation](weaver/assimilation.md) preserves provenance, rights, and local
 maintenance obligations. Shadow may hold an isolated alternative and Drift may evaluate it.

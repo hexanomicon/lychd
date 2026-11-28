@@ -188,7 +188,7 @@ canonical namespace.
 Fixed source registry retains bridge_chat@1 (Bridge conversation, context, Agent turn, optional consent
 Gate, reply), adds bridge_chat@2 with an admission-pinned exact capability key and bridge_chat@3
 with that key plus an explicit public-note Archive profile. Opt-in bridge_chat@4 binds one
-authenticated public-page declaration and Scout profile. The registry also retains
+authenticated public-page declaration and Webcrawler profile. The registry also retains
 delegated_rite@1 (exact `/delegate` command token, reference job, Durable Stasis,
 result/reply). Optional delegated_rite@2 retains one configured runtime/profile through Run admission
 and checkpoint validation; neither revision supplies an external coding-agent/Tomb plane. One boot-composed catalogue
@@ -232,16 +232,16 @@ State separately owns executable and native answer acceptance.
 The opt-in `bridge_chat@4` revision answers one explicitly declared public page. Its
 command is `/read-public <exact HTTPS URL>` followed by a newline and a nonblank question. The
 authenticated operator separately declares the complete locator public under the current local
-Scout classification policy; an ordinary message or model-produced URL cannot supply that
-declaration. Admission retains the declaration, exact Scout profile and local chat capability.
+Webcrawler classification policy; an ordinary message or model-produced URL cannot supply that
+declaration. Admission retains the declaration, exact Webcrawler profile and local chat capability.
 This revision refuses other command forms rather than falling back to another Bridge revision.
 
 Its score is `PreparePageReview` → `AwaitPageConsent` → `AcquireAndAnswerPage` →
 `SettlePageAnswer`. Preparation atomically retains the acquisition request and complete native
 review with its consent. The consent Gate parks without acquiring material. The acquisition station
-resolves and verifies the exact local chat grant before claiming Scout's durable, bounded attempt;
+resolves and verifies the exact local chat grant before claiming Webcrawler's durable, bounded attempt;
 hardware re-entry cannot repeat an issued acquisition. Fetch, extraction and inference share that
-station. Scout rechecks current authority after awaited preparation and before each network handoff,
+station. Webcrawler rechecks current authority after awaited preparation and before each network handoff,
 extraction and material consumption, including token counting. No remote model or model tool is
 admitted by this profile.
 

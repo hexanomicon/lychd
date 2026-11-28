@@ -7,7 +7,7 @@ admits a durable delivery. Graph execution occurs only inside ``perform_run``.
 
 from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field, model_validator
 
 from lychd.domain.archive import ArchiveProfile
 from lychd.domain.cortex.bridge_preference import BridgePreferenceDecision, validate_retained_preference
@@ -15,8 +15,8 @@ from lychd.domain.cortex.semantic_answer import SemanticAnswerBinding
 from lychd.domain.delegation.routing import DelegatedRuntimeBinding
 from lychd.domain.intercom.native import PeerRunBinding
 from lychd.domain.naming import NamingSnapshot
-from lychd.domain.scout.feed import ScoutFeedBinding
-from lychd.domain.scout.profile import ScoutBinding
+from lychd.domain.webcrawler.feed import WebcrawlerFeedBinding
+from lychd.domain.webcrawler.profile import WebcrawlerBinding
 
 __all__ = ["Intent"]
 
@@ -24,7 +24,7 @@ __all__ = ["Intent"]
 class Intent(BaseModel):
     """The single cross-surface request shape — one shape, one `submit()` law."""
 
-    model_config = ConfigDict(extra="forbid", frozen=True)
+    model_config = ConfigDict(serialize_by_alias=True, extra="forbid", frozen=True)
 
     session_id: str
     # S3: run_id is advisory client-correlation ONLY. Run identity is minted by the
@@ -44,7 +44,11 @@ class Intent(BaseModel):
     admitted_archive: ArchiveProfile | None = None
     admitted_semantic: SemanticAnswerBinding | None = None
     admitted_delegation: DelegatedRuntimeBinding | None = None
-    admitted_scout: ScoutBinding | ScoutFeedBinding | None = None
+    admitted_webcrawler: WebcrawlerBinding | WebcrawlerFeedBinding | None = Field(
+        default=None,
+        validation_alias=AliasChoices("admitted_webcrawler", "admitted_scout"),
+        serialization_alias="admitted_scout",
+    )
     admitted_peer: PeerRunBinding | None = None
 
     @model_validator(mode="after")
