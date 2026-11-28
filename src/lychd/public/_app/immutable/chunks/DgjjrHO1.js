@@ -1,0 +1,1 @@
+import{Ft as e}from"./BksSpvxN.js";e();
