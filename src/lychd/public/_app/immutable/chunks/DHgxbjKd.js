@@ -1,0 +1,1 @@
+import{G as e,U as t,g as n,st as r}from"./BksSpvxN.js";var i=e(`<span class="delegate-mark">⬢</span>`);function a(e,a){var o=i();r(()=>{n(o,`role`,a.label?`img`:void 0),n(o,`aria-label`,a.label),n(o,`aria-hidden`,a.label?void 0:`true`),n(o,`title`,a.label)}),t(e,o)}export{a as t};
