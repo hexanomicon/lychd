@@ -644,7 +644,7 @@ key together with family, modalities, tools, readiness, and drain constraints; d
 aliases cannot redirect the turn. Missing or mismatched checkpoint bindings refuse execution before
 a node runs. Revision 1 keeps its original manifest and remains executable after activation changes.
 The same selector also admits the bounded [public-note and semantic-source-answer](#karma-semantic-memory)
-and [Scout public-page](#scout-web-acquisition) revisions; their authority and evidence boundaries
+and [Webcrawler public-page](#webcrawler-web-acquisition) revisions; their authority and evidence boundaries
 remain with those records. The explicitly boot-selected `bridge_chat@5` retains its complete exact
 Archive generation manifest/reference, threshold and finite recall bounds with the local Chat key.
 Omitting configuration still selects revision 1 for new admissions.
@@ -682,12 +682,12 @@ it. The synthetic PostgreSQL controls use ORM metadata and do not claim migratio
 - **Topic:** [Choose a Bridge capability](sepulcher/aspects/weaver/index.md#choose-a-bridge-capability) and [prefer a ready route](sepulcher/aspects/weaver/index.md#prefer-a-ready-route-at-admission)
 - **Law:** [Configuration](./adr/12-configuration.md), [Workflow](./adr/28-workflow.md), and [Dispatcher](./adr/22-dispatcher.md)
 
-### Pydantic AI 2.66.0 cognitive adapter {#pydantic-ai-adapter}
+### Pydantic AI 2.77.0 cognitive adapter {#pydantic-ai-adapter}
 
 **State:** Available
 
 **Proved now:** LychD constructs typed agents and runs Bridge through the exact
-`pydantic-ai-slim==2.66.0` contract with serializable state and fail-closed provider profiles.
+`pydantic-ai-slim==2.77.0` contract with serializable state and fail-closed provider profiles.
 The context window bounds each model request after output reservation, including tool follow-ups
 and validation retries, while cumulative Run usage remains intact. Supported pre-counts and
 completed streamed/non-streamed responses use the same request bound.
@@ -713,7 +713,7 @@ or Linux Vessel image, or admit Portal execution. The serial Graph adapter has i
 - **Version:** [Dependency](https://github.com/hexanomicon/lychd/blob/main/pyproject.toml)
 - **Law:** [Agents](./adr/20-agents.md)
 
-### Native Pydantic Graph 2.66.0 adapter {#pydantic-ai-v2-migration}
+### Native Pydantic Graph 2.77.0 adapter {#pydantic-ai-v2-migration}
 
 **State:** Available
 
@@ -1581,7 +1581,7 @@ older reading position; an explicit Latest turn action releases linked-Run focus
 the draft. The composer explains the current admission or active-Run restriction.
 
 The Bridge snapshot also identifies the admission engine's configured default casting, separate
-from retained Run identities. A configured Scout default supplies fixed command guidance with a
+from retained Run identities. A configured Webcrawler default supplies fixed command guidance with a
 two-line example and the complete URL's public declaration. The composer renders that text
 literally, preserves its line breaks, and removes it when refreshed guidance is absent. This is
 configuration help, not readiness or permission; ordinary admission and native review still apply.
@@ -1604,9 +1604,9 @@ reviews cannot submit a decision. An unresolved choice retains its original verd
 identity across remounts and later refusals; a changed review permits outcome refresh, not a new
 choice or a retry against different material. Legacy Consent remains supported. Existing PostgreSQL
 installations require migration `0010` before running this code.
-The opt-in [Scout public-page workflow](#scout-web-acquisition) supplies an owner-produced native
+The opt-in [Webcrawler public-page workflow](#webcrawler-web-acquisition) supplies an owner-produced native
 review, atomic preparation/Consent custody, and current authority checks before acquisition and
-local inference. Its deployment and mechanism qualification limits remain those of Scout.
+local inference. Its deployment and mechanism qualification limits remain those of Webcrawler.
 
 The [trusted source-browser profile](#current-evidence-envelope) separately qualifies its fixed
 controlled-failure/useful-reply, exact Orb/Loom journey and retained reload. It does not extend
@@ -1618,7 +1618,7 @@ including reviewed or explicitly auto-sent [dictation](#audio-admission).
 Selected-session turns and model history still hydrate that one conversation. There is no general
 storage quota or retention policy; archive paging and stream limits do not bound every retained
 payload or protect against a hostile authenticated operator.
-Native action owners beyond that Scout path still require their own production admission,
+Native action owners beyond that Webcrawler path still require their own production admission,
 review/custody transaction, and effect-time authorization. The client review and recovery tests use
 component fixtures and intercepted HTTP requests; they do not qualify complete production-browser
 layout or accessibility. The separately assembled
@@ -1782,7 +1782,7 @@ An explicit PostgreSQL selector enables `scavenger.observe_market@2` and its pro
 admission/read/filter/delete API. The serial Graph keeps references only, uses native Core
 consent, and commits the whole field under application custody. The `/scavenger` Altar view
 supplies the complete seed, displays source/coverage and every occurrence, and separates local
-filtering, Run cancellation, and terminal payload deletion. [Scout's evidence boundary](#scout-web-acquisition)
+filtering, Run cancellation, and terminal payload deletion. [Webcrawler's evidence boundary](#webcrawler-web-acquisition)
 owns the assembled development proof and remaining installed, public-network, and process limits.
 
 **Boundary — Not yet:** Selecting Creation or Scavenger enables the bounded work described above. The
@@ -2622,7 +2622,7 @@ operator profile.
 The separate operator research path does not supply native per-URL consent, remote Principal
 enrollment, general web research authority or persistent memory. Its current Docker/Bubblewrap
 assembly and full delivered-plan → public acquisition → local synthesis → Discord delivery chain
-still require an identified live-host occurrence; the existing native Scout mechanism receipts
+still require an identified live-host occurrence; the existing native Webcrawler mechanism receipts
 do not qualify that new assembly automatically.
 Public history/media and production deployment acceptance remain separate contract work.
 
@@ -2657,8 +2657,8 @@ separately scoped.
 - **Source:** [Frozen expression catalogue](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/reach/expressions.py) binds reaction and GIF choices to the operator profile.
 - **Verification:** [Native expression selection and settlement](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/test_reach_expressions.py), [reaction/GIF REST custody](https://github.com/hexanomicon/lychd/blob/main/tests/unit/interface/test_discord_expressions.py), and [dialogue ordering and cosmetic failures](https://github.com/hexanomicon/lychd/blob/main/tests/unit/interface/test_nadir_expressions.py).
 - **Source:** [Transient catalogue research and citations](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/reach/research.py), [closed source/progress values](https://github.com/hexanomicon/lychd/blob/main/src/lychd/compositions/reach/research_wire.py), [host research broker](https://github.com/hexanomicon/lychd/blob/main/scripts/reach_research_broker.py), [separate source worker](https://github.com/hexanomicon/lychd/blob/main/scripts/reach_scout_worker.py), and [source-image builder](https://github.com/hexanomicon/lychd/blob/main/scripts/reach_research_image.py).
-- **Verification:** [Native two-call research and source-custody cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/test_reach_research.py), [document catalogue and excerpt cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/test_reach_document_research.py), [acknowledgement and broker custody cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_reach_research_broker.py), [source authority and attempt cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_reach_scout_worker.py), and [same-audience plan delivery cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/interface/test_nadir_research_progress.py). These authored cases do not themselves record a live deployment.
-- **Law:** [Explicit Reach research profile](./adr/30-webcrawler.md#explicit-reach-operator-research-profile) and [separate operator authority](./adr/38-iam.md#trusted-local-scout-profile).
+- **Verification:** [Native two-call research and source-custody cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/test_reach_research.py), [document catalogue and excerpt cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/compositions/test_reach_document_research.py), [acknowledgement and broker custody cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_reach_research_broker.py), [source authority and attempt cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_reach_webcrawler_worker.py), and [same-audience plan delivery cases](https://github.com/hexanomicon/lychd/blob/main/tests/unit/interface/test_nadir_research_progress.py). These authored cases do not themselves record a live deployment.
+- **Law:** [Explicit Reach research profile](./adr/30-webcrawling.md#explicit-reach-operator-research-profile) and [separate operator authority](./adr/38-iam.md#trusted-local-webcrawler-profile).
 - **Topic:** [Discord operator profile](./compositions/reach/operator.md)
 
 ### Offline music, Comfy and local video probes {#music-comfy-engineering-probes}
@@ -3032,15 +3032,15 @@ installed/browser receipt and supplies no shared-user isolation or remote Princi
 - **Verification:** [Network policy tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/animation/test_transmute_golden.py), [CLI and image-policy controls](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_cli.py), [HTTP boundary tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_http_boundary.py), [Factory HTTP assembly tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_app_factory.py), and [Altar route tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_pages.py)
 - **Law:** [Security](./adr/09-security.md)
 
-### Scout web acquisition {#scout-web-acquisition}
+### Web acquisition with Webcrawler <span id="scout-web-acquisition"></span> {#webcrawler-web-acquisition}
 
 **State:** Partial
 
-**Proved now:** Scout's law assigns separate boundaries to search, fetch, render, extraction,
+**Proved now:** Webcrawler's law assigns separate boundaries to search, fetch, render, extraction,
 destination pinning, quarantine, authentication, and paid effects. The accepted design selects
 native static Fetch + Extract, a SearXNG Search Soulstone, and a later isolated Crawl4AI renderer
 candidate. Firecrawl is deferred, and paid web-acquisition Portals remain private-extension
-territory. Scout provider contributions, a narrow SearXNG query/result contract, per-transmission
+territory. Webcrawler provider contributions, a narrow SearXNG query/result contract, per-transmission
 engine egress mediation, and static extraction qualification limits and cases are now specified.
 The complete acquisition envelope remains a design target.
 
@@ -3071,7 +3071,7 @@ worker/runtime fingerprints and paired network receipts. It does not requalify t
 historical static/RSS runtime or the composed PostgreSQL receipt.
 
 A repeat on 5 November 2026 CET passed the same ordered OCI proofs after the HTTPX2 client
-migration changed dependency declarations and lock metadata. The selected Scout dependency
+migration changed dependency declarations and lock metadata. The selected Webcrawler dependency
 versions and actual Fetch/authority exports remained unchanged; that renewed OCI record bound
 the new build inputs to the observed runtime and verified cleanup. The same qualification
 limits apply.
@@ -3089,6 +3089,8 @@ input, both owned containers were removed with observed 404 responses, and the u
 was removed. The maintained OCI record now binds that actual engine, image, source, paired
 network receipts and policy custody. The same proof limits apply; this does not replace the
 historical static/RSS or composed PostgreSQL qualifications or qualify production operation.
+The current Makefile, dependency declarations and lockfile differ from the inputs recorded on
+9 November. Qualifying the current OCI build requires a new occurrence.
 
 A separate `scout-rss-extract@1` profile now projects strict UTF-8 RSS 2.0 into immutable
 channel/item observations in that same fixed child. It accepts three explicit XML media types;
@@ -3122,7 +3124,7 @@ Preparation and claim are explicit fixtures, so this proof does not establish da
 extraction authorization or inference.
 
 The opt-in `bridge_chat@4` path now binds an actual local authentication marker, an explicit
-public-locator declaration, an immutable Scout profile and an exact local chat capability. Native
+public-locator declaration, an immutable Webcrawler profile and an exact local chat capability. Native
 review precedes acquisition. PostgreSQL retains preparation and consent atomically, admits one
 active claim per binding, reserves host/binding counters, and releases them only against an owned
 completion. Unknown attempts keep reservations and their slot; a new process cannot reconstruct
@@ -3140,13 +3142,13 @@ native consent and resumed claim, owned settlement and persisted turns. Its tran
 process and model are controlled substitutes, distinct from the separately qualified mechanisms.
 
 A worker-driven PostgreSQL test now parks the actual Graph and restores its typed continuation
-from durable storage through `perform_run`. Scout checkpoints carry the exact native consent
+from durable storage through `perform_run`. Webcrawler checkpoints carry the exact native consent
 owner before entering the Gate and clear it before proceeding. Approval acquires and settles
 once; denial settles a refusal without acquisition or inference. Missing or conflicting owners
 fail before any resumed station, stale deliveries remain inert, and terminal events, delivery
 settlement and source exclusion are checked. Legacy checkpoints without an owner remain
 non-resumable; the worker never infers authority from their review reference. The test reconstructs
-checkpoint and event-bus objects, while retaining the admitted Scout service in the same process;
+checkpoint and event-bus objects, while retaining the admitted Webcrawler service in the same process;
 queue publication, dispatcher, acquisition and model remain controlled substitutes.
 
 A maintained historical composed Linux receipt dated **19 October 2026** joined actual credential
@@ -3223,7 +3225,7 @@ while a separate 303 case refuses before parsing or a follow-up request. All thr
 settle their owned resources. These are private one-use fixture experiments, not a shipped
 service, live-engine qualification, repeated-use profile or native Search authority.
 
-**Boundary — Not yet:** No SearXNG or Crawl4AI Rune/adapter, general Scout provider store,
+**Boundary — Not yet:** No SearXNG or Crawl4AI Rune/adapter, general Webcrawler provider store,
 effect-scoped Agent tool, download quarantine, website authentication/session custody, or Smith
 ingestion path ships. No Search engine has passed qualification. The transport/extraction proof
 uses a synthetic audit gate; the additional current-authority network proof uses fixture admission
@@ -3238,26 +3240,27 @@ unimplemented outside the shared Pod.
 
 **Evidence**
 
-- **Topic:** [Scout](sepulcher/aspects/scout.md)
-- **Verification:** [Pinned SearXNG transport study](sepulcher/aspects/scout.md#searxng-transport-cut) and its [dated offline observation](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/scout/searxng-transport-cut-2026-10-18.json) establish controlled upstream retry and private one-use transport-cut behavior only. The separate [local service-fixture observation](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/scout/searxng-service-fixture-2026-10-18.json) adds actual one-use authenticated service/parser evidence; no live engine, repeated service use, production egress boundary or native Search is qualified.
+- **Topic:** [Webcrawler](sepulcher/aspects/webcrawler.md)
+- **Verification:** [Pinned SearXNG transport study](sepulcher/aspects/webcrawler.md#searxng-transport-cut) and its [dated offline observation](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/scout/searxng-transport-cut-2026-10-18.json) establish controlled upstream retry and private one-use transport-cut behavior only. The separate [local service-fixture observation](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/scout/searxng-service-fixture-2026-10-18.json) adds actual one-use authenticated service/parser evidence; no live engine, repeated service use, production egress boundary or native Search is qualified.
 - **Source:** [Feed admission and protected API](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/api/scavenger.py), [model-free Graph](https://github.com/hexanomicon/lychd/blob/main/src/lychd/agents/workflows/observe_market.py), [application custody](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/scavenger.py), and [Altar application](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/pages/observationsScavenger/components/ObservationsScavengerView.svelte)
 - **Verification:** [Dated ordinary native public feed and retained readback observation](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/scout/native-finite-feed-observation-2026-10-18.json) records successful finite custody, the failed original restart guard, separate fresh-process GET readback and unchanged permanent accounting; clean application shutdown remains unqualified.
 - **Verification:** [After-fix ordinary native retained readback](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/scout/native-queue-shutdown-readback-2026-10-18.json) binds the exact dirty source candidate, full captured log assessment, unchanged retained data/accounting and independent resource settlement. [Queue-plugin regressions](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_runtime_queue_plugin.py) exercise actual installed workers, sole retirement ownership and partial-startup/failed-stop containment with inert transports.
 - **Verification:** [Selected PostgreSQL and physical feed proof](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_scavenger_feed_pg.py), [protected HTTP and logging tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_scavenger.py), [driver privacy tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/db/test_scavenger_privacy.py), and [Altar lifecycle tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/pages/observationsScavenger/state/observation.test.ts)
 
-- **Law:** [Webcrawler](./adr/30-webcrawler.md)
+- **Law:** [Webcrawling](./adr/30-webcrawling.md)
 - **Source:** [Pure destination preflight](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/scout/destination.py), [fixed extraction worker](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/scout_worker.py), and [Linux supervisor](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/scout_extraction.py)
-- **Verification:** [Destination boundary tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/scout/test_destination.py), [worker tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/test_scout_worker.py), [supervision and receipt-freshness tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_scout_extraction.py), [live host proof](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_scout_extraction_runtime.py), and [maintained qualification receipt](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/scout/linux-extraction-runtime.json)
-- **Verification:** [Separate OCI static receipt](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/scout/linux-oci-extraction-runtime.json), [adapter and freshness contracts](https://github.com/hexanomicon/lychd/blob/main/tests/architecture/test_scout_qualification_profile.py), and [Scout OCI qualification procedure](https://github.com/hexanomicon/lychd/blob/main/tests/README.md) bind the new runtime to its paired Fetch/authority proofs without replacing the historical static/RSS evidence.
+- **Verification:** [Destination boundary tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/webcrawler/test_destination.py), [worker tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/test_webcrawler_worker.py), [supervision and receipt-freshness tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_webcrawler_extraction.py), [live host proof](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_scout_extraction_runtime.py), and [maintained qualification receipt](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/scout/linux-extraction-runtime.json)
+- **Verification:** [Separate OCI static receipt](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/scout/linux-oci-extraction-runtime.json), [adapter and freshness contracts](https://github.com/hexanomicon/lychd/blob/main/tests/architecture/test_scout_qualification_profile.py), and [Webcrawler OCI qualification procedure](https://github.com/hexanomicon/lychd/blob/main/tests/README.md) bind the new runtime to its paired Fetch/authority proofs without replacing the historical static/RSS evidence.
 - **Source:** [Native acquisition](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/scout_fetch.py), [gated transport](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/scout_socket.py), and [Run effect fences](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/cortex/cancellation.py)
-- **Verification:** [RSS behavioral tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/test_scout_rss_worker.py), [RSS return validation and freshness](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_scout_rss_extraction.py), [RSS live child proof](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_scout_rss_extraction_runtime.py), and [maintained RSS receipt](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/scout/linux-rss-extraction-runtime.json)
-- **Verification:** [Acquisition and freshness tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_scout_fetch.py), [HTTP decoder tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_scout_http.py), [Run fencing tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/cortex/test_cancellation.py), [isolated network proof](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_scout_fetch_runtime.py), and [maintained transport receipt](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/scout/linux-fetch-runtime.json)
-- **Source:** [Current authority](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/scout/authority.py), [durable attempts](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/scout.py), [owned coordinator](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/scout_workflow.py), and [public-page casting](https://github.com/hexanomicon/lychd/blob/main/src/lychd/agents/workflows/scout_chat.py)
-- **Verification:** [Authority contracts](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/scout/test_authority.py), [PostgreSQL attempts](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_scout_attempts_pg.py), [migration custody](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_scout_migrations_pg.py), [coordinator boundaries](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_scout_workflow.py), and [transient workflow projection](https://github.com/hexanomicon/lychd/blob/main/tests/agents/test_scout_chat.py)
-- **Verification:** [Assembled PostgreSQL workflow](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_scout_workflow_pg.py)
-- **Verification:** [Worker and durable Graph continuation](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_scout_graph_workflow_pg.py) and [consent checkpoint ownership](https://github.com/hexanomicon/lychd/blob/main/tests/agents/test_scout_consent_owner.py)
-- **Verification:** [Composed isolated passage](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_scout_composed_runtime.py), [historical composed receipt](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/scout/linux-composed-runtime.json), and [historical integrity and stale-closure refusal](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/scout/test_composed_receipt.py)
-- **Verification:** [Current-authority network proof](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_scout_authority_runtime.py), [maintained authority receipt](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/scout/linux-authority-runtime.json), and [authority receipt freshness](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/scout/test_authority_receipt.py)
+- **Verification:** [RSS behavioral tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/test_webcrawler_rss_worker.py), [RSS return validation and freshness](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_webcrawler_rss_extraction.py), [RSS live child proof](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_scout_rss_extraction_runtime.py), and [maintained RSS receipt](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/scout/linux-rss-extraction-runtime.json)
+- **Verification:** [Acquisition and freshness tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_webcrawler_fetch.py), [HTTP decoder tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_webcrawler_http.py), [Run fencing tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/cortex/test_cancellation.py), [isolated network proof](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_scout_fetch_runtime.py), and [maintained transport receipt](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/scout/linux-fetch-runtime.json)
+- **Source:** [Current authority](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/scout/authority.py), [durable attempts](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/webcrawler.py), [owned coordinator](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/webcrawler_workflow.py), and [public-page casting](https://github.com/hexanomicon/lychd/blob/main/src/lychd/agents/workflows/webcrawler_chat.py)
+- **Verification:** [Authority contracts](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/webcrawler/test_authority.py), [PostgreSQL attempts](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_webcrawler_attempts_pg.py), [migration custody](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_webcrawler_migrations_pg.py), [coordinator boundaries](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_webcrawler_workflow.py), and [transient workflow projection](https://github.com/hexanomicon/lychd/blob/main/tests/agents/test_webcrawler_chat.py)
+- **Verification:** [Assembled PostgreSQL workflow](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_webcrawler_workflow_pg.py)
+- **Verification:** [Worker and durable Graph continuation](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_webcrawler_graph_workflow_pg.py) and [consent checkpoint ownership](https://github.com/hexanomicon/lychd/blob/main/tests/agents/test_webcrawler_consent_owner.py)
+- **Verification:** [Consent naming compatibility](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/webcrawler/test_consent_compatibility.py) checks the original review label, owner, tool and digest and rejects changed bindings.
+- **Verification:** [Composed isolated passage](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_webcrawler_composed_runtime.py), [historical composed receipt](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/scout/linux-composed-runtime.json), and [historical integrity and stale-closure refusal](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/webcrawler/test_composed_receipt.py)
+- **Verification:** [Current-authority network proof](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_scout_authority_runtime.py), [maintained authority receipt](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/scout/linux-authority-runtime.json), and [authority receipt freshness](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/webcrawler/test_authority_receipt.py)
 
 ### Vision admission {#vision-admission}
 
@@ -3934,7 +3937,7 @@ Additive migration `0018` covers empty cycles and refuses downgrade while lineag
 Generated OpenAPI/TypeScript, 341 frontend tests and repository static checks pass; the final test-only
 fixture repair passes focused static checks. Final non-container qualification passes 5,895 tests
 with 15 explicit optional skips and 448 container deselections. Three actual Bridge baselines and
-fresh extractor/composed Scout qualification preserve the maintained receipt oracles.
+fresh extractor/composed Webcrawler qualification preserve the maintained receipt oracles.
 
 One [ordinary native successor observation](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/creation/native-successor-admission-2026-10-17.json)
 at source `a80d91d` uses ordinary CLI/configuration, protected API, SAQ and retained PostgreSQL.

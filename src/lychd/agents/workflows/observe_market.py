@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 from pydantic_graph import BaseNode, End, GraphRunContext
 
 from lychd.agents.services import WorkflowServices
@@ -13,35 +13,37 @@ from lychd.agents.workflows.base import Gate, PatternEdge, PatternManifest, Patt
 from lychd.compositions.scavenger.ports import ObservationCommit
 from lychd.domain.cortex.graph import build_serial_graph
 from lychd.domain.cortex.runs import ConsentPending
-from lychd.domain.scout.feed import ScoutFeedBinding
-from lychd.domain.scout.profile import ScoutReviewRef, ScoutWorkflowCode, ScoutWorkflowError
+from lychd.domain.webcrawler.feed import WebcrawlerFeedBinding
+from lychd.domain.webcrawler.profile import WebcrawlerReviewRef, WebcrawlerWorkflowCode, WebcrawlerWorkflowError
 
 if TYPE_CHECKING:
     from lychd.agents.router import Intent
     from lychd.compositions.scavenger.ports import ScavengerWorkflowPort
-    from lychd.domain.scout.feed import ScoutFeedWorkflowPort
+    from lychd.domain.webcrawler.feed import WebcrawlerFeedWorkflowPort
 
 
 class ObserveMarketState(BaseModel):
     """Only admitted references and safe review/result facts survive durable parking."""
 
-    model_config = ConfigDict(extra="forbid", hide_input_in_errors=True)
+    model_config = ConfigDict(serialize_by_alias=True, extra="forbid", hide_input_in_errors=True)
     run_id: str
-    scout: ScoutFeedBinding = Field(repr=False)
-    review: ScoutReviewRef | None = None
+    webcrawler: WebcrawlerFeedBinding = Field(
+        repr=False, validation_alias=AliasChoices("webcrawler", "scout"), serialization_alias="scout"
+    )
+    review: WebcrawlerReviewRef | None = None
     pending_consent_id: str | None = None
     commit: ObservationCommit | None = None
 
 
-def _ports(services: WorkflowServices) -> tuple[ScoutFeedWorkflowPort, ScavengerWorkflowPort]:
-    if services.feed_scout is None or services.scavenger is None:
-        raise ScoutWorkflowError(ScoutWorkflowCode.ADMISSION)
-    return services.feed_scout, services.scavenger
+def _ports(services: WorkflowServices) -> tuple[WebcrawlerFeedWorkflowPort, ScavengerWorkflowPort]:
+    if services.feed_webcrawler is None or services.scavenger is None:
+        raise WebcrawlerWorkflowError(WebcrawlerWorkflowCode.ADMISSION)
+    return services.feed_webcrawler, services.scavenger
 
 
-def _review(state: ObserveMarketState) -> ScoutReviewRef:
+def _review(state: ObserveMarketState) -> WebcrawlerReviewRef:
     if state.review is None:
-        raise ScoutWorkflowError(ScoutWorkflowCode.BINDING)
+        raise WebcrawlerWorkflowError(WebcrawlerWorkflowCode.BINDING)
     return state.review
 
 
@@ -52,12 +54,12 @@ class PrepareFeedReview(BaseNode[ObserveMarketState, WorkflowServices]):
     async def run(
         self, ctx: GraphRunContext[ObserveMarketState, WorkflowServices]
     ) -> AwaitFeedConsent | FinishMarketObservation:
-        scout, app = _ports(ctx.deps)
+        webcrawler, app = _ports(ctx.deps)
         state = ctx.state
-        state.commit = await app.committed(run_id=str(state.run_id), binding=state.scout)
+        state.commit = await app.committed(run_id=str(state.run_id), binding=state.webcrawler)
         if state.commit is not None:
             return FinishMarketObservation()
-        state.review = await scout.prepare(run_id=str(state.run_id), binding=state.scout)
+        state.review = await webcrawler.prepare(run_id=str(state.run_id), binding=state.webcrawler)
         state.pending_consent_id = str(state.review.consent_id)
         return AwaitFeedConsent()
 
@@ -69,13 +71,15 @@ class AwaitFeedConsent(Gate, BaseNode[ObserveMarketState, WorkflowServices]):
     async def run(
         self, ctx: GraphRunContext[ObserveMarketState, WorkflowServices]
     ) -> AwaitFeedConsent | AcquireMarketField:
-        scout, _ = _ports(ctx.deps)
-        verdict = await scout.consent(run_id=str(ctx.state.run_id), binding=ctx.state.scout, review=_review(ctx.state))
+        webcrawler, _ = _ports(ctx.deps)
+        verdict = await webcrawler.consent(
+            run_id=str(ctx.state.run_id), binding=ctx.state.webcrawler, review=_review(ctx.state)
+        )
         if verdict == "pending":
-            raise ConsentPending(str(_review(ctx.state).consent_id), str(ctx.state.run_id), "scout.public-feed")
+            raise ConsentPending(str(_review(ctx.state).consent_id), str(ctx.state.run_id), "webcrawler.public-feed")
         ctx.state.pending_consent_id = None
         if verdict != "granted":
-            raise ScoutWorkflowError(ScoutWorkflowCode.CONSENT)
+            raise WebcrawlerWorkflowError(WebcrawlerWorkflowCode.CONSENT)
         return AcquireMarketField()
 
 
@@ -84,15 +88,15 @@ class AcquireMarketField(BaseNode[ObserveMarketState, WorkflowServices]):
     """Consume once and atomically adopt the whole field outside Graph state."""
 
     async def run(self, ctx: GraphRunContext[ObserveMarketState, WorkflowServices]) -> FinishMarketObservation:
-        scout, app = _ports(ctx.deps)
+        webcrawler, app = _ports(ctx.deps)
         state, run_id = ctx.state, str(ctx.state.run_id)
         # A previous commit can outlive its response or this node's checkpoint.
-        state.commit = await app.committed(run_id=run_id, binding=state.scout)
+        state.commit = await app.committed(run_id=run_id, binding=state.webcrawler)
         if state.commit is None:
             review = _review(state)
-            material = await scout.acquire(run_id=run_id, binding=state.scout, review=review)
-            scout.authorize_feed_consume(run_id=run_id, binding=state.scout, review=review, material=material)
-            state.commit = await app.adopt(run_id=run_id, binding=state.scout, review=review, material=material)
+            material = await webcrawler.acquire(run_id=run_id, binding=state.webcrawler, review=review)
+            webcrawler.authorize_feed_consume(run_id=run_id, binding=state.webcrawler, review=review, material=material)
+            state.commit = await app.adopt(run_id=run_id, binding=state.webcrawler, review=review, material=material)
         return FinishMarketObservation()
 
 
@@ -102,23 +106,23 @@ class FinishMarketObservation(BaseNode[ObserveMarketState, WorkflowServices, Obs
 
     async def run(self, ctx: GraphRunContext[ObserveMarketState, WorkflowServices]) -> End[ObservationCommit]:
         _, app = _ports(ctx.deps)
-        current = await app.committed(run_id=str(ctx.state.run_id), binding=ctx.state.scout)
+        current = await app.committed(run_id=str(ctx.state.run_id), binding=ctx.state.webcrawler)
         if current is None or current != ctx.state.commit:
-            raise ScoutWorkflowError(ScoutWorkflowCode.SETTLEMENT)
+            raise WebcrawlerWorkflowError(WebcrawlerWorkflowCode.SETTLEMENT)
         return End(current)
 
 
 def _make_state(intent: Intent) -> ObserveMarketState:
-    binding = intent.admitted_scout
+    binding = intent.admitted_webcrawler
     if (
-        type(binding) is not ScoutFeedBinding
+        type(binding) is not WebcrawlerFeedBinding
         or intent.run_id is None
         or intent.source != "scavenger"
         or intent.admitted_capability_key is not None
         or intent.prompt != str(binding.consumer.application_admission_id)
     ):
-        raise ScoutWorkflowError(ScoutWorkflowCode.ADMISSION)
-    return ObserveMarketState(run_id=intent.run_id, scout=binding)
+        raise WebcrawlerWorkflowError(WebcrawlerWorkflowCode.ADMISSION)
+    return ObserveMarketState(run_id=intent.run_id, webcrawler=binding)
 
 
 def _validate_state(intent: Intent, state: BaseModel) -> None:
@@ -126,13 +130,13 @@ def _validate_state(intent: Intent, state: BaseModel) -> None:
     if (
         type(state) is not ObserveMarketState
         or state.run_id != expected.run_id
-        or state.scout != expected.scout
+        or state.webcrawler != expected.webcrawler
         or (
             state.pending_consent_id is not None
             and (state.review is None or state.pending_consent_id != str(state.review.consent_id))
         )
     ):
-        raise ScoutWorkflowError(ScoutWorkflowCode.BINDING)
+        raise WebcrawlerWorkflowError(WebcrawlerWorkflowCode.BINDING)
 
 
 OBSERVE_MARKET_GRAPH = build_serial_graph(

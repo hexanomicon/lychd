@@ -32,10 +32,10 @@ from lychd.config.logging import PRIVATE_CONTENT_LOG_OPT
 from lychd.domain.codex.guards import requires_scopes
 from lychd.domain.cortex.ledger import RunAdmissionConflictError
 from lychd.domain.cortex.runs import RunStatus
-from lychd.domain.scout.feed import ScoutFeedBinding
-from lychd.domain.scout.profile import ScoutWorkflowError
 from lychd.domain.web.contracts import FrameworkError
 from lychd.domain.web.schemas import ConsentCard
+from lychd.domain.webcrawler.feed import WebcrawlerFeedBinding
+from lychd.domain.webcrawler.profile import WebcrawlerWorkflowError
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -81,7 +81,7 @@ def _service(state: State) -> ScavengerService:
 def _refusal(error: Exception) -> HTTPException:
     if isinstance(error, ScavengerRefused):
         code = str(error) if str(error) in _CODES else "application_refused"
-    elif isinstance(error, ScoutWorkflowError):
+    elif isinstance(error, WebcrawlerWorkflowError):
         code = "scout_" + error.code.value
     elif isinstance(error, RunAdmissionConflictError):
         code = "conflicting_run"
@@ -95,8 +95,8 @@ def _consent_run(run: RunRecord | None, admission_id: UUID) -> RunRecord | None:
     if (
         run is None
         or run.source != "scavenger"
-        or type(run.admitted_scout) is not ScoutFeedBinding
-        or run.admitted_scout.consumer.application_admission_id != admission_id
+        or type(run.admitted_webcrawler) is not WebcrawlerFeedBinding
+        or run.admitted_webcrawler.consumer.application_admission_id != admission_id
     ):
         reason = "run_custody"
         raise ScavengerRefused(reason)
@@ -150,7 +150,7 @@ class ScavengerController(Controller):
                 engine=state.services.run_engine,
                 admission=admission,
             )
-        except (ScavengerRefused, ScoutWorkflowError, RunAdmissionConflictError, ValidationError) as error:
+        except (ScavengerRefused, WebcrawlerWorkflowError, RunAdmissionConflictError, ValidationError) as error:
             raise _refusal(error) from None
 
     @get(

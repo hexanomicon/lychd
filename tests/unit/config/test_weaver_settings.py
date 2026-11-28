@@ -13,7 +13,7 @@ from lychd.agents.workflows import BRIDGE_CHAT, BRIDGE_CHAT_ARCHIVE, BRIDGE_CHAT
 from lychd.config.settings import BridgeCastingSettings, Settings, SettingsSnapshot, WeaverSettings
 from lychd.domain.archive import ArchiveProfile, ArchiveSubject
 from lychd.domain.cortex.bridge_preference import BridgePreference, BridgePreferenceRoute
-from tests.scout_fixtures import scout_profile
+from tests.webcrawler_fixtures import webcrawler_profile
 
 
 def test_absent_bridge_selection_preserves_legacy_configuration() -> None:
@@ -81,15 +81,26 @@ def test_preference_refuses_unversioned_or_unbounded_policy(patch: dict[str, Any
         BridgePreference.model_validate(payload)
 
 
-def test_scout_profile_requires_revision_four_and_keeps_older_revisions_retained() -> None:
-    profile = scout_profile()
-    with pytest.raises(ValidationError, match="requires scout"):
+def test_page_config_accepts_old_spelling_and_emits_only_webcrawler() -> None:
+    profile = webcrawler_profile()
+    raw = {"revision": "4", "capability_key": "local:chat:answer", "scout": profile}
+    settings = BridgeCastingSettings.model_validate(raw)
+    assert settings.webcrawler == profile
+    assert "webcrawler" in settings.model_dump()
+    assert "scout" not in settings.model_dump()
+    with pytest.raises(ValidationError, match="Extra inputs"):
+        BridgeCastingSettings.model_validate(raw | {"webcrawler": profile})
+
+
+def test_webcrawler_profile_requires_revision_four_and_keeps_older_revisions_retained() -> None:
+    profile = webcrawler_profile()
+    with pytest.raises(ValidationError, match="requires webcrawler"):
         BridgeCastingSettings(revision="4", capability_key="local:chat:answer")
     with pytest.raises(ValidationError, match="other revisions do not accept"):
-        BridgeCastingSettings(revision="2", capability_key="local:chat:answer", scout=profile)
+        BridgeCastingSettings(revision="2", capability_key="local:chat:answer", webcrawler=profile)
     registry = builtin_workflow_registry(
         weaver=WeaverSettings(
-            bridge=BridgeCastingSettings(revision="4", capability_key="local:chat:answer", scout=profile)
+            bridge=BridgeCastingSettings(revision="4", capability_key="local:chat:answer", webcrawler=profile)
         )
     )
     assert registry.default.manifest.revision == "4"

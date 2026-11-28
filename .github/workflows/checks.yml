@@ -1,7 +1,7 @@
 name: Repository Checks
 
 # Altar and documentation gates report on every PR and long-lived branch push.
-# Full Python, PostgreSQL and isolated Scout qualification are manually dispatched. Python
+# Full Python, PostgreSQL and isolated Webcrawler qualification are manually dispatched. Python
 # runs inside the reviewed test image, including its Podman 5 Quadlet generator.
 # Passing these gates does not qualify deployed host services.
 on:
@@ -13,9 +13,9 @@ on:
   workflow_dispatch:
     inputs:
       scope:
-        description: Run ordinary contracts or the separate isolated Scout qualification
+        description: Run ordinary contracts or the separate isolated Webcrawler qualification
         type: choice
-        options: [contracts, scout]
+        options: [contracts, webcrawler, scout]
         default: contracts
 
 concurrency:
@@ -30,8 +30,8 @@ env:
 
 jobs:
   scout-qualification:
-    name: Scout isolated network qualification
-    if: github.event_name == 'workflow_dispatch' && inputs.scope == 'scout'
+    name: Webcrawler isolated network qualification
+    if: github.event_name == 'workflow_dispatch' && (inputs.scope == 'webcrawler' || inputs.scope == 'scout')
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
@@ -68,7 +68,7 @@ jobs:
           sudo -n --preserve-env=LYCHD_SCOUT_QUALIFICATION_PROFILE,LYCHD_SCOUT_QUALIFICATION_OUTPUT,LYCHD_SCOUT_DOCKER_SOCKET,DOCKER_HOST,DOCKER_CONTEXT \
             python3 -I -S scripts/scout_qualification.py --apparmor-load "$RUNNER_TEMP/scout-apparmor"
 
-      - name: Run the maintained Scout qualification adapter
+      - name: Run the maintained Webcrawler qualification adapter
         shell: bash
         env:
           LYCHD_SCOUT_QUALIFICATION_OUTPUT: ${{ runner.temp }}/scout-qualification
@@ -116,7 +116,7 @@ jobs:
 
   python:
     name: Python contracts ${{ matrix.python-version }}
-    if: github.event_name == 'workflow_dispatch' && inputs.scope != 'scout'
+    if: github.event_name == 'workflow_dispatch' && inputs.scope == 'contracts'
     strategy:
       fail-fast: false
       matrix:
@@ -138,7 +138,7 @@ jobs:
 
   postgres:
     name: Disposable PostgreSQL receipts ${{ matrix.python-version }}
-    if: github.event_name == 'workflow_dispatch' && inputs.scope != 'scout'
+    if: github.event_name == 'workflow_dispatch' && inputs.scope == 'contracts'
     strategy:
       fail-fast: false
       matrix:
@@ -172,7 +172,7 @@ jobs:
           persist-credentials: false
 
       - name: Install Python and uv
-        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
         with:
           version: "0.13.0"
           python-version: "3.15.0"
@@ -225,7 +225,7 @@ jobs:
           persist-credentials: false
 
       - name: Install Python and uv
-        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
         with:
           version: "0.13.0"
           python-version: "3.15.0"

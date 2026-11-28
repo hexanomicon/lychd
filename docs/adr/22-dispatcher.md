@@ -68,7 +68,7 @@ declared agent-loop toolsets, or a non-empty `tool_execution` toolset surface. T
 are `chat`, `vision`, `embedding`, `stt`, `tts`, `tool_execution`, and `rerank`; `model_id` remains
 required. Only `chat` and non-empty `tool_execution` can issue this v1 grant. The other family
 labels remain routing metadata and fail closed at issue; they do not prove an executable STT/TTS
-call, visual or embedding job, rerank call, Scout effect, host tool, or live session merely because
+call, visual or embedding job, rerank call, Webcrawler effect, host tool, or live session merely because
 the vocabulary can name one.
 
 Current `[[models]]` declarations may project into v2 only through an explicit compatibility map

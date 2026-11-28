@@ -22,7 +22,7 @@ and delegated rite predate the Portfolio and retain their original ownership.
 An **Invocation** opens one bounded [Circle](../../../divination/altar/circle.md). Its
 **Casting** performs the selected Scroll. The **Run** records that Invocation durably, including
 the chosen score, so a worker returning from a pause can find the same revision. Graph advances
-work between stations. In the [public-page score](https://github.com/hexanomicon/lychd/blob/main/src/lychd/agents/workflows/scout_chat.py),
+work between stations. In the [public-page score](https://github.com/hexanomicon/lychd/blob/main/src/lychd/agents/workflows/webcrawler_chat.py),
 the station `await_page_consent` binds to the Python node `AwaitPageConsent`. Its declared
 edges allow the Run to wait, proceed to acquisition, or settle without contacting the page.
 The score places that decision. The consent owner supplies the verdict. [Loom](../../../divination/altar/loom.md)
@@ -72,7 +72,7 @@ Revision 3 adds bounded public-note recall with transient Context injection and 
 revision 2's tool-capable conversation.
 
 Revision 4 adds one explicitly declared public page, native consent and transient local-model
-Context. Its [Scout configuration](../scout.md#public-page-answers) selects a qualified static
+Context. Its [Webcrawler configuration](../webcrawler.md#public-page-answers) selects a qualified static
 runtime and finite budgets. Neither profile turns a Scroll or source-authored text into tool authority.
 
 Revision 5 adds read-only answers from the independently enabled Archive semantic generation,

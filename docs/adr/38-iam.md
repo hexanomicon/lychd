@@ -257,16 +257,16 @@ later revocation cannot retract accepted source bytes; it does atomically invali
 vectors and fence late completion. A caller-supplied Run UUID is attribution, never a Run grant,
 relationship assertion or authority to emit events into that Run.
 
-## Trusted local Scout profile
+## Trusted local Webcrawler profile <span id="trusted-local-scout-profile"></span>
 
-The opt-in Scout profile binds one authenticated local operator to a host-owned subject
+The opt-in Webcrawler profile binds one authenticated local operator to a host-owned subject
 and authentication generation in the single control process and event loop. Its mandatory current
 host authorizer separately decides public-locator classification, review disclosure/judgment,
 Fetch, Extract and transient material consumption. Every decision binds the actual subject,
 retained Run and request, exact preparation, purpose, policy revision, revocation generation,
 expiry and applicable budget. Neither a caller-supplied Run UUID nor a matching Sigil name/scope
 bag supplies authority. [Security](09-security.md#target-and-disclosure-basis) owns the declaration
-and disclosure basis; [Scout](30-webcrawler.md#attempt-layers-and-crash-semantics) owns attempts
+and disclosure basis; [Webcrawler](30-webcrawling.md#attempt-layers-and-crash-semantics) owns attempts
 and reservations. Raw acquired material remains transient, and this profile admits no remote
 model inference.
 
@@ -292,11 +292,11 @@ does not revoke it. Withdrawal uses Run cancellation or current host-policy revo
 injects current authority again and never restores a live permit from a receipt.
 
 This local composition seam supplies no remote Principal enrollment, Ward session, cross-process
-revocation or isolation from trusted same-process code. [Scout's evidence](../state-of-the-work.md#scout-web-acquisition)
+revocation or isolation from trusted same-process code. [Webcrawler's evidence](../state-of-the-work.md#webcrawler-web-acquisition)
 separates the selected page and model-free feed workflows, transport qualification, and the
 remaining deployment and recovery limits.
 
-The separate [Reach operator research profile](30-webcrawler.md#explicit-reach-operator-research-profile)
+The separate [Reach operator research profile](30-webcrawling.md#explicit-reach-operator-research-profile)
 uses a private operator-authored standing public catalogue and a distinct local attempt owner.
 It does not manufacture `LocalOperatorAuthentication`, native per-URL consent or a retained
 Bridge Run from a Discord identity. Exact initiator/place selectors narrow that local standing

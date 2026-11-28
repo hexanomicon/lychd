@@ -111,7 +111,7 @@ def test_semantic_policy_is_exclusive_to_five(revision: str) -> None:
 
 @pytest.mark.parametrize(
     "patch",
-    [{"semantic": None}, {"capability_key": None}, {"archive": PROFILE}, {"scout": {}}, {"preference": {}}],
+    [{"semantic": None}, {"capability_key": None}, {"archive": PROFILE}, {"webcrawler": {}}, {"preference": {}}],
 )
 def test_revision_five_requires_semantic_and_key_and_rejects_other_profiles(patch: dict[str, Any]) -> None:
     with pytest.raises(ValidationError):

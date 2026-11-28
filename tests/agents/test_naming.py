@@ -18,8 +18,8 @@ from lychd.agents.the_first_one import THE_FIRST_ONE_SPEC, named_agent_spec
 from lychd.agents.workflows import builtin_workflow_registry, resolve_named_workflow
 from lychd.agents.workflows.archive_chat import ARCHIVE_AGENT_SPEC
 from lychd.agents.workflows.bridge_chat import BRIDGE_CHAT, BRIDGE_CHAT_BOUND, BridgeChatState, WeaveContext
-from lychd.agents.workflows.scout_chat import SCOUT_AGENT_SPEC
 from lychd.agents.workflows.semantic_chat import SEMANTIC_AGENT_SPEC
+from lychd.agents.workflows.webcrawler_chat import WEBCRAWLER_AGENT_SPEC
 from lychd.domain.cortex.context import IDENTITY_BLOCK_TEXT, ContextBudgetExceededError, naming_identity_block
 from lychd.domain.naming import NamingSnapshot
 from tests.agents.conftest import make_services
@@ -88,7 +88,7 @@ async def test_bridge_graph_uses_retained_names_in_actual_model_instructions(wor
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("spec", [THE_FIRST_ONE_SPEC, ARCHIVE_AGENT_SPEC, SCOUT_AGENT_SPEC, SEMANTIC_AGENT_SPEC])
+@pytest.mark.parametrize("spec", [THE_FIRST_ONE_SPEC, ARCHIVE_AGENT_SPEC, WEBCRAWLER_AGENT_SPEC, SEMANTIC_AGENT_SPEC])
 async def test_every_bridge_profile_preserves_rules_and_sends_named_instruction(spec: AgentSpec) -> None:
     captured: list[str | None] = []
 

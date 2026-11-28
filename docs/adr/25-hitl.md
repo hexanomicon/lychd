@@ -165,7 +165,7 @@ preparation and action recovery. [Persistence](06-persistence.md#native-consent-
 owns schema compatibility.
 
 The shared metadata and client review do not complete an application's admission path. For
-example, [Scout's opt-in public-page workflow](../state-of-the-work.md#scout-web-acquisition)
+example, [Webcrawler's opt-in public-page workflow](../state-of-the-work.md#webcrawler-web-acquisition)
 binds its own preparation, Consent and current authority before acquisition.
 [Blockworld's placement experiment](../state-of-the-work.md#blockworld-experiments) exercises its
 separate application-owned transaction under its recorded test conditions. Other owners must

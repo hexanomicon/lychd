@@ -52,7 +52,7 @@ delegation requests select their scores as follows:
 | `bridge_chat@1` | Unconfigured default | `bridge-chat-state-v1` |
 | `bridge_chat@2` | [One configured Chat capability](index.md#choose-a-bridge-capability) or [a preference between two local routes](index.md#prefer-a-ready-route-at-admission) | `bridge-chat-state-v2` |
 | `bridge_chat@3` | Configured public Archive and exact capability | `bridge-archive-state-v1` |
-| `bridge_chat@4` | [Configured Scout](../scout.md#public-page-answers), authenticated command and exact local capability | `bridge-scout-state-v1` |
+| `bridge_chat@4` | [Configured Webcrawler](../webcrawler.md#public-page-answers), authenticated command and exact local capability | `bridge-scout-state-v1` |
 | `bridge_chat@5` | Configured semantic recall with an exact Archive generation and local Chat capability | `bridge-semantic-state-v1` |
 | `delegated_rite@1` | Exact `/delegate` command token | `delegated-rite-state-v1` |
 | `delegated_rite@2` | Configured exact runtime and `/delegate` command token | `delegated-rite-state-v2` |

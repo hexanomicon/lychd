@@ -13,16 +13,16 @@ from lychd.agents.workflows import (
     BRIDGE_CHAT,
     BRIDGE_CHAT_ARCHIVE,
     BRIDGE_CHAT_BOUND,
-    BRIDGE_CHAT_SCOUT,
     BRIDGE_CHAT_SEMANTIC,
+    BRIDGE_CHAT_WEBCRAWLER,
     BuiltinWorkflowRegistry,
     Workflow,
 )
 from lychd.domain.cortex.runs import RunStatus
-from lychd.domain.scout.profile import parse_page_question
 from lychd.domain.web.schemas import BridgeTurn
-from lychd.interface.web.scout_admission import ScoutAdmissionService
-from tests.scout_fixtures import scout_profile
+from lychd.domain.webcrawler.profile import parse_page_question
+from lychd.interface.web.webcrawler_admission import WebcrawlerAdmissionService
+from tests.webcrawler_fixtures import webcrawler_profile
 
 if TYPE_CHECKING:
     from types import SimpleNamespace
@@ -39,15 +39,15 @@ _GUIDANCE = (
 
 def _configure(services: SimpleNamespace, *, revision: str = "4") -> Mock:
     services.run_engine.workflows = BuiltinWorkflowRegistry(
-        workflows=(BRIDGE_CHAT, BRIDGE_CHAT_BOUND, BRIDGE_CHAT_ARCHIVE, BRIDGE_CHAT_SCOUT, BRIDGE_CHAT_SEMANTIC),
+        workflows=(BRIDGE_CHAT, BRIDGE_CHAT_BOUND, BRIDGE_CHAT_ARCHIVE, BRIDGE_CHAT_WEBCRAWLER, BRIDGE_CHAT_SEMANTIC),
         active_revisions=(("bridge_chat", revision),),
         default_name="bridge_chat",
     )
-    services.run_engine.bridge_scout = scout_profile().model_copy(
+    services.run_engine.bridge_webcrawler = webcrawler_profile().model_copy(
         update={"resolver_custody_statement": "PRIVATE_CONFIGURATION_SENTINEL"}
     )
-    admission = Mock(spec=ScoutAdmissionService)
-    services.scout_admission = services.run_engine.scout_admission = admission
+    admission = Mock(spec=WebcrawlerAdmissionService)
+    services.webcrawler_admission = services.run_engine.webcrawler_admission = admission
     return admission
 
 
@@ -68,7 +68,7 @@ async def _retained_run(services: SimpleNamespace, workflow: Workflow) -> str:
     return session.id
 
 
-def test_empty_scout_snapshot_projects_actual_admission_default_without_effects(
+def test_empty_webcrawler_snapshot_projects_actual_admission_default_without_effects(
     altar_client: AsgiClient, fake_services: SimpleNamespace, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     admission = _configure(fake_services)
@@ -100,7 +100,7 @@ def test_empty_scout_snapshot_projects_actual_admission_default_without_effects(
     assert parsed.question == "What does this page claim?"
 
 
-def test_selected_snapshot_uses_current_scout_despite_older_session_run(
+def test_selected_snapshot_uses_current_webcrawler_despite_older_session_run(
     altar_client: AsgiClient, fake_services: SimpleNamespace
 ) -> None:
     _configure(fake_services)
@@ -115,13 +115,13 @@ def test_selected_snapshot_uses_current_scout_despite_older_session_run(
 
 
 @pytest.mark.parametrize("revision", ["1", "2", "3"])
-def test_older_current_revision_never_borrows_guidance_from_retained_scout(
+def test_older_current_revision_never_borrows_guidance_from_retained_webcrawler(
     altar_client: AsgiClient, fake_services: SimpleNamespace, revision: str
 ) -> None:
     _configure(fake_services, revision=revision)
-    session_id = asyncio.run(_retained_run(fake_services, BRIDGE_CHAT_SCOUT))
+    session_id = asyncio.run(_retained_run(fake_services, BRIDGE_CHAT_WEBCRAWLER))
     # Even a disagreeing read-only catalogue cannot choose the composer identity.
-    fake_services.workflows = BuiltinWorkflowRegistry(workflows=(BRIDGE_CHAT_SCOUT,))
+    fake_services.workflows = BuiltinWorkflowRegistry(workflows=(BRIDGE_CHAT_WEBCRAWLER,))
     for path in ("/api/v1/bridge", f"/api/v1/bridge/sessions/{session_id}"):
         response = altar_client.get(path)
         assert response.status_code == 200
@@ -132,12 +132,12 @@ def test_older_current_revision_never_borrows_guidance_from_retained_scout(
         }
 
 
-def test_inactive_registered_scout_does_not_advertise_its_command(
+def test_inactive_registered_webcrawler_does_not_advertise_its_command(
     altar_client: AsgiClient, fake_services: SimpleNamespace
 ) -> None:
     _configure(fake_services, revision="1")
     registry = fake_services.run_engine.workflows
-    assert registry.get_revision("bridge_chat", "4") is BRIDGE_CHAT_SCOUT
+    assert registry.get_revision("bridge_chat", "4") is BRIDGE_CHAT_WEBCRAWLER
     assert not registry.is_active("bridge_chat", "4")
     response = altar_client.get("/api/v1/bridge")
     assert response.status_code == 200
@@ -145,16 +145,16 @@ def test_inactive_registered_scout_does_not_advertise_its_command(
 
 
 @pytest.mark.parametrize("missing", ["profile", "engine_admission", "handler_admission"])
-def test_scout_identity_without_required_collaborator_has_no_guidance(
+def test_webcrawler_identity_without_required_collaborator_has_no_guidance(
     altar_client: AsgiClient, fake_services: SimpleNamespace, missing: str
 ) -> None:
     _configure(fake_services)
     if missing == "profile":
-        fake_services.run_engine.bridge_scout = None
+        fake_services.run_engine.bridge_webcrawler = None
     elif missing == "engine_admission":
-        fake_services.run_engine.scout_admission = None
+        fake_services.run_engine.webcrawler_admission = None
     else:
-        fake_services.scout_admission = None
+        fake_services.webcrawler_admission = None
     response = altar_client.get("/api/v1/bridge")
     assert response.status_code == 200
     assert response.json()["composer"] == {"pattern_id": "bridge_chat", "pattern_revision": "4", "guidance": None}
@@ -172,7 +172,7 @@ def test_unavailable_admission_registry_does_not_fall_back_to_catalogue(
     altar_client: AsgiClient, fake_services: SimpleNamespace, registry: Any
 ) -> None:
     fake_services.run_engine.workflows = registry
-    fake_services.workflows = BuiltinWorkflowRegistry(workflows=(BRIDGE_CHAT_SCOUT,))
+    fake_services.workflows = BuiltinWorkflowRegistry(workflows=(BRIDGE_CHAT_WEBCRAWLER,))
     response = altar_client.get("/api/v1/bridge")
     assert response.status_code == 200
     assert response.json()["composer"] is None

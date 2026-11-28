@@ -229,7 +229,7 @@ parent indexes and the owning `.nav.yml` when routes move. Zensical's built-in A
 
 Specialized model, database, namespace and host proofs have different prerequisites and receipt
 boundaries. Follow [qualification profiles](tests/README.md) for PostgreSQL, Intercom/Atlas,
-Quadlet, embedding/semantic memory, Scout/Scavenger and optional music probes. Historical
+Quadlet, embedding/semantic memory, Webcrawler/Scavenger and optional music probes. Historical
 host-native receipts do not qualify the current image; [State of Work](docs/state-of-the-work.md#current-evidence-envelope)
 owns their status. The ordinary wrapper does not forward arbitrary proof flags, files or sockets.
 

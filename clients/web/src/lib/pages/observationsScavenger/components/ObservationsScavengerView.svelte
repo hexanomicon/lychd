@@ -146,7 +146,7 @@
         {#if document.run_id}<a href={`/orb/${encodeURIComponent(document.run_id)}`}>Inspect Run evidence</a>{/if}</p>
       {#if document.status === "awaiting_consent"}<p>The Run is waiting for your native acquisition review. Refresh to load its current outcome.</p>
       {:else if document.status === "unknown"}<p class="notice">Acquisition outcome is unknown. Deletion and a replacement fetch cannot settle this reservation. No automatic refetch is allowed.</p>
-      {:else if document.status === "unavailable"}<p>No complete consumer field is available. Run completion or a Scout receipt alone does not prove a saved observation.</p>
+      {:else if document.status === "unavailable"}<p>No complete consumer field is available. Run completion or a Webcrawler receipt alone does not prove a saved observation.</p>
       {:else if document.status === "deleted"}<p>Deleted, not an empty market. This UUID cannot recreate its application payload.</p>
       {:else if document.status === "pending" || document.status === "reserved"}<p>Work is pending. Refresh explicitly. Deletion does not cancel this Run.</p>{/if}
       {#if document.seed}
@@ -195,7 +195,7 @@
         <dt>Field digest</dt><dd><code>{view.field_digest}</code></dd>
         <dt>Literal filter</dt><dd>{view.filter.revision}, Unicode {view.casefold_unicode_version}</dd>
         <dt>Profile / extractor</dt><dd>{observation.profile} / {observation.extractor}</dd>
-        <dt>Scout receipt</dt><dd><code>{observation.scout_receipt_id}</code></dd>
+        <dt>Webcrawler receipt</dt><dd><code>{observation.scout_receipt_id}</code></dd>
         <dt>Source digest</dt><dd><code>{observation.source_digest}</code></dd>
         <dt>Record digest</dt><dd><code>{observation.record_digest}</code></dd>
         <dt>Observation digest</dt><dd><code>{document.observation_digest}</code></dd>

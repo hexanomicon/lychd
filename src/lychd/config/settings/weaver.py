@@ -4,15 +4,15 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import ConfigDict, Field, field_validator, model_validator
+from pydantic import AliasChoices, ConfigDict, Field, field_validator, model_validator
 
 from lychd.config.settings.section import SettingsSection
 from lychd.domain.archive import ArchiveProfile
 from lychd.domain.cortex.bridge_preference import BridgePreference
 from lychd.domain.cortex.semantic_answer import SemanticAnswerSelection
 from lychd.domain.delegation.routing import DelegatedRuntimeBinding
-from lychd.domain.scout.feed import ScoutFeedProfile
-from lychd.domain.scout.profile import ScoutProfile
+from lychd.domain.webcrawler.feed import WebcrawlerFeedProfile
+from lychd.domain.webcrawler.profile import WebcrawlerProfile
 
 
 class BridgeCastingSettings(SettingsSection):
@@ -26,7 +26,7 @@ class BridgeCastingSettings(SettingsSection):
     """Revision-2-only bounded local Chat preference; execution retains one exact key."""
     archive: ArchiveProfile | None = None
     """Mandatory exact public-note binding for the read-only revision 3."""
-    scout: ScoutProfile | None = None
+    webcrawler: WebcrawlerProfile | None = Field(default=None, validation_alias=AliasChoices("webcrawler", "scout"))
     """Mandatory explicit public-page profile for revision 4 only."""
 
     semantic: SemanticAnswerSelection | None = None
@@ -44,8 +44,8 @@ class BridgeCastingSettings(SettingsSection):
         if (self.revision == "3") != (self.archive is not None):
             msg = "Bridge revision 3 requires archive; revision 2 does not accept it."
             raise ValueError(msg)
-        if (self.revision == "4") != (self.scout is not None):
-            msg = "Bridge revision 4 requires scout; other revisions do not accept it."
+        if (self.revision == "4") != (self.webcrawler is not None):
+            msg = "Bridge revision 4 requires webcrawler; other revisions do not accept it."
             raise ValueError(msg)
         if (self.revision == "5") != (self.semantic is not None):
             msg = "Bridge revision 5 requires semantic; other revisions do not accept it."
@@ -85,7 +85,7 @@ class ScavengerCastingSettings(SettingsSection):
     """Opt into one exact model-free finite observation and native feed binding."""
 
     revision: Literal["3"]
-    scout: ScoutFeedProfile
+    webcrawler: WebcrawlerFeedProfile = Field(validation_alias=AliasChoices("webcrawler", "scout"))
 
 
 class WeaverSettings(SettingsSection):
@@ -104,8 +104,8 @@ class WeaverSettings(SettingsSection):
     """Select an exact Bridge revision; omission keeps bridge_chat@1 active."""
 
     @model_validator(mode="after")
-    def _one_scout_binding(self) -> WeaverSettings:
-        if self.scavenger is not None and self.bridge is not None and self.bridge.scout is not None:
-            message = "The first native profile permits one active Scout binding, not page/feed coexistence."
+    def _one_webcrawler_binding(self) -> WeaverSettings:
+        if self.scavenger is not None and self.bridge is not None and self.bridge.webcrawler is not None:
+            message = "The first native profile permits one active Webcrawler binding, not page/feed coexistence."
             raise ValueError(message)
         return self

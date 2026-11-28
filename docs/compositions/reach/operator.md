@@ -884,7 +884,7 @@ profile. It offers verified local documents as `doc:<manifest-path>` selectors a
 operator-authored public web entries. Each web entry has a unique lowercase `id`, `title`, exact
 canonical HTTPS `url`, and optional bounded `focus` phrases. The operator authorizes each complete
 public locator before launch; a question, pasted link or model decision cannot add a destination.
-The [research profile law](../../adr/30-webcrawler.md#explicit-reach-operator-research-profile)
+The [research profile law](../../adr/30-webcrawling.md#explicit-reach-operator-research-profile)
 keeps that standing authority separate from native Bridge consent and Discord identity.
 
 For a conversation request, web metadata becomes eligible when its current question or an

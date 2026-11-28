@@ -231,13 +231,13 @@ transformation-receipt-chain digest, and `CutVerification@1` digest. A nullable 
 transformer claim alone is not an admissible privacy basis. The Gate verifies that this basis,
 candidate/wire digest, target, purpose, policy, expiry, and remaining disclosure use all agree.
 
-An HTTPS site's identity is distinct from the native Scout adapter implementing the contact.
+An HTTPS site's identity is distinct from the native Webcrawler adapter implementing the contact.
 DNS resolution and TLS hostname disclosure precede the HTTP request and need their own admitted
 handoffs; a resolver decision cannot authorize the site. DNS custody includes the selected
 resolver's forwarding or recursive-resolution policy. A fixed resolver address does not establish
 that policy, and unknown custody facts refuse whenever disclosure policy depends on them.
 
-The [trusted local Scout profile](38-iam.md#trusted-local-scout-profile) may admit an explicit
+The [trusted local Webcrawler profile](38-iam.md#trusted-local-webcrawler-profile) may admit an explicit
 public-locator declaration from an authenticated operator separately authorized to classify that
 source. The declaration binds the exact complete URL, subject and authentication generation,
 purpose, source/influence manifest, classification, category and policy revision. It is an
@@ -271,7 +271,7 @@ lineage references, policy and disclosure-basis revisions, expiry, budgets, and 
 caller-supplied full `ArtifactRef`, raw subject, filename, material-parent, source span, reversal
 value, credential, or live Sigil/capability/grant/lease handle.
 
-Within the trusted local Scout profile, its host-bound local subject and authentication generation
+Within the trusted local Webcrawler profile, its host-bound local subject and authentication generation
 occupy the identity binding without claiming an enrolled Ward Principal or remote credential.
 The public-text peer profile likewise binds its authenticated local initiator separately from
 the enrolled workload/remote peer identities. Its explicit operator-operation binding is an
@@ -334,9 +334,9 @@ remote disclosure safety, general anonymization or a normal application egress p
 #### Public-text peer network handoff
 
 The Intercom profile requires its own typed network admission and custody. A closed diagnostic
-recorder claim, Cut shape, Scout locator declaration or transport class grants it no authority.
+recorder claim, Cut shape, Webcrawler locator declaration or transport class grants it no authority.
 Policy-independent pinned socket/TLS mechanisms may be reused under the mandatory Intercom gate;
-Scout's source/locator policy is not peer trust.
+Webcrawler's source/locator policy is not peer trust.
 
 The gate verifies the independently admitted public source and exact enrolled `A2ATarget`, then
 seals the complete application request after authentication headers are prepared. Public protocol

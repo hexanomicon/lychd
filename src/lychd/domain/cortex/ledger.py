@@ -337,7 +337,7 @@ def _intent_payload(intent: Intent, *, idempotency_key: str | None = None) -> di
         "admitted_bridge_preference": preference.model_dump(mode="json") if preference is not None else None,
         "admitted_archive": intent.admitted_archive.model_dump(mode="json") if intent.admitted_archive else None,
         "admitted_semantic": intent.admitted_semantic.model_dump(mode="json") if intent.admitted_semantic else None,
-        "admitted_scout": intent.admitted_scout.model_dump(mode="json") if intent.admitted_scout else None,
+        "admitted_scout": intent.admitted_webcrawler.model_dump(mode="json") if intent.admitted_webcrawler else None,
         "admitted_peer": intent.admitted_peer.model_dump(mode="json") if intent.admitted_peer else None,
         "admitted_delegation": intent.admitted_delegation.model_dump(mode="json")
         if intent.admitted_delegation
@@ -769,7 +769,7 @@ class InMemoryRunLedger:
             admitted_archive=intent.admitted_archive,
             admitted_semantic=intent.admitted_semantic,
             admitted_delegation=intent.admitted_delegation,
-            admitted_scout=intent.admitted_scout,
+            admitted_webcrawler=intent.admitted_webcrawler,
             admitted_peer=intent.admitted_peer,
         )
         stored = _copy_run_record(record)
@@ -2502,7 +2502,7 @@ class DbRunLedger:
                 "admitted_archive": intent.get("admitted_archive"),
                 "admitted_semantic": intent.get("admitted_semantic"),
                 "admitted_delegation": intent.get("admitted_delegation"),
-                "admitted_scout": intent.get("admitted_scout"),
+                "admitted_webcrawler": intent.get("admitted_scout"),
                 "admitted_peer": intent.get("admitted_peer"),
             }
         )
@@ -2525,7 +2525,7 @@ class DbRunLedger:
             admitted_archive=parsed_intent.admitted_archive,
             admitted_semantic=parsed_intent.admitted_semantic,
             admitted_delegation=parsed_intent.admitted_delegation,
-            admitted_scout=parsed_intent.admitted_scout,
+            admitted_webcrawler=parsed_intent.admitted_webcrawler,
             admitted_peer=parsed_intent.admitted_peer,
             attempt=int(row.attempt),  # type: ignore[attr-defined]
             enqueue_seq=int(row.enqueue_seq),  # type: ignore[attr-defined]
